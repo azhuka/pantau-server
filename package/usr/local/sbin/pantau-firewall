@@ -143,21 +143,20 @@ EOF
     done
     [ -z "$rest" ] || fail "IP tidak valid: '$ip'"
 
-    [ "$o1" -ge 1 ] || fail "IP tidak valid/nol: '$ip'"
-    [ "$o1" -eq 10 ] && fail "IP privat (RFC1918) tidak boleh diblokir: '$ip'"
-    if [ "$o1" -eq 172 ] && [ "$o2" -ge 16 ] && [ "$o2" -le 31 ]; then
-        fail "IP privat (RFC1918) tidak boleh diblokir: '$ip'"
-    fi
-    if [ "$o1" -eq 192 ] && [ "$o2" -eq 168 ]; then
-        fail "IP privat (RFC1918) tidak boleh diblokir: '$ip'"
-    fi
-    [ "$o1" -eq 127 ] && fail "IP loopback tidak boleh diblokir: '$ip'"
-    [ "$o1" -eq 169 ] && [ "$o2" -eq 254 ] && fail "IP link-local tidak boleh diblokir: '$ip'"
+    [ "$o1" -ge 1 ] && [ "$o1" -le 223 ] || fail "IP tidak valid atau di luar jangkauan unicast: '$ip'"
+    [ "$o1" -eq 127 ] && fail "IP loopback (127.0.0.0/8) tidak boleh diblokir: '$ip'"
+    [ "$o1" -eq 169 ] && [ "$o2" -eq 254 ] && fail "IP link-local (169.254.0.0/16) tidak boleh diblokir: '$ip'"
     if [ "$ACTION" = "block" ]; then
+        if command -v ufw >/dev/null 2>&1; then
+            ufw insert 1 deny from "$ip" to any >/dev/null 2>&1 || true
+        fi
         out="$("$IPT" -I INPUT 1 -s "$ip" -j DROP 2>&1)" || fail "iptables gagal utk $ip: $out"
         echo "OK: INPUT DROP utk $ip"
     else
         # unblock: hapus aturan jika ada
+        if command -v ufw >/dev/null 2>&1; then
+            ufw delete deny from "$ip" to any >/dev/null 2>&1 || true
+        fi
         out="$("$IPT" -D INPUT -s "$ip" -j DROP 2>&1)" || fail "iptables hapus gagal utk $ip (mungkin aturan tidak ada): $out"
         echo "OK: Hapus blokir INPUT DROP utk $ip"
     fi

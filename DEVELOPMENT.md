@@ -354,6 +354,21 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.160
+
+- **Tipe Rilis:** Dukungan Blokir IP Private (RFC1918) & Penyelarasan Integrasi UFW Agen (*Support for Private RFC1918 IP Blocking & Agent UFW Integration Harmonization*)
+- **Fokus Utama:** Mengatasi penolakan dan kegagalan pemblokiran alamat IP lokal/privat pada agen dan wrapper sistem operasi:
+  1. **Dukungan Pemblokiran IP Privat (RFC1918) pada Agen (`agent/agent_pantau.py` & `package/usr/local/sbin/pantau-firewall`):**
+     - Memperbarui fungsi `_validate_ipv4()` pada agen agar mengizinkan seluruh rentang alamat IPv4 unicast yang sah termasuk blok privat RFC1918 (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`), sehingga operator NOC dapat memitigasi serangan atau anomali jaringan internal (seperti `192.168.20.12`).
+     - Menghapus pembatasan RFC1918 pada skrip wrapper `/usr/local/sbin/pantau-firewall` dan `PANTAU_FIREWALL_SCRIPT_BODY`, dengan mempertahankan proteksi keamanan terhadap pemblokiran alamat loopback (`127.0.0.0/8`), link-local (`169.254.0.0/16`), multicast (`224.0.0.0/4`), broadcast, dan alamat IP mesin server itu sendiri.
+  2. **Harmonisasi Pemblokiran IP Bersama UFW & Iptables:**
+     - Menambahkan injeksi otomatis aturan pemblokiran ke UFW (`ufw insert 1 deny from <ip> to any`) dan pembukaan blokir (`ufw delete deny from <ip> to any`) saat firewall UFW terpasang, berdampingan dengan injeksi instan rantai `iptables -I INPUT 1 -s <ip> -j DROP`.
+     - Memperbaiki keterangan hasil aksi pada tabel Riwayat Tindakan agar tidak lagi menyematkan catatan aturan volatile saat perintah mitigasi berstatus gagal.
+  3. **Pembaruan Otonom Mandiri Wrapper Host:**
+     - Memperbarui logika `ensure_pantau_firewall_updated()` pada agen untuk mendeteksi berkas wrapper yang masih menolak RFC1918 dan secara otomatis menimpanya dengan versi biner mutakhir.
+  4. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.160` pada 7 berkas inti repositori.
+
 ## Versi 4.8.159
 
 - **Tipe Rilis:** Eliminasi Duplikasi Riwayat Tindakan & Self-Healing Deteksi Status UFW Agen (*Eliminating Duplicate Action History Records & Agent Autonomous UFW Detection Self-Healing*)

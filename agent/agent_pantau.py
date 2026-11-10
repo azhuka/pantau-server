@@ -479,7 +479,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.159"
+AGENT_VERSION = "4.8.160"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -686,13 +686,13 @@ def execute_command(cfg: dict, command: dict) -> dict:
 
 
 def _validate_ipv4(ip: str) -> bool:
-    """IPv4 publik yang aman diblokir (bukan privat/loopback/link-local/multicast)."""
+    """IPv4 yang valid dan aman diblokir (bukan loopback/link-local/multicast/unspecified)."""
     try:
-        addr = ipaddress.IPv4Address(ip)
+        addr = ipaddress.IPv4Address(ip.strip())
     except ValueError:
         return False
-    return not (addr.is_private or addr.is_loopback or addr.is_link_local
-                or addr.is_multicast or addr.is_reserved)
+    return not (addr.is_loopback or addr.is_link_local
+                or addr.is_multicast or addr.is_unspecified or addr.is_reserved)
 
 
 PANTAU_FIREWALL_SCRIPT_BODY = r"""#!/usr/bin/env bash
@@ -828,20 +828,19 @@ EOF
     done
     [ -z "$rest" ] || fail "IP tidak valid: '$ip'"
 
-    [ "$o1" -ge 1 ] || fail "IP tidak valid/nol: '$ip'"
-    [ "$o1" -eq 10 ] && fail "IP privat (RFC1918) tidak boleh diblokir: '$ip'"
-    if [ "$o1" -eq 172 ] && [ "$o2" -ge 16 ] && [ "$o2" -le 31 ]; then
-        fail "IP privat (RFC1918) tidak boleh diblokir: '$ip'"
-    fi
-    if [ "$o1" -eq 192 ] && [ "$o2" -eq 168 ]; then
-        fail "IP privat (RFC1918) tidak boleh diblokir: '$ip'"
-    fi
-    [ "$o1" -eq 127 ] && fail "IP loopback tidak boleh diblokir: '$ip'"
-    [ "$o1" -eq 169 ] && [ "$o2" -eq 254 ] && fail "IP link-local tidak boleh diblokir: '$ip'"
+    [ "$o1" -ge 1 ] && [ "$o1" -le 223 ] || fail "IP tidak valid atau di luar jangkauan unicast: '$ip'"
+    [ "$o1" -eq 127 ] && fail "IP loopback (127.0.0.0/8) tidak boleh diblokir: '$ip'"
+    [ "$o1" -eq 169 ] && [ "$o2" -eq 254 ] && fail "IP link-local (169.254.0.0/16) tidak boleh diblokir: '$ip'"
     if [ "$ACTION" = "block" ]; then
+        if command -v ufw >/dev/null 2>&1; then
+            ufw insert 1 deny from "$ip" to any >/dev/null 2>&1 || true
+        fi
         out="$("$IPT" -I INPUT 1 -s "$ip" -j DROP 2>&1)" || fail "iptables gagal utk $ip: $out"
         echo "OK: INPUT DROP utk $ip"
     else
+        if command -v ufw >/dev/null 2>&1; then
+            ufw delete deny from "$ip" to any >/dev/null 2>&1 || true
+        fi
         out="$("$IPT" -D INPUT -s "$ip" -j DROP 2>&1)" || fail "iptables hapus gagal utk $ip (mungkin aturan tidak ada): $out"
         echo "OK: Hapus blokir INPUT DROP utk $ip"
     fi
@@ -869,7 +868,7 @@ def ensure_pantau_firewall_updated(force: bool = False) -> bool:
                     cur_content = f.read()
             except Exception:
                 pass
-            if "status)" in cur_content:
+            if "status)" in cur_content and "RFC1918" not in cur_content:
                 return True
 
         content_to_write = PANTAU_FIREWALL_SCRIPT_BODY.strip() + "\n"
@@ -902,29 +901,39 @@ def ensure_pantau_firewall_updated(force: bool = False) -> bool:
 
 
 def _exec_block_ip(command: dict) -> dict:
-    """Blokir IP sumber pendekatan SSH: iptables -I INPUT 1 -s <ip> -j DROP."""
+    """Blokir IP sumber serangan / pengganggu: iptables -I INPUT 1 -s <ip> -j DROP."""
     ensure_pantau_firewall_updated()
     params = command.get("params") or {}
-    ips = [str(i) for i in (params.get("ips") or [])][:10]
+    ips = [str(i).strip() for i in (params.get("ips") or [])][:10]
     if not ips:
         return {"ok": False, "output": "Tidak ada IP untuk diblokir."}
     outs: list = []
     ok_all = True
+    any_success = False
+    my_ip = get_local_ip()
     for ip in ips:
         if not _validate_ipv4(ip):
-            outs.append(f"{ip}: IP tidak valid / diblokir (privat/local/multicast)")
+            outs.append(f"{ip}: Format IP tidak valid atau terlarang (loopback/link-local/multicast)")
+            ok_all = False
+            continue
+        if ip == my_ip:
+            outs.append(f"{ip}: Ditolak (tidak dapat memblokir IP server itu sendiri)")
             ok_all = False
             continue
         if IS_ROOT:
             res = _run_native(["iptables", "-I", "INPUT", "1", "-s", ip, "-j", "DROP"],
                               f"iptables -I INPUT 1 -s {ip} -j DROP")
+            if shutil.which("ufw"):
+                _run_cmd(["ufw", "insert", "1", "deny", "from", ip, "to", "any"], timeout=5)
         else:
             res = _run_native(["/usr/bin/sudo", "-n", PANTAU_FIREWALL, "block", ip],
                               f"sudo -n {PANTAU_FIREWALL} block {ip}")
         if not res["ok"]:
             ok_all = False
+        else:
+            any_success = True
         outs.append(f"{ip}: {res['output']}")
-    note = " | aturan iptables volatile (hilang saat reboot): utk permanen gunakan iptables-persistent"
+    note = " | aturan diterapkan (iptables volatile / permanen jika ufw/iptables-persistent aktif)" if any_success else ""
     return {"ok": ok_all, "output": ("; ".join(outs) + note)[:2000]}
 
 
@@ -932,19 +941,21 @@ def _exec_unblock_ip(command: dict) -> dict:
     """Buka blokir IP: iptables -D INPUT -s <ip> -j DROP."""
     ensure_pantau_firewall_updated()
     params = command.get("params") or {}
-    ips = [str(i) for i in (params.get("ips") or [])][:10]
+    ips = [str(i).strip() for i in (params.get("ips") or [])][:10]
     if not ips:
         return {"ok": False, "output": "Tidak ada IP untuk dibuka blokirnya."}
     outs: list = []
     ok_all = True
     for ip in ips:
         if not _validate_ipv4(ip):
-            outs.append(f"{ip}: IP tidak valid / diblokir")
+            outs.append(f"{ip}: Format IP tidak valid")
             ok_all = False
             continue
         if IS_ROOT:
             res = _run_native(["iptables", "-D", "INPUT", "-s", ip, "-j", "DROP"],
                               f"iptables -D INPUT -s {ip} -j DROP")
+            if shutil.which("ufw"):
+                _run_cmd(["ufw", "delete", "deny", "from", ip, "to", "any"], timeout=5)
         else:
             res = _run_native(["/usr/bin/sudo", "-n", PANTAU_FIREWALL, "unblock", ip],
                               f"sudo -n {PANTAU_FIREWALL} unblock {ip}")
