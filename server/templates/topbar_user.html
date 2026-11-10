@@ -1,16 +1,10 @@
 {% if user %}
+{% set u_role = 'Master Admin' if user.is_master_admin() else ('Operator' if user.is_operator() else 'Viewer') %}
 <div class="noc-topbar-user" id="topbarUserChip">
-  <a href="/profile" class="noc-user-pill" title="Profil Akun: {{ user.username }} (Klik untuk kelola akun)">
+  <a href="/profile" class="noc-user-pill" title="Profil Akun: {{ user.username }} · Peran: {{ u_role }}">
     <span class="noc-user-avatar">{{ user.username[:1].upper() }}</span>
     <span class="noc-user-name">{{ user.username }}</span>
   </a>
-  {% if user.is_master_admin() %}
-  <span class="badge badge-danger noc-role-badge">Master Admin</span>
-  {% elif user.is_operator() %}
-  <span class="badge badge-blue noc-role-badge">Operator</span>
-  {% else %}
-  <span class="badge badge-muted noc-role-badge">Viewer</span>
-  {% endif %}
   <div class="noc-user-divider"></div>
   <a href="/logout" class="noc-user-logout" title="Keluar dari sesi Pantau Server" aria-label="Keluar">
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">

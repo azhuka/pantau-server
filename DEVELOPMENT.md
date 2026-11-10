@@ -354,6 +354,19 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.157
+
+- **Tipe Rilis:** Eliminasi Teks Redundan & Perampingan Kapsul Akun Operator Topbar (*Eliminating Redundant Role Badges & Streamlining Topbar Account Capsule*)
+- **Fokus Utama:** Menghilangkan pengulangan kata ganda pada chip akun operator topbar dan menyederhanakan hierarki visual NOC:
+  1. **Peniadaan Redundansi Nama & Peran pada Kapsul Topbar (`server/templates/topbar_user.html`):**
+     - Menghilangkan badge teks peran (*role badge*) yang sebelumnya berdampingan langsung dengan nama pengguna, mengeliminasi tampilan teks ganda ("double") seperti `master-admin MASTER ADMIN`.
+     - Menyematkan informasi peran secara elegan dan rapi ke dalam atribut tooltip `title="Profil Akun: <username> · Peran: <role>"`.
+     - Menghilangkan badge berwarna merah dari bilah atas yang dapat mengecoh fokus operator NOC dari insiden kritis sesungguhnya.
+  2. **Kapsul Akun Ramping & Modern:**
+     - Menampilkan avatar inisial bulat beraksen lembut, nama pengguna mono/semibold, garis pembatas vertikal halus, dan tombol Keluar (Logout) berikon SVG yang proporsional.
+  3. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.157` pada 7 berkas inti repositori.
+
 ## Versi 4.8.156
 
 - **Tipe Rilis:** Optimasi Desain Sidebar Ramping Berdensitas Tinggi, Relokasi Akun Operator ke Topbar, & Pembersihan Sidebar Footer (*Ultra-Compact Sidebar Optimization, Operator Account Relocation to Universal Topbar, & Clean Sidebar Footer*)
