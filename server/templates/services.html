@@ -2019,7 +2019,7 @@ div[style*="position: fixed"] .card {
     <div class="card-header" style="align-items:center;justify-content:space-between">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         <h3 style="margin:0">Riwayat Metrik Performa</h3>
-        <span style="font-size:12px;color:var(--dim)">Grafik Tren Metrik Historis Host (CPU, RAM, Disk &amp; Network)</span>
+        <span style="font-size:12px;color:var(--dim)">Grafik Tren Metrik Historis Host (CPU, RAM, Disk &amp; Load)</span>
       </div>
       <div id="perf-ranges" class="segmented-control">
         <button class="btn btn-sm is-on" data-range="today">Hari Ini</button>
@@ -2073,24 +2073,26 @@ div[style*="position: fixed"] .card {
         <div class="noc-chart-box" id="chart-load"></div>
         <div class="noc-chart-legend" id="legend-load"></div>
       </div>
+    </div>
+  </div>
 
-      <!-- 5. Throughput Traffic Jaringan (Network) -->
-      <div class="noc-metric-card" id="card-perf-net" style="grid-column: 1 / -1">
-        <div class="noc-metric-header">
-          <div style="display:flex;align-items:center;gap:8px">
-            <div class="noc-metric-title">Throughput Traffic Jaringan</div>
-            <span class="badge badge-muted mono" style="font-size:9.5px;padding:1px 6px">Download RX / Upload TX</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <label for="net-chart-iface" style="margin:0;font-size:11px;color:var(--dim);font-weight:500">Antarmuka:</label>
-            <select id="net-chart-iface" onchange="onNetChartIfaceChange(this.value)" style="padding:2px 8px;font-size:11px;font-family:var(--font-mono, monospace);background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;cursor:pointer">
-              <option value="all" selected>Semua Antarmuka (Total)</option>
-            </select>
-          </div>
-        </div>
-        <div class="noc-chart-box" id="chart-net"></div>
-        <div class="noc-chart-legend" id="legend-net"></div>
+  <!-- 6. Throughput Traffic Jaringan (Historical Network Throughput) -->
+  <div class="card" id="card-traffic-net-wrap">
+    <div class="card-header" style="align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <h3 style="margin:0">Throughput Traffic Jaringan</h3>
+        <span style="font-size:12px;color:var(--dim)">Grafik Tren Throughput Lalu Lintas Jaringan Host (Download RX &amp; Upload TX)</span>
       </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <label for="net-chart-iface" style="margin:0;font-size:11px;color:var(--dim);font-weight:500">Antarmuka:</label>
+        <select id="net-chart-iface" onchange="onNetChartIfaceChange(this.value)" style="padding:2px 8px;font-size:11px;font-family:var(--font-mono, monospace);background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;cursor:pointer">
+          <option value="all" selected>Semua Antarmuka (Total)</option>
+        </select>
+      </div>
+    </div>
+    <div style="padding:14px 16px 12px 16px">
+      <div class="noc-chart-box" id="chart-net" style="height:210px"></div>
+      <div class="noc-chart-legend" id="legend-net"></div>
     </div>
   </div>
 
@@ -11049,13 +11051,19 @@ document.querySelectorAll('#perf-ranges .btn').forEach(b =>
     perfRange = b.dataset.range;
     document.querySelectorAll('#perf-ranges .btn').forEach(btn => btn.classList.toggle('is-on', btn === b));
     const card = document.getElementById('perf-ranges')?.closest('.card');
+    const netCard = document.getElementById('card-traffic-net-wrap');
     if (card) {
       card.style.opacity = '0.65';
       card.style.transition = 'opacity .15s ease';
     }
+    if (netCard) {
+      netCard.style.opacity = '0.65';
+      netCard.style.transition = 'opacity .15s ease';
+    }
     showPerfChartLoaders(b.textContent.trim());
     loadPerf(b.dataset.range).finally(() => {
       if (card) card.style.opacity = '1';
+      if (netCard) netCard.style.opacity = '1';
     });
   }));
 showPerfChartLoaders('Hari Ini');

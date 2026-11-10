@@ -354,6 +354,24 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.155
+
+- **Tipe Rilis:** Pemisahan Mandiri Kartu Throughput Traffic Jaringan, Pemulihan Simetri Grid 2x2 Metrik Performa, & ViewBox SVG Responsif Real-Pixel (*Standalone Network Throughput Card, Restored Symmetrical 2x2 Performance Grid, Eliminating Native Tooltips & Dynamic Real-Pixel SVG ViewBox*)
+- **Fokus Utama:** Menyempurnakan hierarki visual antarmuka tab performa NOC agar simetris, anggun, dan profesional:
+  1. **Pemulihan Simetri Grid 2x2 pada Kartu Riwayat Metrik Performa (`server/templates/services.html`):**
+     - Mengembalikan kartu "Riwayat Metrik Performa" murni menjadi grid 2x2 simetris yang proporsional dan seimbang (hanya memuat 4 kartu utama: CPU Usage, Memory Usage, Disk Usage, Load Average).
+     - Menghapus kartu network memanjang horizontal yang merusak keselarasan grid metrik sebelumnya.
+  2. **Kartu Mandiri Tersendiri untuk Throughput Traffic Jaringan (`server/templates/services.html`):**
+     - Memisahkan Throughput Traffic Jaringan ke dalam komponen kartu (`<div class="card">`) tersendiri di bawah Riwayat Metrik Performa.
+     - Dilengkapi dengan header mandiri, deskripsi fungsional, pemilih antarmuka (Semua Antarmuka vs per-interface), kontainer grafik bertinggi 210px yang proporsional, serta sinkronisasi feedback transisi opasitas saat rentang waktu diubah.
+  3. **Penghapusan Tooltip Native Browser Hitam pada Legenda (`server/templates/base.html`):**
+     - Menghapus atribut HTML `title` pada elemen `.noc-legend-item` untuk mengeliminasi tooltip bawaan browser/OS warna hitam pekat yang sebelumnya menutupi label waktu sumbu X saat kursor berada di area legenda.
+  4. **ViewBox SVG Dinamis Berbasis Piksel Nyata (*Real-Pixel ViewBox*) (`server/templates/base.html`):**
+     - Mengubah penetapan dimensi tetap `W = 600` menjadi pembacaan dinamis lebar dan tinggi kontainer aktual (`container.clientWidth` dan `container.clientHeight`).
+     - Menghilangkan distorsi peregangan horizontal (efek gepeng) pada grafik lebar penuh, mempertahankan ketajaman font, dan menyesuaikan jumlah tick sumbu X waktu secara adaptif (`targetTicks` berbasis lebar layar).
+  5. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.155` pada 7 berkas inti repositori.
+
 ## Versi 4.8.154
 
 - **Tipe Rilis:** Refaktor Penataan Tata Letak Metrik Performa NOC & Integrasi Kartu Jaringan Terpadu (*Unified NOC Metric Grid Architecture & Network Throughput Card Integration*)
