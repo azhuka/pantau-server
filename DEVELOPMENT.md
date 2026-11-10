@@ -354,6 +354,18 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.166
+
+- **Tipe Rilis:** Perbaikan Kritis Sintaksis JavaScript services.html & Pemulihan Render Metrik Real-Time (*Critical services.html JavaScript Syntax Fix & Real-Time Metrics Rendering Restoration*)
+- **Fokus Utama:** Mengatasi kendala terhentinya eksekusi seluruh skrip antarmuka halaman detail server yang menyebabkan seluruh metrik performa (CPU, RAM, Swap, Load, Uptime, Sparkline, dan Grafik Riwayat) menampilkan strip kosong (`-`) akibat adanya blok penutup duplikat (`SyntaxError: Unexpected token '}'` pada `services.html`):
+  1. **Pembersihan Blok Sintaksis Duplikat (`server/templates/services.html`):**
+     - Menghapus blok penutup ganda pada baris ~6279 pasca fungsi `submitFirewallAction()` (`}, 2500); } } } }`) yang memicu galat sintaksis fatal saat browser mem-parsing skrip halaman.
+     - Memvalidasi seluruh tag `<script>` pada berkas menggunakan `node --check` dan memastikan 100% lolos kompilasi sintaksis tanpa kesalahan.
+  2. **Pemulihan Alur Polling Telemetri & Inisialisasi Grafik:**
+     - Dengan pulihnya sintaksis skrip utama, alur inisialisasi `pollSystem()`, `poll()`, render sparkline, serta inisialisasi grafik historis ApexCharts berjalan normal kembali seketika saat halaman dimuat.
+  3. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.166` pada 7 berkas inti repositori.
+
 ## Versi 4.8.165
 
 - **Tipe Rilis:** Eliminasi Kontradiksi Visual Status Aktif vs Pesan Aturan Nonaktif & Sinkronisasi Snapshot Balik Agen (*Elimination of Active Status vs Inactive Rule Text Visual Contradiction & Agent Reverse Snapshot Synchronization*)
