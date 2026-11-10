@@ -194,7 +194,7 @@
         <th class="sortable col-fixed-cell col-num-cell" data-sort-key="mem" data-col-title="Memori" style="cursor:pointer;min-width:85px" title="Kapasitas total memori utama (RAM) dan Swap">Memori <span class="sort-arrow" style="display:inline-flex;align-items:center;margin-left:3px;vertical-align:middle;color:var(--dim);opacity:0.45"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span></th>
         <th class="col-fixed-cell col-num-cell" data-col-title="Penyimpanan" style="min-width:95px" title="Daftar partisi dan kapasitas penyimpanan fisik (Disk)">Penyimpanan</th>
         <th class="sortable col-fixed-cell col-center-cell" data-sort-key="uptime" data-col-title="Uptime" style="cursor:pointer;min-width:90px" title="Durasi waktu aktif server sejak boot terakhir">Uptime <span class="sort-arrow" style="display:inline-flex;align-items:center;margin-left:3px;vertical-align:middle;color:var(--dim);opacity:0.45"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span></th>
-        <th class="col-fixed-cell col-center-cell" data-col-title="Agen &amp; APT" style="min-width:80px;text-align:center" title="Versi agen pemantau dan ketersediaan pembaruan paket">Agen &amp; APT</th>
+        <th class="col-fixed-cell col-center-cell" data-col-title="Agen &amp; APT" style="min-width:80px;text-align:center" title="Versi agen pemantau dan ketersediaan pembaruan packages (APT)">Agen &amp; APT</th>
         <th class="col-fixed-cell col-center-cell" data-col-title="Tag" style="min-width:60px" title="Label kategori dan pengelompokan server">Tag</th>
         <th class="col-fixed-cell col-center-cell" data-col-title="Status &amp; Lapor" style="min-width:80px;text-align:center" title="Status konektivitas dan waktu laporan data terakhir">Status &amp; Lapor</th>
         <th class="col-fixed-cell col-act" data-col-title="Tindakan" style="width:88px;min-width:88px;text-align:center" title="Aksi operasional: rincian, edit, atau hapus server">Tindakan</th>
@@ -362,7 +362,7 @@
         <div style="margin-top:2px" id="srv-apt-{{ srv.id }}">
           {% if srv._apt_upgradable is not none %}
             {% if srv._apt_upgradable > 0 %}
-              <span class="badge badge-warn" style="font-size:7.5px;padding:0.5px 3.5px" title="{{ srv._apt_upgradable }} paket tersedia">{{ srv._apt_upgradable }} paket</span>
+              <span class="badge badge-warn" style="font-size:7.5px;padding:0.5px 3.5px" title="{{ srv._apt_upgradable }} packages tersedia">{{ srv._apt_upgradable }} packages</span>
             {% else %}
               <span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px">mutakhir</span>
             {% endif %}
@@ -674,7 +674,7 @@ function createAndAppendServersRow(srv, tbody) {
         </span>
       </div>
       <div style="margin-top:2px" id="srv-apt-${srv.id}">
-        ${srv.apt_upgradable != null ? (srv.apt_upgradable > 0 ? `<span class="badge badge-warn" style="font-size:7.5px;padding:0.5px 3.5px">${srv.apt_upgradable} paket</span>` : `<span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px">mutakhir</span>`) : `<span style="color:var(--dim);font-size:8px">—</span>`}
+        ${srv.apt_upgradable != null ? (srv.apt_upgradable > 0 ? `<span class="badge badge-warn" style="font-size:7.5px;padding:0.5px 3.5px">${srv.apt_upgradable} packages</span>` : `<span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px">mutakhir</span>`) : `<span style="color:var(--dim);font-size:8px">—</span>`}
       </div>
     </td>
     <td>
@@ -786,7 +786,7 @@ async function srvPoll() {
       if (sApt) {
         if (srv.apt_upgradable != null) {
           if (srv.apt_upgradable > 0) {
-            sApt.innerHTML = `<span class="badge badge-warn" style="font-size:7.5px;padding:0.5px 3.5px" title="${srv.apt_upgradable} ${isEn ? 'packages available' : 'paket tersedia'}">${srv.apt_upgradable} ${isEn ? 'packages' : 'paket'}</span>`;
+            sApt.innerHTML = `<span class="badge badge-warn" style="font-size:7.5px;padding:0.5px 3.5px" title="${srv.apt_upgradable} ${isEn ? 'packages available' : 'packages tersedia'}">${srv.apt_upgradable} ${isEn ? 'packages' : 'packages'}</span>`;
           } else {
             sApt.innerHTML = `<span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px">${isEn ? 'up-to-date' : 'mutakhir'}</span>`;
           }

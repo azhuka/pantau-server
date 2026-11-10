@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token }}">
 <title>{% block title %}Pantau Server{% endblock %}</title>
-<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.144' }}">
+<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.145' }}">
 {% block extra_head %}{% endblock %}
 <script>
 (function() {
@@ -2576,7 +2576,7 @@ body.show-alert-banner .main{padding-top:72px}
   </nav>
   <div class="sidebar-footer">
     <div style="display:flex;align-items:center;margin-bottom:6px">
-      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.144' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
+      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.145' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
     </div>
     {% if user %}
     <div style="margin-bottom:6px;line-height:1.4">
@@ -2989,8 +2989,8 @@ window.unregisterTrackedBackgroundTask = function(id) {
             const isSuccess = (j.status === 'success');
             let summary = '';
             if (isSuccess) {
-              if (t.kind === 'APT_UPDATE') summary = 'Indeks paket OS berhasil dimutakhirkan.';
-              else if (t.kind === 'APT_UPGRADE' || t.kind === 'APT_DIST_UPGRADE') summary = 'Peningkatan paket OS selesai diselesaikan.';
+              if (t.kind === 'APT_UPDATE') summary = 'Indeks repositori packages OS berhasil dimutakhirkan.';
+              else if (t.kind === 'APT_UPGRADE' || t.kind === 'APT_DIST_UPGRADE') summary = 'Peningkatan packages OS selesai diselesaikan.';
               else summary = 'Proses latar belakang selesai dengan sukses.';
             } else {
               summary = 'Proses latar belakang selesai dengan status gagal.';
@@ -3527,7 +3527,7 @@ function escHtml(s){
 function getAlertGroupTitle(key, firstMsg) {
   if (key === 'agent_stale') return 'Agen Tidak Melapor';
   if (key === 'agent_conflict') return 'Konflik Agen / Duplikasi API Key';
-  if (key && key.startsWith('service_down:')) return 'Layanan Sistem Terhenti: ' + key.split(':')[1];
+  if (key && key.startsWith('service_down:')) return 'Service Sistem Terhenti: ' + key.split(':')[1];
   if (key && key.startsWith('disk_ro:')) return 'Partisi Disk Read-Only (' + (key.split(':')[1] || '') + ')';
   if (key === 'ram_critical') return 'Kapasitas RAM Kritis (Hampir Penuh)';
   if (key === 'swap_critical') return 'Kapasitas Swap Kritis';
@@ -3547,7 +3547,7 @@ function getAlertGroupDesc(key, firstMsg) {
     return 'Terdeteksi lebih dari satu host aktif melapor menggunakan API key yang sama (kemungkinan duplikasi VM atau kloning OS).';
   }
   if (key && key.startsWith('service_down:')) {
-    return 'Layanan sistem ' + key.split(':')[1] + ' dilaporkan terhenti (down) atau mengalami kegagalan proses.';
+    return 'Service sistem ' + key.split(':')[1] + ' dilaporkan terhenti (down) atau mengalami kegagalan proses.';
   }
   if (key && key.startsWith('disk_ro:')) {
     return 'Sistem berkas partisi disk ' + (key.split(':')[1] || '') + ' terkunci dalam mode Read-Only akibat proteksi kernel atau kegagalan I/O storage. Seluruh operasi tulis ditolak.';
@@ -3934,8 +3934,8 @@ async function unignoreProblem(target, onDone) {
   }
   const ok = await showConfirmModal({
     title: isEn ? 'Resume Monitoring' : 'Aktifkan Kembali Pemantauan',
-    target: (id ? ('Insiden #' + id) : (svcid ? ('Layanan ' + svcid) : 'Pemantauan')),
-    message: isEn ? 'Resume active monitoring for this incident / service.' : 'Aktifkan kembali pemantauan aktif untuk layanan/insiden ini.',
+    target: (id ? ('Insiden #' + id) : (svcid ? ('Service ' + svcid) : 'Pemantauan')),
+    message: isEn ? 'Resume active monitoring for this incident / service.' : 'Aktifkan kembali pemantauan aktif untuk service/insiden ini.',
     btnText: isEn ? 'Resume' : 'Aktifkan',
     btnClass: 'btn-primary',
     iconType: 'primary',
@@ -4248,25 +4248,25 @@ function renderProblemDetailModal(p) {
       const sname = p.key.split(':', 2)[1];
       causeText = isEn
         ? `Service "${sname}" is not listening on its port or its process is not running on the host.`
-        : `Layanan "${sname}" tidak mendengarkan port atau prosesnya tidak aktif di server.`;
+        : `Service "${sname}" tidak mendengarkan port atau prosesnya tidak aktif di server.`;
       impactText = isEn
         ? `Clients or downstream systems cannot access service ${sname}.`
-        : `Klien atau sistem tidak dapat mengakses layanan ${sname}.`;
+        : `Klien atau sistem tidak dapat mengakses service ${sname}.`;
       recoList = isEn
         ? [`Inspect service status: sudo systemctl status ${sname}`, `Check error logs: sudo journalctl -u ${sname} -n 50 --no-pager`, `Restart service: sudo systemctl restart ${sname}`]
-        : [`Periksa status layanan: sudo systemctl status ${sname}`, `Lihat log galat: sudo journalctl -u ${sname} -n 50 --no-pager`, `Mulai ulang layanan: sudo systemctl restart ${sname}`];
+        : [`Periksa status service: sudo systemctl status ${sname}`, `Lihat log error: sudo journalctl -u ${sname} -n 50 --no-pager`, `Restart service: sudo systemctl restart ${sname}`];
       cmdList = [`sudo systemctl status ${sname}`, `sudo journalctl -u ${sname} -n 50 --no-pager`, `sudo systemctl restart ${sname}`];
     } else if (p.key.startsWith('svc_no_data:')) {
       const sname = p.key.split(':', 2)[1];
       causeText = isEn
         ? `Monitoring agent has not captured metrics or status for service "${sname}".`
-        : `Agen di server belum mendeteksi status atau metrik untuk layanan "${sname}".`;
+        : `Agen di server belum mendeteksi status atau metrik untuk service "${sname}".`;
       impactText = isEn
         ? `Availability metrics for ${sname} cannot be accurately computed.`
-        : `Metrik ketersediaan layanan ${sname} belum dapat dihitung secara akurat.`;
+        : `Metrik ketersediaan service ${sname} belum dapat dihitung secara akurat.`;
       recoList = isEn
         ? [`Ensure service daemon is running: sudo systemctl status ${sname}`, `Check if listening port is open: ss -tulpn | grep ${sname}`]
-        : [`Pastikan layanan berjalan: sudo systemctl status ${sname}`, `Pastikan port listening aktif: ss -tulpn | grep ${sname}`];
+        : [`Pastikan service berjalan: sudo systemctl status ${sname}`, `Pastikan listening port aktif: ss -tulpn | grep ${sname}`];
       cmdList = [`sudo systemctl status ${sname}`, `pgrep -fa ${sname}`];
     } else if (p.key === 'agent_conflict') {
       causeText = isEn
@@ -4274,7 +4274,7 @@ function renderProblemDetailModal(p) {
         : 'Beberapa host dengan IP berbeda melapor secara bersamaan menggunakan API key yang sama (kemungkinan VM dikloning).';
       impactText = isEn
         ? 'Service telemetry and metrics flap erratically across different instances.'
-        : 'Metrik layanan dan resource berfluktuasi tidak stabil (flapping).';
+        : 'Metrik service dan resource berfluktuasi tidak stabil (flapping).';
       recoList = isEn
         ? ['Stop agent on cloned host: sudo systemctl stop agent_pantau', 'Register as a distinct server in Pantau Server dashboard.']
         : ['Hentikan agen di host kloningan: sudo systemctl stop agent_pantau', 'Daftarkan server baru di Pantau Server bila merupakan server terpisah.'];
@@ -4307,7 +4307,7 @@ function renderProblemDetailModal(p) {
         : `Beban pemakaian prosesor (CPU) sangat tinggi (${_esc(p.message)}).`;
       impactText = isEn
         ? 'System thread execution queues stall, degrading request response times.'
-        : 'Waktu respons layanan melambat drastis dan potensi timeout koneksi.';
+        : 'Waktu respons service melambat drastis dan potensi timeout koneksi.';
       recoList = isEn
         ? ['Identify top CPU consumers in Processes tab', 'Check for infinite execution loops or hung worker threads']
         : ['Buka tab Proses untuk melihat proses dengan pemakaian CPU tertinggi', 'Periksa loop tak terhingga atau thread pekerja yang menggantung'];
@@ -4321,7 +4321,7 @@ function renderProblemDetailModal(p) {
         : 'Aplikasi tidak dapat menulis berkas baru, database berisiko read-only atau crash.';
       recoList = isEn
         ? ['Find largest directories: sudo du -xh --max-depth=2 / | sort -rh | head -15', 'Vacuum journal logs: sudo journalctl --vacuum-size=200M', 'Clean APT package cache: sudo apt clean']
-        : ['Periksa direktori terbesar: sudo du -xh --max-depth=2 / | sort -rh | head -15', 'Bersihkan log systemd lama: sudo journalctl --vacuum-size=200M', 'Bersihkan cache paket: sudo apt clean'];
+        : ['Periksa direktori terbesar: sudo du -xh --max-depth=2 / | sort -rh | head -15', 'Bersihkan log systemd lama: sudo journalctl --vacuum-size=200M', 'Bersihkan cache packages: sudo apt clean'];
       cmdList = ['df -h', 'sudo du -xh --max-depth=2 / | sort -rh | head -15', 'sudo journalctl --disk-usage'];
     } else if (['security_danger', 'failed_logins'].includes(p.key)) {
       causeText = isEn
@@ -4340,7 +4340,7 @@ function renderProblemDetailModal(p) {
         : 'Agen Pantau pada server ini tidak mengirimkan telemetri ke server pusat. Kemungkinan penyebab mencakup server offline, shutdown, koneksi jaringan terputus, service agent_pantau terhenti, atau pemblokiran firewall.';
       impactText = isEn
         ? 'Hardware performance metrics, service health indicators, and security telemetry are no longer live on the dashboard.'
-        : 'Metrik kinerja hardware (CPU, RAM, Disk), status layanan, dan telemetri keamanan server tidak dapat diperbarui secara live di dashboard.';
+        : 'Metrik kinerja hardware (CPU, RAM, Disk), status services, dan telemetri keamanan server tidak dapat diperbarui secara live di dashboard.';
       recoList = isEn
         ? [
             'Verify host machine power status: ensure server is powered ON.',
@@ -4366,13 +4366,13 @@ function renderProblemDetailModal(p) {
     } else if (p.key === 'apt_updates') {
       causeText = isEn
         ? `Operating system package updates are available for installation (${_esc(pMsg)}).`
-        : `Terdapat paket pembaruan sistem operasi yang siap di-upgrade (${_esc(p.message)}).`;
+        : `Terdapat packages pembaruan sistem operasi yang siap di-upgrade (${_esc(p.message)}).`;
       impactText = isEn
         ? 'Host remains exposed to known vulnerabilities and unpatched CVEs.'
         : 'Sistem berisiko terhadap celah keamanan yang telah ditambal pada versi terbaru.';
       recoList = isEn
         ? ['Use "Update OS" button in dashboard or run: sudo apt update && sudo apt upgrade -y', 'Inspect upgradable packages list']
-        : ['Gunakan tombol Update OS di dashboard atau jalankan: sudo apt update && sudo apt upgrade -y', 'Periksa daftar paket yang siap diperbarui'];
+        : ['Gunakan tombol Update OS di dashboard atau jalankan: sudo apt update && sudo apt upgrade -y', 'Periksa daftar packages yang siap diperbarui'];
     } else if (p.key === 'agent_outdated') {
       const curVer = (ctx.data_teknis && (ctx.data_teknis.versi_agen_klien || ctx.data_teknis.agent_version)) || 'lama';
       const targetVer = (ctx.data_teknis && (ctx.data_teknis.versi_dashboard_pusat || ctx.data_teknis.dashboard_version)) || 'terbaru';
@@ -4437,7 +4437,7 @@ function renderProblemDetailModal(p) {
       techRows.push(`<tr><td style="color:var(--dim);padding:4px 0">${isEn ? 'Agent Version' : 'Versi Agen'}</td><td><span class="mono">${_esc(tech.agent_version)}</span> <span style="color:var(--dim)">(${isEn ? 'Latest: ' : 'Terbaru: '}${_esc(tech.dashboard_version || '')})</span></td></tr>`);
     }
     if (tech.paket_upgradable !== undefined) {
-      techRows.push(`<tr><td style="color:var(--dim);padding:4px 0">${isEn ? 'OS Updates' : 'Paket OS Siap Upgrade'}</td><td><strong>${_esc(tech.paket_upgradable)} ${isEn ? 'packages' : 'paket'}</strong></td></tr>`);
+      techRows.push(`<tr><td style="color:var(--dim);padding:4px 0">${isEn ? 'OS Updates' : 'Packages OS Siap Upgrade'}</td><td><strong>${_esc(tech.paket_upgradable)} ${isEn ? 'packages' : 'packages'}</strong></td></tr>`);
     }
     if (tech.waktu_kejadian) {
       techRows.push(`<tr><td style="color:var(--dim);padding:4px 0">${isEn ? 'Event Timestamp' : 'Waktu Kejadian'}</td><td class="mono" style="font-size:11.5px">${_esc(tech.waktu_kejadian)}</td></tr>`);
@@ -5243,7 +5243,7 @@ function attachTablePagination(target, options = {}) {
       else if (unitLabel === 'tugas') displayUnit = 'tasks';
       else if (unitLabel === 'sertifikat') displayUnit = 'certificates';
       else if (unitLabel === 'server') displayUnit = 'servers';
-      else if (unitLabel === 'layanan') displayUnit = 'services';
+      else if (unitLabel === 'services') displayUnit = 'services';
       else if (unitLabel === 'proses') displayUnit = 'processes';
       else if (unitLabel === 'aturan') displayUnit = 'rules';
       else if (unitLabel === 'port') displayUnit = 'ports';

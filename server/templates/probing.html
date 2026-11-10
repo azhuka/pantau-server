@@ -483,7 +483,7 @@
   <div>
     <h2>Pemantauan Endpoint &amp; Jaringan</h2>
     <div style="font-size:12.5px;color:var(--dim);margin-top:4px">
-      Pantau kondisi layanan endpoint (aplikasi, jaringan, port) dari luar
+      Pantau kondisi endpoint (services, jaringan, port) (aplikasi, jaringan, port) dari luar
     </div>
   </div>
   <div class="probe-controls" style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap">
@@ -500,7 +500,7 @@
         <option value="all">Semua Protokol</option>
         <option value="http">Web (HTTP / HTTPS)</option>
         <option value="ping">Ping Jaringan (ICMP)</option>
-        <option value="tcp">Port Layanan (TCP)</option>
+        <option value="tcp">Port Service (TCP)</option>
       </select>
     </div>
     <div class="filter-col" title="Filter Status">
@@ -643,7 +643,7 @@
           </button>
           <button type="button" class="type-tab-btn" id="tab-btn-tcp" onclick="setProbeTypeTab('tcp')">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
-            Port Layanan (TCP)
+            Port Service (TCP)
           </button>
         </div>
         <input type="hidden" id="formProbeType" value="http">
@@ -1190,7 +1190,7 @@ function setProbeTypeTab(type) {
     rowPort.style.display = 'block';
     targetLabel.textContent = 'Alamat Host / IP Server *';
     targetInput.placeholder = '10.0.0.5 atau db.internal.lan';
-    if (targetHelp) targetHelp.textContent = 'Alamat IP atau host server tujuan yang memiliki port layanan aktif.';
+    if (targetHelp) targetHelp.textContent = 'Alamat IP atau host server tujuan yang memiliki port service aktif.';
   }
 }
 

@@ -362,7 +362,7 @@ def process_kill(
     if not user or not user.has_perm("can_processes"):
         if request.headers.get("accept") == "application/json":
             return JSONResponse(
-                {"ok": False, "detail": "Akses ditolak: Anda tidak memiliki wewenang Manajer Tugas"}, status_code=403
+                {"ok": False, "detail": "Akses ditolak: Anda tidak memiliki wewenang Task Manager"}, status_code=403
             )
         return RedirectResponse("/", status_code=303)
     _verify_csrf_form(request, csrf_token)
@@ -962,7 +962,7 @@ def server_cron_add(
     )
     db.commit()
     if is_json:
-        return JSONResponse({"ok": True, "detail": f"Perintah tambah tugas cron '{id_clean}' dikirim ke agen."})
+        return JSONResponse({"ok": True, "detail": f"Perintah tambah cron job '{id_clean}' dikirim ke agen."})
     return RedirectResponse(f"/servers/{sid}?tab=cron", status_code=303)
 
 
@@ -1072,7 +1072,7 @@ def server_cron_run(
     )
     db.commit()
     if is_json:
-        return JSONResponse({"ok": True, "detail": "Perintah uji jalankan tugas cron dikirim ke agen."})
+        return JSONResponse({"ok": True, "detail": "Perintah uji jalankan cron job dikirim ke agen."})
     return RedirectResponse(f"/servers/{sid}?tab=cron", status_code=303)
 
 

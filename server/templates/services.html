@@ -1508,11 +1508,11 @@ div[style*="position: fixed"] .card {
 
       <!-- Grup 2: Pembaruan & Kontrol Daya Sistem -->
       <div class="toolbar-group">
-        <button class="btn btn-success btn-sm" id="apt-update-btn" onclick="triggerUpdateOS()" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline" data-i18n-title="server_offline_actions_disabled"{% else %}title="Perbarui daftar paket sistem operasi" aria-label="Update OS" data-i18n-title="apt_update_tooltip"{% endif %}>
+        <button class="btn btn-success btn-sm" id="apt-update-btn" onclick="triggerUpdateOS()" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline" data-i18n-title="server_offline_actions_disabled"{% else %}title="Perbarui daftar packages sistem operasi" aria-label="Update OS" data-i18n-title="apt_update_tooltip"{% endif %}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
         </button>
         <span class="toolbar-divider"></span>
-        <button class="btn btn-danger btn-sm {% if apt_upgradable and apt_upgradable > 0 and is_online %}has-updates{% endif %}" id="apt-upgrade-btn" onclick="triggerUpgradeOS()" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline" data-i18n-title="server_offline_actions_disabled"{% elif not apt_upgradable or apt_upgradable == 0 %}disabled style="opacity:0.35;cursor:not-allowed" title="Semua paket OS sudah mutakhir" data-i18n-title="all_packages_up_to_date"{% else %}title="Tingkatkan paket OS yang tersedia{% if apt_upgradable and apt_upgradable > 0 %} ({{ apt_upgradable }} pembaruan){% endif %}" aria-label="Upgrade Paket OS" data-i18n-title="apt_upgrade_tooltip"{% endif %}>
+        <button class="btn btn-danger btn-sm {% if apt_upgradable and apt_upgradable > 0 and is_online %}has-updates{% endif %}" id="apt-upgrade-btn" onclick="triggerUpgradeOS()" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline" data-i18n-title="server_offline_actions_disabled"{% elif not apt_upgradable or apt_upgradable == 0 %}disabled style="opacity:0.35;cursor:not-allowed" title="Semua packages OS sudah mutakhir" data-i18n-title="all_packages_up_to_date"{% else %}title="Tingkatkan packages OS yang tersedia{% if apt_upgradable and apt_upgradable > 0 %} ({{ apt_upgradable }} pembaruan){% endif %}" aria-label="Upgrade Packages OS" data-i18n-title="apt_upgrade_tooltip"{% endif %}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="16 12 12 8 8 12"></polyline><line x1="12" y1="16" x2="12" y2="8"></line></svg>
         </button>
         <span class="toolbar-divider"></span>
@@ -1521,8 +1521,8 @@ div[style*="position: fixed"] .card {
               data-guardrail-password="1"
               data-guardrail-title="Reboot Sistem Operasi Host"
               data-guardrail-target="{{ server.hostname }} ({{ server.ip_address }})"
-              data-guardrail-badge="Dampak Layanan"
-              data-guardrail-msg="Restart sistem operasi host. Seluruh layanan dan koneksi aktif akan terputus sementara."
+              data-guardrail-badge="Dampak Services"
+              data-guardrail-msg="Restart sistem operasi host. Seluruh services dan koneksi aktif akan terputus sementara."
               data-guardrail-btn="Reboot Host"
               data-guardrail-color="warning">
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -1580,11 +1580,11 @@ div[style*="position: fixed"] .card {
   <div class="apt-state {% if apt_upgradable and apt_upgradable > 0 %}apt-state-pending{% elif apt_upgradable == 0 %}apt-state-ok{% endif %}" id="apt-state">
     <span id="apt-state-text">
       {%- if apt_upgradable and apt_upgradable > 0 -%}
-        <b>{{ apt_upgradable }} paket</b> dapat di-upgrade{% if upgradable_packages %}: <span class="mono dim">{% for p in upgradable_packages[:8] %}{{ p.name if p is mapping else p }}{% if not loop.last %}, {% endif %}{% endfor %}{% if upgradable_packages|length > 8 %}…{% endif %}</span>{% endif %}
+        <b>{{ apt_upgradable }} packages</b> dapat di-upgrade{% if upgradable_packages %}: <span class="mono dim">{% for p in upgradable_packages[:8] %}{{ p.name if p is mapping else p }}{% if not loop.last %}, {% endif %}{% endfor %}{% if upgradable_packages|length > 8 %}…{% endif %}</span>{% endif %}
       {%- elif apt_upgradable == 0 -%}
-        Semua paket OS sudah mutakhir.{% if apt_last_update %} <span class="dim">Terakhir diperiksa {{ apt_last_update[:16].replace('T', ' ') }}.</span>{% endif %}
+        Semua packages OS sudah mutakhir.{% if apt_last_update %} <span class="dim">Terakhir diperiksa {{ apt_last_update[:16].replace('T', ' ') }}.</span>{% endif %}
       {%- else -%}
-        Belum ada info paket — klik <b>Update OS</b> untuk menyegarkan.
+        Belum ada info packages — klik <b>Update OS</b> untuk menyegarkan.
       {%- endif -%}
     </span>
   </div>
@@ -1592,7 +1592,7 @@ div[style*="position: fixed"] .card {
   <div id="apt-task-active-banner" style="display:none;background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);border-radius:6px;padding:8px 14px;margin-top:10px;font-size:12px;color:var(--text);align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
     <div style="display:flex;align-items:center;gap:8px">
       <span class="spinner" style="display:inline-block;width:12px;height:12px;border:2px solid rgba(59,130,246,0.3);border-top-color:var(--blue);border-radius:50%;animation:spin 1s linear infinite"></span>
-      <span id="apt-task-banner-text" style="font-weight:500">Pembaruan paket OS sedang berjalan di latar belakang...</span>
+      <span id="apt-task-banner-text" style="font-weight:500">Pembaruan packages OS sedang berjalan di latar belakang...</span>
     </div>
     <div style="display:flex;align-items:center;gap:8px">
       <span id="apt-task-banner-timer" class="badge badge-muted mono" style="font-size:11px">00:00</span>
@@ -2185,7 +2185,7 @@ div[style*="position: fixed"] .card {
             {% endif %}
             {% if not user.is_viewer() and p.is_open %}
               {% if p.action == 'restart' and p.svc_id %}
-                <button type="button" class="btn btn-primary btn-sm" onclick="restartService({{ server.id }}, {{ p.svc_id }}, '{{ p.log_unit or p.key }}', this)" title="Restart layanan" aria-label="Restart layanan">
+                <button type="button" class="btn btn-primary btn-sm" onclick="restartService({{ server.id }}, {{ p.svc_id }}, '{{ p.log_unit or p.key }}', this)" title="Restart service" aria-label="Restart service">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
                 </button>
               {% elif p.action == 'mitigate' and user.has_perm('can_firewall') and p.ip_count and p.ip_count > 0 %}
@@ -2193,7 +2193,7 @@ div[style*="position: fixed"] .card {
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
                 </button>
               {% elif p.action == 'apt_update' %}
-                <button class="btn btn-primary btn-sm" onclick="triggerUpdateOS()" title="Perbarui paket sistem" aria-label="Perbarui paket sistem">
+                <button class="btn btn-primary btn-sm" onclick="triggerUpdateOS()" title="Update packages sistem" aria-label="Update packages sistem">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 17 12 21 16 17"></polyline><line x1="12" y1="12" x2="12" y2="21"></line><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"></path></svg>
                 </button>
               {% elif p.action == 'agent_update_cmd' %}
@@ -2355,10 +2355,10 @@ div[style*="position: fixed"] .card {
 
 <div class="tab-body" id="tab-layanan" hidden>
 <div class="card">
-  <div class="card-header"><h3>Riwayat Layanan</h3>
+  <div class="card-header"><h3>Riwayat Services</h3>
     <select id="svc-graph-sel"
             style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;margin-right:8px">
-      <option value="">memuat layanan…</option>
+      <option value="">memuat services…</option>
     </select>
     <div id="svc-ranges" class="segmented-control" style="display:flex;gap:4px;flex-wrap:wrap">
       <button class="btn btn-sm" data-range="today">Hari Ini</button>
@@ -2388,7 +2388,7 @@ div[style*="position: fixed"] .card {
       <span id="svc-strip-to">Sekarang</span>
     </div>
   </div>
-  <div id="svc-empty" class="empty-msg" style="display:none">Belum ada data riwayat layanan.</div>
+  <div id="svc-empty" class="empty-msg" style="display:none">Belum ada data riwayat services.</div>
   <div class="grid-2" style="padding:0 14px 14px 14px;gap:14px">
     <div>
       <div style="font-size:11px;font-weight:600;color:var(--dim);letter-spacing:.3px;margin-bottom:6px">Waktu Respon (ms)</div>
@@ -2403,10 +2403,10 @@ div[style*="position: fixed"] .card {
 
 <div class="card">
   <div class="card-header">
-    <h3>Daftar Layanan</h3>
+    <h3>Daftar Services (Monitored Services)</h3>
     <div style="display:flex;align-items:center;gap:8px">
       <div class="pantau-col-dropdown" data-table-id="tbl-services">
-        <button type="button" class="pantau-col-btn" onclick="PantauColManager.toggleDropdown('tbl-services', this)" title="Sesuaikan kolom daftar layanan">
+        <button type="button" class="pantau-col-btn" onclick="PantauColManager.toggleDropdown('tbl-services', this)" title="Sesuaikan kolom daftar services">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
             <line x1="9" y1="3" x2="9" y2="21"></line>
@@ -2418,7 +2418,7 @@ div[style*="position: fixed"] .card {
         <div class="pantau-col-menu" style="display:none"></div>
       </div>
       {% if user.has_perm('can_services') %}
-      <button type="button" class="btn btn-primary btn-sm" id="btn-add-svc-modal" onclick="openAddSvcModal()" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Tambah layanan baru" aria-label="Tambah Layanan"{% endif %}>
+      <button type="button" class="btn btn-primary btn-sm" id="btn-add-svc-modal" onclick="openAddSvcModal()" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Tambah service baru (daemon/port)" aria-label="Tambah Service"{% endif %}>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
       </button>
       {% endif %}
@@ -2427,15 +2427,15 @@ div[style*="position: fixed"] .card {
   {% if services %}
   <table id="tbl-services" class="noc-table-dense" style="width:100%;margin:0">
     <thead><tr>
-      <th class="col-fixed-cell" data-col-title="Layanan" style="min-width:130px" title="Nama layanan atau daemon yang dipantau">Layanan</th>
-      <th class="col-fixed-cell col-center-cell" data-col-title="Port" title="Nomor port jaringan yang digunakan oleh layanan">Port</th>
+      <th class="col-fixed-cell" data-col-title="Service" style="min-width:130px" title="Nama service atau daemon yang dipantau">Service</th>
+      <th class="col-fixed-cell col-center-cell" data-col-title="Port" title="Nomor port jaringan yang digunakan oleh service">Port</th>
       <th class="col-fixed-cell" data-col-title="Proses" title="Nama proses sistem operasi yang dieksekusi">Proses</th>
-      <th class="col-fixed-cell col-center-cell" data-col-title="Status" title="Kondisi terkini layanan (up = aktif normal, down = terhenti)">Status</th>
-      <th class="col-fixed-cell col-center-cell" data-col-title="Koneksi" title="Jumlah koneksi jaringan aktif yang saat ini terhubung ke layanan">Koneksi</th>
-      <th class="col-fixed-cell col-center-cell" data-col-title="Respons" title="Waktu respons layanan dalam satuan milidetik (ms)">Respons (ms)</th>
-      <th class="col-hero-cell" data-col-title="Keterangan" title="Keterangan atau hasil pemeriksaan status layanan">Keterangan</th>
-      <th class="col-fixed-cell col-center-cell" data-col-title="Uptime 24j" title="Persentase ketersediaan layanan dalam 24 jam terakhir">Uptime 24j</th>
-      <th class="col-fixed-cell col-act" data-col-title="Tindakan" style="text-align:center" title="Kontrol layanan: Restart, Mulai, Berhenti, Log, Abaikan/Pantau, atau Hapus">Tindakan</th>
+      <th class="col-fixed-cell col-center-cell" data-col-title="Status" title="Kondisi terkini service (up = aktif normal, down = terhenti)">Status</th>
+      <th class="col-fixed-cell col-center-cell" data-col-title="Koneksi" title="Jumlah koneksi jaringan aktif yang saat ini terhubung ke service">Koneksi</th>
+      <th class="col-fixed-cell col-center-cell" data-col-title="Respons" title="Waktu respons service dalam satuan milidetik (ms)">Respons (ms)</th>
+      <th class="col-hero-cell" data-col-title="Keterangan" title="Keterangan atau hasil pemeriksaan status service">Keterangan</th>
+      <th class="col-fixed-cell col-center-cell" data-col-title="Uptime 24j" title="Persentase ketersediaan service dalam 24 jam terakhir">Uptime 24j</th>
+      <th class="col-fixed-cell col-act" data-col-title="Tindakan" style="text-align:center" title="Kontrol service: Restart, Start, Stop, Log, Abaikan/Pantau, atau Lepas">Tindakan</th>
     </tr></thead>
     <tbody>
     {% for svc in services %}
@@ -2447,13 +2447,13 @@ div[style*="position: fixed"] .card {
       <td class="mono">{{ svc.process_name }}</td>
       <td id="sts-{{ svc.id }}">
         {% if svc._status == 'down' and svc._is_ignored %}
-          <span class="badge badge-muted" title="Layanan berhenti (diabaikan)">down</span>
+          <span class="badge badge-muted" title="Service berhenti (diabaikan)">down</span>
         {% elif svc._status == 'up' and svc._is_ignored %}
-          <span class="badge badge-up" title="Layanan aktif (pengawasan down diabaikan)">up</span>
+          <span class="badge badge-up" title="Service aktif (pengawasan down diabaikan)">up</span>
         {% elif svc._status == 'down' and svc.ignored_reason and ('DIMATIKAN OLEH OPERATOR' in svc.ignored_reason or 'DIHENTIKAN OLEH OPERATOR' in svc.ignored_reason) %}
-          <span class="badge badge-warning" style="font-size:10px;padding:2px 6px;font-weight:600" title="Layanan sengaja dihentikan oleh operator ({{ svc.ignored_by or 'OPERATOR' }})">DIHENTIKAN</span>
+          <span class="badge badge-warning" style="font-size:10px;padding:2px 6px;font-weight:600" title="Service sengaja dihentikan oleh operator ({{ svc.ignored_by or 'OPERATOR' }})">DIHENTIKAN</span>
         {% elif svc._status == 'down' and getattr(svc, '_is_oom_killed', False) %}
-          <span class="badge badge-danger" style="font-size:9.5px;padding:2px 6px;font-weight:700" title="Layanan dihentikan paksa oleh Kernel (Out of Memory - OOM Killer)">OOM KILLED</span>
+          <span class="badge badge-danger" style="font-size:9.5px;padding:2px 6px;font-weight:700" title="Service dihentikan paksa oleh Kernel (Out of Memory - OOM Killer)">OOM KILLED</span>
         {% else %}
           <span class="badge badge-{{ svc._status }}">{{ svc._status }}</span>
         {% endif %}
@@ -2475,7 +2475,7 @@ div[style*="position: fixed"] .card {
         <div style="display:inline-flex;align-items:center;gap:4px">
           <span id="act-{{ svc.id }}" data-sid="{{ server.id }}" data-svc="{{ svc.id }}" data-name="{{ svc.service_name }}" style="display:inline-flex;align-items:center;gap:3px">
             {% if user.is_viewer() or not user.has_perm('can_services') %}
-              <button type="button" class="btn btn-ghost btn-sm" onclick='jumpToLog({{ svc.service_name|tojson }})' title="Lihat log layanan {{ svc.service_name }}" aria-label="Log">
+              <button type="button" class="btn btn-ghost btn-sm" onclick='jumpToLog({{ svc.service_name|tojson }})' title="Lihat log service {{ svc.service_name }}" aria-label="Log">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
               </button>
             {% else %}
@@ -2484,7 +2484,7 @@ div[style*="position: fixed"] .card {
               <!-- Kelompok Kontrol Host Klien (Systemctl) -->
               <button type="button" class="btn btn-primary btn-sm btn-noc-icon btn-svc-restart"
                       {% if is_pending or not is_online %}disabled style="opacity:0.35;cursor:not-allowed"{% endif %}
-                      title="{% if not is_online %}Server offline — aksi dinonaktifkan{% else %}Mulai ulang (restart) layanan {{ svc.service_name }} di OS host{% endif %}"
+                      title="{% if not is_online %}Server offline — aksi dinonaktifkan{% else %}Restart service {{ svc.service_name }} di OS host{% endif %}"
                       aria-label="Restart"
                       onclick="restartService({{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
@@ -2492,29 +2492,29 @@ div[style*="position: fixed"] .card {
               <button type="button" class="btn btn-ghost btn-sm btn-noc-icon btn-svc-start"
                       {% if is_pending or is_up or not is_online %}disabled style="opacity:0.35;cursor:not-allowed"{% endif %}
                       onclick="svcAction('start', {{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)"
-                      title="{% if not is_online %}Server offline — aksi dinonaktifkan{% elif is_up %}Layanan sudah dalam kondisi aktif{% else %}Nyalakan / jalankan layanan {{ svc.service_name }} di OS host{% endif %}"
+                      title="{% if not is_online %}Server offline — aksi dinonaktifkan{% elif is_up %}Service sudah dalam kondisi aktif{% else %}Start service {{ svc.service_name }} di OS host{% endif %}"
                       aria-label="Start">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
               </button>
               <button type="button" class="btn btn-ghost btn-sm btn-noc-icon btn-svc-stop"
                       {% if is_pending or not is_up or not is_online %}disabled style="opacity:0.35;cursor:not-allowed"{% endif %}
                       onclick="svcAction('stop', {{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)"
-                      title="{% if not is_online %}Server offline — aksi dinonaktifkan{% elif not is_up %}Layanan sudah dalam kondisi berhenti{% else %}Hentikan layanan {{ svc.service_name }} di OS host{% endif %}"
+                      title="{% if not is_online %}Server offline — aksi dinonaktifkan{% elif not is_up %}Service sudah dalam kondisi berhenti{% else %}Stop service {{ svc.service_name }} di OS host{% endif %}"
                       aria-label="Stop">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect></svg>
               </button>
               <!-- Pemisah Visual: Aksi Host vs Setelan Pemantauan -->
               <span class="act-separator" title="Pemisah Kontrol Host &amp; Metadata Pemantauan"></span>
               <!-- Kelompok Setelan Pemantauan (Metadata Dashboard) -->
-              <button type="button" class="btn btn-ghost btn-sm btn-noc-icon" onclick='jumpToLog({{ svc.service_name|tojson }})' title="Lihat log layanan {{ svc.service_name }}" aria-label="Log">
+              <button type="button" class="btn btn-ghost btn-sm btn-noc-icon" onclick='jumpToLog({{ svc.service_name|tojson }})' title="Lihat log service {{ svc.service_name }}" aria-label="Log">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
               </button>
               {% if svc._is_ignored %}
-                <button type="button" class="btn btn-ghost btn-sm btn-noc-icon" title="Aktifkan kembali pemantauan dan peringatan untuk layanan {{ svc.service_name }}" aria-label="Pantau" data-id="{{ svc._problem.id if svc._problem else '' }}" data-svcid="{{ svc.id }}" data-sid="{{ server.id }}" onclick="unignoreProblem(this)">
+                <button type="button" class="btn btn-ghost btn-sm btn-noc-icon" title="Aktifkan kembali pemantauan dan peringatan untuk service {{ svc.service_name }}" aria-label="Pantau" data-id="{{ svc._problem.id if svc._problem else '' }}" data-svcid="{{ svc.id }}" data-sid="{{ server.id }}" onclick="unignoreProblem(this)">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
                 </button>
               {% else %}
-                <button type="button" class="btn btn-ghost btn-sm btn-noc-icon" {% if is_up %}disabled style="opacity:0.35;cursor:not-allowed"{% endif %} {% if is_up %}title="Layanan aktif normal — opsi abaikan hanya untuk layanan bermasalah/berhenti"{% else %}title="Abaikan peringatan jika layanan {{ svc.service_name }} memang sengaja dihentikan"{% endif %} aria-label="Abaikan" data-id="{{ svc._problem.id if svc._problem else '' }}" data-svcid="{{ svc.id }}" data-sid="{{ server.id }}" data-msg="Abaikan pemantauan layanan {{ svc.service_name }}" onclick="openIgnoreModal(this)">
+                <button type="button" class="btn btn-ghost btn-sm btn-noc-icon" {% if is_up %}disabled style="opacity:0.35;cursor:not-allowed"{% endif %} {% if is_up %}title="Service aktif normal — opsi abaikan hanya untuk service bermasalah/berhenti"{% else %}title="Abaikan peringatan jika service {{ svc.service_name }} memang sengaja dihentikan"{% endif %} aria-label="Abaikan" data-id="{{ svc._problem.id if svc._problem else '' }}" data-svcid="{{ svc.id }}" data-sid="{{ server.id }}" data-msg="Abaikan pemantauan service {{ svc.service_name }}" onclick="openIgnoreModal(this)">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"></path><path d="M18.63 13A17.89 17.89 0 0 1 18 8"></path><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"></path><path d="M18 8a6 6 0 0 0-9.33-5"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
                 </button>
               {% endif %}
@@ -2525,7 +2525,7 @@ div[style*="position: fixed"] .card {
           </span>
 
           {% if not user.is_viewer() and user.has_perm('can_services') %}
-          <button type="button" class="btn btn-ghost btn-sm btn-noc-icon btn-deregister" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Lepas {{ svc.service_name }} dari pengawasan (Hanya lepas, layanan tetap terdaftar pada server klien)"{% endif %} aria-label="Lepas dari Pengawasan" onclick="deleteService({{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)">
+          <button type="button" class="btn btn-ghost btn-sm btn-noc-icon btn-deregister" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Lepas {{ svc.service_name }} dari pengawasan (Hanya lepas dari dashboard, daemon/service di server klien tetap berjalan)"{% endif %} aria-label="Lepas dari Pengawasan" onclick="deleteService({{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="8" y1="12" x2="16" y2="12"></line></svg>
           </button>
           {% endif %}
@@ -2540,12 +2540,12 @@ div[style*="position: fixed"] .card {
   {% endif %}
 </div>
 
-<!-- Kartu 3: Seluruh Unit Layanan Systemd (OS Services) -->
+<!-- Kartu 3: Seluruh Systemd Services (OS Daemons) (OS Services) -->
 <div class="card" id="card-systemd-units" style="margin-top:16px">
   <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
     <div>
       <h3 style="margin:0;display:flex;align-items:center;gap:8px">
-        <span>Unit Layanan Systemd</span>
+        <span>Systemd Services (OS Daemons)</span>
         <span class="badge badge-info" id="sysd-total-badge" style="font-size:11px;cursor:pointer" onclick="setSysdStatusFilter('all')" title="Tampilkan semua unit">0 unit</span>
         <span class="badge badge-up" id="sysd-running-badge" style="display:none;font-size:11px;cursor:pointer" onclick="setSysdStatusFilter('running')" title="Filter status running (klik ulang untuk reset)">0 running</span>
         <span class="badge badge-danger" id="sysd-failed-badge" style="display:none;font-size:11px;cursor:pointer" onclick="setSysdStatusFilter('failed')" title="Filter status failed (klik ulang untuk reset)">0 failed</span>
@@ -2556,7 +2556,7 @@ div[style*="position: fixed"] .card {
     <!-- Toolbar: Search + Filter + Refresh -->
     <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
       <div class="filter-col-search" title="Cari unit atau fungsi" style="min-width:170px">
-        <label class="filter-col-label" for="sysd-search-input">Cari Layanan</label>
+        <label class="filter-col-label" for="sysd-search-input">Cari Service</label>
         <div class="filter-search-box">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
           <input type="search" id="sysd-search-input" placeholder="Cari unit atau fungsi…" oninput="filterSystemdTable()">
@@ -2564,7 +2564,7 @@ div[style*="position: fixed"] .card {
       </div>
 
       <!-- Filter Status -->
-      <div class="filter-col" title="Filter Status Layanan">
+      <div class="filter-col" title="Filter Status Service">
         <label class="filter-col-label" for="sysd-status-filter">Status</label>
         <select id="sysd-status-filter" class="filter-select" onchange="filterSystemdTable()">
           <option value="all">Semua Status</option>
@@ -2690,7 +2690,7 @@ div[style*="position: fixed"] .card {
         </div>
 
         <!-- Filter Status: runtime status -->
-        <div class="filter-col" title="Filter Status Paket">
+        <div class="filter-col" title="Filter Status Packages">
           <label class="filter-col-label" for="pkg-status-filter">Status</label>
           <select id="pkg-status-filter" class="filter-select" onchange="filterPackagesTable()">
             <option value="all">Semua Status</option>
@@ -2705,9 +2705,9 @@ div[style*="position: fixed"] .card {
 
         <span class="toolbar-divider" style="height:18px;border-left:1px solid var(--border);margin:0 4px"></span>
 
-        <!-- Tombol Penyesuai Kolom Paket -->
+        <!-- Tombol Penyesuai Kolom Packages -->
         <div class="pantau-col-dropdown" data-table-id="tbl-packages">
-          <button type="button" class="pantau-col-btn" onclick="PantauColManager.toggleDropdown('tbl-packages', this)" title="Sesuaikan kolom tabel paket">
+          <button type="button" class="pantau-col-btn" onclick="PantauColManager.toggleDropdown('tbl-packages', this)" title="Sesuaikan kolom tabel packages">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
               <line x1="9" y1="3" x2="9" y2="21"></line>
@@ -2719,13 +2719,13 @@ div[style*="position: fixed"] .card {
           <div class="pantau-col-menu" style="display:none"></div>
         </div>
 
-        <!-- Refresh daftar paket (ikon + tooltip) -->
-        <button type="button" class="btn btn-ghost btn-sm" id="btn-pkg-refresh" onclick="refreshPackagesList(true)" title="Refresh daftar paket" aria-label="Refresh daftar paket">
+        <!-- Refresh daftar packages (ikon + tooltip) -->
+        <button type="button" class="btn btn-ghost btn-sm" id="btn-pkg-refresh" onclick="refreshPackagesList(true)" title="Refresh daftar packages" aria-label="Refresh daftar packages">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
         </button>
 
-        <!-- Upgrade semua paket (ikon + tooltip mengarah ke upgrade atas) -->
-        <button type="button" class="btn btn-primary btn-sm" id="btn-pkg-upgrade-all" onclick="triggerUpgradeOS()" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed"{% endif %} title="Upgrade semua paket" aria-label="Upgrade semua paket">
+        <!-- Upgrade semua packages (ikon + tooltip mengarah ke upgrade atas) -->
+        <button type="button" class="btn btn-primary btn-sm" id="btn-pkg-upgrade-all" onclick="triggerUpgradeOS()" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed"{% endif %} title="Upgrade semua packages" aria-label="Upgrade semua packages">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="16 12 12 8 8 12"></polyline><line x1="12" y1="16" x2="12" y2="8"></line></svg>
         </button>
       </div>
@@ -2734,11 +2734,11 @@ div[style*="position: fixed"] .card {
     <!-- State Loading & Empty -->
     <div id="pkg-loading" style="display:none;padding:32px 16px;text-align:center;color:var(--dim)">
       <div class="spinner" style="display:inline-block;width:24px;height:24px;border:2.5px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin 1s linear infinite;margin-bottom:8px"></div>
-      <div>Memuat daftar paket dari server...</div>
+      <div>Memuat daftar packages dari server...</div>
     </div>
 
     <div id="pkg-empty" class="empty-msg" style="display:none;padding:24px 16px;text-align:center">
-      Belum ada data paket sistem. Klik tombol <strong>Refresh daftar paket</strong> di atas untuk memindai paket.
+      Belum ada data packages sistem. Klik tombol <strong>Refresh daftar packages</strong> di atas untuk memindai packages.
     </div>
 
     <!-- Tabel Daftar Packages -->
@@ -2749,10 +2749,10 @@ div[style*="position: fixed"] .card {
             <th class="col-fixed-cell col-center-cell" data-col-title="Status" style="cursor:pointer" onclick="togglePkgSort('status')" title="Klik untuk mengurutkan Status">
               Status <span id="pkg-sort-status" style="font-size:10px;opacity:0.6">↕</span>
             </th>
-            <th class="col-fixed-cell" data-col-title="Nama Paket" style="min-width:180px;cursor:pointer" onclick="togglePkgSort('name')" title="Klik untuk mengurutkan Nama Paket">
-              Nama Paket <span id="pkg-sort-name" style="font-size:10px;opacity:0.6">↕</span>
+            <th class="col-fixed-cell" data-col-title="Nama Package" style="min-width:180px;cursor:pointer" onclick="togglePkgSort('name')" title="Klik untuk mengurutkan Nama Package">
+              Nama Package <span id="pkg-sort-name" style="font-size:10px;opacity:0.6">↕</span>
             </th>
-            <th class="col-fixed-cell col-center-cell" data-col-title="Tipe" style="cursor:pointer" onclick="togglePkgSort('is_user')" title="Klik untuk mengurutkan Tipe Paket (Pengguna/Sistem)">
+            <th class="col-fixed-cell col-center-cell" data-col-title="Tipe" style="cursor:pointer" onclick="togglePkgSort('is_user')" title="Klik untuk mengurutkan Tipe Package (Pengguna/Sistem)">
               Tipe <span id="pkg-sort-is_user" style="font-size:10px;opacity:0.6">↕</span>
             </th>
             <th class="col-fixed-cell" data-col-title="Versi" style="cursor:pointer" onclick="togglePkgSort('version')" title="Klik untuk mengurutkan Versi">
@@ -2761,8 +2761,8 @@ div[style*="position: fixed"] .card {
             <th class="col-fixed-cell col-num-cell" data-col-title="Ukuran" style="cursor:pointer" onclick="togglePkgSort('size_kb')" title="Klik untuk mengurutkan Ukuran">
               Ukuran <span id="pkg-sort-size_kb" style="font-size:10px;opacity:0.6">↕</span>
             </th>
-            <th class="col-hero-cell" data-col-title="Deskripsi" style="min-width:240px" title="Deskripsi singkat fungsi paket">Deskripsi</th>
-            <th class="col-fixed-cell col-act" data-col-title="Tindakan" style="text-align:center" title="Tindakan kontrol paket: Bersihkan cache, Lihat log, Upgrade paket">Tindakan</th>
+            <th class="col-hero-cell" data-col-title="Deskripsi" style="min-width:240px" title="Deskripsi singkat fungsi package">Deskripsi</th>
+            <th class="col-fixed-cell col-act" data-col-title="Tindakan" style="text-align:center" title="Tindakan kontrol package: Bersihkan cache, Lihat log, Upgrade package">Tindakan</th>
           </tr>
         </thead>
         <tbody id="pkg-tbody">
@@ -2774,7 +2774,7 @@ div[style*="position: fixed"] .card {
     <!-- Paginasi Tabel Packages Lengkap -->
     <div id="pkg-pagination-wrap" style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-top:1px solid var(--border);font-size:12px;color:var(--dim);flex-wrap:wrap;gap:8px">
       <div style="display:flex;align-items:center;gap:10px">
-        <span id="pkg-page-info">Menampilkan 0 - 0 dari 0 paket</span>
+        <span id="pkg-page-info">Menampilkan 0 - 0 dari 0 packages</span>
         <label style="display:inline-flex;align-items:center;gap:4px;margin-left:6px;font-size:11.5px">
           Tampilkan:
           <select id="pkg-page-size-select" style="padding:2px 6px;font-size:11.5px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text)" onchange="setPkgPageSize(this.value)">
@@ -2804,7 +2804,7 @@ div[style*="position: fixed"] .card {
   <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
     <div>
       <h3 style="margin:0;display:flex;align-items:center;gap:8px">
-        <span>Manajer Tugas</span>
+        <span>Task Manager (Processes)</span>
         <span class="badge badge-info" id="proc-total-badge" style="font-size:11px">10 proses</span>
       </h3>
       <span style="font-size:12px;color:var(--dim)">Pantau dan kelola proses server</span>
@@ -2828,7 +2828,7 @@ div[style*="position: fixed"] .card {
     </div>
   </div>
 
-  <!-- Tabel Utama Manajer Tugas dengan Kolom Urut Interaktif -->
+  <!-- Tabel Utama Task Manager (Processes) dengan Kolom Urut Interaktif -->
   <div style="overflow-x:auto">
     <table id="tbl-task-manager" style="width:100%;font-size:10px">
       <thead>
@@ -2869,13 +2869,13 @@ div[style*="position: fixed"] .card {
   <div class="card">
     <div class="card-header" style="align-items:center;justify-content:space-between">
       <div>
-        <h3 style="margin:0">Tugas Terjadwal (Cron Jobs)</h3>
-        <span style="font-size:12px;color:var(--dim)">Daftar eksekusi tugas periodik sistem (/etc/crontab &amp; /etc/cron.d/*)</span>
+        <h3 style="margin:0">Cron Jobs (Scheduled Tasks)</h3>
+        <span style="font-size:12px;color:var(--dim)">Daftar jadwal eksekusi cron sistem (/etc/crontab &amp; /etc/cron.d/*)</span>
       </div>
       <div style="display:flex;gap:8px;align-items:center">
-        <span class="badge badge-info" id="cron-jobs-count">{{ (cron_jobs.jobs|length) if cron_jobs and cron_jobs.jobs else 0 }} tugas aktif</span>
+        <span class="badge badge-info" id="cron-jobs-count">{{ (cron_jobs.jobs|length) if cron_jobs and cron_jobs.jobs else 0 }} cron jobs aktif</span>
         {% if user.has_perm('can_cron') %}
-        <button class="btn btn-primary btn-sm" id="btn-add-cron-modal" onclick="openAddCronModal()" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Tambah tugas cron baru" aria-label="Tambah Tugas"{% endif %}>
+        <button class="btn btn-primary btn-sm" id="btn-add-cron-modal" onclick="openAddCronModal()" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Tambah cron job baru" aria-label="Tambah Cron Job"{% endif %}>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
         </button>
         {% endif %}
@@ -2916,7 +2916,7 @@ div[style*="position: fixed"] .card {
                   {% set cron_ident = c.get('ident', '') %}
                   <button type="button" class="btn btn-sm {{ 'btn-warn' if c.get('is_enabled', True) else 'btn-primary' }}"
                           onclick="submitCronToggle('{{ cron_ident }}', '{{ 'disable' if c.get('is_enabled', True) else 'enable' }}', this)"
-                          {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="{{ 'Nonaktifkan tugas cron ini' if c.get('is_enabled', True) else 'Aktifkan kembali tugas cron ini' }}"{% endif %}
+                          {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="{{ 'Nonaktifkan cron job ini' if c.get('is_enabled', True) else 'Aktifkan kembali cron job ini' }}"{% endif %}
                           aria-label="{{ 'Jeda' if c.get('is_enabled', True) else 'Aktifkan' }}">
                     {% if c.get('is_enabled', True) %}
                       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
@@ -2932,7 +2932,7 @@ div[style*="position: fixed"] .card {
                   </button>
                   <button type="button" class="btn btn-sm btn-danger"
                           onclick="submitCronDelete('{{ cron_ident }}', this)"
-                          {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Hapus tugas cron ini"{% endif %}
+                          {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Hapus cron job ini"{% endif %}
                           aria-label="Hapus">
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                   </button>
@@ -2946,7 +2946,7 @@ div[style*="position: fixed"] .card {
         </tbody>
       </table>
     </div>
-    <div class="empty-msg" id="cron-empty" style="display:{{ 'none' if (cron_jobs and cron_jobs.jobs) else 'block' }}">Belum ada tugas cron sistem terdeteksi pada server ini.</div>
+    <div class="empty-msg" id="cron-empty" style="display:{{ 'none' if (cron_jobs and cron_jobs.jobs) else 'block' }}">Belum ada cron job sistem terdeteksi pada server ini.</div>
   </div>
 
   <div class="card">
@@ -2962,7 +2962,7 @@ div[style*="position: fixed"] .card {
         <thead>
           <tr>
             <th class="col-fixed-cell" title="Nama unit timer systemd">Nama Timer</th>
-            <th class="col-fixed-cell" title="Unit service yang dipicu saat timer berjalan">Layanan Yang Diaktifkan</th>
+            <th class="col-fixed-cell" title="Unit service yang dipicu saat timer berjalan">Service Yang Diaktifkan</th>
             <th class="col-hero-cell" title="Rincian jadwal jadwal terakhir dan selanjutnya">Jadwal &amp; Status</th>
           </tr>
         </thead>
@@ -3123,21 +3123,21 @@ div[style*="position: fixed"] .card {
     <div class="user-subnav-bar">
       <button type="button" class="user-subnav-btn is-active btn-primary" id="btn-subnav-users" onclick="switchUserSubnav('users')">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-        <span>Pengguna (Users)</span>
+        <span>Users</span>
         <span class="user-subnav-count" id="badge-users-count">{{ accounts|length if accounts else 0 }}</span>
       </button>
       <button type="button" class="user-subnav-btn btn-ghost" id="btn-subnav-groups" onclick="switchUserSubnav('groups')">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-        <span>Grup (Groups)</span>
+        <span>Groups</span>
         <span class="user-subnav-count" id="badge-groups-count">{{ system_groups|length if system_groups else 0 }}</span>
       </button>
     </div>
 
     <div style="display:flex;align-items:center;gap:8px">
       {% if user.has_perm('can_users_sys') %}
-      <button class="btn btn-primary btn-sm" id="btn-create-user-modal" onclick="openCreateUserModal()" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Tambah pengguna baru" aria-label="Tambah Pengguna"{% endif %} style="display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:4px 10px">
+      <button class="btn btn-primary btn-sm" id="btn-create-user-modal" onclick="openCreateUserModal()" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Tambah user baru" aria-label="Tambah User"{% endif %} style="display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:4px 10px">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
-        <span>Tambah Pengguna</span>
+        <span>Tambah User</span>
       </button>
       {% endif %}
     </div>
@@ -3147,10 +3147,10 @@ div[style*="position: fixed"] .card {
   <div class="card" id="subview-users">
     <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px">
       <div>
-        <h3 style="margin:0;font-size:14px;font-weight:600">Daftar Pengguna Linux</h3>
-        <span style="font-size:12px;color:var(--dim)">Akun pengguna dan layanan sistem (/etc/passwd)</span>
+        <h3 style="margin:0;font-size:14px;font-weight:600">Daftar Users (/etc/passwd)</h3>
+        <span style="font-size:12px;color:var(--dim)">Akun users dan services sistem (/etc/passwd)</span>
       </div>
-      <span class="badge badge-info" id="acc-count-badge">{{ accounts|length if accounts else 0 }} Pengguna</span>
+      <span class="badge badge-info" id="acc-count-badge">{{ accounts|length if accounts else 0 }} Users</span>
     </div>
     <div class="table-toolbar" style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:var(--bg-subtle, rgba(255,255,255,0.02));border-bottom:1px solid var(--border);gap:12px">
       <div class="btn-group" style="display:inline-flex;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:2px;gap:2px">
@@ -3164,7 +3164,7 @@ div[style*="position: fixed"] .card {
         <button type="button" onclick="clearUserSearch()" style="position:absolute;right:6px;background:none;border:none;cursor:pointer;color:var(--dim);display:none" id="acc-search-clear" title="Bersihkan">✕</button>
       </div>
     </div>
-    <div id="acc-empty" class="empty-msg" style="{{ 'display:none' if accounts else 'display:block' }}">Belum ada data pengguna dari server ini.</div>
+    <div id="acc-empty" class="empty-msg" style="{{ 'display:none' if accounts else 'display:block' }}">Belum ada data users dari server ini.</div>
     <div style="overflow-x:auto">
       <table id="acc-table" class="noc-table-compact" style="min-width:850px;{{ 'display:table;width:100%' if accounts else 'display:none;width:100%' }}">
         <thead>
@@ -3186,9 +3186,9 @@ div[style*="position: fixed"] .card {
                 <span class="badge badge-info" style="font-size:9.5px;padding:1px 5px" title="Pengguna memiliki hak istimewa sudo/root">Sudoer</span>
               {% endif %}
               {% if a.is_system %}
-                <span class="badge badge-muted" style="font-size:9.5px;padding:1px 5px" title="Akun sistem/layanan (UID &lt; 1000)">Sistem</span>
+                <span class="badge badge-muted" style="font-size:9.5px;padding:1px 5px" title="Akun sistem/service (UID &lt; 1000)">Sistem</span>
               {% else %}
-                <span class="badge badge-up" style="font-size:9.5px;padding:1px 5px" title="Akun pengguna reguler">Reguler</span>
+                <span class="badge badge-up" style="font-size:9.5px;padding:1px 5px" title="Akun user reguler">Reguler</span>
               {% endif %}
               {% if a.is_locked %}
                 <span class="badge badge-warn" style="font-size:9.5px;padding:1px 5px" title="Akun saat ini terkunci">Terkunci</span>
@@ -3265,10 +3265,10 @@ div[style*="position: fixed"] .card {
   <div class="card" id="subview-groups" style="display:none">
     <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px">
       <div>
-        <h3 style="margin:0;font-size:14px;font-weight:600">Daftar Grup Linux</h3>
+        <h3 style="margin:0;font-size:14px;font-weight:600">Daftar Groups (/etc/group)</h3>
         <span style="font-size:12px;color:var(--dim)">Daftar grup sistem operasi dan anggota (/etc/group)</span>
       </div>
-      <span class="badge badge-info" id="groups-count-badge">{{ system_groups|length if system_groups else 0 }} Grup</span>
+      <span class="badge badge-info" id="groups-count-badge">{{ system_groups|length if system_groups else 0 }} Groups</span>
     </div>
     <div class="table-toolbar" style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:var(--bg-subtle, rgba(255,255,255,0.02));border-bottom:1px solid var(--border);gap:12px">
       <div class="btn-group" style="display:inline-flex;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:2px;gap:2px">
@@ -3287,7 +3287,7 @@ div[style*="position: fixed"] .card {
       <table id="groups-table" class="noc-table-compact" style="min-width:760px;{{ 'display:table;width:100%' if system_groups else 'display:none;width:100%' }}">
         <thead>
           <tr>
-            <th class="col-fixed-cell" style="min-width:140px">Nama Grup</th>
+            <th class="col-fixed-cell" style="min-width:140px">Group Name</th>
             <th class="col-fixed-cell col-num-cell" style="width:80px;min-width:75px">GID</th>
             <th class="col-fixed-cell col-center-cell" style="width:120px;min-width:100px">Tipe</th>
             <th class="col-hero-cell" style="min-width:240px">Anggota (Members)</th>
@@ -3300,7 +3300,7 @@ div[style*="position: fixed"] .card {
             <td style="white-space:nowrap">
               <strong class="mono" style="font-size:13px">{{ g.group }}</strong>
               {% if g.is_privileged %}
-                <span class="badge badge-info" style="font-size:9.5px;padding:1px 5px" title="Grup administratif dengan hak akses khusus sistem">Privileged</span>
+                <span class="badge badge-info" style="font-size:9.5px;padding:1px 5px" title="Group administratif dengan hak akses khusus (Privileged)">Privileged</span>
               {% endif %}
             </td>
             <td class="mono" style="white-space:nowrap">{{ g.gid }}</td>
@@ -3308,7 +3308,7 @@ div[style*="position: fixed"] .card {
               {% if g.is_system %}
                 <span class="badge badge-muted" style="font-size:9.5px" title="Grup sistem (GID < 1000)">Sistem</span>
               {% else %}
-                <span class="badge badge-up" style="font-size:9.5px" title="Grup pengguna biasa (GID ≥ 1000)">Reguler</span>
+                <span class="badge badge-up" style="font-size:9.5px" title="Group user reguler (GID ≥ 1000)">Reguler</span>
               {% endif %}
             </td>
             <td>
@@ -3337,7 +3337,7 @@ div[style*="position: fixed"] .card {
     </div>
   </div>
 
-  <!-- Card Riwayat Tindakan Akun Pengguna -->
+  <!-- Card Riwayat Tindakan Akun Users -->
   <div class="card" id="card-acc-action-history">
     {% set acc_acts = [] %}
     {% if actions %}
@@ -3380,7 +3380,7 @@ div[style*="position: fixed"] .card {
             {% endfor %}
           {% else %}
           <tr>
-            <td colspan="6" style="text-align:center;color:var(--dim);padding:20px">Belum ada riwayat tindakan akun pengguna di server ini.</td>
+            <td colspan="6" style="text-align:center;color:var(--dim);padding:20px">Belum ada riwayat tindakan akun user di server ini.</td>
           </tr>
           {% endif %}
         </tbody>
@@ -3598,7 +3598,7 @@ div[style*="position: fixed"] .card {
       <div class="segmented-control" id="logging-sub-ctrl" style="margin-left:4px">
         <button type="button" class="btn btn-sm is-on" id="btn-sublog-svc" onclick="switchLoggingView('svc')">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-          <span>Log Layanan</span>
+          <span>Log Services</span>
         </button>
         <button type="button" class="btn btn-sm" id="btn-sublog-sys" onclick="switchLoggingView('sys')">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
@@ -3621,7 +3621,7 @@ div[style*="position: fixed"] .card {
       <div class="filter-row-main" style="align-items:flex-end;gap:10px;display:flex;flex-wrap:wrap">
         <!-- 1. Dropdown Unit Layanan -->
         <div class="filter-col" style="flex:1.2;min-width:210px;max-width:340px">
-          <label class="filter-col-label" for="log-unit">Unit Layanan</label>
+          <label class="filter-col-label" for="log-unit">Unit Service</label>
           <select id="log-unit" class="filter-select" onchange="changeUnit()" style="width:100%;font-size:12px;padding:5px 8px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:5px">
             {% set seen_units = [] %}
             {% if services %}
@@ -3643,7 +3643,7 @@ div[style*="position: fixed"] .card {
               {% endfor %}
             {% endif %}
             {% if not seen_units %}
-              <option value="">— Memuat unit layanan… —</option>
+              <option value="">— Memuat unit services… —</option>
             {% endif %}
           </select>
         </div>
@@ -3696,7 +3696,7 @@ div[style*="position: fixed"] .card {
           <tr>
             <th style="width:190px" title="Waktu kejadian tercatat di sistem">Waktu (Terbaru di Atas)</th>
             <th style="width:125px" title="Tingkat keparahan event journald">Prioritas</th>
-            <th style="width:200px" title="Unit layanan atau proses penghasil log">Unit / Identitas</th>
+            <th style="width:200px" title="Unit services atau proses penghasil log">Unit / Identitas</th>
             <th title="Pesan rincian galat">Pesan Galat</th>
           </tr>
         </thead>
@@ -3743,17 +3743,17 @@ div[style*="position: fixed"] .card {
 <!-- MODAL-MODAL GLOBAL OPERASIONAL DETAIL SERVER                            -->
 <!-- ======================================================================= -->
 
-<!-- Modal Tambah Layanan -->
+<!-- Modal Tambah Service -->
 <div id="add-svc-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.6);align-items:center;justify-content:center;backdrop-filter:blur(3px);padding:16px" onclick="if(event.target===this)closeAddSvcModal()">
   <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;width:min(420px,92vw);box-shadow:0 12px 40px rgba(0,0,0,.4)">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <h3 style="margin:0">Tambah Layanan</h3>
+      <h3 style="margin:0">Tambah Service</h3>
       <button type="button" class="btn btn-ghost btn-sm modal-close" onclick="closeAddSvcModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer" aria-label="Tutup">&times;</button>
     </div>
     <form method="post" action="/servers/{{ server.id }}/services/add" id="add-svc-form">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <div style="margin-bottom:12px">
-        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Nama Layanan *</label>
+        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Nama Service *</label>
         <input type="text" name="service_name" required placeholder="nginx, mariadb, sshd…"
                style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px">
       </div>
@@ -3772,7 +3772,7 @@ div[style*="position: fixed"] .card {
         <button type="button" class="btn btn-ghost" onclick="closeAddSvcModal()">Batal</button>
         <button type="submit" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:6px">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
-          <span>Tambah Layanan</span>
+          <span>Tambah Service</span>
         </button>
       </div>
     </form>
@@ -3932,15 +3932,15 @@ div[style*="position: fixed"] .card {
   </div>
 </div>
 
-<!-- Modal: Tambah Tugas Terjadwal (Cron Job) -->
+<!-- Modal: Tambah Cron Job -->
 <div id="add-cron-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.6);align-items:center;justify-content:center;backdrop-filter:blur(3px);padding:16px" onclick="if(event.target===this)closeAddCronModal()">
   <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;width:min(560px,94vw);box-shadow:0 12px 40px rgba(0,0,0,.4);max-height:90vh;overflow-y:auto">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
-      <h3 style="margin:0;color:var(--neon)">Tambah Tugas Terjadwal (Cron Job)</h3>
+      <h3 style="margin:0;color:var(--neon)">Tambah Cron Job</h3>
       <button type="button" class="btn btn-ghost btn-sm modal-close" onclick="closeAddCronModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer" aria-label="Tutup">&times;</button>
     </div>
     <p style="font-size:12px;color:var(--dim);margin:0 0 18px;line-height:1.5">
-      Tugas cron akan disimpan di <code class="mono">/etc/cron.d/pantau-&lt;nama&gt;</code>.
+      Cron job akan disimpan di <code class="mono">/etc/cron.d/pantau-&lt;nama&gt;</code>.
     </p>
     <form method="post" action="/servers/{{ server.id }}/cron/add" id="add-cron-form">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -3986,7 +3986,7 @@ div[style*="position: fixed"] .card {
         <button type="button" class="btn btn-ghost" onclick="closeAddCronModal()">Batal</button>
         <button type="submit" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:6px">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
-          <span>Tambah Tugas Cron</span>
+          <span>Tambah Cron Job</span>
         </button>
       </div>
     </form>
@@ -4034,7 +4034,7 @@ div[style*="position: fixed"] .card {
     </div>
     
     <p style="font-size:13px;color:var(--dim);margin:0 0 16px 0;line-height:1.5">
-      Saat mode pemeliharaan aktif, server ini tidak akan memicu alarm atau tiket insiden baru ketika layanan dimatikan atau saat mesin di-reboot.
+      Saat mode pemeliharaan aktif, server ini tidak akan memicu alarm atau tiket insiden baru ketika service dihentikan atau saat mesin di-reboot.
     </p>
 
     <div style="margin-bottom:16px;padding:12px 14px;background:var(--bg);border:1px solid var(--border);border-radius:6px;font-size:13px">
@@ -4242,7 +4242,7 @@ div[style*="position: fixed"] .card {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
         </div>
         <div>
-          <h3 id="apt-task-title" style="margin:0;font-size:15px;font-weight:600;line-height:1.2">Update Paket OS</h3>
+          <h3 id="apt-task-title" style="margin:0;font-size:15px;font-weight:600;line-height:1.2">Update Packages OS</h3>
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:10px">
@@ -4266,7 +4266,7 @@ div[style*="position: fixed"] .card {
         <span id="apt-task-footer-status" style="font-size:12px;color:var(--dim)">Menjalankan proses...</span>
       </div>
       <div style="display:flex;align-items:center;gap:8px">
-        <button type="button" id="apt-task-upgrade-btn" class="btn btn-primary btn-sm" onclick="triggerUpgradeFromModal()" style="display:none;align-items:center;gap:5px" title="Tingkatkan paket OS yang tersedia">
+        <button type="button" id="apt-task-upgrade-btn" class="btn btn-primary btn-sm" onclick="triggerUpgradeFromModal()" style="display:none;align-items:center;gap:5px" title="Tingkatkan packages OS yang tersedia">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><circle cx="12" cy="12" r="10"></circle><polyline points="16 12 12 8 8 12"></polyline><line x1="12" y1="16" x2="12" y2="8"></line></svg><span id="apt-task-upgrade-label">Upgrade</span>
         </button>
         <button type="button" id="apt-task-close-btn" class="btn btn-ghost btn-sm" onclick="closeAptTaskModal()">
@@ -4277,18 +4277,18 @@ div[style*="position: fixed"] .card {
   </div>
 </div>
 
-<!-- Modal: Show Logs Paket -->
+<!-- Modal: Show Logs Package -->
 <div id="pkg-log-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:16px" onclick="if(event.target===this)closePkgLogModal()">
   <div class="card" style="width:100%;max-width:750px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 12px 36px rgba(0,0,0,0.6);border:1px solid var(--border);border-radius:10px;overflow:hidden">
     <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;padding:12px 18px;background:var(--bg-card)">
       <div style="display:flex;align-items:center;gap:8px">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue)"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
-        <h3 id="pkg-log-title" style="margin:0;font-size:14px;font-weight:600">Log Riwayat Paket</h3>
+        <h3 id="pkg-log-title" style="margin:0;font-size:14px;font-weight:600">Log Riwayat Package</h3>
       </div>
       <button type="button" class="btn btn-ghost btn-sm" onclick="closePkgLogModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer">&times;</button>
     </div>
     <div style="flex:1;overflow:auto;background:#0d1117;padding:14px;color:#c9d1d9;font-family:monospace;font-size:12px;line-height:1.5;white-space:pre-wrap" id="pkg-log-body">
-      Memuat riwayat log paket...
+      Memuat riwayat log package...
     </div>
     <div style="display:flex;justify-content:flex-end;padding:10px 16px;background:var(--bg-card);border-top:1px solid var(--border)">
       <button type="button" class="btn btn-ghost btn-sm" onclick="closePkgLogModal()">Tutup</button>
@@ -4425,9 +4425,9 @@ function initServicesTabPagination() {
 
   // 1. Tab Layanan
   if (document.getElementById('tbl-services') && !_servicesTabPagination['services']) {
-    _servicesTabPagination['services'] = attachTablePagination('#tbl-services', { unitLabel: 'layanan', defaultLimit: 10, pageSizeOptions: [10, 25, 50, 100, 'all'] });
+    _servicesTabPagination['services'] = attachTablePagination('#tbl-services', { unitLabel: 'services', defaultLimit: 10, pageSizeOptions: [10, 25, 50, 100, 'all'] });
   }
-  // 2. Tab Manajer Tugas (Proses)
+  // 2. Tab Task Manager (Processes) (Proses)
   if (document.getElementById('tbl-task-manager') && !_servicesTabPagination['task-manager']) {
     _servicesTabPagination['task-manager'] = attachTablePagination('#tbl-task-manager', { unitLabel: 'proses', defaultLimit: 10, pageSizeOptions: [10, 25, 50, 100, 'all'] });
   }
@@ -4451,7 +4451,7 @@ function initServicesTabPagination() {
   }
   // 6. Tab Cron (Crontab Jobs)
   if (document.getElementById('cron-table') && !_servicesTabPagination['cron']) {
-    _servicesTabPagination['cron'] = attachTablePagination('#cron-table', { unitLabel: 'tugas', defaultLimit: 10, pageSizeOptions: [10, 25, 50, 'all'] });
+    _servicesTabPagination['cron'] = attachTablePagination('#cron-table', { unitLabel: 'cron jobs', defaultLimit: 10, pageSizeOptions: [10, 25, 50, 'all'] });
   }
   // 7. Tab Cron (Systemd Timers)
   if (document.getElementById('systemd-timers-table') && !_servicesTabPagination['timers']) {
@@ -4541,7 +4541,7 @@ function updateTabAlertDots(options) {
     if (d) {
       const hasDown = options.services.some(s => s.status === 'down' && !s.ignored);
       d.style.display = hasDown ? 'inline-block' : 'none';
-      d.title = hasDown ? 'Ada layanan penting yang berhenti (down)' : '';
+      d.title = hasDown ? 'Ada service penting yang berhenti (down)' : '';
     }
   }
 
@@ -4555,7 +4555,7 @@ function updateTabAlertDots(options) {
     }
   }
 
-  // 4. Manajer Tugas (Ada proses zombie atau membebani CPU/RAM ekstrem)
+  // 4. Task Manager (Processes) (Ada proses zombie atau membebani CPU/RAM ekstrem)
   if (options.procs !== undefined) {
     const d = document.getElementById('tab-dot-proses');
     if (d) {
@@ -4626,7 +4626,7 @@ setTimeout(() => {
   });
 }, 200);
 
-// ---------- Manajer Tugas (Task Manager) ----------
+// ---------- Task Manager (Processes) (Task Manager) ----------
 const INITIAL_TOP_PROCS = {{ top_procs | tojson }};
 let currentTopProcsData = null;
 let procSortCol = 'cpu';      // 'pid' | 'user' | 'comm' | 'state' | 'cpu' | 'mem'
@@ -5029,7 +5029,7 @@ function triggerFastPoll() {
 function renderServiceActions(sid, svcId, name, status, isPending, problem, isServiceIgnored, pendingAction) {
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   const svgLog = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>';
-  const logBtn = '<button type="button" class="btn btn-ghost btn-sm" onclick="jumpToLog(\'' + escHtml(name) + '\')" title="' + (isEn ? 'View logs for ' + name : 'Lihat log layanan ' + name) + '" aria-label="Log">' + svgLog + '</button>';
+  const logBtn = '<button type="button" class="btn btn-ghost btn-sm" onclick="jumpToLog(\'' + escHtml(name) + '\')" title="' + (isEn ? 'View logs for ' + name : 'Lihat log service ' + name) + '" aria-label="Log">' + svgLog + '</button>';
   if (IS_VIEWER || !CAN_SERVICES) return logBtn;
   const online = (typeof IS_ONLINE !== 'undefined') ? IS_ONLINE : true;
   const isUp = status === 'up';
@@ -5039,8 +5039,8 @@ function renderServiceActions(sid, svcId, name, status, isPending, problem, isSe
   const effAction = pendingAction || (op ? op.action : null);
 
   // Status & kontrol:
-  // - Saat proses 'stop' berjalan atau status layanan sudah 'down': tombol Stop dinonaktifkan, tombol Start siap dipakai
-  // - Saat proses 'start' berjalan atau status layanan sudah 'up': tombol Start dinonaktifkan, tombol Stop siap dipakai
+  // - Saat proses 'stop' berjalan atau status service sudah 'down': tombol Stop dinonaktifkan, tombol Start siap dipakai
+  // - Saat proses 'start' berjalan atau status service sudah 'up': tombol Start dinonaktifkan, tombol Stop siap dipakai
   const isStopping = effAction === 'stop' || status === 'down';
   const isStarting = effAction === 'start' || (status === 'up' && effAction !== 'stop');
   const startDis = !online || isStarting || (status === 'up' && !effectivelyPending);
@@ -5049,7 +5049,7 @@ function renderServiceActions(sid, svcId, name, status, isPending, problem, isSe
 
   const isIgnored = Boolean(isServiceIgnored || (problem && problem.is_ignored));
   const probId = (problem && problem.id) ? problem.id : '';
-  const probMsg = (problem && problem.message) ? problem.message : (isEn ? ('Ignore monitoring for service ' + name) : ('Abaikan pemantauan layanan ' + name));
+  const probMsg = (problem && problem.message) ? problem.message : (isEn ? ('Ignore monitoring for service ' + name) : ('Abaikan pemantauan service ' + name));
 
   const offlineTitle = isEn ? 'Server offline — actions disabled' : 'Server offline — aksi dinonaktifkan';
 
@@ -5058,17 +5058,17 @@ function renderServiceActions(sid, svcId, name, status, isPending, problem, isSe
   const svgBellOff = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"></path><path d="M18.63 13A17.89 17.89 0 0 1 18 8"></path><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"></path><path d="M18 8a6 6 0 0 0-9.33-5"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
 
   if (isIgnored) {
-    const ignTitle = isEn ? 'Cancel ignore for this service' : 'Pantau kembali layanan ini';
+    const ignTitle = isEn ? 'Cancel ignore for this service' : 'Pantau kembali service ini';
     ignoreBtn = '<button type="button" class="btn btn-ghost btn-sm" data-id="' + probId + '" data-svcid="' + svcId + '" data-sid="' + sid + '" onclick="unignoreProblem(this)" title="' + ignTitle + '" aria-label="Pantau">' + svgBell + '</button>';
   } else {
     const abkDis = isUp ? 'disabled style="opacity:0.35;cursor:not-allowed" ' : '';
-    const abkTitle = isUp ? (isEn ? 'Service is running normally — ignore is only for stopped services' : 'Layanan aktif normal — opsi abaikan hanya untuk layanan bermasalah/berhenti') : (isEn ? 'Ignore monitoring for this service' : 'Abaikan pemantauan layanan ini');
+    const abkTitle = isUp ? (isEn ? 'Service is running normally — ignore is only for stopped services' : 'Service aktif normal — opsi abaikan hanya untuk service bermasalah/berhenti') : (isEn ? 'Ignore monitoring for this service' : 'Abaikan pemantauan service ini');
     ignoreBtn = '<button type="button" class="btn btn-ghost btn-sm" ' + abkDis + 'data-id="' + probId + '" data-svcid="' + svcId + '" data-sid="' + sid + '" data-msg="' + escHtml(probMsg) + '" onclick="openIgnoreModal(this)" title="' + abkTitle + '" aria-label="Abaikan">' + svgBellOff + '</button>';
   }
 
-  const rstTitle = !online ? offlineTitle : (isEn ? 'Restart service ' + name : 'Mulai ulang (restart) layanan ' + name);
-  const startTitle = !online ? offlineTitle : (isUp ? (isEn ? 'Service is already running' : 'Layanan sudah aktif') : (isEn ? 'Start service' : 'Mulai layanan'));
-  const stopTitle = !online ? offlineTitle : (!isUp ? (isEn ? 'Service is stopped' : 'Layanan sudah nonaktif / berhenti') : (isEn ? 'Stop service' : 'Hentikan layanan'));
+  const rstTitle = !online ? offlineTitle : (isEn ? 'Restart service ' + name : 'Restart service ' + name);
+  const startTitle = !online ? offlineTitle : (isUp ? (isEn ? 'Service is already running' : 'Service sudah dalam kondisi aktif') : (isEn ? 'Start service' : 'Start service di OS host'));
+  const stopTitle = !online ? offlineTitle : (!isUp ? (isEn ? 'Service is stopped' : 'Service sudah nonaktif / berhenti') : (isEn ? 'Stop service' : 'Stop service'));
   const disStyle = !online ? 'style="opacity:0.35;cursor:not-allowed" ' : '';
 
   let pendingBadge = '';
@@ -5123,12 +5123,12 @@ async function restartService(sid, svcId, svcName, btn) {
     return;
   }
   const ok = await showSvcConfirmModal({
-    title: isEn ? 'Confirm Restart Service' : 'Konfirmasi Restart Layanan',
+    title: isEn ? 'Confirm Restart Service' : 'Konfirmasi Restart Service',
     badge: isEn ? 'HOST OPERATION' : 'AKSI SISTEM KLIEN (HOST)',
     target: svcName,
     message: isEn
       ? ('Are you sure you want to <strong>restart</strong> service <strong>' + escHtml(svcName) + '</strong>?<br><br><div style="padding:8px 10px;background:rgba(59,130,246,0.1);border-left:3px solid #3b82f6;border-radius:4px;font-size:12px;line-height:1.45;color:var(--text);margin-top:6px"><strong>Host Execution Notice:</strong> This command will be sent to Pantau Agent to execute <code>systemctl restart ' + escHtml(svcName) + '</code> on the target Linux operating system. The service will be temporarily interrupted.</div>')
-      : ('Apakah Anda yakin ingin me-<strong>restart</strong> layanan <strong>' + escHtml(svcName) + '</strong>?<br><br><div style="padding:8px 10px;background:rgba(59,130,246,0.1);border-left:3px solid #3b82f6;border-radius:4px;font-size:12px;line-height:1.45;color:var(--text);margin-top:6px"><strong>Pemberitahuan Eksekusi Host:</strong> Perintah ini akan dikirim ke Agen Pantau untuk mengeksekusi <code>systemctl restart ' + escHtml(svcName) + '</code> secara nyata pada sistem operasi server target. Layanan akan terhenti sejenak.</div>'),
+      : ('Apakah Anda yakin ingin me-<strong>restart</strong> service <strong>' + escHtml(svcName) + '</strong>?<br><br><div style="padding:8px 10px;background:rgba(59,130,246,0.1);border-left:3px solid #3b82f6;border-radius:4px;font-size:12px;line-height:1.45;color:var(--text);margin-top:6px"><strong>Pemberitahuan Eksekusi Host:</strong> Perintah ini akan dikirim ke Agen Pantau untuk mengeksekusi <code>systemctl restart ' + escHtml(svcName) + '</code> secara nyata pada sistem operasi server target. Service akan terhenti sejenak.</div>'),
     btnText: isEn ? 'Yes, Restart' : 'Ya, Restart',
     btnClass: 'btn-primary',
     iconType: 'primary'
@@ -5186,12 +5186,12 @@ async function svcAction(action, sid, svcId, svcName, btn) {
 
   if (action === 'stop') {
     const ok = await showSvcConfirmModal({
-      title: isEn ? 'Confirm Stop Service' : 'Konfirmasi Hentikan Layanan',
+      title: isEn ? 'Confirm Stop Service' : 'Konfirmasi Stop Service',
       badge: isEn ? 'HOST OPERATION' : 'AKSI SISTEM KLIEN (HOST)',
       target: svcName,
       message: isEn
         ? ('Are you sure you want to <strong>stop</strong> service <strong>' + escHtml(svcName) + '</strong>?<br><br><div style="padding:8px 10px;background:rgba(239,68,68,0.1);border-left:3px solid #ef4444;border-radius:4px;font-size:12px;line-height:1.45;color:var(--text);margin-top:6px"><strong>Host Execution Notice:</strong> This command will be sent to Pantau Agent to execute <code>systemctl stop ' + escHtml(svcName) + '</code> on the target Linux operating system.</div>')
-        : ('Apakah Anda yakin ingin <strong>menghentikan</strong> layanan <strong>' + escHtml(svcName) + '</strong>?<br><br><div style="padding:8px 10px;background:rgba(239,68,68,0.1);border-left:3px solid #ef4444;border-radius:4px;font-size:12px;line-height:1.45;color:var(--text);margin-top:6px"><strong>Pemberitahuan Eksekusi Host:</strong> Perintah ini akan dikirim ke Agen Pantau untuk mengeksekusi <code>systemctl stop ' + escHtml(svcName) + '</code> secara nyata pada sistem operasi server target.</div>'),
+        : ('Apakah Anda yakin ingin <strong>menghentikan</strong> service <strong>' + escHtml(svcName) + '</strong>?<br><br><div style="padding:8px 10px;background:rgba(239,68,68,0.1);border-left:3px solid #ef4444;border-radius:4px;font-size:12px;line-height:1.45;color:var(--text);margin-top:6px"><strong>Pemberitahuan Eksekusi Host:</strong> Perintah ini akan dikirim ke Agen Pantau untuk mengeksekusi <code>systemctl stop ' + escHtml(svcName) + '</code> secara nyata pada sistem operasi server target.</div>'),
       btnText: isEn ? 'Yes, Stop' : 'Ya, Hentikan',
       btnClass: 'btn-danger',
       iconType: 'danger'
@@ -5505,7 +5505,7 @@ async function submitCreateUser(e) {
   if (e && e.preventDefault) e.preventDefault();
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   if (!CAN_USERS_SYS) {
-    showToast(isEn ? 'Access denied: You do not have permission to create users.' : 'Akses ditolak: Anda tidak memiliki wewenang membuat pengguna sistem.', false);
+    showToast(isEn ? 'Access denied: You do not have permission to create users.' : 'Akses ditolak: Anda tidak memiliki wewenang membuat user sistem.', false);
     return;
   }
   const form = document.getElementById('create-user-form');
@@ -5540,7 +5540,7 @@ async function submitCreateUser(e) {
       if (typeof pollSystem === 'function') pollSystem();
       if (typeof filterServerActionHistory === 'function') filterServerActionHistory();
     } else {
-      showToast(res.detail || 'Gagal membuat pengguna.', false);
+      showToast(res.detail || 'Gagal membuat user.', false);
     }
   } catch (err) {
     showToast('Kendala jaringan: ' + err.message, false);
@@ -5556,7 +5556,7 @@ async function submitCreateUser(e) {
 async function submitUserAction(action, username, btn) {
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   if (!CAN_USERS_SYS) {
-    showToast(isEn ? 'Access denied: You do not have permission to manage system users.' : 'Akses ditolak: Anda tidak memiliki wewenang mengelola pengguna sistem.', false);
+    showToast(isEn ? 'Access denied: You do not have permission to manage system users.' : 'Akses ditolak: Anda tidak memiliki wewenang mengelola user sistem.', false);
     return;
   }
   if (typeof IS_ONLINE !== 'undefined' && !IS_ONLINE) {
@@ -5572,7 +5572,7 @@ async function submitUserAction(action, username, btn) {
       badge: isEn ? 'HOST OPERATION' : 'AKSI SISTEM KLIEN (HOST)',
       msg: isEn
         ? ('Permanently delete user account <strong>' + escHtml(username) + '</strong> directly on the target Linux client OS (via <code>userdel</code>).')
-        : ('Hapus permanen akun pengguna <strong>' + escHtml(username) + '</strong> langsung pada sistem operasi server klien (eksekusi <code>userdel</code>). Seluruh izin login akan terhapus.'),
+        : ('Hapus permanen akun user <strong>' + escHtml(username) + '</strong> langsung pada sistem operasi server klien (eksekusi <code>userdel</code>). Seluruh izin login akan terhapus.'),
       btnText: isEn ? 'Delete User' : 'Hapus Pengguna',
       color: 'danger'
     });
@@ -5583,7 +5583,7 @@ async function submitUserAction(action, username, btn) {
       target: username,
       message: isEn
         ? ('Disable login access for user <strong>' + escHtml(username) + '</strong> on the target Linux client OS (via <code>passwd -l</code>).')
-        : ('Kunci akun pengguna <strong>' + escHtml(username) + '</strong> pada sistem operasi server klien (eksekusi <code>passwd -l</code>). Pengguna tidak akan dapat login via SSH maupun konsol lokal.'),
+        : ('Kunci akun user <strong>' + escHtml(username) + '</strong> pada sistem operasi server klien (eksekusi <code>passwd -l</code>). Pengguna tidak akan dapat login via SSH maupun konsol lokal.'),
       btnText: isEn ? 'Lock Account' : 'Kunci Akun',
       btnClass: 'btn-danger',
       iconType: 'danger',
@@ -5596,7 +5596,7 @@ async function submitUserAction(action, username, btn) {
       target: username,
       message: isEn
         ? ('Restore login access for user <strong>' + escHtml(username) + '</strong> on the target Linux client OS (via <code>passwd -u</code>).')
-        : ('Buka kembali kunci akun pengguna <strong>' + escHtml(username) + '</strong> pada sistem operasi server klien (eksekusi <code>passwd -u</code>). Hak login pengguna akan dipulihkan.'),
+        : ('Buka kembali kunci akun user <strong>' + escHtml(username) + '</strong> pada sistem operasi server klien (eksekusi <code>passwd -u</code>). Hak login pengguna akan dipulihkan.'),
       btnText: isEn ? 'Unlock Account' : 'Buka Kunci',
       btnClass: 'btn-primary',
       iconType: 'primary',
@@ -5633,7 +5633,7 @@ async function submitUserAction(action, username, btn) {
     });
     const res = await r.json().catch(() => ({}));
     if (r.ok && (res.ok !== false)) {
-      showToast(res.detail || (isEn ? ('Action ' + action + ' for user ' + username + ' sent successfully.') : ('Perintah ' + action + ' pengguna ' + username + ' berhasil dikirim.')), true);
+      showToast(res.detail || (isEn ? ('Action ' + action + ' for user ' + username + ' sent successfully.') : ('Perintah ' + action + ' user ' + username + ' berhasil dikirim.')), true);
       if (action === 'delete') {
         const row = btn ? btn.closest('tr') : null;
         if (row) {
@@ -5844,7 +5844,7 @@ function searchUsersTable(resetPage = false) {
   const isEn = (typeof isEnPage === 'function') ? isEnPage() : false;
   if (emptyMsg) {
     if (rows.length > 0 && matchCount === 0) {
-      emptyMsg.textContent = isEn ? 'No users matching current filter or search query.' : 'Tidak ada pengguna yang cocok dengan filter atau kata kunci pencarian.';
+      emptyMsg.textContent = isEn ? 'No users matching current filter or search query.' : 'Tidak ada user yang cocok dengan filter atau kata kunci pencarian.';
       emptyMsg.style.display = 'block';
       if (tableEl) tableEl.style.display = 'none';
     } else if (rows.length > 0) {
@@ -5952,7 +5952,7 @@ function clearGroupSearch() {
   }
 }
 
-// === Modal: Tambah Tugas Cron ===
+// === Modal: Tambah Cron Job ===
 function openAddCronModal() {
   if (typeof IS_ONLINE !== 'undefined' && !IS_ONLINE) {
     const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
@@ -6037,12 +6037,12 @@ async function deleteService(sid, svcId, svcName, btn) {
     return;
   }
   const ok = await showSvcConfirmModal({
-    title: isEn ? 'Confirm Remove from Monitoring' : 'Lepas Layanan dari Pengawasan',
+    title: isEn ? 'Confirm Remove from Monitoring' : 'Lepas Service dari Pengawasan',
     badge: isEn ? 'DASHBOARD METADATA' : 'PENGATURAN MONITORING',
     target: svcName,
     message: isEn
       ? ('Are you sure you want to <strong>remove</strong> service <strong>' + escHtml(svcName) + '</strong> from monitoring?<br><br><div style="padding:8px 10px;background:rgba(59,130,246,0.1);border-left:3px solid #3b82f6;border-radius:4px;font-size:12px;line-height:1.45;color:var(--text);margin-top:6px"><strong>Scope Notice:</strong> Only unlinking from monitoring. The service remains registered and running normally on the client server.</div>')
-      : ('Apakah Anda yakin ingin <strong>melepas</strong> layanan <strong>' + escHtml(svcName) + '</strong> dari pengawasan?<br><br><div style="padding:8px 10px;background:rgba(59,130,246,0.1);border-left:3px solid #3b82f6;border-radius:4px;font-size:12px;line-height:1.45;color:var(--text);margin-top:6px"><strong>Pemberitahuan Batas Lingkup:</strong> Hanya melepas pemantauan di dashboard. Layanan tetap terdaftar dan berjalan normal pada server klien.</div>'),
+      : ('Apakah Anda yakin ingin <strong>melepas</strong> service <strong>' + escHtml(svcName) + '</strong> dari pengawasan?<br><br><div style="padding:8px 10px;background:rgba(59,130,246,0.1);border-left:3px solid #3b82f6;border-radius:4px;font-size:12px;line-height:1.45;color:var(--text);margin-top:6px"><strong>Pemberitahuan Batas Lingkup:</strong> Hanya melepas pemantauan di dashboard. Service tetap terdaftar dan berjalan normal pada server klien.</div>'),
     btnText: isEn ? 'Remove from Monitoring' : 'Lepas dari Pengawasan',
     btnClass: 'btn-warning',
     iconType: 'warning'
@@ -6064,12 +6064,12 @@ async function deleteService(sid, svcId, svcName, btn) {
     });
     const j = await r.json().catch(() => ({}));
     if (r.ok) {
-      showToast(j.detail || (isEn ? ('Service ' + svcName + ' removed from monitoring.') : ('Layanan ' + svcName + ' telah dilepas dari pengawasan dashboard.')), true);
+      showToast(j.detail || (isEn ? ('Service ' + svcName + ' removed from monitoring.') : ('Service ' + svcName + ' telah dilepas dari pengawasan dashboard.')), true);
       if (tr) tr.remove();
       if (typeof poll === 'function') poll();
       else if (typeof fetchOverview === 'function') fetchOverview();
     } else {
-      showToast(j.detail || (isEn ? 'Failed to remove service from monitoring.' : 'Gagal melepas layanan dari pengawasan.'), false);
+      showToast(j.detail || (isEn ? 'Failed to remove service from monitoring.' : 'Gagal melepas service dari pengawasan.'), false);
       btn.disabled = false;
       btn.innerHTML = originalHtml;
     }
@@ -6261,11 +6261,11 @@ async function submitCronToggle(ident, mode, btn) {
     });
     const res = await r.json().catch(() => ({}));
     if (r.ok && res.ok !== false) {
-      showToast(res.detail || (isEn ? `Cron task status updated.` : `Status tugas cron diperbarui.`), true);
+      showToast(res.detail || (isEn ? `Cron task status updated.` : `Status cron job diperbarui.`), true);
       triggerFastPoll();
       if (typeof pollSystem === 'function') pollSystem();
     } else {
-      showToast(res.detail || (isEn ? 'Failed to toggle cron task.' : 'Gagal mengubah status tugas cron.'), false);
+      showToast(res.detail || (isEn ? 'Failed to toggle cron task.' : 'Gagal mengubah status cron job.'), false);
     }
   } catch(err) {
     showToast((isEn ? 'Network issue: ' : 'Kendala jaringan: ') + err.message, false);
@@ -6281,9 +6281,9 @@ async function submitCronRun(user, command, btn) {
     return;
   }
   const ok = await showConfirmModal({
-    title: isEn ? 'Test Run Cron Task' : 'Uji Jalankan Tugas Cron',
+    title: isEn ? 'Test Run Cron Task' : 'Uji Jalankan Cron Job',
     target: user ? `${user}: ${command}` : command,
-    message: isEn ? 'Execute this cron job immediately once for testing.' : 'Eksekusi tugas cron ini satu kali sekarang untuk pengujian.',
+    message: isEn ? 'Execute this cron job immediately once for testing.' : 'Eksekusi cron job ini satu kali sekarang untuk pengujian.',
     btnText: isEn ? 'Run Now' : 'Jalankan Sekarang',
     btnClass: 'btn-primary',
     iconType: 'primary',
@@ -6307,7 +6307,7 @@ async function submitCronRun(user, command, btn) {
     });
     const res = await r.json().catch(() => ({}));
     if (r.ok && res.ok !== false) {
-      showToast(res.detail || (isEn ? 'Cron test run command sent.' : 'Perintah uji jalankan tugas cron dikirim ke agen.'), true);
+      showToast(res.detail || (isEn ? 'Cron test run command sent.' : 'Perintah uji jalankan cron job dikirim ke agen.'), true);
       triggerFastPoll();
     } else {
       showToast(res.detail || (isEn ? 'Failed to trigger cron test.' : 'Gagal memicu uji coba cron.'), false);
@@ -6326,12 +6326,12 @@ async function submitCronDelete(ident, btn) {
     return;
   }
   const ok = await showConfirmModal({
-    title: isEn ? 'Delete Cron Task' : 'Hapus Tugas Cron',
+    title: isEn ? 'Delete Cron Task' : 'Hapus Cron Job',
     target: ident,
     message: isEn
       ? ('Permanently remove this cron task entry directly from crontab on the target Linux client OS.<br><br><div style="padding:8px 10px;background:rgba(239,68,68,0.1);border-left:3px solid #ef4444;border-radius:4px;font-size:12px;line-height:1.45;color:var(--text);margin-top:6px"><strong>Host Execution Notice:</strong> This schedule will no longer run on the client server.</div>')
-      : ('Hapus baris tugas cron ini secara permanen langsung dari crontab sistem operasi server klien.<br><br><div style="padding:8px 10px;background:rgba(239,68,68,0.1);border-left:3px solid #ef4444;border-radius:4px;font-size:12px;line-height:1.45;color:var(--text);margin-top:6px"><strong>Pemberitahuan Eksekusi Host:</strong> Jadwal tugas ini tidak akan lagi dijalankan secara periodik pada server klien.</div>'),
-    btnText: isEn ? 'Delete Task' : 'Hapus Tugas',
+      : ('Hapus baris cron job ini secara permanen langsung dari crontab sistem operasi server klien.<br><br><div style="padding:8px 10px;background:rgba(239,68,68,0.1);border-left:3px solid #ef4444;border-radius:4px;font-size:12px;line-height:1.45;color:var(--text);margin-top:6px"><strong>Pemberitahuan Eksekusi Host:</strong> Jadwal cron job ini tidak akan lagi dijalankan secara periodik pada server klien.</div>'),
+    btnText: isEn ? 'Delete Task' : 'Hapus Cron Job',
     btnClass: 'btn-danger',
     iconType: 'danger',
     badge: isEn ? 'HOST OPERATION' : 'AKSI SISTEM KLIEN (HOST)'
@@ -6353,11 +6353,11 @@ async function submitCronDelete(ident, btn) {
     });
     const res = await r.json().catch(() => ({}));
     if (r.ok && res.ok !== false) {
-      showToast(res.detail || (isEn ? `Cron task '${ident}' deleted.` : `Tugas cron '${ident}' dihapus.`), true);
+      showToast(res.detail || (isEn ? `Cron task '${ident}' deleted.` : `Cron job '${ident}' dihapus.`), true);
       triggerFastPoll();
       if (typeof pollSystem === 'function') pollSystem();
     } else {
-      showToast(res.detail || (isEn ? 'Failed to delete cron task.' : 'Gagal menghapus tugas cron.'), false);
+      showToast(res.detail || (isEn ? 'Failed to delete cron task.' : 'Gagal menghapus cron job.'), false);
     }
   } catch(err) {
     showToast((isEn ? 'Network issue: ' : 'Kendala jaringan: ') + err.message, false);
@@ -6516,7 +6516,7 @@ function fmtUptime(sec) {
   return s + m + (isEn ? 'm' : 'm');
 }
 
-// ---------- paket OS update (tombol Update / Upgrade) ----------
+// ---------- packages OS update (tombol Update / Upgrade) ----------
 let lastAptPkgs = [];
 let aptLastCount = null;
 let aptArmed = false;   // Upgrade baru aktif setelah user menekan Update & tuntas
@@ -6530,8 +6530,8 @@ function aptLabel(kind, detail = '') {
   const d = detail || (typeof aptTaskDetail !== 'undefined' ? aptTaskDetail : '') || '';
   if (kind === 'APT_DIST_UPGRADE') return 'apt dist-upgrade';
   if (kind === 'APT_UPGRADE_INTERACT' || kind === 'APT_UPGRADE') return 'apt upgrade';
-  if (kind === 'APT_FIX') return 'reparasi paket (dpkg & apt fix)';
-  if (kind === 'PKG_UPGRADE') return d ? `apt install --only-upgrade ${d}` : 'apt upgrade paket';
+  if (kind === 'APT_FIX') return 'reparasi packages (dpkg & apt fix)';
+  if (kind === 'PKG_UPGRADE') return d ? `apt install --only-upgrade ${d}` : 'apt upgrade packages';
   if (kind === 'PKG_CLEAN') return 'apt clean';
   return 'apt update';
 }
@@ -6550,7 +6550,7 @@ function aptSetUpgradeEnabled(ok) {
         b.title = isEn ? 'Server offline — actions disabled' : 'Server offline — aksi dinonaktifkan';
         b.dataset.i18nTitle = 'server_offline_actions_disabled';
       } else {
-        b.title = isEn ? 'All OS packages are up to date' : 'Semua paket OS sudah mutakhir';
+        b.title = isEn ? 'All OS packages are up to date' : 'Semua packages OS sudah mutakhir';
         b.dataset.i18nTitle = 'all_packages_up_to_date';
       }
     } else {
@@ -6558,7 +6558,7 @@ function aptSetUpgradeEnabled(ok) {
       b.style.opacity = '';
       b.style.cursor = '';
       b.classList.add('has-updates');
-      b.title = isEn ? 'Upgrade OS packages' : 'Perbarui paket sistem operasi';
+      b.title = isEn ? 'Upgrade OS packages' : 'Update packages sistem operasi';
       b.dataset.i18nTitle = 'apt_upgrade_tooltip';
     }
   }
@@ -6599,7 +6599,7 @@ function syncPackagesTabApt(aptN, pkgs) {
     if (tabBadge) tabBadge.style.display = 'none';
   }
 
-  // 2. Sinkronkan peta paket upgradable (_upgMap & _upgradableRawData)
+  // 2. Sinkronkan peta packages upgradable (_upgMap & _upgradableRawData)
   _upgMap.clear();
   if (Array.isArray(pkgs) && count > 0) {
     _upgradableRawData = pkgs;
@@ -6652,13 +6652,13 @@ function renderApt(data) {
   if (aptRunning) {
     // jangan timpa status proses yang sedang berjalan
   } else if (aptN == null) {
-    aptSetState('', isEn ? 'No package info — click <b>Update OS</b> to refresh.' : 'Belum ada info paket — klik <b>Update OS</b> untuk menyegarkan.');
+    aptSetState('', isEn ? 'No package info — click <b>Update OS</b> to refresh.' : 'Belum ada info packages — klik <b>Update OS</b> untuk menyegarkan.');
   } else if (aptN === 0) {
-    aptSetState('ok', (isEn ? 'All OS packages are up to date.' : 'Semua paket OS sudah mutakhir.')
+    aptSetState('ok', (isEn ? 'All OS packages are up to date.' : 'Semua packages OS sudah mutakhir.')
       + (data.apt_last_update ? ' <span class="dim">' + (isEn ? 'Last checked ' : 'Terakhir diperiksa ') + fmtAptLast(data.apt_last_update) + '.</span>' : ''));
   } else {
     const names = pkgs.slice(0, 8).map(pkgName).filter(Boolean).join(', ');
-    aptSetState('pending', '<b>' + aptN + (isEn ? ' packages</b> can be upgraded' : ' paket</b> dapat di-upgrade')
+    aptSetState('pending', '<b>' + aptN + (isEn ? ' packages</b> can be upgraded' : ' packages</b> dapat di-upgrade')
       + (names ? ': <span class="mono dim">' + escapeHtml(names) + (pkgs.length > 8 ? '…' : '') + '</span>' : '.'));
   }
   const canUpgrade = (aptN != null && aptN > 0);
@@ -6669,13 +6669,13 @@ function renderApt(data) {
       lbl.textContent = canUpgrade ? `Upgrade (${aptN})` : 'Upgrade';
     }
     const isOnline = (typeof IS_ONLINE !== 'undefined' ? IS_ONLINE : true);
-    let tipText = isEn ? 'Upgrade OS packages' : 'Perbarui paket sistem operasi';
+    let tipText = isEn ? 'Upgrade OS packages' : 'Update packages sistem operasi';
     if (!isOnline) {
       tipText = isEn ? 'Server offline — actions disabled' : 'Server offline — aksi dinonaktifkan';
     } else if (!canUpgrade) {
-      tipText = isEn ? 'All OS packages are up to date' : 'Semua paket OS sudah mutakhir';
+      tipText = isEn ? 'All OS packages are up to date' : 'Semua packages OS sudah mutakhir';
     } else {
-      tipText = (isEn ? 'Upgrade OS packages' : 'Perbarui paket sistem operasi') + ` (${aptN} ${isEn ? 'updates' : 'pembaruan'})`;
+      tipText = (isEn ? 'Upgrade OS packages' : 'Update packages sistem operasi') + ` (${aptN} ${isEn ? 'updates' : 'pembaruan'})`;
     }
     upBtn.setAttribute('data-tooltip', tipText);
     upBtn.setAttribute('data-tooltip-orig', tipText);
@@ -6835,23 +6835,23 @@ function updateAptTaskTitles(kind, detail = '') {
   const d = detail || (typeof aptTaskDetail !== 'undefined' ? aptTaskDetail : '') || '';
 
   if (kind === 'APT_UPDATE') {
-    title = isEn ? 'OS Package Update' : 'Update Paket OS';
-    banner = isEn ? 'OS package update is running in the background...' : 'Update paket OS sedang berjalan di latar belakang...';
+    title = isEn ? 'OS Package Update' : 'Update Packages OS';
+    banner = isEn ? 'OS package update is running in the background...' : 'Update packages OS sedang berjalan di latar belakang...';
   } else if (kind === 'APT_UPGRADE' || kind === 'APT_UPGRADE_INTERACT' || kind === 'APT_DIST_UPGRADE') {
-    title = isEn ? 'OS Package Upgrade' : 'Upgrade Paket OS';
-    banner = isEn ? 'OS package upgrade is running in the background...' : 'Upgrade paket OS sedang berjalan di latar belakang...';
+    title = isEn ? 'OS Package Upgrade' : 'Upgrade Packages OS';
+    banner = isEn ? 'OS package upgrade is running in the background...' : 'Upgrade packages OS sedang berjalan di latar belakang...';
   } else if (kind === 'PKG_UPGRADE') {
-    title = d ? (isEn ? `Upgrade Package: ${d}` : `Upgrade Paket: ${d}`) : (isEn ? 'Package Upgrade' : 'Upgrade Paket');
-    banner = d ? (isEn ? `Upgrading package ${d} in the background...` : `Upgrade paket ${d} sedang berjalan di latar belakang...`) : (isEn ? 'Package upgrade is running in the background...' : 'Upgrade paket sedang berjalan di latar belakang...');
+    title = d ? (isEn ? `Upgrade Package: ${d}` : `Upgrade Package: ${d}`) : (isEn ? 'Package Upgrade' : 'Upgrade Package');
+    banner = d ? (isEn ? `Upgrading package ${d} in the background...` : `Upgrade package ${d} sedang berjalan di latar belakang...`) : (isEn ? 'Package upgrade is running in the background...' : 'Upgrade package sedang berjalan di latar belakang...');
   } else if (kind === 'PKG_CLEAN') {
-    title = isEn ? 'Package Cache Clean' : 'Bersihkan Cache Paket';
-    banner = isEn ? 'Cleaning package cache in the background...' : 'Pembersihan cache paket sedang berjalan di latar belakang...';
+    title = isEn ? 'Package Cache Clean' : 'Bersihkan Cache Package';
+    banner = isEn ? 'Cleaning package cache in the background...' : 'Pembersihan cache packages sedang berjalan di latar belakang...';
   } else if (kind === 'APT_FIX') {
-    title = isEn ? 'Package Repair' : 'Reparasi Paket (dpkg & fix)';
-    banner = isEn ? 'Package repair is running in the background...' : 'Reparasi paket sedang berjalan di latar belakang...';
+    title = isEn ? 'Package Repair' : 'Reparasi Package (dpkg & fix)';
+    banner = isEn ? 'Package repair is running in the background...' : 'Reparasi packages sedang berjalan di latar belakang...';
   } else {
-    title = isEn ? 'OS Package Update' : 'Pembaruan Paket OS';
-    banner = isEn ? 'Package update is running in the background...' : 'Pembaruan paket OS sedang berjalan di latar belakang...';
+    title = isEn ? 'OS Package Update' : 'Pembaruan Packages OS';
+    banner = isEn ? 'Package update is running in the background...' : 'Pembaruan packages OS sedang berjalan di latar belakang...';
   }
 
   if (titleEl) titleEl.textContent = title;
@@ -6885,7 +6885,7 @@ function updateAptTaskModalUpgradeBtn(kind) {
       upBtn.style.opacity = '0.55';
       upBtn.style.cursor = 'not-allowed';
       if (upLabel) upLabel.textContent = isEn ? 'Upgrade' : 'Upgrade';
-      upBtn.title = isEn ? 'Waiting for package update to complete...' : 'Menunggu proses update paket selesai...';
+      upBtn.title = isEn ? 'Waiting for package update to complete...' : 'Menunggu proses update packages selesai...';
     } else {
       const count = (typeof aptLastCount !== 'undefined') ? aptLastCount : 0;
       if (count > 0) {
@@ -6893,13 +6893,13 @@ function updateAptTaskModalUpgradeBtn(kind) {
         upBtn.style.opacity = '1';
         upBtn.style.cursor = 'pointer';
         if (upLabel) upLabel.textContent = isEn ? `Upgrade (${count})` : `Upgrade (${count})`;
-        upBtn.title = isEn ? `Upgrade ${count} available OS packages` : `Tingkatkan ${count} paket OS yang tersedia`;
+        upBtn.title = isEn ? `Upgrade ${count} available OS packages` : `Tingkatkan ${count} packages OS yang tersedia`;
       } else {
         upBtn.disabled = true;
         upBtn.style.opacity = '0.45';
         upBtn.style.cursor = 'not-allowed';
         if (upLabel) upLabel.textContent = isEn ? 'All Up to Date' : 'Semua Mutakhir';
-        upBtn.title = isEn ? 'All OS packages are up to date' : 'Semua paket OS sudah mutakhir';
+        upBtn.title = isEn ? 'All OS packages are up to date' : 'Semua packages OS sudah mutakhir';
       }
     }
   } else {
@@ -7440,7 +7440,7 @@ class WebTerminal {
     this.aptActive = true;
     this.setProcessRunning(true);
     const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
-    if (this.titleEl) this.titleEl.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg><span>' + (isEn ? 'Terminal &middot; package updates' : 'Terminal &middot; pembaruan paket') + '</span>';
+    if (this.titleEl) this.titleEl.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg><span>' + (isEn ? 'Terminal &middot; package updates' : 'Terminal &middot; pembaruan packages') + '</span>';
     this.status(isEn ? 'running apt process…' : 'menjalankan proses apt…', 'var(--yellow)', 'busy');
   }
 
@@ -8023,12 +8023,12 @@ async function triggerAptTask(kind, detail = '') {
   }
 }
 
-// Tombol Update OS: Menjalankan tugas pembaruan repositori paket
+// Tombol Update OS: Menjalankan tugas pembaruan repositori packages
 function triggerUpdateOS() {
   return triggerAptTask('APT_UPDATE');
 }
 
-// Tombol Upgrade: Menjalankan tugas peningkatan paket sistem operasi
+// Tombol Upgrade: Menjalankan tugas upgrade package sistem operasi
 function triggerUpgradeOS() {
   return triggerAptTask('APT_UPGRADE');
 }
@@ -8092,11 +8092,11 @@ async function aptFollow(rid, kind, startedMs, detail = '') {
   updateAptTaskActiveBanner();
 
   if (typeof window.registerTrackedBackgroundTask === 'function') {
-    let taskTitle = 'Upgrade Paket OS';
-    if (kind === 'APT_UPDATE') taskTitle = 'Update Paket OS';
-    else if (kind === 'PKG_UPGRADE' && d) taskTitle = `Upgrade Paket ${d}`;
-    else if (kind === 'PKG_CLEAN') taskTitle = 'Bersihkan Cache Paket';
-    else if (kind === 'APT_FIX') taskTitle = 'Reparasi Paket OS';
+    let taskTitle = 'Upgrade Packages OS';
+    if (kind === 'APT_UPDATE') taskTitle = 'Update Packages OS';
+    else if (kind === 'PKG_UPGRADE' && d) taskTitle = `Upgrade Package ${d}`;
+    else if (kind === 'PKG_CLEAN') taskTitle = 'Bersihkan Cache Package';
+    else if (kind === 'APT_FIX') taskTitle = 'Reparasi Packages OS';
 
     window.registerTrackedBackgroundTask({
       id: rid,
@@ -8185,8 +8185,8 @@ async function aptFollow(rid, kind, startedMs, detail = '') {
     const durSecs = Math.max(1, Math.round((Date.now() - start) / 1000));
     if (typeof window.notifyBackgroundTaskComplete === 'function') {
       const d = detail || (typeof aptTaskDetail !== 'undefined' ? aptTaskDetail : '') || '';
-      let failTitle = (kind === 'APT_UPDATE' ? 'Update Paket OS Gagal' : 'Upgrade Paket OS Gagal');
-      if (kind === 'PKG_UPGRADE' && d) failTitle = `Upgrade Paket ${d} Gagal`;
+      let failTitle = (kind === 'APT_UPDATE' ? 'Update Packages OS Gagal' : 'Upgrade Packages OS Gagal');
+      if (kind === 'PKG_UPGRADE' && d) failTitle = `Upgrade Package ${d} Gagal`;
       window.notifyBackgroundTaskComplete({
         title: failTitle,
         message: isEn ? 'Process failed or timed out.' : 'Proses gagal dijalankan atau melebihi batas waktu.',
@@ -8223,8 +8223,8 @@ async function aptFollow(rid, kind, startedMs, detail = '') {
       const durSecs = Math.max(1, Math.round((Date.now() - start) / 1000));
       if (typeof window.notifyBackgroundTaskComplete === 'function') {
         const d = detail || (typeof aptTaskDetail !== 'undefined' ? aptTaskDetail : '') || '';
-        let warnTitle = 'Update Paket OS Selesai dengan Peringatan';
-        if (kind === 'PKG_UPGRADE' && d) warnTitle = `Upgrade Paket ${d} dengan Peringatan`;
+        let warnTitle = 'Update Packages OS Selesai dengan Peringatan';
+        if (kind === 'PKG_UPGRADE' && d) warnTitle = `Upgrade Package ${d} dengan Peringatan`;
         window.notifyBackgroundTaskComplete({
           title: warnTitle,
           message: warnText ? String(warnText).slice(0, 140) : (isEn ? 'Some repository indexes failed to download.' : 'Terdapat kendala saat mengunduh sebagian indeks repositori.'),
@@ -8237,22 +8237,22 @@ async function aptFollow(rid, kind, startedMs, detail = '') {
       }
     } else {
       setAptTaskBuffer(header + finalOutput + '\r\n\x1b[32m✔ ' + (isEn ? 'Completed successfully.' : 'Selesai dengan sukses.') + '\x1b[0m\r\n');
-      setAptTaskModalState('success', kind, isEn ? 'Task completed successfully.' : 'Tugas berhasil diselesaikan.');
+      setAptTaskModalState('success', kind, isEn ? 'Task completed successfully.' : 'Task berhasil diselesaikan.');
 
       const durSecs = Math.max(1, Math.round((Date.now() - start) / 1000));
       const d = detail || (typeof aptTaskDetail !== 'undefined' ? aptTaskDetail : '') || '';
       let succMsg = '';
       if (kind === 'APT_UPDATE') {
         const upCnt = (info && info.apt && typeof info.apt.upgradable === 'number') ? info.apt.upgradable : 0;
-        succMsg = upCnt > 0 ? (isEn ? `${upCnt} packages upgradable.` : `${upCnt} paket dapat di-upgrade.`) : (isEn ? 'All packages up to date.' : 'Seluruh paket OS telah mutakhir.');
+        succMsg = upCnt > 0 ? (isEn ? `${upCnt} packages upgradable.` : `${upCnt} packages dapat di-upgrade.`) : (isEn ? 'All packages up to date.' : 'Seluruh packages OS telah mutakhir.');
       } else if (kind === 'PKG_UPGRADE' && d) {
-        succMsg = isEn ? `Package ${d} upgraded successfully.` : `Peningkatan paket ${d} berhasil diselesaikan.`;
+        succMsg = isEn ? `Package ${d} upgraded successfully.` : `Upgrade package ${d} berhasil diselesaikan.`;
       } else {
-        succMsg = isEn ? 'OS package upgrade completed successfully.' : 'Peningkatan paket OS berhasil diselesaikan.';
+        succMsg = isEn ? 'OS package upgrade completed successfully.' : 'Peningkatan packages OS berhasil diselesaikan.';
       }
       if (typeof window.notifyBackgroundTaskComplete === 'function') {
-        let okTitle = (kind === 'APT_UPDATE' ? 'Update Paket OS Selesai' : 'Upgrade Paket OS Selesai');
-        if (kind === 'PKG_UPGRADE' && d) okTitle = `Upgrade Paket ${d} Selesai`;
+        let okTitle = (kind === 'APT_UPDATE' ? 'Update Packages OS Selesai' : 'Upgrade Packages OS Selesai');
+        if (kind === 'PKG_UPGRADE' && d) okTitle = `Upgrade Package ${d} Selesai`;
         window.notifyBackgroundTaskComplete({
           title: okTitle,
           message: succMsg,
@@ -8270,7 +8270,7 @@ async function aptFollow(rid, kind, startedMs, detail = '') {
       if (hasFetchFail) {
         const cacheNotice = isEn ? ' (cached: index update failed)' : ' (cache lama: update indeks gagal)';
         if (apt.upgradable > 0) {
-          aptSetState('warning', '<b>' + apt.upgradable + (isEn ? ' packages</b> upgradable' : ' paket</b> dapat di-upgrade') + ' <span class="dim">' + cacheNotice + '</span>');
+          aptSetState('warning', '<b>' + apt.upgradable + (isEn ? ' packages</b> upgradable' : ' packages</b> dapat di-upgrade') + ' <span class="dim">' + cacheNotice + '</span>');
           const pkgs = apt.packages || [];
           const enriched = pkgs.map(p => {
             const matched = matchAptByName(pkgName(p));
@@ -8284,10 +8284,10 @@ async function aptFollow(rid, kind, startedMs, detail = '') {
             ? '<div style="margin-top:6px;max-height:160px;overflow:auto;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-family:monospace;font-size:11px">'
               + enriched.slice(0, 60).map(pkgItemHtml).join('<br>') + '</div>'
             : '';
-          aptMsg('<b>' + apt.upgradable + (isEn ? ' packages ready for upgrade' : ' paket siap untuk di-upgrade') + cacheNotice + '.</b>' + listHtml, 'var(--yellow)');
+          aptMsg('<b>' + apt.upgradable + (isEn ? ' packages ready for upgrade' : ' packages siap untuk di-upgrade') + cacheNotice + '.</b>' + listHtml, 'var(--yellow)');
         }
       } else if (apt.upgradable > 0) {
-        aptSetState('pending', '<b>' + apt.upgradable + (isEn ? ' packages</b> ready to upgrade. <span class="dim">See list below.</span>' : ' paket</b> siap di-upgrade. <span class="dim">Lihat daftar di bawah.</span>'));
+        aptSetState('pending', '<b>' + apt.upgradable + (isEn ? ' packages</b> ready to upgrade. <span class="dim">See list below.</span>' : ' packages</b> siap di-upgrade. <span class="dim">Lihat daftar di bawah.</span>'));
         const pkgs = apt.packages || [];
         const enriched = pkgs.map(p => {
           const matched = matchAptByName(pkgName(p));
@@ -8301,18 +8301,18 @@ async function aptFollow(rid, kind, startedMs, detail = '') {
           ? '<div style="margin-top:6px;max-height:160px;overflow:auto;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-family:monospace;font-size:11px">'
             + enriched.slice(0, 60).map(pkgItemHtml).join('<br>') + '</div>'
           : '';
-        aptMsg('<b>' + apt.upgradable + (isEn ? ' packages ready for upgrade.</b>' : ' paket siap untuk di-upgrade.</b>') + listHtml, 'var(--yellow)');
+        aptMsg('<b>' + apt.upgradable + (isEn ? ' packages ready for upgrade.</b>' : ' packages siap untuk di-upgrade.</b>') + listHtml, 'var(--yellow)');
       } else if (kind === 'APT_UPGRADE' || kind === 'APT_UPGRADE_INTERACT' || kind === 'APT_DIST_UPGRADE') {
-        aptSetState('ok', isEn ? 'Upgrade completed — all packages are up to date.' : 'Proses upgrade selesai — semua paket sudah ditingkatkan.');
-        aptMsg('<b>' + (isEn ? 'Upgrade completed — all packages are up to date.' : 'Proses upgrade selesai — semua paket sudah ditingkatkan.') + '</b>', 'var(--green)');
+        aptSetState('ok', isEn ? 'Upgrade completed — all packages are up to date.' : 'Proses upgrade selesai — semua packages sudah ditingkatkan.');
+        aptMsg('<b>' + (isEn ? 'Upgrade completed — all packages are up to date.' : 'Proses upgrade selesai — semua packages sudah ditingkatkan.') + '</b>', 'var(--green)');
         aptArmed = false;
         aptLastCount = 0;
         syncPackagesTabApt(0, []);
         if (typeof refreshPackagesList === 'function') refreshPackagesList(false);
       } else {
-        aptSetState('ok', (isEn ? 'All OS packages are up to date.' : 'Semua paket OS sudah mutakhir.')
+        aptSetState('ok', (isEn ? 'All OS packages are up to date.' : 'Semua packages OS sudah mutakhir.')
           + (apt.last_update ? ' <span class="dim">' + (isEn ? 'Last checked ' : 'Terakhir diperiksa ') + fmtAptLast(apt.last_update) + '.</span>' : ''));
-        aptMsg(isEn ? '<b>All OS packages are up to date.</b>' : '<b>Semua paket OS sudah mutakhir.</b>', 'var(--green)');
+        aptMsg(isEn ? '<b>All OS packages are up to date.</b>' : '<b>Semua packages OS sudah mutakhir.</b>', 'var(--green)');
       }
       aptUpdated = true;
       aptLastCount = apt.upgradable;
@@ -8324,7 +8324,7 @@ async function aptFollow(rid, kind, startedMs, detail = '') {
       }
       updateAptTaskModalUpgradeBtn(aptTaskKind);
     } else {
-      aptSetState('ok', isEn ? 'Task completed.' : 'Tugas selesai.');
+      aptSetState('ok', isEn ? 'Task completed.' : 'Task selesai.');
       if (kind === 'APT_UPGRADE' || kind === 'APT_UPGRADE_INTERACT' || kind === 'APT_DIST_UPGRADE' || kind === 'PKG_UPGRADE') {
         syncPackagesTabApt(0, []);
         if (typeof refreshPackagesList === 'function') refreshPackagesList(false);
@@ -8518,11 +8518,11 @@ function renderProblemsTab(level, openList, histList) {
     if (isOpen) {
       if (!IS_VIEWER) {
         if (p.action === 'restart' && p.svc_id && CAN_SERVICES) {
-          toolsHtml += `<button type="button" class="btn btn-primary btn-sm" onclick="restartService(${SID}, ${p.svc_id}, '${escapeHtml(p.log_unit || p.key || 'service')}', this)" title="${isEn ? 'Restart service' : 'Restart layanan'}" aria-label="${isEn ? 'Restart' : 'Restart'}">${svgRestart}</button>`;
+          toolsHtml += `<button type="button" class="btn btn-primary btn-sm" onclick="restartService(${SID}, ${p.svc_id}, '${escapeHtml(p.log_unit || p.key || 'service')}', this)" title="${isEn ? 'Restart service' : 'Restart service'}" aria-label="${isEn ? 'Restart' : 'Restart'}">${svgRestart}</button>`;
         } else if (p.action === 'mitigate' && CAN_FIREWALL && p.ip_count && p.ip_count > 0) {
           toolsHtml += `<button type="button" class="btn btn-danger btn-sm" onclick="submitProblemBlockAttackerIps(this, ${p.ip_count})" title="${isEn ? `Block ${p.ip_count} source IPs (iptables)` : `Blokir ${p.ip_count} IP sumber (iptables)`}" aria-label="Block IP">${svgShield}</button>`;
         } else if (p.action === 'apt_update' && CAN_APT) {
-          toolsHtml += `<button class="btn btn-primary btn-sm" onclick="triggerUpdateOS()" title="${isEn ? 'Update OS packages' : 'Perbarui paket sistem'}" aria-label="Update OS">${svgDownload}</button>`;
+          toolsHtml += `<button class="btn btn-primary btn-sm" onclick="triggerUpdateOS()" title="${isEn ? 'Update OS packages' : 'Update packages sistem'}" aria-label="Update OS">${svgDownload}</button>`;
         } else if (p.action === 'agent_update_cmd' && CAN_OTA) {
           toolsHtml += `<button type="button" class="btn btn-ghost btn-sm" onclick="copyAgentUpdateCmd(event)" title="${isEn ? 'Copy agent update command to clipboard' : 'Salin perintah update agen ke clipboard'}" aria-label="Update Agent">${svgTerm}</button>`;
         } else if (p.action === 'reset_platform' && CAN_SERVICES) {
@@ -8778,12 +8778,12 @@ function formatActionRowI18n(a, isEn) {
       'Hapus Pengguna': 'Delete User',
       'Putus Sesi Terminal': 'Terminate Terminal Session',
       'Hentikan Proses (Kill)': 'Kill Process',
-      'Muat Ulang Layanan': 'Reload Service',
+      'Muat Ulang Service': 'Reload Service',
       'Aktifkan Boot (Systemd)': 'Enable Boot (Systemd)',
       'Nonaktifkan Boot (Systemd)': 'Disable Boot (Systemd)',
-      'Restart Layanan': 'Restart Service',
-      'Hentikan Layanan': 'Stop Service',
-      'Jalankan Layanan': 'Start Service',
+      'Restart Service': 'Restart Service',
+      'Stop Service': 'Stop Service',
+      'Start Service': 'Start Service',
       'Pembaruan Agen (OTA)': 'Agent Update (OTA)',
       'Abaikan Insiden': 'Ignore Incident',
       'Abaikan Masalah': 'Ignore Incident',
@@ -8792,11 +8792,11 @@ function formatActionRowI18n(a, isEn) {
       'Tandai Ditangani': 'Mark Acknowledged',
       'Selesaikan Insiden': 'Resolve Incident',
       'Selesaikan Masalah': 'Resolve Incident',
-      'Layanan Pulih': 'Service Recovered',
-      'layanan pulih': 'Service Recovered',
+      'Service Pulih': 'Service Recovered',
+      'service pulih': 'Service Recovered',
       'Mode Pemeliharaan': 'Maintenance Mode',
-      'Tambah Layanan': 'Add Service',
-      'Hapus Layanan': 'Delete Service',
+      'Tambah Service': 'Add Service',
+      'Hapus Service': 'Delete Service',
       'Reboot OS': 'Reboot OS',
       'Reboot Host': 'Reboot Host',
       'Power Off': 'Power Off',
@@ -8897,7 +8897,7 @@ function renderActionHistory(actions) {
     if (accTbody) {
       if (accBadge) accBadge.textContent = '0 ' + (isEn ? 'actions' : 'tindakan');
       accTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--dim);padding:20px">' +
-        (isEn ? 'No user account action history on this server.' : 'Belum ada riwayat tindakan akun pengguna di server ini.') + '</td></tr>';
+        (isEn ? 'No user account action history on this server.' : 'Belum ada riwayat tindakan akun user di server ini.') + '</td></tr>';
       if (_servicesTabPagination && _servicesTabPagination['acc-action']) {
         _servicesTabPagination['acc-action'].update();
       }
@@ -8949,7 +8949,7 @@ function renderActionHistory(actions) {
     }
     if (!accActions.length) {
       accTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--dim);padding:20px">' +
-        (isEn ? 'No user account action history on this server.' : 'Belum ada riwayat tindakan akun pengguna di server ini.') + '</td></tr>';
+        (isEn ? 'No user account action history on this server.' : 'Belum ada riwayat tindakan akun user di server ini.') + '</td></tr>';
     } else {
       accTbody.innerHTML = accActions.map(a => {
         const f = formatActionRowI18n(a, isEn);
@@ -9101,7 +9101,7 @@ function updateAllOfflineGuards(online) {
     if (!online) probBlockIp.title = offTitle;
   }
 
-  // 8. Tombol Tindakan pada Tab Manajer Tugas (Processes)
+  // 8. Tombol Tindakan pada Tab Task Manager (Processes) (Processes)
   document.querySelectorAll('#top-procs-tbody button, .btn-kill-proc').forEach(btn => {
     btn.disabled = !online;
     btn.style.opacity = !online ? '0.35' : '';
@@ -9296,7 +9296,7 @@ function patch(data) {
       } else {
         updateBtn.style.opacity = '';
         updateBtn.style.cursor = '';
-        updateBtn.title = isEnHero ? 'Update package repositories' : 'Perbarui repositori paket sistem operasi';
+        updateBtn.title = isEnHero ? 'Update package repositories' : 'Perbarui repositori packages sistem operasi';
         updateBtn.dataset.i18nTitle = 'apt_update_tooltip';
       }
     }
@@ -9318,14 +9318,14 @@ function patch(data) {
           upgradeBtn.title = isEnHero ? 'Server offline — actions disabled' : 'Server offline — aksi dinonaktifkan';
           upgradeBtn.dataset.i18nTitle = 'server_offline_actions_disabled';
         } else {
-          upgradeBtn.title = isEnHero ? 'All OS packages are up to date' : 'Semua paket OS sudah mutakhir';
+          upgradeBtn.title = isEnHero ? 'All OS packages are up to date' : 'Semua packages OS sudah mutakhir';
           upgradeBtn.dataset.i18nTitle = 'all_packages_up_to_date';
         }
       } else {
         upgradeBtn.style.opacity = '';
         upgradeBtn.style.cursor = '';
         upgradeBtn.classList.add('has-updates');
-        upgradeBtn.title = isEnHero ? 'Upgrade OS packages' : 'Perbarui paket sistem operasi';
+        upgradeBtn.title = isEnHero ? 'Upgrade OS packages' : 'Update packages sistem operasi';
         upgradeBtn.dataset.i18nTitle = 'apt_upgrade_tooltip';
       }
     }
@@ -9412,11 +9412,11 @@ function patch(data) {
         const transBadge = effOp.action === 'stop' ? 'down' : (effOp.action === 'start' ? 'up' : 'warn');
         sts.innerHTML = '<span class="badge badge-' + transBadge + '">' + escHtml(s.status) + '</span> <span class="badge badge-warn" style="font-size:10px">' + escHtml(effStatus) + '</span>';
       } else if (s.status === 'down' && s.ignored) {
-        sts.innerHTML = '<span class="badge badge-muted" title="' + (isEnPatch ? 'Service stopped (monitoring ignored)' : 'Layanan berhenti (diabaikan)') + '">down</span>';
+        sts.innerHTML = '<span class="badge badge-muted" title="' + (isEnPatch ? 'Service stopped (monitoring ignored)' : 'Service berhenti (diabaikan)') + '">down</span>';
       } else if (s.status === 'up' && s.ignored) {
-        sts.innerHTML = '<span class="badge badge-up" title="' + (isEnPatch ? 'Service running (down monitoring ignored)' : 'Layanan aktif (pengawasan down diabaikan)') + '">up</span>';
+        sts.innerHTML = '<span class="badge badge-up" title="' + (isEnPatch ? 'Service running (down monitoring ignored)' : 'Service aktif (pengawasan down diabaikan)') + '">up</span>';
       } else if (s.status === 'down' && s.is_oom_killed) {
-        sts.innerHTML = '<span class="badge badge-danger" style="font-size:9.5px;padding:2px 6px;font-weight:700" title="' + (isEnPatch ? 'Service terminated by Kernel (OOM Killer)' : 'Layanan dihentikan paksa oleh Kernel (Out of Memory - OOM Killer)') + '">OOM KILLED</span>';
+        sts.innerHTML = '<span class="badge badge-danger" style="font-size:9.5px;padding:2px 6px;font-weight:700" title="' + (isEnPatch ? 'Service terminated by Kernel (OOM Killer)' : 'Service dihentikan paksa oleh Kernel (Out of Memory - OOM Killer)') + '">OOM KILLED</span>';
       } else {
         const st = s.status === 'unknown' ? 'inactive' : s.status;
         sts.innerHTML = '<span class="badge badge-' + st + '">' + escHtml(s.status) + '</span>';
@@ -9521,7 +9521,7 @@ function renderPorts(ports) {
 
     if (!isMonitored && !isProtected && CAN_SERVICES) {
       const cleanProc = escHtml(p.pname || p.proc || '');
-      actions += `<button type="button" class="btn btn-sm btn-noc-icon btn-ghost" onclick="openAddSvcModal('${cleanProc}', '${portNum}', '${cleanProc}')" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Add this active socket to Monitored Services' : 'Tambahkan socket/daemon ini ke Layanan Terpantau'}" aria-label="Pantau">${svgAddSvc}</button> `;
+      actions += `<button type="button" class="btn btn-sm btn-noc-icon btn-ghost" onclick="openAddSvcModal('${cleanProc}', '${portNum}', '${cleanProc}')" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Add this active socket to Monitored Services' : 'Tambahkan socket/daemon ini ke Monitored Services'}" aria-label="Pantau">${svgAddSvc}</button> `;
     }
 
     if (CAN_PROCESSES && p.pid && !isProtected) {
@@ -9686,7 +9686,7 @@ function renderCron(cron_jobs) {
   const isEn = isEnPage();
 
   const countEl = document.getElementById('cron-jobs-count');
-  if (countEl) countEl.textContent = jobs.length + (isEn ? ' active tasks' : ' tugas aktif');
+  if (countEl) countEl.textContent = jobs.length + (isEn ? ' active jobs' : ' cron jobs aktif');
 
   const cronWrap = document.getElementById('cron-table-wrap');
   const cronEmpty = document.getElementById('cron-empty');
@@ -9711,9 +9711,9 @@ function renderCron(cron_jobs) {
           const svgCronDel = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>';
 
           if (CAN_CRON && isManaged) {
-            actHtml = `<button type="button" class="btn btn-sm ${isEnabled ? 'btn-warn' : 'btn-primary'}" onclick="submitCronToggle('${ident}', '${isEnabled ? 'disable' : 'enable'}', this)" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEnabled ? (isEn ? 'Pause this cron job' : 'Nonaktifkan tugas cron ini') : (isEn ? 'Enable this cron job' : 'Aktifkan kembali tugas cron ini')}" aria-label="${isEnabled ? (isEn ? 'Pause' : 'Jeda') : (isEn ? 'Enable' : 'Aktifkan')}">${isEnabled ? svgCronPause : svgCronPlay}</button>
+            actHtml = `<button type="button" class="btn btn-sm ${isEnabled ? 'btn-warn' : 'btn-primary'}" onclick="submitCronToggle('${ident}', '${isEnabled ? 'disable' : 'enable'}', this)" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEnabled ? (isEn ? 'Pause this cron job' : 'Nonaktifkan cron job ini') : (isEn ? 'Enable this cron job' : 'Aktifkan kembali cron job ini')}" aria-label="${isEnabled ? (isEn ? 'Pause' : 'Jeda') : (isEn ? 'Enable' : 'Aktifkan')}">${isEnabled ? svgCronPause : svgCronPlay}</button>
             <button type="button" class="btn btn-sm btn-ghost" onclick="submitCronRun('${userClean}', '${cmdArg}', this)" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Run now (test)' : 'Jalankan sekarang (uji coba)'}" aria-label="${isEn ? 'Run' : 'Jalankan'}">${svgCronRun}</button>
-            <button type="button" class="btn btn-sm btn-danger" onclick="submitCronDelete('${ident}', this)" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Delete this cron job' : 'Hapus tugas cron ini'}" aria-label="${isEn ? 'Delete' : 'Hapus'}">${svgCronDel}</button>`;
+            <button type="button" class="btn btn-sm btn-danger" onclick="submitCronDelete('${ident}', this)" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Delete this cron job' : 'Hapus cron job ini'}" aria-label="${isEn ? 'Delete' : 'Hapus'}">${svgCronDel}</button>`;
           } else {
             actHtml = `<span style="font-size:11px;color:var(--dim)">${isEn ? 'System' : 'Sistem'}</span>`;
           }
@@ -10281,8 +10281,8 @@ function renderSys(data) {
       return '<tr data-user="' + userEsc.toLowerCase() + '" data-is-system="' + (isSys ? '1' : '0') + '" data-is-active="' + (hasActive ? '1' : '0') + '">'
         + '<td style="white-space:nowrap"><strong>' + userEsc + '</strong>'
         + (isSudo ? ' <span class="badge badge-info" style="font-size:9.5px;padding:1px 5px" title="' + (isEn ? 'User has sudo/root privileges' : 'Pengguna memiliki hak istimewa sudo/root') + '">Sudoer</span>' : '')
-        + (isSys ? (' <span class="badge badge-muted" style="font-size:9.5px;padding:1px 5px" title="' + (isEn ? 'System/service account (UID < 1000)' : 'Akun sistem/layanan (UID < 1000)') + '">' + (isEn ? 'System' : 'Sistem') + '</span>')
-                 : (' <span class="badge badge-up" style="font-size:9.5px;padding:1px 5px" title="' + (isEn ? 'Regular human user' : 'Akun pengguna reguler') + '">' + (isEn ? 'Regular' : 'Reguler') + '</span>'))
+        + (isSys ? (' <span class="badge badge-muted" style="font-size:9.5px;padding:1px 5px" title="' + (isEn ? 'System/service account (UID < 1000)' : 'Akun sistem/service (UID < 1000)') + '">' + (isEn ? 'System' : 'Sistem') + '</span>')
+                 : (' <span class="badge badge-up" style="font-size:9.5px;padding:1px 5px" title="' + (isEn ? 'Regular human user' : 'Akun user reguler') + '">' + (isEn ? 'Regular' : 'Reguler') + '</span>'))
         + (isLocked ? ' <span class="badge badge-warn" style="font-size:9.5px;padding:1px 5px" title="' + (isEn ? 'Account is currently locked' : 'Akun saat ini terkunci') + '">' + (isEn ? 'Locked' : 'Terkunci') + '</span>' : '') + '</td>'
         + '<td class="mono" style="white-space:nowrap;font-size:12px"><strong>' + escHtml(String(a.uid)) + '</strong> <span style="color:var(--dim)">/</span> ' + escHtml(String(a.gid !== undefined && a.gid !== null ? a.gid : '-')) + '</td>'
         + '<td style="font-size:12px">' + groupsHtml + '</td>'
@@ -11263,13 +11263,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         const res = await r.json().catch(() => ({}));
         if (r.ok && res.ok !== false) {
-          showToast(res.detail || (isEn ? 'Cron job added.' : 'Tugas cron berhasil ditambahkan.'), true);
+          showToast(res.detail || (isEn ? 'Cron job added.' : 'Cron job berhasil ditambahkan.'), true);
           if (typeof closeAddCronModal === 'function') closeAddCronModal();
           this.reset();
           triggerFastPoll();
           if (typeof pollSystem === 'function') pollSystem();
         } else {
-          showToast(res.detail || (isEn ? 'Failed to add cron job.' : 'Gagal menambahkan tugas cron.'), false);
+          showToast(res.detail || (isEn ? 'Failed to add cron job.' : 'Gagal menambahkan cron job.'), false);
         }
       } catch(err) {
         showToast((isEn ? 'Network issue: ' : 'Kendala jaringan: ') + err.message, false);
@@ -11329,13 +11329,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         const res = await r.json().catch(() => ({}));
         if (r.ok && res.ok !== false) {
-          showToast(res.detail || (isEn ? 'Service added.' : 'Layanan berhasil ditambahkan.'), true);
+          showToast(res.detail || (isEn ? 'Service added.' : 'Service berhasil ditambahkan.'), true);
           if (typeof closeAddSvcModal === 'function') closeAddSvcModal();
           this.reset();
           triggerFastPoll();
           if (typeof poll === 'function') poll();
         } else {
-          showToast(res.detail || (isEn ? 'Failed to add service.' : 'Gagal menambahkan layanan.'), false);
+          showToast(res.detail || (isEn ? 'Failed to add service.' : 'Gagal menambahkan service.'), false);
         }
       } catch(err) {
         showToast((isEn ? 'Network issue: ' : 'Kendala jaringan: ') + err.message, false);
@@ -11348,7 +11348,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 // ===================================================================
-// MANAJEMEN PACKAGES (Inventaris & Kontrol Paket OS)
+// MANAJEMEN PACKAGES (Inventaris & Kontrol Packages OS)
 // ===================================================================
 
 function _initPackagesData() {
@@ -11462,11 +11462,11 @@ function filterPackagesTable() {
   _pkgFilteredList = _packagesList.filter(pkg => {
     if (!pkg || !pkg.name) return false;
 
-    // Filter Tipe Paket: Pengguna vs Sistem
+    // Filter Tipe Package: Pengguna vs Sistem
     if (filterType === 'user' && !pkg.is_user) return false;
     if (filterType === 'system' && pkg.is_user) return false;
 
-    // Filter Status Paket: runtime systemd / upgradable
+    // Filter Status Packages: runtime systemd / upgradable
     const isUpg = _upgMap.has(pkg.name);
     const st = (pkg.status || 'installed').toLowerCase();
     if (filterSt === 'upgradable' && !isUpg) return false;
@@ -11693,19 +11693,19 @@ async function refreshPackagesList(manual = false) {
           let pkgs = JSON.parse(raw);
           if (Array.isArray(pkgs)) {
             _packagesList = pkgs;
-            if (manual) showToast(`Daftar paket berhasil dimuat (${pkgs.length} paket).`, true);
+            if (manual) showToast(`Daftar packages berhasil dimuat (${pkgs.length} packages).`, true);
             filterPackagesTable();
             return;
           }
         }
-        throw new Error('Respon daftar paket tidak dalam format yang valid.');
+        throw new Error('Respon daftar packages tidak dalam format yang valid.');
       } else if (checkData.status === 'failed') {
-        throw new Error(checkData.result || 'Gagal memindai paket dari agen server.');
+        throw new Error(checkData.result || 'Gagal memindai packages dari agen server.');
       }
     }
-    throw new Error('Waktu tunggu permintaan paket habis.');
+    throw new Error('Waktu tunggu permintaan packages habis.');
   } catch (err) {
-    if (manual) showToast('Gagal memuat paket: ' + err.message, false);
+    if (manual) showToast('Gagal memuat packages: ' + err.message, false);
     filterPackagesTable();
   } finally {
     _pkgLoading = false;
@@ -11728,9 +11728,9 @@ async function clearPkgCache(pkgName) {
     return;
   }
   const ok = await showConfirmModal({
-    title: 'Bersihkan Cache Paket',
+    title: 'Bersihkan Cache Package',
     target: pkgName,
-    message: `Bersihkan berkas deb sementara dalam cache arsip untuk paket ${pkgName}.`,
+    message: `Bersihkan berkas deb sementara dalam cache arsip untuk package ${pkgName}.`,
     btnText: 'Bersihkan Cache',
     btnClass: 'btn-warning',
     iconType: 'warning',
@@ -11768,7 +11768,7 @@ async function clearPkgCache(pkgName) {
         showToast(succMsg, true);
         if (typeof window.notifyBackgroundTaskComplete === 'function') {
           window.notifyBackgroundTaskComplete({
-            title: 'Pembersihan Cache Paket Selesai',
+            title: 'Pembersihan Cache Package Selesai',
             message: succMsg,
             serverName: (typeof SERVER_NAME !== 'undefined' ? SERVER_NAME : ''),
             status: 'success',
@@ -11790,8 +11790,8 @@ async function showPkgLogs(pkgName) {
   const title = document.getElementById('pkg-log-title');
   const body = document.getElementById('pkg-log-body');
   if (modal) modal.style.display = 'flex';
-  if (title) title.textContent = `Riwayat Log Paket: ${pkgName}`;
-  if (body) body.textContent = `Memuat log riwayat aktivitas dpkg untuk paket '${pkgName}'...`;
+  if (title) title.textContent = `Riwayat Log Package: ${pkgName}`;
+  if (body) body.textContent = `Memuat log riwayat aktivitas dpkg untuk package '${pkgName}'...`;
 
   const isOnline = (typeof IS_ONLINE !== 'undefined') ? IS_ONLINE : true;
   if (!isOnline) {
@@ -11825,7 +11825,7 @@ async function showPkgLogs(pkgName) {
       const checkRes = await fetch(`/api/logs/request/${rid}`, { credentials: 'same-origin' });
       const checkData = await checkRes.json();
       if (checkData.status === 'success') {
-        if (body) body.textContent = checkData.result || `Tidak ada aktivitas log tercatat untuk paket ${pkgName}.`;
+        if (body) body.textContent = checkData.result || `Tidak ada aktivitas log tercatat untuk package ${pkgName}.`;
         return;
       } else if (checkData.status === 'failed') {
         throw new Error(checkData.result || 'Gagal mengambil log.');
@@ -11844,10 +11844,10 @@ function closePkgLogModal() {
 
 async function upgradeSinglePkg(pkgName) {
   const ok = await showConfirmModal({
-    title: 'Tingkatkan Versi Paket (Upgrade)',
+    title: 'Upgrade Versi Package',
     target: pkgName,
-    message: `Tingkatkan versi paket perangkat lunak ${pkgName} ke versi terbaru sekarang.`,
-    btnText: 'Tingkatkan Paket',
+    message: `Upgrade versi package ${pkgName} ke versi terbaru sekarang.`,
+    btnText: 'Upgrade Package',
     btnClass: 'btn-primary',
     iconType: 'primary',
     badge: 'APT UPGRADE'
@@ -12131,7 +12131,7 @@ function renderSystemdTable() {
 
     // Cek apakah ada port listening
     const matchedPort = _netSvcMap.get(baseName.toLowerCase());
-    const portBadge = matchedPort ? `<span class="badge badge-info" style="font-size:9px;margin-left:5px" title="Layanan mendengarkan di port jaringan ${matchedPort}">Port ${matchedPort}</span>` : '';
+    const portBadge = matchedPort ? `<span class="badge badge-info" style="font-size:9px;margin-left:5px" title="Service mendengarkan di port jaringan ${matchedPort}">Port ${matchedPort}</span>` : '';
 
     // Status badge
     let statusBadge = '';
@@ -12140,9 +12140,9 @@ function renderSystemdTable() {
     if (u.status === 'running') {
       statusBadge = '<span class="badge badge-up" style="font-size:10px;padding:2px 6px">RUNNING</span>';
     } else if (opStoppedBy) {
-      statusBadge = `<span class="badge badge-warning" style="font-size:9.5px;padding:2px 6px;font-weight:600" title="Layanan sengaja dihentikan oleh operator (${escapeHtml(opStoppedBy)})">DIHENTIKAN OPERATOR</span>`;
+      statusBadge = `<span class="badge badge-warning" style="font-size:9.5px;padding:2px 6px;font-weight:600" title="Service sengaja dihentikan oleh operator (${escapeHtml(opStoppedBy)})">DIHENTIKAN OPERATOR</span>`;
     } else if (isOomKilled) {
-      statusBadge = '<span class="badge badge-danger" style="font-size:9.5px;padding:2px 6px;font-weight:700" title="Layanan dihentikan paksa oleh Kernel (Out of Memory - OOM Killer)">OOM KILLED</span>';
+      statusBadge = '<span class="badge badge-danger" style="font-size:9.5px;padding:2px 6px;font-weight:700" title="Service dihentikan paksa oleh Kernel (Out of Memory - OOM Killer)">OOM KILLED</span>';
     } else if (u.status === 'failed') {
       statusBadge = '<span class="badge badge-danger" style="font-size:10px;padding:2px 6px;font-weight:700">FAILED</span>';
     } else if (u.status === 'exited') {
@@ -12191,15 +12191,15 @@ function renderSystemdTable() {
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
     </button>`;
 
-    const startBtn = `<button type="button" class="btn btn-ghost btn-sm" ${disAttr} ${isRunning ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} onclick="systemdAction('start', '${nameEsc}', this)" title="${isRunning ? 'Layanan sudah aktif' : 'Nyalakan unit service ' + nameEsc}" aria-label="Start">
+    const startBtn = `<button type="button" class="btn btn-ghost btn-sm" ${disAttr} ${isRunning ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} onclick="systemdAction('start', '${nameEsc}', this)" title="${isRunning ? 'Service sudah dalam kondisi aktif' : 'Nyalakan unit service ' + nameEsc}" aria-label="Start">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
     </button>`;
 
-    const stopBtn = `<button type="button" class="btn btn-ghost btn-sm" ${disAttr} ${(!isRunning || isAgent) ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} onclick="systemdAction('stop', '${nameEsc}', this)" title="${isAgent ? 'Agen Pantau dilindungi dan tidak boleh dihentikan' : (!isRunning ? 'Layanan sudah berhenti' : 'Hentikan unit service ' + nameEsc)}" aria-label="Stop">
+    const stopBtn = `<button type="button" class="btn btn-ghost btn-sm" ${disAttr} ${(!isRunning || isAgent) ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} onclick="systemdAction('stop', '${nameEsc}', this)" title="${isAgent ? 'Agen Pantau dilindungi dan tidak boleh dihentikan' : (!isRunning ? 'Service sudah berhenti' : 'Hentikan unit service ' + nameEsc)}" aria-label="Stop">
       <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect></svg>
     </button>`;
 
-    const reloadBtn = `<button type="button" class="btn btn-ghost btn-sm" ${disAttr} ${!isRunning ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} onclick="systemdAction('reload', '${nameEsc}', this)" title="${!isRunning ? 'Layanan tidak aktif' : 'Reload konfigurasi ' + nameEsc}" aria-label="Reload">
+    const reloadBtn = `<button type="button" class="btn btn-ghost btn-sm" ${disAttr} ${!isRunning ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} onclick="systemdAction('reload', '${nameEsc}', this)" title="${!isRunning ? 'Service tidak aktif' : 'Reload konfigurasi ' + nameEsc}" aria-label="Reload">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
     </button>`;
 
@@ -12322,8 +12322,8 @@ async function systemdAction(action, unitName, btn) {
 
   if (action === 'stop') {
     const ok = await showSvcConfirmModal({
-      title: 'Konfirmasi Hentikan Layanan Systemd',
-      message: `Apakah Anda yakin ingin <strong>menghentikan</strong> unit service <strong>${escapeHtml(unitName)}</strong>?<br><br>Pastikan layanan ini aman dihentikan dan tidak mengganggu stabilitas host.`,
+      title: 'Konfirmasi Stop Service Systemd',
+      message: `Apakah Anda yakin ingin <strong>menghentikan</strong> unit service <strong>${escapeHtml(unitName)}</strong>?<br><br>Pastikan service ini aman dihentikan dan tidak mengganggu stabilitas host.`,
       btnText: 'Ya, Hentikan',
       btnClass: 'btn-danger',
       iconType: 'danger'
@@ -12332,7 +12332,7 @@ async function systemdAction(action, unitName, btn) {
   } else if (action === 'disable') {
     const ok = await showSvcConfirmModal({
       title: 'Konfirmasi Nonaktifkan Boot Otomatis',
-      message: `Apakah Anda yakin ingin <strong>menonaktifkan auto-start saat boot (disable)</strong> untuk unit <strong>${escapeHtml(unitName)}</strong>?<br><br>Layanan tidak akan menyala otomatis saat server melakukan booting ulang.`,
+      message: `Apakah Anda yakin ingin <strong>menonaktifkan auto-start saat boot (disable)</strong> untuk unit <strong>${escapeHtml(unitName)}</strong>?<br><br>Service tidak akan menyala otomatis saat server melakukan booting ulang.`,
       btnText: 'Ya, Nonaktifkan',
       btnClass: 'btn-warning',
       iconType: 'warning'

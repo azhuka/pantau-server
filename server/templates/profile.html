@@ -1523,7 +1523,7 @@ function openViewUserModal(arg1, username, role, isActive, totpEnabled, lastLogi
     if (u.role === 'master_admin' || u.role === 'admin') {
       roleSummaryEl.innerHTML = `
         <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:8px;padding:12px 14px;color:#fca5a5;line-height:1.5;font-size:12px">
-          <strong>Hak Istimewa Mutlak (Setara Root):</strong> Memiliki kendali penuh tanpa batasan pada seluruh modul sistem, mencakup observasi metrik, manajemen server &amp; layanan, eksekusi Web Terminal, File Manager, jejak audit, dan konfigurasi platform.
+          <strong>Hak Istimewa Mutlak (Setara Root):</strong> Memiliki kendali penuh tanpa batasan pada seluruh modul sistem, mencakup observasi metrik, manajemen server &amp; services, eksekusi Web Terminal, File Manager, jejak audit, dan konfigurasi platform.
         </div>
       `;
     } else if (u.role === 'operator') {

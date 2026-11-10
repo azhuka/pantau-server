@@ -1379,7 +1379,7 @@ body.popout-fleet_table #dash-fleet-card {
       </span>
       <div>
         <h3 style="font-size:13.5px;font-weight:600;margin:0">Status &amp; Kinerja</h3>
-        <div style="font-size:11px;color:var(--dim);margin-top:1px">Tinjauan cepat situasi, level prioritas, pemakaian hardware, dan kesehatan layanan per host secara real-time.</div>
+        <div style="font-size:11px;color:var(--dim);margin-top:1px">Tinjauan cepat situasi, level prioritas, pemakaian hardware, dan kesehatan services per host secara real-time.</div>
       </div>
     </div>
 
@@ -1455,7 +1455,7 @@ body.popout-fleet_table #dash-fleet-card {
           <th class="sortable col-dash-cpu" data-col="5" data-col-title="CPU (%)" style="vertical-align:middle;cursor:pointer;text-align:center">CPU (%) <span class="sort-arrow">↕</span></th>
           <th class="sortable col-dash-ram" data-col-title="RAM (%)" style="vertical-align:middle;cursor:pointer;text-align:center">RAM (%) <span class="sort-arrow">↕</span></th>
           <th class="sortable col-dash-disk" data-col-title="STORAGE (%)" style="vertical-align:middle;cursor:pointer;text-align:center">STORAGE (%) <span class="sort-arrow">↕</span></th>
-          <th class="col-dash-svc" data-col-title="Layanan" style="vertical-align:middle;text-align:center">Layanan</th>
+          <th class="col-dash-svc" data-col-title="Services" style="vertical-align:middle;text-align:center">Services</th>
           <th class="sortable col-dash-prob" data-col="9" data-col-title="Insiden" style="vertical-align:middle;cursor:pointer;text-align:center">Insiden <span class="sort-arrow">↕</span></th>
         </tr>
       </thead>
@@ -1620,7 +1620,7 @@ body.popout-fleet_table #dash-fleet-card {
             {% endif %}
           </td>
 
-          <!-- 8. Layanan -->
+          <!-- 8. Services -->
           <td class="col-dash-svc mono" id="tbl-svc-td-{{ srv.id }}" data-sort-val="{{ up_svcs }}" style="text-align:center;vertical-align:middle;font-size:12px">
             {% if not srv.last_seen or tot_svcs == 0 or srv._status_label == 'Offline' %}
               <span id="tbl-svc-{{ srv.id }}" style="color:var(--dim)">-</span>
@@ -1776,10 +1776,10 @@ body.popout-fleet_table #dash-fleet-card {
           </div>
         </div>
 
-        <!-- Ringkasan Layanan & Masalah -->
+        <!-- Ringkasan Services & Masalah -->
         <div style="display:flex;align-items:center;justify-content:space-between;font-size:11.5px">
           <div id="card-svc-{{ srv.id }}">
-            <span style="color:var(--dim)">Layanan:</span>
+            <span style="color:var(--dim)">Services:</span>
             {% if not srv.last_seen or tot_svcs == 0 %}
               <span style="color:var(--dim)">-</span>
             {% else %}
@@ -2062,7 +2062,7 @@ function renderSevDetailModal(sev) {
               <button type="button" class="btn btn-ghost btn-sm" onclick='try{openProblemDetailModal(${JSON.stringify(p).replace(/'/g, "&#39;")});}catch(e){window.location.href="${rowHref}";}' title="Diagnosa &amp; Solusi" aria-label="Diagnosa">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
               </button>
-              <a href="${rowHref}" class="btn btn-ghost btn-sm" title="Buka Rincian Layanan Server" aria-label="Rincian">
+              <a href="${rowHref}" class="btn btn-ghost btn-sm" title="Buka Rincian Services Server" aria-label="Rincian">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
               </a>
             </div>
@@ -2478,7 +2478,7 @@ function createAndAppendDashGridCard(srv, gridEl) {
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;font-size:11.5px">
       <div id="card-svc-${srv.id}">
-        <span style="color:var(--dim)">Layanan:</span> -
+        <span style="color:var(--dim)">Services:</span> -
       </div>
       <div id="card-prob-${srv.id}" style="display:inline-flex;align-items:center;gap:3px;flex-wrap:wrap">
         <span class="badge badge-up" style="font-size:10.5px">${(typeof isEn !== 'undefined' && isEn) ? 'None' : 'Nihil'}</span>
@@ -2756,7 +2756,7 @@ async function pollNocDashboard() {
         tblDiskTd.title = `Kapasitas Disk: ${srv.disk_pct != null ? srv.disk_pct.toFixed(1) + '%' : '-'} (Total: ${diskTotStr}, Sisa: ${diskAvailStr})`;
       }
 
-      // Layanan: Total / UP (Default: Hijau/Hijau; Ada Insiden: Hijau/Putih)
+      // Services: Total / UP (Default: Hijau/Hijau; Ada Insiden: Hijau/Putih)
       const tblSvc = document.getElementById('tbl-svc-' + srv.id);
       if (tblSvc) {
         if (!hasReported || !srv.services || srv.services.length === 0 || srv.overall_status === 'offline') {
@@ -2853,13 +2853,13 @@ async function pollNocDashboard() {
       const cardSvc = document.getElementById('card-svc-' + srv.id);
       if (cardSvc) {
         if (!hasReported || !srv.services || srv.services.length === 0) {
-          cardSvc.innerHTML = '<span style="color:var(--dim)">Layanan:</span> <span style="color:var(--dim)">-</span>';
+          cardSvc.innerHTML = '<span style="color:var(--dim)">Services:</span> <span style="color:var(--dim)">-</span>';
         } else {
           const totCount = srv.services.length;
           const upCount = srv.services.filter(s => s.status === 'up').length;
           const hasIncident = (upCount < totCount) || ((dCnt + avgCnt + wCnt + iCnt) > 0);
           const upColor = hasIncident ? 'var(--text)' : 'var(--green)';
-          cardSvc.innerHTML = `<span style="color:var(--dim)">Layanan:</span> <span style="font-weight:700"><span style="color:var(--green)">${totCount}</span>/<span style="color:${upColor}">${upCount}</span></span>`;
+          cardSvc.innerHTML = `<span style="color:var(--dim)">Services:</span> <span style="font-weight:700"><span style="color:var(--green)">${totCount}</span>/<span style="color:${upColor}">${upCount}</span></span>`;
         }
       }
 

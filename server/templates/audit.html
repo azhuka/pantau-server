@@ -17,7 +17,7 @@
     <span style="font-size:12px;color:var(--dim)" id="audit-header-count">{{ rows|length }} terbaru</span>
   </div>
   <p style="font-size:12px;color:var(--dim);margin:0 0 14px">
-    Catatan aktivitas autentikasi, manajemen server, layanan, pengguna, serta eksekusi perintah remote beserta pelaksana dan hasilnya.
+    Catatan aktivitas autentikasi, manajemen server, services, users, serta eksekusi perintah remote beserta pelaksana dan hasilnya.
   </p>
 
   <!-- Panel Filter Presisi Tinggi NOC: Terpadu, Rapi, & Bersih -->
@@ -27,7 +27,7 @@
     <!-- Baris 1: Filter Operasional Multi-Kriteria Berlabel Rapi & Presisi -->
     <div class="filter-row-main">
       <!-- 1. Filter Pengguna -->
-      <div class="filter-col" title="Filter menurut pengguna yang mengeksekusi">
+      <div class="filter-col" title="Filter menurut operator / user yang mengeksekusi">
         <label class="filter-col-label" for="audit-user-filter">Pengguna</label>
         <select name="user" id="audit-user-filter" class="filter-select" onchange="applyAuditFilters()">
           <option value="">Semua Pengguna</option>
@@ -134,10 +134,10 @@
     <thead>
       <tr>
         <th class="col-fixed-cell" title="Waktu eksekusi atau pencatatan tindakan">Waktu</th>
-        <th class="col-fixed-cell" title="Nama akun pengguna yang menjalankan tindakan">Pengguna</th>
+        <th class="col-fixed-cell" title="Nama akun operator atau user yang menjalankan tindakan">User</th>
         <th class="col-fixed-cell" title="Server yang dituju">Server</th>
         <th class="col-fixed-cell" title="Jenis operasi atau perintah yang dijalankan">Tindakan</th>
-        <th class="col-hero-cell" title="Entitas sasaran spesifik (layanan, IP, akun, file, atau parameter)">Target</th>
+        <th class="col-hero-cell" title="Entitas sasaran spesifik (services, IP, user, file, atau parameter)">Target</th>
         <th class="col-center-cell" title="Status hasil eksekusi perintah">Status</th>
         <th class="col-hero-cell" title="Pesan respons atau keluaran perintah">Hasil / Respons</th>
       </tr>
@@ -164,7 +164,7 @@
         <td style="font-size:11px;color:var(--dim);padding:6px 14px;line-height:1.4" class="audit-res-cell" data-raw="{{ r.result }}">{{ r.result }}</td>
       </tr>
       {% else %}
-      <tr><td colspan="7" class="empty-msg" data-i18n="audit_empty">Belum ada riwayat tindakan pengguna.</td></tr>
+      <tr><td colspan="7" class="empty-msg" data-i18n="audit_empty">Belum ada riwayat tindakan user / operator.</td></tr>
       {% endfor %}
     </tbody>
   </table>

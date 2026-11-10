@@ -156,7 +156,7 @@ def _parse_iso_dt(value, default=None):
 
 
 def _apt_pkg_services(pkg_name: str, services: list[str]) -> list[str]:
-    """Service aktif (dari service_name) yang terdampak upgrade paket."""
+    """Service aktif (dari service_name) yang terdampak upgrade packages."""
     low = (pkg_name or "").lower()
     hits = set()
     mapped = PKG_SERVICE_MAP.get(low)
@@ -457,7 +457,7 @@ def agent_report(
 
         reported_service_ids.add(service.id)
 
-        # Cek apakah ada perintah stop yang sedang pending/executing atau layanan sengaja dimatikan operator
+        # Cek apakah ada perintah stop yang sedang pending/executing atau service sengaja dimatikan operator
         has_stop_in_flight = db.query(Command).filter(
             Command.server_id == server.id,
             Command.service_id == service.id,
@@ -468,7 +468,7 @@ def agent_report(
 
         if (has_stop_in_flight or is_op_stopped) and status == "up":
             status = "down"
-            health_message = service.ignored_reason or "Layanan dihentikan oleh operator"
+            health_message = service.ignored_reason or "Service dihentikan oleh operator"
 
         # Ambil status metrik terakhir sebelum menambahkan metrik baru
         last_m = (
@@ -485,7 +485,7 @@ def agent_report(
             health_message=health_message or None,
         ))
 
-        # Deteksi pemulihan / status aktif layanan
+        # Deteksi pemulihan / status aktif service
         if status == "up":
             # 1. Tutup masalah service_down seketika jika masih terbuka
             open_probs = db.query(ServerProblem).filter(
@@ -502,7 +502,7 @@ def agent_report(
             if prev_status in ("down", "offline", "unknown"):
                 svc_mode = getattr(service, "ignore_mode", None)
                 if svc_mode == "incident":
-                    # Mode insiden: hanya untuk satu insiden saat itu, reset ke normal saat layanan pulih
+                    # Mode insiden: hanya untuk satu insiden saat itu, reset ke normal saat service pulih
                     service.is_ignored = 0
                     service.ignored_until = None
                     service.ignored_reason = None
@@ -515,7 +515,7 @@ def agent_report(
                         service.ignored_reason = None
                         service.ignore_mode = None
                 elif svc_mode == "permanent":
-                    # Mode permanen: TETAP diabaikan (is_ignored = 1), tidak di-reset saat layanan pulih!
+                    # Mode permanen: TETAP diabaikan (is_ignored = 1), tidak di-reset saat service pulih!
                     pass
                 else:
                     if service.ignored_until and service.ignored_until <= datetime.utcnow():
@@ -556,13 +556,13 @@ def agent_report(
                 service_id=svc.id,
                 status="down",
                 active_connections=0,
-                health_message="Layanan tidak terdeteksi listening pada port atau proses tidak berjalan" if not is_op_shutdown else svc.ignored_reason,
+                health_message="Service tidak terdeteksi listening pada port atau proses tidak berjalan" if not is_op_shutdown else svc.ignored_reason,
             ))
 
     db.commit()
 
     # ------------------------------------------------------------------
-    # Data kinerja hardware/jaringan + akun + unit layanan (opsional)
+    # Data kinerja hardware/jaringan + akun + unit service (opsional)
     # ------------------------------------------------------------------
     sysd = body.get("system")
     if isinstance(sysd, dict):
@@ -726,7 +726,7 @@ def agent_report(
                 })
         extras.system_groups = json.dumps(clean_groups)
 
-    # Info paket OS yang bisa di-upgrade (dari agen)
+    # Info packages OS yang bisa di-upgrade (dari agen)
     if isinstance(body.get("apt"), dict):
         apt = body["apt"]
         if isinstance(apt.get("upgradable"), int):
@@ -744,7 +744,7 @@ def agent_report(
             else:
                 if getattr(server, "is_isolated_net", 0) != 1:
                     upg_cnt = int(extras.apt_upgradable)
-                    new_msg = f"{upg_cnt} paket menunggu upgrade"
+                    new_msg = f"{upg_cnt} packages menunggu upgrade"
                     new_ctx = _build_problem_context("apt_updates", server, upgradable=upg_cnt)
                     prob = db.query(ServerProblem).filter(
                         ServerProblem.server_id == server.id,
@@ -795,7 +795,7 @@ def agent_report(
             extras.apt_packages = json.dumps(pkgs) if (pkgs and (extras.apt_upgradable or 0) > 0) else "[]"
 
     if body.get("packages_changed"):
-        # Otomatis jadwalkan pembaruan inventaris paket terpasang jika ada perubahan paket langsung di klien
+        # Otomatis jadwalkan pembaruan inventaris packages terpasang jika ada perubahan packages langsung di klien
         recent_pkg_req = (
             db.query(LogRequest)
             .filter(
@@ -1140,7 +1140,7 @@ def api_command_result(
                 response_time_ms=None,
                 active_connections=0,
                 timestamp=datetime.utcnow(),
-                health_message="Layanan dihentikan oleh operator",
+                health_message="Service dihentikan oleh operator",
             )
             db.add(m)
         except Exception as e:
@@ -1159,7 +1159,7 @@ def api_command_result(
                 response_time_ms=1.0,
                 active_connections=0,
                 timestamp=datetime.utcnow(),
-                health_message="Layanan berhasil dimulai oleh operator",
+                health_message="Service berhasil dimulai oleh operator",
             )
             db.add(m)
             svc_obj = db.query(Service).filter(Service.id == cmd.service_id).first()
@@ -1576,7 +1576,7 @@ def api_logs_result(
                     p.resolved_note = _clean_str("auto (upgrade selesai)", "auto", 100)
             else:
                 upg_cnt = int(extras.apt_upgradable)
-                new_msg = f"{upg_cnt} paket menunggu upgrade"
+                new_msg = f"{upg_cnt} packages menunggu upgrade"
                 new_ctx = _build_problem_context("apt_updates", server, upgradable=upg_cnt)
                 prob = db.query(ServerProblem).filter(
                     ServerProblem.server_id == server.id,
@@ -1647,7 +1647,7 @@ def api_logs_request(
     user: User = Depends(require_user),
     db: Session = Depends(get_db),
 ):
-    """Buat permintaan log layanan (dieksekusi agent klien)."""
+    """Buat permintaan log service (dieksekusi agent klien)."""
     _verify_csrf_header(request)
     sid = _clamp_int(body.get("server_id"), None, 0, 2 ** 31 - 1)
     unit = _clean_str(body.get("unit"), "", 100)

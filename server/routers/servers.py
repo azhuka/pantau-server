@@ -1,7 +1,7 @@
 """
 Router Manajemen Server Pantau.
 Menangani katalog server, tambah/edit server, rotasi API key,
-detail server (tab layanan, akun, cron, port, ssl, firewall, paket, logs),
+detail server (tab services, users, cron, ports, ssl, firewall, packages, logs),
 riwayat aktivitas/kinerja host (perf, system snapshot, storage runway),
 serta tindakan pemeliharaan dan catatan server.
 """
@@ -944,7 +944,7 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
                         "version": u_ver or "-",
                         "arch": "",
                         "size_kb": 0,
-                        "summary": "Pembaruan paket tersedia",
+                        "summary": "Pembaruan packages tersedia",
                         "is_user": True,
                         "status": "installed",
                     }
@@ -1368,7 +1368,7 @@ def user_activity_page(request: Request, sid: int, username: str, db: Session = 
 
 @router.get("/servers/{sid}/metrics", response_class=HTMLResponse)
 def metrics_page(request: Request, sid: int, db: Session = Depends(get_db)):
-    """Alihkan ke tab Layanan di halaman rincian server."""
+    """Alihkan ke tab Services di halaman rincian server."""
     user = get_current_user(request, db)
     if not user:
         return RedirectResponse("/login", status_code=303)
@@ -2229,7 +2229,7 @@ def api_server_system(
     user: User = Depends(require_user),
     db: Session = Depends(get_db),
 ):
-    """Snapshot HW/jaringan terbaru + riwayat singkat + akun + unit layanan."""
+    """Snapshot HW/jaringan terbaru + riwayat singkat + akun + unit services."""
     server = db.query(Server).filter(Server.id == sid, Server.is_active == 1).first()
     if not server:
         raise HTTPException(status_code=404, detail="Server tidak ditemukan")

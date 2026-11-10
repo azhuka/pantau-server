@@ -673,7 +673,7 @@
           <option value="auto" {% if res_type == 'auto' %}selected{% endif %}>✓ Pulih Normal (Otomatis)</option>
           <option value="manual" {% if res_type == 'manual' %}selected{% endif %}>✓ Ditangani Operator</option>
           <option value="online" {% if res_type == 'online' %}selected{% endif %}>✓ Koneksi Pulih (Online)</option>
-          <option value="service_up" {% if res_type == 'service_up' %}selected{% endif %}>✓ Layanan Berjalan</option>
+          <option value="service_up" {% if res_type == 'service_up' %}selected{% endif %}>✓ Service Berjalan</option>
           <option value="stale_closed" {% if res_type == 'stale_closed' %}selected{% endif %}>Ditutup (Host Terputus)</option>
           <option value="session_closed" {% if res_type == 'session_closed' %}selected{% endif %}>Sesi SSH Ditutup</option>
           <option value="dedup" {% if res_type == 'dedup' %}selected{% endif %}>Dibersihkan (Duplikasi)</option>
@@ -735,7 +735,7 @@
           <th class="col-time-detailed" style="color:var(--dim);text-align:left;white-space:nowrap;padding:7px 12px" title="Waktu insiden mulai terdeteksi hingga berhasil teratasi">Waktu</th>
           <th class="col-server" style="color:var(--dim);text-align:left;white-space:nowrap;padding:7px 12px" title="Nama host dan grup server">Server</th>
           <th class="col-sev" style="color:var(--dim);text-align:center;white-space:nowrap;padding:7px 12px" title="Tingkat keparahan insiden saat terjadi">Keparahan</th>
-          <th class="col-component" style="color:var(--dim);text-align:left;white-space:nowrap;padding:7px 12px" title="Komponen yang terdampak (layanan, host/agen, processor, dll.)">Komponen</th>
+          <th class="col-component" style="color:var(--dim);text-align:left;white-space:nowrap;padding:7px 12px" title="Komponen yang terdampak (services, host/agen, CPU, dll.)">Komponen</th>
           <th class="col-desc" style="color:var(--dim);text-align:left;padding:7px 12px" title="Deskripsi anomali yang telah selesai">Deskripsi Insiden</th>
           <th class="col-durasi" style="color:var(--dim);text-align:left;white-space:nowrap;padding:7px 12px" title="Total durasi downtime hingga sistem pulih kembali">Durasi</th>
           <th class="col-res" style="color:var(--dim);text-align:left;white-space:nowrap;padding:7px 12px" title="Catatan status penanganan atau pemulihan">Resolusi</th>
@@ -1679,11 +1679,11 @@ window.poll = async function(opts = {}) {
             const ackOp = (String(p.acknowledged_by).toLowerCase().includes('admin') ? 'Master Admin' : p.acknowledged_by);
             resBadge = `<span class="badge badge-up" style="font-size:10px;padding:1px 5px" title="${isEn ? 'Handled manually by operator ' + _esc(ackOp) : 'Diselesaikan secara manual oleh operator ' + _esc(ackOp)}">✓ ${isEn ? 'Handled (' + _esc(ackOp) + ')' : 'Ditangani (' + _esc(ackOp) + ')'}</span>`;
           } else if (p.resolved_note === 'server_offline') {
-            resBadge = `<span class="badge badge-muted" style="font-size:10px;padding:1px 5px" title="${isEn ? 'Closed because host disconnected (alarm suppression)' : 'Insiden layanan ditutup sementara otomatis karena host terputus (supresi alarm bertingkat)'}">${isEn ? 'Closed (Host Down)' : 'Ditutup Otomatis (Host Terputus)'}</span>`;
+            resBadge = `<span class="badge badge-muted" style="font-size:10px;padding:1px 5px" title="${isEn ? 'Closed because host disconnected (alarm suppression)' : 'Insiden service ditutup sementara otomatis karena host terputus (supresi alarm bertingkat)'}">${isEn ? 'Closed (Host Down)' : 'Ditutup Otomatis (Host Terputus)'}</span>`;
           } else if (p.resolved_note === 'server_online' || p.key === 'agent_stale') {
             resBadge = `<span class="badge badge-up" style="font-size:10px;padding:1px 5px" title="${isEn ? 'Agent connection restored and server reporting online' : 'Koneksi agen pulih sepenuhnya dan server aktif melapor kembali'}">✓ ${isEn ? 'Host Back Online' : 'Koneksi Pulih (Kembali Online)'}</span>`;
           } else if (p.resolved_note === 'service_up') {
-            resBadge = `<span class="badge badge-up" style="font-size:10px;padding:1px 5px" title="${isEn ? 'System service resumed and running normally' : 'Layanan sistem telah beroperasi normal kembali'}">✓ ${isEn ? 'Service Running' : 'Layanan Berjalan Kembali'}</span>`;
+            resBadge = `<span class="badge badge-up" style="font-size:10px;padding:1px 5px" title="${isEn ? 'System service resumed and running normally' : 'Service sistem telah beroperasi normal kembali'}">✓ ${isEn ? 'Service Running' : 'Service Berjalan Kembali'}</span>`;
           } else if (p.resolved_note === 'session_closed') {
             resBadge = `<span class="badge badge-muted" style="font-size:10px;padding:1px 5px" title="${isEn ? 'Remote SSH session closed safely' : 'Sesi remote SSH telah selesai ditutup dengan aman'}">✓ ${isEn ? 'SSH Closed' : 'Sesi SSH Ditutup'}</span>`;
           } else if (p.resolved_note === 'duplicate_cleanup') {

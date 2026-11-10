@@ -1,8 +1,8 @@
 """
-Router Manajemen Layanan dan Operasi Systemd.
-Menangani pendaftaran layanan yang dipantau, kontrol lifecycle layanan
+Router Manajemen Services dan Operasi Systemd.
+Menangani pendaftaran services yang dipantau, kontrol lifecycle services
 (start/stop/restart/delete/toggle-core), tindakan unit systemd host (restart/start/stop/reload/enable/disable),
-kebijakan pengabaian pemantauan layanan (ignore/unignore), serta riwayat uptime & latensi layanan.
+kebijakan pengabaian pemantauan services (ignore/unignore), serta riwayat uptime & latensi services.
 """
 
 from datetime import datetime, timedelta
@@ -69,7 +69,7 @@ def service_add_submit(
     if not user or not user.has_perm("can_services"):
         if is_json:
             return JSONResponse(
-                {"ok": False, "detail": "Akses ditolak: Izin kontrol layanan diperlukan"},
+                {"ok": False, "detail": "Akses ditolak: Izin kontrol services diperlukan"},
                 status_code=403,
             )
         return RedirectResponse("/", status_code=303)
@@ -136,7 +136,7 @@ def service_restart(
     if not user or not user.has_perm("can_services"):
         if is_json:
             return Response(
-                json.dumps({"ok": False, "detail": "Akses ditolak: Anda tidak memiliki wewenang Layanan"}),
+                json.dumps({"ok": False, "detail": "Akses ditolak: Anda tidak memiliki wewenang Services"}),
                 status_code=403,
                 media_type="application/json",
             )
@@ -214,13 +214,13 @@ def service_restart(
 
 
 def _service_action(request: Request, sid: int, svc_id: int, action: str, db: Session, csrf_token: str = ""):
-    """Helper bersama untuk start/stop layanan."""
+    """Helper bersama untuk start/stop services."""
     user = get_current_user(request, db)
     is_json = "application/json" in request.headers.get("accept", "")
     if not user or not user.has_perm("can_services"):
         if is_json:
             return Response(
-                json.dumps({"ok": False, "detail": "Akses ditolak: Anda tidak memiliki wewenang Layanan"}),
+                json.dumps({"ok": False, "detail": "Akses ditolak: Anda tidak memiliki wewenang Services"}),
                 status_code=403,
                 media_type="application/json",
             )
@@ -262,14 +262,14 @@ def _service_action(request: Request, sid: int, svc_id: int, action: str, db: Se
     if action == "stop" and cur_st == "down":
         if is_json:
             return Response(
-                json.dumps({"ok": True, "detail": f"Layanan {svc.service_name} sudah dalam kondisi berhenti."}),
+                json.dumps({"ok": True, "detail": f"Service {svc.service_name} sudah dalam kondisi berhenti."}),
                 media_type="application/json",
             )
         return RedirectResponse(f"/servers/{sid}?tab=layanan", status_code=303)
     if action == "start" and cur_st == "up":
         if is_json:
             return Response(
-                json.dumps({"ok": True, "detail": f"Layanan {svc.service_name} sudah dalam kondisi aktif."}),
+                json.dumps({"ok": True, "detail": f"Service {svc.service_name} sudah dalam kondisi aktif."}),
                 media_type="application/json",
             )
         return RedirectResponse(f"/servers/{sid}?tab=layanan", status_code=303)
@@ -295,7 +295,7 @@ def _service_action(request: Request, sid: int, svc_id: int, action: str, db: Se
     now_ts = datetime.utcnow()
     if action == "stop":
         op_name = (user.username if user else "OPERATOR").upper()
-        reason_txt = f"LAYANAN DIMATIKAN OLEH OPERATOR ({op_name})"
+        reason_txt = f"SERVICE DIMATIKAN OLEH OPERATOR ({op_name})"
         svc.is_ignored = 1
         svc.ignored_until = None
         svc.ignored_by = user.username
@@ -309,13 +309,13 @@ def _service_action(request: Request, sid: int, svc_id: int, action: str, db: Se
                 response_time_ms=None,
                 active_connections=0,
                 timestamp=now_ts,
-                health_message=f"Layanan dihentikan oleh operator ({op_name})",
+                health_message=f"Service dihentikan oleh operator ({op_name})",
             )
         )
 
         sev = "warning"
-        msg = f"Layanan {svc.service_name} dimatikan oleh operator ({op_name})"
-        tip = "Layanan sengaja dihentikan melalui panel kontrol oleh operator."
+        msg = f"Service {svc.service_name} dimatikan oleh operator ({op_name})"
+        tip = "Service sengaja dihentikan melalui panel kontrol oleh operator."
 
         prob = (
             db.query(ServerProblem)
@@ -365,7 +365,7 @@ def _service_action(request: Request, sid: int, svc_id: int, action: str, db: Se
                 response_time_ms=0,
                 active_connections=0,
                 timestamp=now_ts,
-                health_message=f"Layanan dimulai oleh operator ({user.username})",
+                health_message=f"Service dimulai oleh operator ({user.username})",
             )
         )
 
@@ -405,7 +405,7 @@ def service_start(
     csrf_token: str = Form(default=""),
     db: Session = Depends(get_db),
 ):
-    """Mulai layanan yang sedang stop (admin/operator)."""
+    """Mulai service yang sedang stop (admin/operator)."""
     return _service_action(request, sid, svc_id, "start", db, csrf_token)
 
 
@@ -417,7 +417,7 @@ def service_stop(
     csrf_token: str = Form(default=""),
     db: Session = Depends(get_db),
 ):
-    """Hentikan layanan yang sedang berjalan (admin/operator)."""
+    """Hentikan service yang sedang berjalan (admin/operator)."""
     return _service_action(request, sid, svc_id, "stop", db, csrf_token)
 
 
@@ -434,7 +434,7 @@ def service_delete(
     if not user or not user.has_perm("can_services"):
         if is_json:
             return Response(
-                json.dumps({"ok": False, "detail": "Akses ditolak: Izin kontrol layanan diperlukan"}),
+                json.dumps({"ok": False, "detail": "Akses ditolak: Izin kontrol services diperlukan"}),
                 status_code=403,
                 media_type="application/json",
             )
@@ -463,12 +463,12 @@ def service_delete(
         db.commit()
         if is_json:
             return Response(
-                json.dumps({"ok": True, "detail": f"Layanan {svc_name} berhasil dilepas dari pengawasan dashboard"}),
+                json.dumps({"ok": True, "detail": f"Service {svc_name} berhasil dilepas dari pengawasan dashboard"}),
                 media_type="application/json",
             )
     elif is_json:
         return Response(
-            json.dumps({"ok": False, "detail": "Layanan tidak ditemukan"}),
+            json.dumps({"ok": False, "detail": "Service tidak ditemukan"}),
             status_code=404,
             media_type="application/json",
         )
@@ -500,7 +500,7 @@ def service_toggle_core(
         new_is_core = 0 if getattr(svc, "is_core", 1) else 1
         svc.is_core = new_is_core
         server = db.query(Server).filter(Server.id == sid).first()
-        status_name = "Layanan Utama (Core)" if new_is_core else "Layanan Pendukung (Secondary)"
+        status_name = "Core Service" if new_is_core else "Secondary Service"
         _audit(
             db,
             user.username,
@@ -536,7 +536,7 @@ async def api_systemd_action(
 ):
     user = get_current_user(request, db)
     if not user or not user.has_perm("can_services"):
-        raise HTTPException(status_code=403, detail="Akses ditolak: Anda tidak memiliki wewenang Layanan")
+        raise HTTPException(status_code=403, detail="Akses ditolak: Anda tidak memiliki wewenang Services")
 
     _verify_csrf_header(request)
 
@@ -600,7 +600,7 @@ async def api_systemd_action(
     db.add(cmd)
 
     if action == "stop":
-        reason_txt = f"LAYANAN DIMATIKAN OLEH OPERATOR ({op_name})"
+        reason_txt = f"SERVICE DIMATIKAN OLEH OPERATOR ({op_name})"
         for svc in matching_services:
             svc.is_ignored = 1
             svc.ignored_until = None
@@ -614,7 +614,7 @@ async def api_systemd_action(
                     response_time_ms=None,
                     active_connections=0,
                     timestamp=now_ts,
-                    health_message=f"Layanan dihentikan oleh operator ({op_name})",
+                    health_message=f"Service dihentikan oleh operator ({op_name})",
                 )
             )
 
@@ -639,13 +639,13 @@ async def api_systemd_action(
                 service_name=disp_name,
                 port=None,
                 proc=unit_clean,
-                health_msg=f"Layanan dihentikan oleh operator ({op_name})",
+                health_msg=f"Service dihentikan oleh operator ({op_name})",
                 is_op_stop=True,
                 op_by=op_name,
             )
             if prob:
                 prob.severity = "warning"
-                prob.message = f"Layanan {disp_name} dimatikan oleh operator ({op_name})"
+                prob.message = f"Service {disp_name} dimatikan oleh operator ({op_name})"
                 prob.tip = f"Unit {unit} sengaja dihentikan melalui panel kontrol oleh operator ({op_name}). Tindakan pemeliharaan tidak memicu alarm darurat."
                 prob.is_ignored = 1
                 prob.ignored_until = None
@@ -660,7 +660,7 @@ async def api_systemd_action(
                         server_id=sid,
                         key=pk,
                         severity="warning",
-                        message=f"Layanan {disp_name} dimatikan oleh operator ({op_name})",
+                        message=f"Service {disp_name} dimatikan oleh operator ({op_name})",
                         tip=f"Unit {unit} sengaja dihentikan melalui panel kontrol oleh operator ({op_name}). Tindakan pemeliharaan tidak memicu alarm darurat.",
                         is_ignored=1,
                         ignore_mode="permanent",
@@ -685,7 +685,7 @@ async def api_systemd_action(
                     response_time_ms=0,
                     active_connections=0,
                     timestamp=now_ts,
-                    health_message=f"Layanan dimulai oleh operator ({user.username})",
+                    health_message=f"Service dimulai oleh operator ({user.username})",
                 )
             )
 
@@ -727,7 +727,7 @@ async def api_systemd_action(
         "disable": "menonaktifkan boot",
     }
     if action == "stop":
-        detail_msg = f"Perintah penghentian unit {unit} telah dikirim ke agen. Status layanan dicatat sebagai pemeliharaan operator (Peringatan)."
+        detail_msg = f"Perintah penghentian unit {unit} telah dikirim ke agen. Status service dicatat sebagai pemeliharaan operator (Peringatan)."
     elif action in ("start", "restart"):
         detail_msg = f"Perintah {labels.get(action, action)} unit {unit} telah dikirim ke agen. Status pemeliharaan dipulihkan."
     else:
@@ -747,13 +747,13 @@ def api_service_ignore(
     user: User = Depends(require_user),
     db: Session = Depends(get_db),
 ):
-    """Abaikan pemantauan suatu layanan secara langsung (bisa permanen atau durasi)."""
+    """Abaikan pemantauan suatu service secara langsung (bisa permanen atau durasi)."""
     _verify_csrf_header(request)
     if user.is_viewer() or not (user.is_master_admin() or user.has_perm("can_services")):
-        raise HTTPException(status_code=403, detail="Akses ditolak: izin kontrol layanan diperlukan")
+        raise HTTPException(status_code=403, detail="Akses ditolak: izin kontrol services diperlukan")
     svc = db.query(Service).filter(Service.id == svc_id, Service.server_id == sid).first()
     if not svc:
-        raise HTTPException(status_code=404, detail="Layanan tidak ditemukan")
+        raise HTTPException(status_code=404, detail="Service tidak ditemukan")
 
     duration = str(body.get("duration", "permanent")).lower().strip()
     reason = str(body.get("reason", "")).strip()[:255] or None
@@ -813,7 +813,7 @@ def api_service_ignore(
         db,
         user.username,
         "problem_ignore",
-        target=f"Layanan {svc.service_name}",
+        target=f"Service {svc.service_name}",
         result=res_str,
         server_id=sid,
     )
@@ -837,13 +837,13 @@ def api_service_unignore(
     user: User = Depends(require_user),
     db: Session = Depends(get_db),
 ):
-    """Aktifkan kembali pemantauan suatu layanan."""
+    """Aktifkan kembali pemantauan suatu service."""
     _verify_csrf_header(request)
     if user.is_viewer() or not (user.is_master_admin() or user.has_perm("can_services")):
-        raise HTTPException(status_code=403, detail="Akses ditolak: izin kontrol layanan diperlukan")
+        raise HTTPException(status_code=403, detail="Akses ditolak: izin kontrol services diperlukan")
     svc = db.query(Service).filter(Service.id == svc_id, Service.server_id == sid).first()
     if not svc:
-        raise HTTPException(status_code=404, detail="Layanan tidak ditemukan")
+        raise HTTPException(status_code=404, detail="Service tidak ditemukan")
 
     svc.is_ignored = 0
     svc.ignored_until = None
@@ -867,7 +867,7 @@ def api_service_unignore(
         db,
         user.username,
         "problem_unignore",
-        target=f"Layanan {svc.service_name}",
+        target=f"Service {svc.service_name}",
         result="pemantauan diaktifkan kembali",
         server_id=sid,
     )
@@ -886,7 +886,7 @@ def api_service_history(
     user: User = Depends(require_user),
     db: Session = Depends(get_db),
 ):
-    """Riwayat metric service (status, koneksi, waktu respon) utk grafik layanan."""
+    """Riwayat metric service (status, koneksi, waktu respon) utk grafik service."""
     svc = db.query(Service).filter(Service.id == svc_id, Service.server_id == sid).first()
     if not svc:
         raise HTTPException(status_code=404, detail="Service tidak ditemukan")

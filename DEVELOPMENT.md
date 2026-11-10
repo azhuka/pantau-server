@@ -354,6 +354,30 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.145
+
+- **Tipe Rilis:** Penegakan Komprehensif Nomenklatur & Terminologi Teknis Standar Sysadmin/NOC di Seluruh Lapisan Aplikasi Pantau Server (*Comprehensive Enforcement of Global Sysadmin/NOC Technical Nomenclature Across All Application Layers*)
+- **Fokus Utama:** Mengeliminasi seluruh kerancuan istilah lokal non-standar (seperti "paket", "layanan", "tugas", "pengguna") dan menegakkan terminologi standar internasional yang baku di dunia sistem operasi Linux, DevOps, sysadmin, dan NOC:
+  1. **Distingsi Tegas Packages vs Jaringan ("paket tidak sama dengan packages"):**
+     - Mengubah seluruh representasi antarmuka, modal, tooltip, dan pesan backend manajemen software APT/dpkg menjadi **`Packages`** (atau singular **`Package`**).
+     - Menghindari ambiguitas fatal bagi operator jaringan antara software package sistem operasi dengan packet jaringan (*IP packets*, *packet loss*, *ICMP packets*).
+  2. **Standardisasi Nomenklatur Services & Daemons:**
+     - Mengubah seluruh label antarmuka dari "layanan" menjadi **`Services`** / **`Service`** (Systemd Services, Monitored Services, Core Services, Secondary Services, Port Services).
+     - Menghilangkan kerancuan semantik antara unit daemon systemd dengan konsep customer service / layanan umum.
+  3. **Penegakan Terminologi Tasks & Processes:**
+     - Mengubah istilah "Manajer Tugas" dan penamaan proses sistem operasi menjadi **`Tasks`** / **`Task Manager`** / **`Processes`**.
+     - Mengubah referensi "Tugas Terjadwal" / "Tugas Cron" menjadi **`Cron Jobs`** / **`Cron Jobs (Scheduled Tasks)`**.
+  4. **Penyelarasan Nomenklatur Users, Groups, & Listening Sockets:**
+     - Menyelaraskan tab akun sistem operasi menjadi **`Users`** dan **`Groups`** (`/etc/passwd` & `/etc/group`).
+     - Menstandarisasi aksi tombol: `Tambah User`, `Daftar Users`, `Daftar Groups`.
+     - Menyelaraskan istilah soket jaringan aktif menjadi **`Ports`** dan **`Listening Sockets`**.
+  5. **Konsistensi Pesan Audit Log & Dialog Konfirmasi Lingkup Host:**
+     - Menyelaraskan seluruh pesan riwayat audit log, pesan exception router, dan popup konfirmasi pemisahan lingkup dashboard vs eksekusi nyata pada sistem operasi host klien (`Service`, `Packages`, `Users`, dll.).
+  6. **Sinkronisasi SemVer 7 Berkas & Pengujian Ketat:**
+     - Sinkronisasi versi SemVer `4.8.145` pada 7 berkas inti repositori.
+     - Kompilasi sintaksis Python (`py_compile`), template Jinja2, dan skrip Bash (`bash -n`) lolos 100%.
+     - Distribusi agen klien ke `/opt/pantau/agent/agent_pantau.py` dan restart daemon `pantau-server.service` serta `agent_pantau.service` berstatus aktif normal (*running*).
+
 ## Versi 4.8.144
 
 - **Tipe Rilis:** Standardisasi Arsitektur Tombol Semantik Presisi NOC, Pemulihan Identitas Warna Lintas Tema Terang/Gelap, & Pembatas Visual Aksi Teruji (*Semantic NOC Button Architecture, Cross-Theme Color Identity Restoration, & Theme-Aware Action Divider*)
