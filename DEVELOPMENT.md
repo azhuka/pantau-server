@@ -354,6 +354,23 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.153
+
+- **Tipe Rilis:** Transformasi Kurva Spline Halus Natural, Area Gradien Bercahaya Mewah, Nilai Metrik Live di Legenda & Desain NOC Enterprise (*Smooth Spline Curves, Rich Area Gradients, Live Values in Legend & Enterprise NOC Aesthetic Overhaul*)
+- **Fokus Utama:** Meningkatkan kualitas estetika, keanggunan visual, dan profesionalisme grafik performa NOC setara standar industri Grafana/Datadog:
+  1. **Kurva Interpolasi Spline Kubik Halus (`server/templates/base.html`):**
+     - Menggantikan polyline garis patah kaku dengan interpolasi kurva Bézier kubik Catmull-Rom (*smooth cubic spline path*) sehingga garis metrik mengalir mulus, anggun, dan tanpa sudut tajam kaku.
+  2. **Pendaran Area Gradien Vertikal Mewah (`server/templates/base.html`):**
+     - Menerapkan degradasi warna vertikal halus (*subtle area gradient fill*) di bawah setiap kurva data (opacity 22% di puncak memudar ke 0% di garis dasar), memberikan kedalaman visual dan volume yang mewah (*rich depth*).
+  3. **Baseline Solid & Grid Horizontal Berdesain Sleek:**
+     - Menghadirkan garis baseline dasar tegas berpadu dengan grid horizontal putus-putus samar dan penanda *tick mark* kecil presisi pada sumbu waktu X.
+  4. **Legenda Interaktif dengan Nilai Live Terkini:**
+     - Memperkaya kapsul legenda interaktif dengan tampilan nilai metrik real-time terbaru di sebelah nama seri (misal `● Download (RX) 104 KB/s`), mempercepat pembacaan data tanpa harus menyorot kursor.
+  5. **Penyempurnaan Styling Tooltip & Kartu Throughput Jaringan (`server/templates/services.html`):**
+     - Meningkatkan desain tooltip popover dengan efek blur obsidian glassmorphism dan penataan kartu throughput jaringan berdensitas tinggi berstandar NOC.
+  6. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.153` pada 7 berkas inti repositori.
+
 ## Versi 4.8.152
 
 - **Tipe Rilis:** Penyempurnaan Area Penangkap Kursor Penuh, Garis Hairline Vertikal Multi-Series, Eliminasi Pemotongan Ticks Sumbu Y & Konsistensi Warna Jaringan (*Full-Area Pointer Capture, Vertical Hairline Crosshair, Non-Clipped Y-Axis Ticks & Network Palette Harmonization*)

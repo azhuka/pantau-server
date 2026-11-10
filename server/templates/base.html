@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token }}">
 <title>{% block title %}Pantau Server{% endblock %}</title>
-<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.152' }}">
+<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.153' }}">
 {% block extra_head %}{% endblock %}
 <script>
 (function() {
@@ -2417,20 +2417,19 @@ body.show-alert-banner .main{padding-top:72px}
   position: absolute;
   pointer-events: none;
   z-index: 30;
-  background: #ffffff;
-  color: #0f172a;
-  padding: 5px 11px;
-  border-radius: 5px;
-  font-size: 12px;
-  font-weight: 600;
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #f8fafc;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 11.5px;
   white-space: nowrap;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 0 1px 1px rgba(255, 255, 255, 0.1);
   transform: translate(-50%, -100%);
   margin-top: -12px;
-  transition: opacity 0.1s ease, transform 0.08s ease;
   display: none;
-  border-width: 1.5px;
-  border-style: solid;
+  border: 1px solid rgba(255, 255, 255, 0.15);
 }
 .noc-chart-tooltip::after {
   content: "";
@@ -2445,54 +2444,58 @@ body.show-alert-banner .main{padding-top:72px}
   border-bottom-color: transparent;
   border-left-color: transparent;
 }
-[data-theme="dark"] .noc-chart-tooltip,
-[data-theme="obsidian"] .noc-chart-tooltip,
-[data-theme="navy"] .noc-chart-tooltip {
-  background: #18181b;
-  color: #f8fafc;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.6);
-}
 .noc-chart-legend {
   display: flex;
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: 8px;
   margin-top: 10px;
   padding-top: 4px;
-  min-height: 20px;
+  min-height: 24px;
 }
 .noc-legend-item {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--text, #334155);
   cursor: pointer;
   user-select: none;
-  padding: 3px 8px;
+  padding: 2.5px 8px;
   border-radius: 4px;
-  transition: opacity 0.15s ease, filter 0.15s ease, color 0.15s ease;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: all 0.15s ease;
 }
 .noc-legend-item:hover {
-  background: var(--card-hover, rgba(0, 0, 0, 0.04));
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.14);
 }
 .noc-legend-item.is-disabled {
   opacity: 0.35 !important;
   color: var(--dim, #94a3b8) !important;
   text-decoration: line-through;
   filter: grayscale(0.8);
+  background: transparent !important;
+  border-color: transparent !important;
 }
 .noc-legend-dot {
-  width: 8px;
-  height: 8px;
+  width: 7.5px;
+  height: 7.5px;
   border-radius: 50%;
   display: inline-block;
   flex-shrink: 0;
 }
 .noc-legend-item.is-disabled .noc-legend-dot {
   background: var(--dim, #94a3b8) !important;
+}
+.noc-legend-val {
+  font-family: var(--font-mono, monospace);
+  font-weight: 700;
+  margin-left: 2px;
+  font-size: 10.5px;
 }
 
 /* -----------------------------------------------------------------------------
@@ -2719,7 +2722,7 @@ body.show-alert-banner .main{padding-top:72px}
   </nav>
   <div class="sidebar-footer">
     <div style="display:flex;align-items:center;margin-bottom:6px">
-      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.152' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
+      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.153' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
     </div>
     {% if user %}
     <div style="margin-bottom:6px;line-height:1.4">
@@ -5677,6 +5680,10 @@ class NocMetricChart {
     svg.style.pointerEvents = 'all';
     svg.style.cursor = 'crosshair';
 
+    // Defs untuk linearGradient area di bawah kurva
+    const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+    svg.appendChild(defs);
+
     // 0. Background hit area transparan penuh untuk menangkap semua event kursor di seluruh bidang
     const bgHit = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
     bgHit.setAttribute('x', '0');
@@ -5690,13 +5697,15 @@ class NocMetricChart {
     // 1. Grid Horizontal & Ticks Y
     yTicks.forEach(tickVal => {
       const y = Y(tickVal);
+      const isZero = (tickVal === 0);
       const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
       line.setAttribute('x1', String(PL));
       line.setAttribute('y1', y.toFixed(1));
       line.setAttribute('x2', String(W - PR));
       line.setAttribute('y2', y.toFixed(1));
-      line.setAttribute('stroke', 'var(--border, rgba(148,163,184,0.18))');
-      line.setAttribute('stroke-width', '1');
+      line.setAttribute('stroke', isZero ? 'var(--border, rgba(255,255,255,0.22))' : 'rgba(255,255,255,0.06)');
+      line.setAttribute('stroke-width', isZero ? '1.2' : '1');
+      if (!isZero) line.setAttribute('stroke-dasharray', '2,4');
       line.style.pointerEvents = 'none';
       svg.appendChild(line);
 
@@ -5704,7 +5713,7 @@ class NocMetricChart {
       txt.setAttribute('x', String(PL - 8));
       txt.setAttribute('y', (y + 3.5).toFixed(1));
       txt.setAttribute('text-anchor', 'end');
-      txt.setAttribute('font-size', '10');
+      txt.setAttribute('font-size', '9.5');
       txt.setAttribute('fill', 'var(--dim, #64748b)');
       txt.setAttribute('font-family', 'var(--font-mono, monospace)');
       txt.style.pointerEvents = 'none';
@@ -5746,11 +5755,23 @@ class NocMetricChart {
       const p = pts[idx];
       const x = X(p.t);
       const anchor = (i === 0) ? 'start' : (i === tickIndices.length - 1 ? 'end' : 'middle');
+
+      // Tick mark kecil di baseline
+      const tickMark = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      tickMark.setAttribute('x1', x.toFixed(1));
+      tickMark.setAttribute('y1', String(PT + ih));
+      tickMark.setAttribute('x2', x.toFixed(1));
+      tickMark.setAttribute('y2', String(PT + ih + 3));
+      tickMark.setAttribute('stroke', 'var(--border, rgba(255,255,255,0.18))');
+      tickMark.setAttribute('stroke-width', '1');
+      tickMark.style.pointerEvents = 'none';
+      svg.appendChild(tickMark);
+
       const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
       txt.setAttribute('x', x.toFixed(1));
       txt.setAttribute('y', String(H - 8));
       txt.setAttribute('text-anchor', anchor);
-      txt.setAttribute('font-size', '10');
+      txt.setAttribute('font-size', '9.5');
       txt.setAttribute('fill', 'var(--dim, #64748b)');
       txt.setAttribute('font-family', 'var(--font-mono, monospace)');
       txt.style.pointerEvents = 'none';
@@ -5758,10 +5779,43 @@ class NocMetricChart {
       svg.appendChild(txt);
     });
 
+    // Helper interpolasi spline halus (Catmull-Rom Cubic Spline)
+    const buildSmoothSpline = ptsList => {
+      if (!ptsList || ptsList.length === 0) return '';
+      if (ptsList.length === 1) return `M ${ptsList[0].x.toFixed(1)} ${ptsList[0].y.toFixed(1)}`;
+      if (ptsList.length === 2) {
+        return `M ${ptsList[0].x.toFixed(1)} ${ptsList[0].y.toFixed(1)} L ${ptsList[1].x.toFixed(1)} ${ptsList[1].y.toFixed(1)}`;
+      }
+      let d = `M ${ptsList[0].x.toFixed(1)} ${ptsList[0].y.toFixed(1)}`;
+      const n = ptsList.length;
+      const tension = 0.2;
+      for (let i = 0; i < n - 1; i++) {
+        const p0 = (i > 0) ? ptsList[i - 1] : ptsList[i];
+        const p1 = ptsList[i];
+        const p2 = ptsList[i + 1];
+        const p3 = (i < n - 2) ? ptsList[i + 2] : p2;
+        const cp1x = p1.x + (p2.x - p0.x) * tension;
+        const cp1y = p1.y + (p2.y - p0.y) * tension;
+        const cp2x = p2.x - (p3.x - p1.x) * tension;
+        const cp2y = p2.y - (p3.y - p1.y) * tension;
+        d += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
+      }
+      return d;
+    };
+
+    const baselineY = PT + ih;
+    const buildAreaPath = ptsList => {
+      const lineD = buildSmoothSpline(ptsList);
+      if (!lineD) return '';
+      const first = ptsList[0];
+      const last = ptsList[ptsList.length - 1];
+      return `${lineD} L ${last.x.toFixed(1)} ${baselineY.toFixed(1)} L ${first.x.toFixed(1)} ${baselineY.toFixed(1)} Z`;
+    };
+
     // Kumpulkan Titik-Titik Seri untuk Interaksi
     const seriesRenderData = [];
 
-    // 3. Render Garis Seri (Polos Tanpa Bulatan / Dots Permanen)
+    // 3. Render Garis Seri (Kurva Halus & Area Gradien Mewah Tanpa Bulatan Permanen)
     visibleSeries.forEach(s => {
       const seriesPts = [];
       pts.forEach(p => {
@@ -5773,29 +5827,64 @@ class NocMetricChart {
       if (seriesPts.length === 0) return;
       seriesRenderData.push({ series: s, points: seriesPts });
 
-      // Gambar Polyline Mulus Polos
-      const polyCoords = seriesPts.map(pt => `${pt.x.toFixed(1)},${pt.y.toFixed(1)}`).join(' ');
-      const polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
-      polyline.setAttribute('points', polyCoords);
-      polyline.setAttribute('fill', 'none');
-      polyline.setAttribute('stroke', s.color);
-      polyline.setAttribute('stroke-width', '2');
-      polyline.setAttribute('stroke-linecap', 'round');
-      polyline.setAttribute('stroke-linejoin', 'round');
-      polyline.style.pointerEvents = 'none';
-      svg.appendChild(polyline);
+      // Gradien Vertikal Area
+      const gradId = 'noc-grad-' + (s.id || '').replace(/[^a-zA-Z0-9]/g, '_') + '-' + Math.random().toString(36).substring(2, 7);
+      const grad = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
+      grad.setAttribute('id', gradId);
+      grad.setAttribute('x1', '0%');
+      grad.setAttribute('y1', '0%');
+      grad.setAttribute('x2', '0%');
+      grad.setAttribute('y2', '100%');
+
+      const stop1 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+      stop1.setAttribute('offset', '0%');
+      stop1.setAttribute('stop-color', s.color);
+      stop1.setAttribute('stop-opacity', '0.22');
+      grad.appendChild(stop1);
+
+      const stop2 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+      stop2.setAttribute('offset', '75%');
+      stop2.setAttribute('stop-color', s.color);
+      stop2.setAttribute('stop-opacity', '0.04');
+      grad.appendChild(stop2);
+
+      const stop3 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+      stop3.setAttribute('offset', '100%');
+      stop3.setAttribute('stop-color', s.color);
+      stop3.setAttribute('stop-opacity', '0.00');
+      grad.appendChild(stop3);
+
+      defs.appendChild(grad);
+
+      // Gambar Area Gradien
+      const areaPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      areaPath.setAttribute('d', buildAreaPath(seriesPts));
+      areaPath.setAttribute('fill', `url(#${gradId})`);
+      areaPath.style.pointerEvents = 'none';
+      svg.appendChild(areaPath);
+
+      // Gambar Garis Kurva Halus
+      const curvePath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      curvePath.setAttribute('d', buildSmoothSpline(seriesPts));
+      curvePath.setAttribute('fill', 'none');
+      curvePath.setAttribute('stroke', s.color);
+      curvePath.setAttribute('stroke-width', '2.2');
+      curvePath.setAttribute('stroke-linecap', 'round');
+      curvePath.setAttribute('stroke-linejoin', 'round');
+      curvePath.style.pointerEvents = 'none';
+      svg.appendChild(curvePath);
     });
 
-    // 4. Hover Group (Garis Hairline Vertikal + Bulatan Interaktif Timbul Saat Kursor Menyorot)
+    // 4. Hover Group (Garis Hairline Vertikal Glowing + Bulatan Interaktif Timbul Saat Kursor Menyorot)
     const hoverGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     hoverGroup.style.display = 'none';
     hoverGroup.style.pointerEvents = 'none';
 
-    // Garis Hairline Vertikal
+    // Garis Hairline Vertikal Glowing
     const vGuide = document.createElementNS('http://www.w3.org/2000/svg', 'line');
     vGuide.setAttribute('y1', String(PT));
     vGuide.setAttribute('y2', String(PT + ih));
-    vGuide.setAttribute('stroke', 'rgba(255, 255, 255, 0.22)');
+    vGuide.setAttribute('stroke', 'rgba(56, 189, 248, 0.45)');
     vGuide.setAttribute('stroke-width', '1');
     vGuide.setAttribute('stroke-dasharray', '3,3');
     hoverGroup.appendChild(vGuide);
@@ -5947,9 +6036,30 @@ class NocMetricChart {
     this.legendContainer.style.display = 'flex';
     this.legendContainer.innerHTML = this.series.map(s => {
       const isDis = !s.visible;
+      let latestValStr = '';
+      if (this.points && this.points.length > 0) {
+        for (let i = this.points.length - 1; i >= 0; i--) {
+          const val = s.getValue(this.points[i]);
+          if (val !== null && val !== undefined && !isNaN(val)) {
+            if (this.unit === '%') {
+              latestValStr = Math.round(val) + '%';
+            } else if (this.unit === 'rate') {
+              latestValStr = formatNocRate(val);
+            } else if (this.unit === '') {
+              latestValStr = (val % 1 === 0 ? val.toString() : val.toFixed(2));
+            } else {
+              latestValStr = (val % 1 === 0 ? val.toString() : val.toFixed(1)) + ' ' + this.unit;
+            }
+            break;
+          }
+        }
+      }
+      const valBadge = latestValStr ? `<span class="noc-legend-val" style="color:${s.color}">${esc(latestValStr)}</span>` : '';
+
       return `<div class="noc-legend-item ${isDis ? 'is-disabled' : ''}" data-series-id="${esc(s.id)}" title="Klik untuk menampilkan / menyembunyikan ${esc(s.name)}">
-        <span class="noc-legend-dot" style="background: ${s.color}"></span>
+        <span class="noc-legend-dot" style="background: ${s.color}; box-shadow: 0 0 5px ${s.color}"></span>
         <span>${esc(s.name)}</span>
+        ${valBadge}
       </div>`;
     }).join('');
 
