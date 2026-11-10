@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token }}">
 <title>{% block title %}Pantau Server{% endblock %}</title>
-<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.142' }}">
+<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.143' }}">
 {% block extra_head %}{% endblock %}
 <script>
 (function() {
@@ -290,15 +290,6 @@
   background:#f1f5f9 !important;
   color:#1e293b !important;
   border-color:rgba(0,0,0,0.08) !important;
-}
-[data-theme="light"] .btn-ghost {
-  background:rgba(0,0,0,0.04) !important;
-  color:#0f172a !important;
-  border-color:rgba(0,0,0,0.14) !important;
-}
-[data-theme="light"] .btn-ghost:hover {
-  background:rgba(0,0,0,0.08) !important;
-  color:#000000 !important;
 }
 [data-theme="light"] .badge-muted {
   background:rgba(0,0,0,0.05) !important;
@@ -2585,7 +2576,7 @@ body.show-alert-banner .main{padding-top:72px}
   </nav>
   <div class="sidebar-footer">
     <div style="display:flex;align-items:center;margin-bottom:6px">
-      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.142' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
+      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.143' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
     </div>
     {% if user %}
     <div style="margin-bottom:6px;line-height:1.4">

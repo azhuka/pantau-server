@@ -354,6 +354,25 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.143
+
+- **Tipe Rilis:** Standardisasi Sistem Tombol Universal Lintas Tema, Eliminasi Anomali Kedip Tombol Upgrade, & Pemulihan Nomenklatur Standar Sysadmin (*Universal Theme-Aware Button System, Upgrade Button Flickering Fix, & Sysadmin Technical Nomenclature Restoration*)
+- **Fokus Utama:** Menyempurnakan kestabilan antarmuka, konsistensi warna tombol di tema gelap maupun terang, serta menjaga pemahaman terminologi standar dunia komputer/NOC:
+  1. **Sistem Pewarnaan Tombol Universal Lintas Tema (Modul 13 `pantau-noc.css`):**
+     - Mengatasi masalah tombol pucat, tidak terbaca, atau teks lenyap menjadi putih di atas putih saat tema terang diaktifkan.
+     - Menyediakan token warna baku untuk seluruh tombol semantik (`btn-primary`, `btn-danger`, `btn-warn`, `btn-success`, `btn-ghost`) di semua varian tema (Dark Midnight, Obsidian OLED, Navy Slate, dan Light Clean) dengan standar kontras WCAG AA.
+  2. **Eliminasi Anomali Kedip Tombol Upgrade (*Flickering Fix*):**
+     - Memperbaiki akar penyebab tombol Upgrade OS berkedip (disable/enable berulang) yang disebabkan oleh hilangnya properti `apt_upgradable` pada endpoint snapshot berkala `/api/servers/{sid}/system`.
+     - Menyinkronkan payload backend dan menambahkan penjaga kondisi pada fungsi `renderSys` agar tidak menimpa status tombol jika data paket tidak disertakan.
+  3. **Penyesuaian Nomenklatur "Lepas dari Pengawasan":**
+     - Mengubah teks aksi dan konfirmasi dari "Cabut" menjadi: *"Lepas {nama} dari pengawasan (Hanya lepas, layanan tetap terdaftar pada server klien)"*.
+  4. **Pemulihan Istilah Teknis Baku Sysadmin / NOC:**
+     - Mengembalikan label tabbar ke istilah standar dunia: `Services`, `Packages`, `Tasks`, `Users`, `Ports`, `Cron Jobs`, dan `Logs` guna menghindari kesalahpahaman operator (misal "paket" vs "packages").
+  5. **Sinkronisasi SemVer 7 Berkas & Layanan Daemon:**
+     - Sinkronisasi versi SemVer `4.8.143` pada 7 berkas inti repositori.
+     - Kompilasi sintaksis Python, template Jinja2, dan skrip instalasi Bash tervalidasi sukses.
+     - Distribusi agen klien ke `/opt/pantau/agent/agent_pantau.py` dan *restart* daemon layanan `pantau-server.service` serta `agent_pantau.service`.
+
 ## Versi 4.8.142
 
 - **Tipe Rilis:** Standardisasi Batas Lingkup Tindakan (*Scope Boundary Standardization*), Pemisahan Kontrol Host vs Metadata Pemantauan, & Eliminasi Ambiguitas Penghapusan

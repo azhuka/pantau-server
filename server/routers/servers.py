@@ -2312,6 +2312,9 @@ def api_server_system(
         "firewall": parse_dict(extra.firewall if extra else None) if (extra and extra.firewall) else None,
         "ssl_certs": parse_list(extra.ssl_certs if extra else None) if (extra and extra.ssl_certs) else None,
         "systemd_units": parse_list(extra.systemd_units if extra else None) if (extra and extra.systemd_units) else None,
+        "apt_upgradable": extra.apt_upgradable if extra else 0,
+        "apt_last_update": extra.apt_last_update.isoformat() if (extra and extra.apt_last_update) else None,
+        "apt_packages": parse_list(extra.apt_packages if extra else None) if (extra and extra.apt_packages) else [],
         "series": [
             {
                 "ts": s.timestamp.isoformat(),

@@ -463,7 +463,7 @@ def service_delete(
         db.commit()
         if is_json:
             return Response(
-                json.dumps({"ok": True, "detail": f"Layanan {svc_name} berhasil dicabut dari pengawasan dashboard"}),
+                json.dumps({"ok": True, "detail": f"Layanan {svc_name} berhasil dilepas dari pengawasan dashboard"}),
                 media_type="application/json",
             )
     elif is_json:

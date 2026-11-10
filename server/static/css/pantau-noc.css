@@ -1053,3 +1053,174 @@ body.show-alert-banner .dash-topbar-header {
   border-color: rgba(255, 255, 255, 0.25) !important;
   color: #fff !important;
 }
+
+/* =============================================================================
+   13. SISTEM PEWARNAAN TOMBOL UNIVERSAL BERBASIS TEMA (DARK, OBSIDIAN, NAVY, LIGHT)
+   Menjamin kontras WCAG AA, bebas warna hardcoded, dan konsisten saat berganti tema
+   ============================================================================= */
+
+/* Base & Dark Default Theme */
+.btn-primary, .btn-noc-primary {
+  background: var(--blue, #3b82f6) !important;
+  color: #ffffff !important;
+  border-color: #2563eb !important;
+}
+.btn-primary:hover, .btn-noc-primary:hover {
+  background: #2563eb !important;
+  border-color: #1d4ed8 !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.4) !important;
+}
+
+.btn-danger, .btn-noc-danger {
+  background: rgba(239, 68, 68, 0.16) !important;
+  color: #f87171 !important;
+  border-color: rgba(239, 68, 68, 0.4) !important;
+}
+.btn-danger:hover, .btn-noc-danger:hover {
+  background: #ef4444 !important;
+  border-color: #dc2626 !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.45) !important;
+}
+
+.btn-warn, .btn-noc-warn {
+  background: rgba(245, 158, 11, 0.16) !important;
+  color: #fbbf24 !important;
+  border-color: rgba(245, 158, 11, 0.4) !important;
+}
+.btn-warn:hover, .btn-noc-warn:hover {
+  background: #f59e0b !important;
+  border-color: #d97706 !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.45) !important;
+}
+
+.btn-success, .btn-noc-success {
+  background: rgba(16, 185, 129, 0.16) !important;
+  color: #34d399 !important;
+  border-color: rgba(16, 185, 129, 0.4) !important;
+}
+.btn-success:hover, .btn-noc-success:hover {
+  background: #10b981 !important;
+  border-color: #059669 !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.45) !important;
+}
+
+.btn-ghost, .btn-noc-ghost {
+  background: rgba(255, 255, 255, 0.04) !important;
+  color: var(--text, #f8fafc) !important;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.12)) !important;
+}
+.btn-ghost:hover, .btn-noc-ghost:hover {
+  background: rgba(255, 255, 255, 0.09) !important;
+  border-color: rgba(255, 255, 255, 0.22) !important;
+  color: #ffffff !important;
+}
+
+/* Light Theme Override: Kontras Tinggi Bebas Teks Pucat di Semua Resolusi */
+[data-theme="light"] .btn-primary,
+[data-theme="light"] .btn-noc-primary {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+  border-color: #0284c7 !important;
+  box-shadow: 0 1px 3px rgba(2, 132, 199, 0.2) !important;
+}
+[data-theme="light"] .btn-primary:hover,
+[data-theme="light"] .btn-noc-primary:hover {
+  background: #0369a1 !important;
+  border-color: #0369a1 !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.35) !important;
+}
+
+[data-theme="light"] .btn-danger,
+[data-theme="light"] .btn-noc-danger {
+  background: rgba(220, 38, 38, 0.08) !important;
+  color: #b91c1c !important;
+  border-color: rgba(220, 38, 38, 0.35) !important;
+  box-shadow: 0 1px 2px rgba(220, 38, 38, 0.08) !important;
+}
+[data-theme="light"] .btn-danger:hover,
+[data-theme="light"] .btn-noc-danger:hover {
+  background: #dc2626 !important;
+  border-color: #b91c1c !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.3) !important;
+}
+
+[data-theme="light"] .btn-warn,
+[data-theme="light"] .btn-noc-warn {
+  background: rgba(217, 119, 6, 0.08) !important;
+  color: #b45309 !important;
+  border-color: rgba(217, 119, 6, 0.35) !important;
+  box-shadow: 0 1px 2px rgba(217, 119, 6, 0.08) !important;
+}
+[data-theme="light"] .btn-warn:hover,
+[data-theme="light"] .btn-noc-warn:hover {
+  background: #d97706 !important;
+  border-color: #b45309 !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(217, 119, 6, 0.3) !important;
+}
+
+[data-theme="light"] .btn-success,
+[data-theme="light"] .btn-noc-success {
+  background: rgba(22, 163, 74, 0.08) !important;
+  color: #15803d !important;
+  border-color: rgba(22, 163, 74, 0.35) !important;
+  box-shadow: 0 1px 2px rgba(22, 163, 74, 0.08) !important;
+}
+[data-theme="light"] .btn-success:hover,
+[data-theme="light"] .btn-noc-success:hover {
+  background: #16a34a !important;
+  border-color: #15803d !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(22, 163, 74, 0.3) !important;
+}
+
+[data-theme="light"] .btn-ghost,
+[data-theme="light"] .btn-noc-ghost {
+  background: rgba(0, 0, 0, 0.04) !important;
+  color: #1e293b !important;
+  border: 1px solid rgba(0, 0, 0, 0.16) !important;
+}
+[data-theme="light"] .btn-ghost:hover,
+[data-theme="light"] .btn-noc-ghost:hover {
+  background: rgba(0, 0, 0, 0.08) !important;
+  border-color: rgba(0, 0, 0, 0.28) !important;
+  color: #020617 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06) !important;
+}
+
+/* Tombol Kontrol Layanan Khusus (Start, Stop, Deregister) pada Tema Terang */
+[data-theme="light"] .btn-svc-start {
+  color: #15803d !important;
+  border-color: rgba(22, 163, 74, 0.35) !important;
+  background: rgba(22, 163, 74, 0.06) !important;
+}
+[data-theme="light"] .btn-svc-start:hover {
+  background: #16a34a !important;
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .btn-svc-stop {
+  color: #b91c1c !important;
+  border-color: rgba(220, 38, 38, 0.35) !important;
+  background: rgba(220, 38, 38, 0.06) !important;
+}
+[data-theme="light"] .btn-svc-stop:hover {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .btn-deregister {
+  color: #b45309 !important;
+  border-color: rgba(217, 119, 6, 0.35) !important;
+  background: rgba(217, 119, 6, 0.06) !important;
+}
+[data-theme="light"] .btn-deregister:hover {
+  background: #d97706 !important;
+  color: #ffffff !important;
+}

@@ -1652,15 +1652,15 @@ div[style*="position: fixed"] .card {
   {% set active_open = open_problems | rejectattr('is_ignored') | list %}
   {% set ignored_open = open_problems | selectattr('is_ignored') | list %}
   <button class="tab" data-tab="masalah" role="tab" id="tab-masalah-btn" data-i18n="tab_masalah"><span class="tab-text">Insiden</span> <span class="badge badge-{{ pmeta[problem_level][1] if (active_open and problem_level in pmeta) else 'muted' }}" id="tab-masalah-badge" style="display:{{ 'inline-block' if open_problems else 'none' }};margin-left:4px;font-size:10px;padding:1px 5px">{% if active_open %}{{ active_open|length }}{% elif ignored_open %}{{ ignored_open|length }}{% else %}0{% endif %}</span></button>
-  <button class="tab" data-tab="layanan" role="tab" id="tab-layanan-btn" data-i18n="tab_layanan"><span class="tab-text">Layanan</span></button>
-  <button class="tab" data-tab="packages" role="tab" id="tab-packages-btn"><span class="tab-text">Paket OS</span>{% if apt_upgradable and apt_upgradable > 0 %} <span class="badge badge-warn" id="tab-packages-badge" style="margin-left:4px;font-size:10px;padding:1px 5px">{{ apt_upgradable }}</span>{% endif %}</button>
-  <button class="tab" data-tab="proses" role="tab" id="tab-proses-btn" data-i18n="tab_proses"><span class="tab-text">Proses</span></button>
-  <button class="tab" data-tab="akun" role="tab" id="tab-akun-btn" data-i18n="tab_akun"><span class="tab-text">Pengguna</span></button>
-  <button class="tab" data-tab="ports" role="tab" id="tab-ports-btn" data-i18n="tab_ports"><span class="tab-text">Port</span></button>
+  <button class="tab" data-tab="layanan" role="tab" id="tab-layanan-btn" data-i18n="tab_layanan"><span class="tab-text">Services</span></button>
+  <button class="tab" data-tab="packages" role="tab" id="tab-packages-btn"><span class="tab-text">Packages</span>{% if apt_upgradable and apt_upgradable > 0 %} <span class="badge badge-warn" id="tab-packages-badge" style="margin-left:4px;font-size:10px;padding:1px 5px">{{ apt_upgradable }}</span>{% endif %}</button>
+  <button class="tab" data-tab="proses" role="tab" id="tab-proses-btn" data-i18n="tab_proses"><span class="tab-text">Tasks</span></button>
+  <button class="tab" data-tab="akun" role="tab" id="tab-akun-btn" data-i18n="tab_akun"><span class="tab-text">Users</span></button>
+  <button class="tab" data-tab="ports" role="tab" id="tab-ports-btn" data-i18n="tab_ports"><span class="tab-text">Ports</span></button>
   <button class="tab" data-tab="firewall" role="tab" id="tab-firewall-btn" data-i18n="tab_firewall"><span class="tab-text">Firewall</span></button>
   <button class="tab" data-tab="ssl" role="tab" id="tab-ssl-btn" data-i18n="tab_ssl"><span class="tab-text">SSL/TLS</span></button>
-  <button class="tab" data-tab="cron" role="tab" id="tab-cron-btn" data-i18n="tab_cron"><span class="tab-text">Cron Job</span></button>
-  <button class="tab" data-tab="log" role="tab" id="tab-log-btn" data-i18n="tab_logging"><span class="tab-text">Log</span></button>
+  <button class="tab" data-tab="cron" role="tab" id="tab-cron-btn" data-i18n="tab_cron"><span class="tab-text">Cron Jobs</span></button>
+  <button class="tab" data-tab="log" role="tab" id="tab-log-btn" data-i18n="tab_logging"><span class="tab-text">Logs</span></button>
 </div>
 
 <div class="tab-body" id="tab-perf">
@@ -2525,7 +2525,7 @@ div[style*="position: fixed"] .card {
           </span>
 
           {% if not user.is_viewer() and user.has_perm('can_services') %}
-          <button type="button" class="btn btn-ghost btn-sm btn-deregister" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Cabut {{ svc.service_name }} dari pengawasan (Hanya mencabut pemantauan di dashboard, daemon di server Linux tetap berjalan)"{% endif %} aria-label="Cabut dari Pengawasan" onclick="deleteService({{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)">
+          <button type="button" class="btn btn-ghost btn-sm btn-deregister" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Lepas {{ svc.service_name }} dari pengawasan (Hanya lepas, layanan tetap terdaftar pada server klien)"{% endif %} aria-label="Lepas dari Pengawasan" onclick="deleteService({{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="8" y1="12" x2="16" y2="12"></line></svg>
           </button>
           {% endif %}
@@ -6037,13 +6037,13 @@ async function deleteService(sid, svcId, svcName, btn) {
     return;
   }
   const ok = await showSvcConfirmModal({
-    title: isEn ? 'Confirm Remove from Monitoring' : 'Cabut Layanan dari Pengawasan',
+    title: isEn ? 'Confirm Remove from Monitoring' : 'Lepas Layanan dari Pengawasan',
     badge: isEn ? 'DASHBOARD METADATA' : 'PENGATURAN MONITORING',
     target: svcName,
     message: isEn
-      ? ('Are you sure you want to <strong>remove</strong> service <strong>' + escHtml(svcName) + '</strong> from monitoring?<br><br><div style="padding:8px 10px;background:rgba(59,130,246,0.1);border-left:3px solid #3b82f6;border-radius:4px;font-size:12px;line-height:1.45;color:var(--text);margin-top:6px"><strong>Scope Notice:</strong> This action <strong>ONLY</strong> removes this service from Pantau Server monitoring dashboard and metric history.<br><br>The service process/daemon on the Linux client server <strong>WILL NOT</strong> be stopped, uninstalled, or deleted.</div>')
-      : ('Apakah Anda yakin ingin <strong>mencabut</strong> layanan <strong>' + escHtml(svcName) + '</strong> dari pengawasan?<br><br><div style="padding:8px 10px;background:rgba(59,130,246,0.1);border-left:3px solid #3b82f6;border-radius:4px;font-size:12px;line-height:1.45;color:var(--text);margin-top:6px"><strong>Pemberitahuan Batas Lingkup:</strong> Tindakan ini <strong>HANYA</strong> mencabut layanan dari daftar pemantauan dan riwayat metrik Pantau Server.<br><br>Proses atau daemon layanan pada server Linux klien <strong>TIDAK AKAN</strong> dihentikan ataupun dihapus. Layanan tetap berjalan normal di server target.</div>'),
-    btnText: isEn ? 'Remove from Monitoring' : 'Cabut dari Pantauan',
+      ? ('Are you sure you want to <strong>remove</strong> service <strong>' + escHtml(svcName) + '</strong> from monitoring?<br><br><div style="padding:8px 10px;background:rgba(59,130,246,0.1);border-left:3px solid #3b82f6;border-radius:4px;font-size:12px;line-height:1.45;color:var(--text);margin-top:6px"><strong>Scope Notice:</strong> Only unlinking from monitoring. The service remains registered and running normally on the client server.</div>')
+      : ('Apakah Anda yakin ingin <strong>melepas</strong> layanan <strong>' + escHtml(svcName) + '</strong> dari pengawasan?<br><br><div style="padding:8px 10px;background:rgba(59,130,246,0.1);border-left:3px solid #3b82f6;border-radius:4px;font-size:12px;line-height:1.45;color:var(--text);margin-top:6px"><strong>Pemberitahuan Batas Lingkup:</strong> Hanya melepas pemantauan di dashboard. Layanan tetap terdaftar dan berjalan normal pada server klien.</div>'),
+    btnText: isEn ? 'Remove from Monitoring' : 'Lepas dari Pengawasan',
     btnClass: 'btn-warning',
     iconType: 'warning'
   });
@@ -6052,7 +6052,7 @@ async function deleteService(sid, svcId, svcName, btn) {
   const tr = btn.closest('tr');
   const originalHtml = btn.innerHTML;
   btn.disabled = true;
-  btn.innerHTML = isEn ? 'Removing…' : 'Mencabut…';
+  btn.innerHTML = isEn ? 'Removing…' : 'Melepas…';
   try {
     const r = await fetch('/servers/' + sid + '/services/' + svcId + '/delete', {
       method: 'POST',
@@ -6064,12 +6064,12 @@ async function deleteService(sid, svcId, svcName, btn) {
     });
     const j = await r.json().catch(() => ({}));
     if (r.ok) {
-      showToast(j.detail || (isEn ? ('Service ' + svcName + ' removed from monitoring.') : ('Layanan ' + svcName + ' berhasil dicabut dari pengawasan dashboard.')), true);
+      showToast(j.detail || (isEn ? ('Service ' + svcName + ' removed from monitoring.') : ('Layanan ' + svcName + ' telah dilepas dari pengawasan dashboard.')), true);
       if (tr) tr.remove();
       if (typeof poll === 'function') poll();
       else if (typeof fetchOverview === 'function') fetchOverview();
     } else {
-      showToast(j.detail || (isEn ? 'Failed to remove service from monitoring.' : 'Gagal mencabut layanan dari pengawasan.'), false);
+      showToast(j.detail || (isEn ? 'Failed to remove service from monitoring.' : 'Gagal melepas layanan dari pengawasan.'), false);
       btn.disabled = false;
       btn.innerHTML = originalHtml;
     }
@@ -9302,9 +9302,9 @@ function patch(data) {
     }
   }
 
-  // Upgrade OS button: Disable when offline or no upgradable packages
+  // Upgrade OS button: Sinkronkan state hanya jika data apt_upgradable tersedia
   const upgradeBtn = document.getElementById('apt-upgrade-btn');
-  if (upgradeBtn) {
+  if (upgradeBtn && typeof data.apt_upgradable !== 'undefined') {
     let aptN = data.apt_upgradable;
     const hasUpdates = (aptN != null && aptN > 0);
     const shouldDisableUpg = !online || !hasUpdates;
