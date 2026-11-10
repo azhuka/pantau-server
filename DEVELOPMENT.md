@@ -354,6 +354,21 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.164
+
+- **Tipe Rilis:** Sinkronisasi Total Status Aktif/Nonaktif Firewall & Eliminasi Kontradiksi Dashboard (*Total Synchronization of Firewall Active/Inactive Status & Dashboard Contradiction Elimination*)
+- **Fokus Utama:** Mengatasi inkonsistensi status pada kartu pengawasan firewall yang tetap berstatus "ACTIVE" setelah aksi penonaktifan berhasil dilakukan, melalui pembaruan seketika (*Optimistic UI*) dan sinkronisasi status backend pada level database server:
+  1. **Sinkronisasi Seketika Status Aktif/Nonaktif Backend (`server/routers/system_ops.py`):**
+     - Menambahkan fungsi [`_sync_firewall_status()`](file:///home/bos/rj45/server/routers/system_ops.py#L130) yang secara instan memperbarui snapshot status firewall di `ServerExtras` menjadi `status: "inactive"` dan mengosongkan aturan (`rules: []`) saat perintah nonaktifkan firewall (`firewall_disable`) dikirim, serta menyetel `status: "active"` saat perintah aktifkan firewall (`firewall_enable`) dikirim.
+     - Memastikan endpoint `/api/servers/{sid}/system` seketika menyajikan status firewall mutakhir tanpa menunggu agen remote menyelesaikan siklus telemetri berkala.
+  2. **Pembaruan Instan Status & Tombol Antarmuka (*Optimistic UI Update* di `server/templates/services.html`):**
+     - Mengimplementasikan fungsi `updateFirewallStatusInUi(action)` pada `submitFirewallAction()`: saat penonaktifan firewall berhasil dikonfirmasi, badge status seketika beralih ke `Nonaktif (Terbuka)`, kartu metrik berubah menjadi `INACTIVE` warna kuning, tombol header berganti menjadi `[Aktifkan Firewall]` (hijau), tabel aturan disembunyikan, dan teks peringatan kosong diperbarui menjadi *"Firewall saat ini nonaktif. Port terbuka sepenuhnya tanpa penyaringan UFW."*.
+     - Memperbaiki `renderFirewall()` agar teks pesan tabel aturan kosong (`#fw-rules-empty`) selalu diselaraskan dengan status aktif/nonaktif backend, serta mengosongkan isi `tbody` jika aturan berjumlah 0.
+  3. **Pembersihan Cache Agen Total (`agent/agent_pantau.py` & `package/opt/pantau/agent/agent_pantau.py`):**
+     - Menyetel `_fw_cache["data"] = None` dan `_fw_cache["at"] = 0.0` pada saat eksekusi perintah firewall (`_exec_firewall_toggle`, `_exec_block_ip`, `_exec_unblock_ip`) untuk menjamin tidak ada residu data cache lama yang terkirim pada siklus laporan telemetri berikutnya.
+  4. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.164` pada 7 berkas inti repositori.
+
 ## Versi 4.8.163
 
 - **Tipe Rilis:** Perbaikan Meluber Tombol Tindakan & Pembaruan Real-Time Tabel Firewall Tanpa Muat Ulang Halaman (*Action Button Overflow Fix & Zero-Reload Real-Time Firewall Table Synchronization*)

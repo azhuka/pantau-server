@@ -479,7 +479,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.163"
+AGENT_VERSION = "4.8.164"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -935,6 +935,7 @@ def _exec_block_ip(command: dict) -> dict:
         outs.append(f"{ip}: {res['output']}")
     note = " | aturan diterapkan (iptables volatile / permanen jika ufw/iptables-persistent aktif)" if any_success else ""
     _fw_cache["at"] = 0.0
+    _fw_cache["data"] = None
     return {"ok": ok_all, "output": ("; ".join(outs) + note)[:2000]}
 
 
@@ -964,6 +965,7 @@ def _exec_unblock_ip(command: dict) -> dict:
             ok_all = False
         outs.append(f"{ip}: {res['output']}")
     _fw_cache["at"] = 0.0
+    _fw_cache["data"] = None
     return {"ok": ok_all, "output": ("; ".join(outs))[:2000]}
 
 
@@ -985,6 +987,7 @@ def _exec_firewall_toggle(action: str) -> dict:
                           f"sudo -n {PANTAU_FIREWALL} {sub}")
     # Bersihkan cache firewall agar deteksi status langsung diperbarui pada siklus berikutnya
     _fw_cache["at"] = 0.0
+    _fw_cache["data"] = None
     return {"ok": res["ok"], "output": res["output"][:2000]}
 
 

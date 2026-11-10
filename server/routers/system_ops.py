@@ -131,6 +131,29 @@ def _sync_firewall_cache_ip(db: Session, sid: int, ip: str, action: str):
         pass
 
 
+def _sync_firewall_status(db: Session, sid: int, new_status: str):
+    """Sinkronisasi seketika status aktif/nonaktif firewall di ServerExtras."""
+    try:
+        extra = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
+        if not extra:
+            return
+        fw_dict = {}
+        if extra.firewall:
+            try:
+                fw_dict = json.loads(extra.firewall)
+            except Exception:
+                fw_dict = {}
+        if not isinstance(fw_dict, dict):
+            fw_dict = {"backend": "ufw", "status": "inactive", "rules": [], "blocked_ips": []}
+
+        fw_dict["status"] = new_status
+        if new_status == "inactive":
+            fw_dict["rules"] = []
+        extra.firewall = json.dumps(fw_dict)
+    except Exception:
+        pass
+
+
 @router.post("/servers/{sid}/problems/block")
 def problem_block_ip(
     request: Request,
@@ -333,6 +356,7 @@ def firewall_enable(
             )
         return RedirectResponse(f"/servers/{sid}?action=fw_pending#tab-firewall", status_code=303)
 
+    _sync_firewall_status(db, sid, "active")
     _enqueue_mitigation(db, sid, "firewall_enable", issued_by=user.username)
     _audit(
         db,
@@ -405,6 +429,7 @@ def firewall_disable(
             )
         return RedirectResponse(f"/servers/{sid}?action=fw_pending#tab-firewall", status_code=303)
 
+    _sync_firewall_status(db, sid, "inactive")
     _enqueue_mitigation(db, sid, "firewall_disable", issued_by=user.username)
     _audit(
         db,
