@@ -4992,7 +4992,7 @@ const _pendingServiceOps = {}; // svcId -> { action: 'stop'|'start'|'restart', e
 function triggerFastPoll() {
   const runPolls = () => {
     if (typeof poll === 'function') poll();
-    if (typeof pollSystem === 'function') pollSystem();
+    if (typeof pollSystem === 'function') pollSystem(true);
   };
   setTimeout(runPolls, 250);
   setTimeout(runPolls, 750);
@@ -6096,7 +6096,11 @@ async function submitPortRule(portProto, rule, btn) {
     if (r.ok && res.ok !== false) {
       showToast(res.detail || (isEn ? `Port rule for ${portProto} sent.` : `Aturan port ${portProto} dikirim ke agen.`), true);
       triggerFastPoll();
-      if (typeof pollSystem === 'function') pollSystem();
+      if (typeof pollSystem === 'function') {
+        pollSystem(true);
+        setTimeout(() => pollSystem(true), 1200);
+        setTimeout(() => pollSystem(true), 3000);
+      }
     } else {
       showToast(res.detail || (isEn ? 'Failed to apply port rule.' : 'Gagal menerapkan aturan port.'), false);
     }
@@ -6115,6 +6119,7 @@ function updateFirewallStatusInUi(action) {
   const actWrap = document.getElementById('fw-header-actions');
   const rulesWrap = document.getElementById('fw-rules-wrap');
   const rulesEmpty = document.getElementById('fw-rules-empty');
+  const rulesTable = document.getElementById('fw-rules-table');
 
   const canFw = typeof CAN_FIREWALL !== 'undefined' ? CAN_FIREWALL : true;
   const isOnline = typeof IS_ONLINE !== 'undefined' ? IS_ONLINE : true;
@@ -6142,15 +6147,10 @@ function updateFirewallStatusInUi(action) {
       rulesEmpty.style.display = 'block';
       rulesEmpty.textContent = isEn ? 'Firewall is currently inactive. All ports are open without filtering.' : 'Firewall saat ini nonaktif. Port terbuka sepenuhnya tanpa penyaringan UFW.';
     }
-    const rulesTable = document.getElementById('fw-rules-table');
-    if (rulesTable) {
-      const tbody = rulesTable.querySelector('tbody');
-      if (tbody) tbody.innerHTML = '';
-    }
     if (typeof _servicesTabPagination !== 'undefined' && _servicesTabPagination['fw-rules']) {
       _servicesTabPagination['fw-rules'].update();
     }
-  } else if (action === 'enable') {
+  } else if (action === 'enable' || action === 'reload') {
     if (statusBadge) {
       statusBadge.className = 'badge badge-up';
       statusBadge.textContent = isEn ? 'Active (Protecting)' : 'Aktif (Melindungi)';
@@ -6168,6 +6168,20 @@ function updateFirewallStatusInUi(action) {
       const backendBadge = document.getElementById('fw-backend-badge');
       const bText = backendBadge ? backendBadge.textContent : 'UFW';
       actWrap.innerHTML = `<span class="badge badge-up" id="fw-status-badge">${isEn ? 'Active (Protecting)' : 'Aktif (Melindungi)'}</span> <span class="badge badge-info" id="fw-backend-badge">${bText}</span> <button type="button" class="btn btn-ghost btn-sm" id="btn-fw-reload" onclick="submitFirewallAction('reload', this)" ${!isOnline ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Reload UFW rules' : 'Muat ulang aturan UFW tanpa memutus koneksi'}" aria-label="Reload Aturan">${svgFwReload} <span>${isEn ? 'Reload Rules' : 'Muat Ulang Aturan'}</span></button> <button type="button" class="btn btn-warn btn-sm" id="btn-fw-disable" onclick="submitFirewallAction('disable', this)" ${!isOnline ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Disable UFW' : 'Nonaktifkan UFW'}" aria-label="Nonaktifkan Firewall">${svgFwDisable} <span>${isEn ? 'Disable Firewall' : 'Nonaktifkan Firewall'}</span></button>`;
+    }
+    const hasRows = rulesTable && rulesTable.querySelectorAll('tbody tr').length > 0;
+    if (hasRows) {
+      if (rulesWrap) rulesWrap.style.display = 'block';
+      if (rulesEmpty) rulesEmpty.style.display = 'none';
+    } else {
+      if (rulesWrap) rulesWrap.style.display = 'none';
+      if (rulesEmpty) {
+        rulesEmpty.style.display = 'block';
+        rulesEmpty.textContent = isEn ? 'Loading active firewall rules…' : 'Memuat aturan firewall aktif…';
+      }
+    }
+    if (typeof _servicesTabPagination !== 'undefined' && _servicesTabPagination['fw-rules']) {
+      _servicesTabPagination['fw-rules'].update();
     }
   }
 }
@@ -6236,7 +6250,11 @@ async function submitFirewallAction(action, btn) {
         updateFirewallStatusInUi(action);
       }
       triggerFastPoll();
-      if (typeof pollSystem === 'function') pollSystem();
+      if (typeof pollSystem === 'function') {
+        pollSystem(true);
+        setTimeout(() => pollSystem(true), 1200);
+        setTimeout(() => pollSystem(true), 3000);
+      }
     } else {
       showToast(res.detail || (isEn ? `Failed to ${action} firewall.` : `Gagal memproses ${action} firewall.`), false);
     }
@@ -6253,6 +6271,11 @@ async function submitFirewallAction(action, btn) {
             btn.disabled = false;
             btn.innerHTML = origHtml;
           }
+        }, 2500);
+      }
+    }
+  }
+}
         }, 2500);
       }
     }
@@ -6381,7 +6404,11 @@ async function submitFirewallUnblock(ip, btn) {
       showToast(res.detail || (isEn ? `Unblock IP ${ip} command sent (~5–10s wait).` : `Perintah lepas blokir IP ${ip} dikirim ke agen. Menunggu eksekusi (~5–10 detik).`), true);
       removeBlockedIpFromUi(ip);
       triggerFastPoll();
-      if (typeof pollSystem === 'function') pollSystem();
+      if (typeof pollSystem === 'function') {
+        pollSystem(true);
+        setTimeout(() => pollSystem(true), 1200);
+        setTimeout(() => pollSystem(true), 3000);
+      }
     } else {
       showToast(res.detail || (isEn ? `Failed to unblock IP ${ip}.` : `Gagal melepas blokir IP ${ip}.`), false);
     }
@@ -6428,7 +6455,11 @@ async function submitCronToggle(ident, mode, btn) {
     if (r.ok && res.ok !== false) {
       showToast(res.detail || (isEn ? `Cron task status updated.` : `Status cron job diperbarui.`), true);
       triggerFastPoll();
-      if (typeof pollSystem === 'function') pollSystem();
+      if (typeof pollSystem === 'function') {
+        pollSystem(true);
+        setTimeout(() => pollSystem(true), 1200);
+        setTimeout(() => pollSystem(true), 3000);
+      }
     } else {
       showToast(res.detail || (isEn ? 'Failed to toggle cron task.' : 'Gagal mengubah status cron job.'), false);
     }
@@ -6520,7 +6551,11 @@ async function submitCronDelete(ident, btn) {
     if (r.ok && res.ok !== false) {
       showToast(res.detail || (isEn ? `Cron task '${ident}' deleted.` : `Cron job '${ident}' dihapus.`), true);
       triggerFastPoll();
-      if (typeof pollSystem === 'function') pollSystem();
+      if (typeof pollSystem === 'function') {
+        pollSystem(true);
+        setTimeout(() => pollSystem(true), 1200);
+        setTimeout(() => pollSystem(true), 3000);
+      }
     } else {
       showToast(res.detail || (isEn ? 'Failed to delete cron task.' : 'Gagal menghapus cron job.'), false);
     }
@@ -6567,7 +6602,11 @@ async function submitSslRemovePath(path, btn) {
     if (r.ok && res.ok !== false) {
       showToast(res.detail || (isEn ? `Certificate path removed.` : `Lokasi sertifikat dihapus dari pengawasan.`), true);
       triggerFastPoll();
-      if (typeof pollSystem === 'function') pollSystem();
+      if (typeof pollSystem === 'function') {
+        pollSystem(true);
+        setTimeout(() => pollSystem(true), 1200);
+        setTimeout(() => pollSystem(true), 3000);
+      }
     } else {
       showToast(res.detail || (isEn ? 'Failed to remove SSL path.' : 'Gagal menghapus lokasi sertifikat.'), false);
     }
@@ -6611,7 +6650,11 @@ async function submitProblemBlockAttackerIps(btn, ipCount) {
     if (r.ok && res.ok !== false) {
       showToast(res.detail || (isEn ? 'IP mitigation command sent to agent.' : 'Perintah mitigasi blokir IP dikirim ke agen.'), true);
       triggerFastPoll();
-      if (typeof pollSystem === 'function') pollSystem();
+      if (typeof pollSystem === 'function') {
+        pollSystem(true);
+        setTimeout(() => pollSystem(true), 1200);
+        setTimeout(() => pollSystem(true), 3000);
+      }
     } else {
       showToast(res.detail || (isEn ? 'Failed to block attacker IPs.' : 'Gagal memblokir IP penyerang.'), false);
     }
@@ -9725,7 +9768,7 @@ function renderFirewall(fw) {
     const tbody = rulesTable.querySelector('tbody');
     if (tbody) {
       if (rList.length) {
-        tbody.innerHTML = rList.map((r, i) => `<tr><td class="mono" style="color:var(--dim)">${i + 1}</td><td class="mono" style="font-size:10px;color:var(--text)">${escHtml(r)}</td></tr>`).join('');
+        tbody.innerHTML = rList.map((r, i) => `<tr><td class="mono" style="color:var(--dim)">${i + 1}</td><td class="mono" style="font-size:11px;color:var(--text)">${escHtml(r)}</td></tr>`).join('');
       } else {
         tbody.innerHTML = '';
       }
@@ -9911,8 +9954,8 @@ function renderSsl(sslList) {
 }
 
 let _sysFetching = false;
-async function pollSystem() {
-  if (_sysFetching) return;
+async function pollSystem(force = false) {
+  if (_sysFetching && !force) return;
   _sysFetching = true;
   try {
     const r = await fetch('/api/servers/' + SID + '/system?_=' + Date.now(), {credentials: 'same-origin', cache: 'no-store'});
@@ -9922,16 +9965,24 @@ async function pollSystem() {
       if (data.extras) _cachedLogExtras = data.extras;
       const tabLog = document.getElementById('tab-log');
       if (tabLog && !tabLog.hidden) {
-        startAutoLog(data.units, data.extras);
+        try { startAutoLog(data.units, data.extras); } catch (e) {}
       }
-      renderSys(data);
-      if (Array.isArray(data.listening_ports) && typeof renderPorts === 'function') renderPorts(data.listening_ports);
-      if (data.firewall && typeof data.firewall === 'object' && typeof renderFirewall === 'function') renderFirewall(data.firewall);
-      if (data.cron_jobs && typeof data.cron_jobs === 'object' && typeof renderCron === 'function') renderCron(data.cron_jobs);
-      if (Array.isArray(data.ssl_certs) && typeof renderSsl === 'function') renderSsl(data.ssl_certs);
-      if (!aptRunning && typeof renderApt === 'function') {
-        renderApt(data);
-      }
+      try { renderSys(data); } catch (e) { console.error('renderSys error:', e); }
+      try {
+        if (Array.isArray(data.listening_ports) && typeof renderPorts === 'function') renderPorts(data.listening_ports);
+      } catch (e) { console.error('renderPorts error:', e); }
+      try {
+        if (data.firewall && typeof data.firewall === 'object' && typeof renderFirewall === 'function') renderFirewall(data.firewall);
+      } catch (e) { console.error('renderFirewall error:', e); }
+      try {
+        if (data.cron_jobs && typeof data.cron_jobs === 'object' && typeof renderCron === 'function') renderCron(data.cron_jobs);
+      } catch (e) { console.error('renderCron error:', e); }
+      try {
+        if (Array.isArray(data.ssl_certs) && typeof renderSsl === 'function') renderSsl(data.ssl_certs);
+      } catch (e) { console.error('renderSsl error:', e); }
+      try {
+        if (!aptRunning && typeof renderApt === 'function') renderApt(data);
+      } catch (e) { console.error('renderApt error:', e); }
     }
   } catch (e) { /* polling lanjut */ }
   finally { _sysFetching = false; }
@@ -11543,7 +11594,11 @@ document.addEventListener('DOMContentLoaded', function() {
           this.reset();
           addBlockedIpToUi(ipVal);
           triggerFastPoll();
-          if (typeof pollSystem === 'function') pollSystem();
+          if (typeof pollSystem === 'function') {
+            pollSystem(true);
+            setTimeout(() => pollSystem(true), 1200);
+            setTimeout(() => pollSystem(true), 3000);
+          }
         } else {
           showToast(res.detail || (isEn ? 'Failed to block IP.' : 'Gagal memblokir alamat IP.'), false);
         }
@@ -11576,7 +11631,11 @@ document.addEventListener('DOMContentLoaded', function() {
           if (typeof closeAddCronModal === 'function') closeAddCronModal();
           this.reset();
           triggerFastPoll();
-          if (typeof pollSystem === 'function') pollSystem();
+          if (typeof pollSystem === 'function') {
+            pollSystem(true);
+            setTimeout(() => pollSystem(true), 1200);
+            setTimeout(() => pollSystem(true), 3000);
+          }
         } else {
           showToast(res.detail || (isEn ? 'Failed to add cron job.' : 'Gagal menambahkan cron job.'), false);
         }
@@ -11609,7 +11668,11 @@ document.addEventListener('DOMContentLoaded', function() {
           if (typeof closeAddSslPathModal === 'function') closeAddSslPathModal();
           this.reset();
           triggerFastPoll();
-          if (typeof pollSystem === 'function') pollSystem();
+          if (typeof pollSystem === 'function') {
+            pollSystem(true);
+            setTimeout(() => pollSystem(true), 1200);
+            setTimeout(() => pollSystem(true), 3000);
+          }
         } else {
           showToast(res.detail || (isEn ? 'Failed to add certificate path.' : 'Gagal menambahkan path sertifikat.'), false);
         }

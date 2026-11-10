@@ -1131,6 +1131,36 @@ def api_command_result(
     cmd.result = _clean_str(body.get("result"), "", 4000)
     cmd.executed_at = datetime.utcnow()
 
+    # Jika agen menyertakan snapshot firewall terkini setelah eksekusi perintah, segera sinkronkan ke ServerExtras
+    if isinstance(body.get("firewall"), dict):
+        try:
+            extra = db.query(ServerExtras).filter(ServerExtras.server_id == server.id).first()
+            if extra:
+                fw = body["firewall"]
+                clean_fw = {
+                    "backend": _clean_str(fw.get("backend"), "unknown", 20),
+                    "status": _clean_str(fw.get("status"), "inactive", 20),
+                    "rules": [
+                        _clean_str(r, "", 150)
+                        for r in (fw.get("rules") or [])[:100]
+                        if isinstance(r, str)
+                    ],
+                    "blocked_ips": [
+                        {
+                            "num": str(b.get("num", "")),
+                            "pkts": str(b.get("pkts", "")),
+                            "bytes": str(b.get("bytes", "")),
+                            "source": str(b.get("source", "")),
+                        }
+                        for b in (fw.get("blocked_ips") or [])[:100]
+                        if isinstance(b, dict)
+                    ]
+                }
+                extra.firewall = json.dumps(clean_fw)
+                db.commit()
+        except Exception as fw_err:
+            logger.warning("[cmd_result] Gagal sinkronisasi data firewall agen: %s", fw_err)
+
     # Jika aksi service stop sukses, segera sisipkan metrik down agar data live langsung sinkron tanpa jeda
     if cmd.service_id and cmd.action in ("stop", "service_stop") and status == "success":
         try:

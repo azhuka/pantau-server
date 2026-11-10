@@ -147,9 +147,8 @@ def _sync_firewall_status(db: Session, sid: int, new_status: str):
             fw_dict = {"backend": "ufw", "status": "inactive", "rules": [], "blocked_ips": []}
 
         fw_dict["status"] = new_status
-        if new_status == "inactive":
-            fw_dict["rules"] = []
         extra.firewall = json.dumps(fw_dict)
+        db.commit()
     except Exception:
         pass
 
@@ -484,6 +483,7 @@ def firewall_reload(
             )
         return RedirectResponse(f"/servers/{sid}?action=fw_pending#tab-firewall", status_code=303)
 
+    _sync_firewall_status(db, sid, "active")
     _enqueue_mitigation(db, sid, "firewall_reload", issued_by=user.username)
     _audit(
         db,

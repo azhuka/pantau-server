@@ -354,6 +354,28 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.165
+
+- **Tipe Rilis:** Eliminasi Kontradiksi Visual Status Aktif vs Pesan Aturan Nonaktif & Sinkronisasi Snapshot Balik Agen (*Elimination of Active Status vs Inactive Rule Text Visual Contradiction & Agent Reverse Snapshot Synchronization*)
+- **Fokus Utama:** Mengatasi anomali tampilan di mana kartu status firewall telah aktif (`ACTIVE` hijau, backend `UFW`, tombol reload & disable), namun daftar aturan menampilkan pesan teks keliru *"Firewall saat ini nonaktif. Port terbuka sepenuhnya tanpa penyaringan UFW."*, serta menjamin data aturan dan IP terblokir tersinkronisasi instan melalui pengembalian snapshot telemetri agen pada eksekusi command:
+  1. **Eliminasi Kontradiksi Visual pada Frontend (`server/templates/services.html`):**
+     - Memperbaiki [`updateFirewallStatusInUi(action)`](file:///home/bos/rj45/server/templates/services.html#L6110) pada cabang aksi `enable` dan `reload`: mengecek keberadaan baris tabel aturan (`#fw-rules-table tbody tr`). Jika baris aturan sudah ada, `#fw-rules-wrap` langsung ditampilkan (`display: block`) dan `#fw-rules-empty` disembunyikan. Jika belum ada baris, teks di `#fw-rules-empty` disetel menjadi *"Memuat aturan firewall aktif…"* sehingga teks kontradiktif *"Firewall saat ini nonaktif..."* dipastikan tidak pernah muncul saat firewall dalam status aktif.
+     - Mempertahankan baris aturan DOM saat firewall dinonaktifkan sementara (hanya menyembunyikan wrapper tanpa menghapus baris `tbody`), sehingga saat diaktifkan kembali baris aturan langsung terlihat tanpa menunggu siklus fetch.
+     - Memperbaiki [`renderFirewall(fw)`](file:///home/bos/rj45/server/templates/services.html#L9713): memastikan jika status aktif (`isActive === true`) namun belum ada aturan kustom, teks yang ditampilkan adalah *"Tidak ada aturan khusus (menggunakan kebijakan default backend)."* dan bukan teks firewall nonaktif.
+  2. **Isolasi Kesalahan & Eksekusi Paksa Polling Telemetri (`server/templates/services.html`):**
+     - Memperbarui signature [`pollSystem(force = false)`](file:///home/bos/rj45/server/templates/services.html#L9956): mengizinkan panggilan paksa (`force = true`) yang mem-bypass guard `_sysFetching` saat dipicu dari callback tindakan interaktif (`submitFirewallAction`, `submitFirewallUnblock`, `formBlockIp`).
+     - Mengisolasi pemanggilan setiap fungsi render (`renderSys`, `renderPorts`, `renderFirewall`, `renderCron`, `renderSsl`, `renderApt`) dalam blok `try ... catch` terpisah, sehingga galat parsing pada satu modul tidak memutus eksekusi rendering firewall.
+     - Menjadwalkan polling susulan multi-tahap (pada 1,2s dan 3,0s) pasca eksekusi aksi kontrol untuk menjamin dashboard segera memperbarui UI seketika setelah agen melaporkan hasil.
+  3. **Pengembalian Snapshot Segar oleh Agen Klien (`agent/agent_pantau.py` & `package/opt/pantau/agent/agent_pantau.py`):**
+     - Menambahkan payload snapshot lengkap [`collect_firewall()`](file:///home/bos/rj45/agent/agent_pantau.py#L936) ke dalam hasil eksekusi perintah `_exec_firewall_toggle`, `_exec_block_ip`, `_exec_unblock_ip`, dan `_exec_firewall_port_rule`.
+     - Fungsi [`report_command_result()`](file:///home/bos/rj45/agent/agent_pantau.py#L1971) menyertakan field `"firewall"` dalam POST ke endpoint `/api/commands/{cid}/result`.
+  4. **Pembaruan Seketika Snapshot Database Server (`server/routers/api_agent.py` & `server/routers/system_ops.py`):**
+     - Endpoint `/api/commands/{cid}/result` di [`api_command_result()`](file:///home/bos/rj45/server/routers/api_agent.py#L1131) seketika mem-parsing dan menyimpan snapshot firewall dari agen langsung ke `ServerExtras.firewall` dan melakukan `db.commit()`.
+     - Menghapus pemusnahan aturan (`fw_dict["rules"] = []`) di `_sync_firewall_status()` saat status `inactive` agar cache aturan UFW Linux host tetap utuh.
+     - Menambahkan sinkronisasi status aktif otomatis pada endpoint `firewall_reload`.
+  5. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.165` pada 7 berkas inti repositori.
+
 ## Versi 4.8.164
 
 - **Tipe Rilis:** Sinkronisasi Total Status Aktif/Nonaktif Firewall & Eliminasi Kontradiksi Dashboard (*Total Synchronization of Firewall Active/Inactive Status & Dashboard Contradiction Elimination*)

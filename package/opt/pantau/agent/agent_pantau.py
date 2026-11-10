@@ -479,7 +479,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.164"
+AGENT_VERSION = "4.8.165"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -936,7 +936,8 @@ def _exec_block_ip(command: dict) -> dict:
     note = " | aturan diterapkan (iptables volatile / permanen jika ufw/iptables-persistent aktif)" if any_success else ""
     _fw_cache["at"] = 0.0
     _fw_cache["data"] = None
-    return {"ok": ok_all, "output": ("; ".join(outs) + note)[:2000]}
+    fw_snapshot = collect_firewall()
+    return {"ok": ok_all, "output": ("; ".join(outs) + note)[:2000], "firewall": fw_snapshot}
 
 
 def _exec_unblock_ip(command: dict) -> dict:
@@ -966,7 +967,8 @@ def _exec_unblock_ip(command: dict) -> dict:
         outs.append(f"{ip}: {res['output']}")
     _fw_cache["at"] = 0.0
     _fw_cache["data"] = None
-    return {"ok": ok_all, "output": ("; ".join(outs))[:2000]}
+    fw_snapshot = collect_firewall()
+    return {"ok": ok_all, "output": ("; ".join(outs))[:2000], "firewall": fw_snapshot}
 
 
 def _exec_firewall_toggle(action: str) -> dict:
@@ -988,7 +990,8 @@ def _exec_firewall_toggle(action: str) -> dict:
     # Bersihkan cache firewall agar deteksi status langsung diperbarui pada siklus berikutnya
     _fw_cache["at"] = 0.0
     _fw_cache["data"] = None
-    return {"ok": res["ok"], "output": res["output"][:2000]}
+    fw_snapshot = collect_firewall()
+    return {"ok": res["ok"], "output": res["output"][:2000], "firewall": fw_snapshot}
 
 
 def _exec_kill_process(command: dict) -> dict:
@@ -1359,7 +1362,9 @@ def _exec_firewall_port_rule(command: dict) -> dict:
 
     res = _run_native(cmd, label)
     _fw_cache["at"] = 0.0
-    return {"ok": res.get("ok", False), "output": res.get("output", "")[:2000]}
+    _fw_cache["data"] = None
+    fw_snapshot = collect_firewall()
+    return {"ok": res.get("ok", False), "output": res.get("output", "")[:2000], "firewall": fw_snapshot}
 
 
 def _exec_ssl_action(action: str, command: dict) -> dict:
@@ -1966,9 +1971,12 @@ def _run_native(cmd: list[str], label: str) -> dict:
 def report_command_result(cfg: dict, command_id: int, result: dict):
     """Lapor hasil eksekusi command ke Dashboard."""
     status = "success" if result["ok"] else "failed"
+    payload = {"status": status, "result": result["output"][:2000]}
+    if isinstance(result.get("firewall"), dict):
+        payload["firewall"] = result["firewall"]
     http_json_request(
         cfg, f"/api/commands/{command_id}/result", "POST",
-        {"status": status, "result": result["output"][:2000]},
+        payload,
     )
 
 
