@@ -2012,27 +2012,6 @@ div[style*="position: fixed"] .card {
         <tbody></tbody>
       </table>
     </div>
-
-    <!-- Grafik Throughput Traffic Jaringan -->
-    <div id="net-chart-wrap" style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-        <div style="font-size:12px;font-weight:600;color:var(--text);letter-spacing:0.3px;display:flex;align-items:center;gap:8px">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary)"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
-          <span>Grafik Throughput Traffic Jaringan</span>
-          <span class="badge" style="font-size:9.5px;padding:1px 6px;background:rgba(56,189,248,0.12);color:#38bdf8;border:1px solid rgba(56,189,248,0.25);border-radius:4px;font-weight:600;letter-spacing:0.2px">Real-Time NOC</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <label for="net-chart-iface" style="margin:0;font-size:11px;color:var(--dim);font-weight:500">Antarmuka:</label>
-          <select id="net-chart-iface" onchange="onNetChartIfaceChange(this.value)" style="padding:3px 10px;font-size:11px;font-family:var(--font-mono, monospace);background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;cursor:pointer">
-            <option value="all" selected>Semua Antarmuka (Total)</option>
-          </select>
-        </div>
-      </div>
-      <div class="noc-metric-card" style="padding:12px 14px;box-shadow:none;border:1px solid rgba(255,255,255,0.08);background:rgba(0,0,0,0.18);border-radius:6px">
-        <div class="noc-chart-box" id="chart-net" style="height:175px"></div>
-        <div class="noc-chart-legend" id="legend-net"></div>
-      </div>
-    </div>
   </div>
 
   <!-- 5. Riwayat Kinerja (Historical Performance Charts) -->
@@ -2093,6 +2072,24 @@ div[style*="position: fixed"] .card {
         </div>
         <div class="noc-chart-box" id="chart-load"></div>
         <div class="noc-chart-legend" id="legend-load"></div>
+      </div>
+
+      <!-- 5. Throughput Traffic Jaringan (Network) -->
+      <div class="noc-metric-card" id="card-perf-net" style="grid-column: 1 / -1">
+        <div class="noc-metric-header">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="noc-metric-title">Throughput Traffic Jaringan</div>
+            <span class="badge badge-muted mono" style="font-size:9.5px;padding:1px 6px">Download RX / Upload TX</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <label for="net-chart-iface" style="margin:0;font-size:11px;color:var(--dim);font-weight:500">Antarmuka:</label>
+            <select id="net-chart-iface" onchange="onNetChartIfaceChange(this.value)" style="padding:2px 8px;font-size:11px;font-family:var(--font-mono, monospace);background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;cursor:pointer">
+              <option value="all" selected>Semua Antarmuka (Total)</option>
+            </select>
+          </div>
+        </div>
+        <div class="noc-chart-box" id="chart-net"></div>
+        <div class="noc-chart-legend" id="legend-net"></div>
       </div>
     </div>
   </div>

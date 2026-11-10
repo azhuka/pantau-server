@@ -354,6 +354,18 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.154
+
+- **Tipe Rilis:** Refaktor Penataan Tata Letak Metrik Performa NOC & Integrasi Kartu Jaringan Terpadu (*Unified NOC Metric Grid Architecture & Network Throughput Card Integration*)
+- **Fokus Utama:** Menyempurnakan tata letak UI sesuai standar pemisahan tanggung jawab antarmuka NOC:
+  1. **Pemisahan Grafik dari Kartu Konfigurasi Jaringan (`server/templates/services.html`):**
+     - Melepaskan kontainer grafik throughput lalu lintas jaringan dari kartu "Konfigurasi Jaringan & Traffic Interface". Kartu antarmuka kini murni menampilkan gateway, DNS resolver, IP utama, dan tabel status link live tanpa gangguan visual.
+  2. **Integrasi Kartu Throughput Jaringan ke dalam Kartu Riwayat Metrik Performa (`server/templates/services.html`):**
+     - Menjadikan Throughput Traffic Jaringan sebagai kartu metrik resmi tersendiri (`.noc-metric-card`) di dalam kontainer kartu besar "Riwayat Metrik Performa" membentang penuh 2 kolom (`grid-column: 1 / -1`).
+     - Menyinkronkan seluruh 5 metrik performa historis host (CPU, Memory, Disk, Load Average, Network) dalam satu kontrol segmented rentang waktu terpusat (Hari Ini, 1 Jam, 6 Jam, 24 Jam, 7 Hari, 30 Hari).
+  3. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.154` pada 7 berkas inti repositori.
+
 ## Versi 4.8.153
 
 - **Tipe Rilis:** Transformasi Kurva Spline Halus Natural, Area Gradien Bercahaya Mewah, Nilai Metrik Live di Legenda & Desain NOC Enterprise (*Smooth Spline Curves, Rich Area Gradients, Live Values in Legend & Enterprise NOC Aesthetic Overhaul*)
