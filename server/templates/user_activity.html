@@ -4,32 +4,32 @@
 {% block content %}
 <div class="page-header">
   <div class="page-header-left">
-    <a href="/servers/{{ server.id }}?tab=akun" class="btn btn-ghost btn-sm" style="height:28px;display:inline-flex;align-items:center">&larr; Kembali</a>
-    <h2 style="margin:0;display:inline-flex;align-items:center;gap:6px">
+    <h2>
       <span>Aktivitas User:</span>
       <span class="mono">{{ username }}</span>
-      <span style="font-size:13px;color:var(--dim)">@ {{ server.hostname }}</span>
+      <span class="page-header-meta">@ {{ server.hostname }}</span>
     </h2>
   </div>
   <div class="page-header-actions">
-    <button type="button" class="btn btn-ghost btn-sm" onclick="loadActivity(false)" title="Segarkan data aktivitas sekarang" style="height:28px;display:inline-flex;align-items:center">
+    <button type="button" class="btn btn-ghost btn-sm" onclick="loadActivity(false)" title="Segarkan data aktivitas sekarang">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
       <span>Segarkan</span>
     </button>
-    <button type="button" class="btn btn-ghost btn-sm" onclick="exportCsv()" title="Download riwayat aktivitas CSV" style="height:28px;display:inline-flex;align-items:center">
+    <button type="button" class="btn btn-ghost btn-sm" onclick="exportCsv()" title="Download riwayat aktivitas CSV">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
       <span>Ekspor CSV</span>
     </button>
     {% if account and account.sessions and not user.is_viewer() %}
       {% for s in account.sessions %}
         {% if s.tty %}
-          <button type="button" class="btn btn-danger btn-sm" onclick="terminateSession('{{ s.tty }}', this)" title="Terminate session terminal {{ s.tty }}" style="height:28px;display:inline-flex;align-items:center">
+          <button type="button" class="btn btn-danger btn-sm" onclick="terminateSession('{{ s.tty }}', this)" title="Terminate session terminal {{ s.tty }}">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
             <span>Putus Sesi {{ s.tty }}</span>
           </button>
         {% endif %}
       {% endfor %}
     {% endif %}
+    <a href="/servers/{{ server.id }}?tab=akun" class="btn btn-ghost btn-sm">&larr; Kembali</a>
   </div>
 </div>
 

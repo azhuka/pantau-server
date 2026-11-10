@@ -507,6 +507,23 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
   3. **Sinkronisasi SemVer 7 Berkas:**
      - Sinkronisasi versi SemVer `4.8.157` pada 7 berkas inti repositori.
 
+## Versi 4.8.171
+
+- **Tipe Rilis:** Standardisasi Global Tata Letak Page Header & Penyelarasan Tipografi Judul Halaman (*Global Page Header Layout Standardization & Page Title Typography Alignment*)
+- **Fokus Utama:** Memperbaiki tata letak kepala halaman konten yang sebelumnya menampilkan judul dan deskripsi berdampingan secara horizontal, sehingga judul terlipat tidak wajar (mis. "Master Control" dan "Center" terpisah baris) dan tombol aksi terdorong ke baris kedua:
+  1. **Komponen Page Header Global (`server/static/css/pantau-noc.css`):**
+     - Memisahkan aturan `.page-header` dari `.noc-topbar`/`.topbar` agar header konten memiliki perilaku tata letak tersendiri tanpa memengaruhi bilah atas lain.
+     - Menjadikan `.page-header-left` sebagai kontainer fleksibel vertikal sehingga judul selalu berada di atas dan deskripsi bertumpuk rapi di bawahnya.
+     - Menetapkan tipografi judul halaman baku: 17px, bobot 700, `line-height` 1.3, `letter-spacing` -0.01em, `margin` 0, serta susunan ikon + teks + badge yang konsisten melalui `inline-flex` dengan `gap` 8px.
+     - Menambahkan aturan baku `.page-header-desc` (12.5px, `line-height` 1.5, warna `--dim`) dan `.page-header-meta` untuk teks metadata pada judul halaman.
+     - Aksi halaman (`.page-header-actions`) tetap rata kanan dan sejajar dengan baris judul (`align-items: flex-start`), serta tetap membungkus secara responsif pada layar sempit.
+  2. **Penghapusan Hardcode Inline pada Header Halaman:**
+     - Menghapus atribut `style` duplikatif (`display:inline-flex`, `align-items:center`, `gap:6px`, `height:28px`, `padding:0 12px`) pada tombol aksi halaman `probing.html`, `maintenance.html`, dan `master_control.html`; seluruhnya kini mengandalkan kelas baku `.btn`/`.btn-sm`.
+     - Menstandarkan tombol "Optimalkan Basis Data" ke varian `.btn-ghost` yang terdefinisi pada design system (menggantikan kelas `btn-outline` yang tidak memiliki definisi CSS).
+     - Merapikan header `user_activity.html`: tautan kembali dipindahkan ke area aksi halaman dan metadata host menggunakan kelas `.page-header-meta`.
+  3. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.171` pada 7 berkas inti repositori.
+
 ## Versi 4.8.170
 
 - **Tipe Rilis:** Penghapusan Elemen Jam UTC pada Topbar Global Seluruh Halaman (*Removal of UTC Clock Element from Global Topbar Across All Pages*)
