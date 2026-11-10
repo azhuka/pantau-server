@@ -354,6 +354,25 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.142
+
+- **Tipe Rilis:** Standardisasi Batas Lingkup Tindakan (*Scope Boundary Standardization*), Pemisahan Kontrol Host vs Metadata Pemantauan, & Eliminasi Ambiguitas Penghapusan
+- **Fokus Utama:** Menegaskan dan memisahkan secara visual maupun terminologis antara tindakan yang mengeksekusi langsung pada sistem operasi server klien (*Host-Level Action*) dengan tindakan pengaturan pemantauan internal dashboard (*Monitoring Metadata Configuration*):
+  1. **Pemisahan Kelompok Tombol Aksi Layanan (*Visual Action Divider*):**
+     - Kolom aksi pada tabel Layanan kini memisahkan tombol **Kontrol Host Klien** (`Restart`, `Start`, `Stop`) dengan **Setelan Pemantauan** (`Log`, `Abaikan`, `Cabut Pantau`) menggunakan pemisah visual yang rapi.
+  2. **Eliminasi Ambiguitas Terminologi "Hapus Layanan":**
+     - Mengubah kata ambigu *"Hapus Layanan"* (`deleteService`) menjadi **"Cabut dari Pengawasan" (*Deregister from Monitoring*)**.
+     - Mengganti ikon tong sampah merah destruktif menjadi tombol `btn-ghost` dengan ikon minus lingkaran standar universal.
+     - Modal konfirmasi kini secara eksplisit mencantumkan kotak pemberitahuan batas lingkup (*Scope Notice*): bahwa tindakan ini HANYA mencabut pemantauan di dashboard Pantau Server, sedangkan proses/daemon di server Linux klien TETAP BERJALAN NORMAL dan tidak dihapus.
+  3. **Penegasan Lingkup Eksekusi pada Seluruh Modal Konfirmasi:**
+     - Seluruh modal tindakan operasional kini menyertakan badge lingkup yang transparan:
+       - 🖥️ **`AKSI SISTEM KLIEN (HOST)`**: Untuk perintah yang langsung dikirim ke Agen Pantau dan mengeksekusi perintah di server klien (`systemctl stop/restart`, `passwd -l`, `passwd -u`, `userdel`, `crontab`).
+       - 📊 **`PENGATURAN MONITORING`**: Untuk perintah yang hanya mengubah metadata dashboard (`Cabut Pemantauan Layanan`, `Cabut Jalur SSL`, `Abaikan Insiden`).
+  4. **Sinkronisasi SemVer 7 Berkas & Layanan Daemon:**
+     - Sinkronisasi versi SemVer `4.8.142` pada 7 berkas inti repositori.
+     - Kompilasi sintaksis Python, template Jinja2, dan skrip instalasi Bash tervalidasi sukses.
+     - Distribusi agen klien ke `/opt/pantau/agent/agent_pantau.py` dan *restart* daemon layanan `pantau-server.service` serta `agent_pantau.service`.
+
 ## Versi 4.8.141
 
 - **Tipe Rilis:** Standardisasi Bilah Filter Log Terpadu & Eliminasi Teks Memuat Gantung (*Unified Log Filter Bar Standardization & Dangling Loading Text Elimination*)

@@ -463,12 +463,12 @@ def service_delete(
         db.commit()
         if is_json:
             return Response(
-                json.dumps({"ok": True, "detail": f"Service {svc_name} dihapus"}),
+                json.dumps({"ok": True, "detail": f"Layanan {svc_name} berhasil dicabut dari pengawasan dashboard"}),
                 media_type="application/json",
             )
     elif is_json:
         return Response(
-            json.dumps({"ok": False, "detail": "Service tidak ditemukan"}),
+            json.dumps({"ok": False, "detail": "Layanan tidak ditemukan"}),
             status_code=404,
             media_type="application/json",
         )
