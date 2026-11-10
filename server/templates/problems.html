@@ -13,9 +13,9 @@
       <span class="badge badge-up">✓ {{ ok_count }} server normal</span>
     </span>
     {% if user.is_master_admin() or user.has_perm('can_manage_servers') %}
-    <button type="button" class="btn btn-ghost btn-sm" onclick="openThresholdModal()" style="display:flex;align-items:center;gap:6px" title="Atur ambang batas peringatan insiden (CPU, RAM, Disk, Swap, SSH)">
+    <button type="button" class="btn btn-ghost btn-sm" onclick="openThresholdModal()" style="display:flex;align-items:center;gap:6px" title="Konfigurasi threshold insiden (CPU, RAM, Disk, Swap, SSH)">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-      <span>Ambang Batas Insiden</span>
+      <span>Threshold Insiden</span>
     </button>
     {% endif %}
   </div>
@@ -483,12 +483,12 @@
       <thead>
         <tr style="border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015)">
           <th class="col-time" data-col-title="Waktu Mulai" style="padding:5px 10px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="Waktu saat insiden mulai terdeteksi">WAKTU MULAI</th>
-          <th class="col-server" data-col-title="Server" style="padding:5px 10px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="Mesin server tempat anomali atau gangguan terjadi">SERVER</th>
+          <th class="col-server" data-col-title="Server" style="padding:5px 10px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="Host atau server tempat anomali atau gangguan terjadi">SERVER</th>
           <th class="col-sev" data-col-title="Keparahan" style="padding:4px 8px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="Tingkat keparahan: Kritis, Gawat, Peringatan, atau Info">KEPARAHAN</th>
           <th class="col-event" data-col-title="Kejadian" style="padding:5px 14px;font-size:10px;color:var(--dim);text-align:left;letter-spacing:0.6px;font-weight:700" title="Deskripsi ringkas mengenai anomali yang terjadi">KEJADIAN</th>
           <th class="col-durasi" data-col-title="Durasi" style="padding:5px 10px;font-size:10px;color:var(--dim);text-align:right;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="Lama waktu insiden berlangsung hingga sekarang">DURASI</th>
           <th class="col-tips" data-col-title="Panduan Solusi" style="padding:5px 12px;font-size:10px;color:var(--dim);text-align:left;letter-spacing:0.6px;font-weight:700" title="Saran langkah penanganan praktis untuk menyelesaikan insiden">PANDUAN SOLUSI</th>
-          <th class="col-act" data-col-title="Tindakan" style="padding:5px 6px;font-size:10px;color:var(--dim);text-align:center;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="Tindakan penanganan: Rincian, Tangani Insiden, atau Abaikan Insiden">TINDAKAN</th>
+          <th class="col-act" data-col-title="Aksi" style="padding:5px 6px;font-size:10px;color:var(--dim);text-align:center;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="Aksi penanganan: Rincian, Tangani Insiden, atau Abaikan Insiden">AKSI</th>
         </tr>
       </thead>
       <tbody>
@@ -571,7 +571,7 @@
         <td class="prob-act-cell col-act" style="padding:5px 6px;text-align:center;white-space:nowrap">
           <div class="prob-act-wrap" style="display:inline-flex;align-items:center;justify-content:center;gap:4px">
             <div class="prob-act-row prob-act-tools">
-              <a href="/servers/{{ p.server_id }}" class="btn btn-ghost btn-sm" style="padding:3px 6px;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px" title="Buka Rincian Server" aria-label="Rincian">
+              <a href="/servers/{{ p.server_id }}" class="btn btn-ghost btn-sm" style="padding:3px 6px;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px" title="Buka Detail Server" aria-label="Rincian">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
               </a>
             </div>
@@ -739,7 +739,7 @@
           <th class="col-desc" style="color:var(--dim);text-align:left;padding:7px 12px" title="Deskripsi anomali yang telah selesai">Deskripsi Insiden</th>
           <th class="col-durasi" style="color:var(--dim);text-align:left;white-space:nowrap;padding:7px 12px" title="Total durasi downtime hingga sistem pulih kembali">Durasi</th>
           <th class="col-res" style="color:var(--dim);text-align:left;white-space:nowrap;padding:7px 12px" title="Catatan status penanganan atau pemulihan">Resolusi</th>
-          <th class="col-act" style="color:var(--dim);text-align:center;white-space:nowrap;padding:7px 12px" title="Tindakan ke rincian server">Tindakan</th>
+          <th class="col-act" style="color:var(--dim);text-align:center;white-space:nowrap;padding:7px 12px" title="Aksi &amp; Detail Server">Aksi</th>
         </tr>
       </thead>
       <tbody id="prob-resolved-tbody">
@@ -799,7 +799,7 @@
           <span class="badge {{ p.res_badge_cls or 'badge-up' }}" style="font-size:10px;padding:1px 5px" title="{{ p.res_tip }}">{{ p.res_label }}</span>
         </td>
         <td style="padding:4px 6px;white-space:nowrap;text-align:center;width:55px" class="col-act">
-          <a href="/servers/{{ p.server_id }}" class="btn btn-ghost btn-sm" title="Buka Rincian Server" aria-label="Rincian">
+          <a href="/servers/{{ p.server_id }}" class="btn btn-ghost btn-sm" title="Buka Detail Server" aria-label="Rincian">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
           </a>
         </td>
@@ -816,13 +816,13 @@
 </div>
 
 {% if user.is_master_admin() or user.has_perm('can_manage_servers') %}
-<!-- Modal Ambang Batas Insiden Global (Standard Interactive Floating Window / probe-modal architecture) -->
+<!-- Modal Threshold Insiden Global (Standard Interactive Floating Window / probe-modal architecture) -->
 <div id="threshold-modal" class="probe-modal-backdrop" onclick="if(event.target===this)closeThresholdModal()">
   <div class="probe-modal-panel" style="max-width:620px" onclick="event.stopPropagation()">
     <div class="probe-modal-head">
       <h3>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue)"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-        <span>Ambang Batas Insiden Global</span>
+        <span>Threshold Insiden Global</span>
       </h3>
       <button type="button" class="probe-modal-close" onclick="closeThresholdModal()" aria-label="Tutup Jendela">&times;</button>
     </div>
@@ -933,7 +933,7 @@
           <button type="button" class="btn btn-ghost btn-sm" onclick="closeThresholdModal()">Batal</button>
           <button type="submit" id="th-submit-btn" class="btn btn-primary btn-sm" style="display:inline-flex;align-items:center;gap:6px">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
-            <span>Simpan Ambang Batas</span>
+            <span>Simpan Threshold</span>
           </button>
         </div>
       </div>
@@ -989,7 +989,7 @@ async function submitThresholds(e) {
     });
     const data = await res.json();
     if (res.ok) {
-      showToast('Ambang batas insiden berhasil disimpan.', true);
+      showToast('Threshold insiden berhasil disimpan.', true);
       closeThresholdModal();
       if (typeof window.poll === 'function') window.poll();
     } else {
@@ -999,18 +999,18 @@ async function submitThresholds(e) {
     showToast('Kendala jaringan: ' + err.message, false);
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Simpan Ambang Batas';
+    btn.textContent = 'Simpan Threshold';
   }
 }
 async function resetThresholds() {
   const ok = await showConfirmModal({
-    title: 'Reset Ambang Batas Global',
-    target: 'Ambang Batas Insiden',
-    message: 'Kembalikan seluruh parameter ambang batas peringatan ke nilai standar bawaan pabrik.',
+    title: 'Reset Threshold Global',
+    target: 'Threshold Insiden',
+    message: 'Kembalikan seluruh parameter threshold monitoring ke nilai default.',
     btnText: 'Reset ke Bawaan',
     btnClass: 'btn-warning',
     iconType: 'warning',
-    badge: 'AMBANG BATAS'
+    badge: 'THRESHOLD'
   });
   if (!ok) return;
   try {
@@ -1023,7 +1023,7 @@ async function resetThresholds() {
     });
     const data = await res.json();
     if (res.ok) {
-      showToast('Ambang batas berhasil direset ke bawaan.', true);
+      showToast('Threshold berhasil di-reset ke nilai default.', true);
       if (data && data.thresholds) {
         const th = data.thresholds;
         if (document.getElementById('th-g-cpu-warn')) document.getElementById('th-g-cpu-warn').value = th.cpu_warn || 85;
@@ -1521,7 +1521,7 @@ window.poll = async function(opts = {}) {
             <thead>
               <tr style="border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015)">
                 <th class="col-time" data-col-title="Waktu Mulai" style="padding:5px 10px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="${isEn ? 'Time when incident was first detected' : 'Waktu saat insiden mulai terdeteksi'}">${isEn ? 'START TIME' : 'WAKTU MULAI'}</th>
-                <th class="col-server" data-col-title="Server" style="padding:5px 10px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="${isEn ? 'Server machine where anomaly occurred' : 'Mesin server tempat anomali atau gangguan terjadi'}">SERVER</th>
+                <th class="col-server" data-col-title="Server" style="padding:5px 10px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="${isEn ? 'Server machine where anomaly occurred' : 'Host server tempat anomali atau gangguan terjadi'}">SERVER</th>
                 <th class="col-sev" data-col-title="Keparahan" style="padding:4px 8px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="${isEn ? 'Urgency level: Critical, High, Warning, or Info' : 'Tingkat keparahan: Kritis, Gawat, Peringatan, atau Info'}">${isEn ? 'SEVERITY' : 'KEPARAHAN'}</th>
                 <th class="col-event" data-col-title="Kejadian" style="padding:5px 14px;font-size:10px;color:var(--dim);text-align:left;letter-spacing:0.6px;font-weight:700" title="${isEn ? 'Brief description of the anomaly' : 'Deskripsi ringkas mengenai anomali yang terjadi'}">${isEn ? 'EVENT' : 'KEJADIAN'}</th>
                 <th class="col-durasi" data-col-title="Durasi" style="padding:5px 10px;font-size:10px;color:var(--dim);text-align:right;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="${isEn ? 'Duration of incident up to now' : 'Lama waktu insiden berlangsung hingga sekarang'}">${isEn ? 'DURATION' : 'DURASI'}</th>

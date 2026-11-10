@@ -618,7 +618,7 @@ function renderLoginsData(rawLogins) {
           const isGenericAuthMsg = !actualCmd || actualCmd === '—'
             || actualCmd.toLowerCase().includes('otentikasi')
             || actualCmd.toLowerCase().includes('password')
-            || actualCmd.toLowerCase().includes('kata sandi')
+            || actualCmd.toLowerCase().includes('password') || actualCmd.toLowerCase().includes('kata sandi')
             || actualCmd.toLowerCase().includes('percobaan');
 
           if (isGenericAuthMsg) {

@@ -851,7 +851,7 @@ body.show-alert-banner .tabbar {
   font-size: 11px !important;
 }
 
-/* Standarisasi grid spesifikasi perangkat keras & platform */
+/* Standarisasi grid spesifikasi hardware & platform */
 .tab-body .specs-grid-4 {
   display: grid !important;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)) !important;
@@ -1544,7 +1544,7 @@ div[style*="position: fixed"] .card {
               data-guardrail-title="Matikan Daya Host (Power Off)"
               data-guardrail-target="{{ server.hostname }} ({{ server.ip_address }})"
               data-guardrail-badge="Dampak Kritis"
-              data-guardrail-msg="Matikan total daya host. Mesin tidak dapat dihidupkan kembali melalui dashboard Pantau."
+              data-guardrail-msg="Matikan daya server (Power Off). Host tidak dapat dihidupkan kembali melalui dashboard (memerlukan IPMI / akses fisik)."
               data-guardrail-btn="Power Off Host"
               data-guardrail-color="danger">
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -1668,13 +1668,13 @@ div[style*="position: fixed"] .card {
   <!-- Grid Atas: Performa Real-Time Kompak & Kolom Catatan/Deskripsi Server -->
   <div class="perf-top-grid">
 
-    <!-- 1. Performa Sekarang — Beban & Utilisasi Mesin (Padat & Rapi) -->
+    <!-- 1. Metrik Real-Time — Beban & Resource Host -->
     <div class="card perf-overview-card">
       <div class="card-header perf-header-compact">
         <div style="display:flex;align-items:center;gap:6px">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
           <strong style="margin:0;font-size:12.5px;font-weight:600">
-            Performa Sekarang — Beban &amp; Utilisasi
+            Metrik Real-Time — Resource &amp; Load Host
           </strong>
         </div>
         <div style="display:flex;align-items:center;gap:6px">
@@ -1699,7 +1699,7 @@ div[style*="position: fixed"] .card {
           <!-- Beban (Load) -->
           <div class="perf-chip">
             <div class="perf-chip-row">
-              <span class="perf-chip-label">Beban (1/5/15m)</span>
+              <span class="perf-chip-label">Load Avg (1/5/15m)</span>
             </div>
             <div class="perf-chip-val mono" id="sys-load" style="font-size:11px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">-</div>
           </div>
@@ -1707,7 +1707,7 @@ div[style*="position: fixed"] .card {
           <!-- Memori -->
           <div class="perf-chip">
             <div class="perf-chip-row">
-              <span class="perf-chip-label">Memori</span>
+              <span class="perf-chip-label">RAM</span>
               <span class="perf-chip-val mono" id="sys-mem" style="font-size:10.5px">-</span>
             </div>
             <div class="meter perf-chip-meter"><div class="meter-bar" id="sys-mem-bar" style="width:0%"></div></div>
@@ -1725,7 +1725,7 @@ div[style*="position: fixed"] .card {
           <!-- Proses -->
           <div class="perf-chip">
             <div class="perf-chip-row">
-              <span class="perf-chip-label">Proses</span>
+              <span class="perf-chip-label">Processes</span>
             </div>
             <div class="perf-chip-val mono" id="sys-procs" style="font-size:12px;margin-top:2px">-</div>
           </div>
@@ -1744,13 +1744,13 @@ div[style*="position: fixed"] .card {
         <div class="perf-spark-row">
           <div class="perf-spark-box">
             <div class="perf-spark-label">
-              <span>Tren CPU (10 mnt)</span>
+              <span>Tren CPU (10 min)</span>
             </div>
             <div id="spark-cpu" class="perf-spark-container"></div>
           </div>
           <div class="perf-spark-box">
             <div class="perf-spark-label">
-              <span>Tren RAM (10 mnt)</span>
+              <span>Tren RAM (10 min)</span>
             </div>
             <div id="spark-mem" class="perf-spark-container"></div>
           </div>
@@ -1779,13 +1779,13 @@ div[style*="position: fixed"] .card {
 
   </div>
 
-  <!-- 2. Spesifikasi Perangkat Keras & Platform -->
+  <!-- 2. Spesifikasi Hardware & Platform -->
   <div class="card">
 
     <div class="card-header" style="align-items:center;justify-content:space-between">
       <div>
-        <h3 style="margin:0">Spesifikasi Perangkat Keras &amp; Platform</h3>
-        <span style="font-size:12px;color:var(--dim)">Identitas perangkat keras, prosesor, RAM fisik, hypervisor, dan sistem operasi</span>
+        <h3 style="margin:0">Spesifikasi Hardware &amp; Platform OS</h3>
+        <span style="font-size:12px;color:var(--dim)">Detail hardware, CPU, RAM fisik, hypervisor, dan sistem operasi</span>
       </div>
       {% if platform_info %}
       <span class="badge mono" id="spec-virt-badge" style="background:{{ platform_info.badge_bg }};color:{{ platform_info.badge_color }};border:1px solid {{ platform_info.badge_border }}">{{ platform_info.label }}</span>
@@ -1802,7 +1802,7 @@ div[style*="position: fixed"] .card {
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
           <div style="display:flex;align-items:center;gap:6px">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>
-            <strong style="font-size:13px">Prosesor (CPU)</strong>
+            <strong style="font-size:13px">Processor (CPU)</strong>
           </div>
           <span class="badge badge-info mono" id="spec-cpu-cores" style="font-size:10px">{{ (hardware_specs.cpu.cores ~ ' Cores') if (server.last_seen and hardware_specs and hardware_specs.cpu and hardware_specs.cpu.cores) else '-' }}</span>
         </div>
@@ -1821,7 +1821,7 @@ div[style*="position: fixed"] .card {
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
           <div style="display:flex;align-items:center;gap:6px">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
-            <strong style="font-size:13px">Kapasitas Memori</strong>
+            <strong style="font-size:13px">Kapasitas Memory (RAM &amp; Swap)</strong>
           </div>
           <span class="badge badge-success mono" style="font-size:8.5px">RAM</span>
         </div>
@@ -1840,7 +1840,7 @@ div[style*="position: fixed"] .card {
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
           <div style="display:flex;align-items:center;gap:6px">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-            <strong style="font-size:13px">Platform &amp; Mesin</strong>
+            <strong style="font-size:13px">Platform &amp; Virtualisasi</strong>
           </div>
         </div>
         <table class="table-compact" style="width:100%;font-size:10px">
@@ -1881,7 +1881,7 @@ div[style*="position: fixed"] .card {
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
           <div style="display:flex;align-items:center;gap:6px">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
-            <strong style="font-size:13px">Perangkat Storage / Disk ({% if platform_info and platform_info.type == 'lxc' %}Alokasi Kontainer{% else %}Block Devices{% endif %})</strong>
+            <strong style="font-size:13px">Storage Devices ({% if platform_info and platform_info.type == 'lxc' %}Alokasi LXC Container{% else %}Block Devices{% endif %})</strong>
           </div>
           <span class="badge badge-info" id="spec-disk-count" style="font-size:8.5px">{{ hardware_specs.disks|length if hardware_specs and hardware_specs.disks else 0 }} Disks</span>
         </div>
@@ -1889,13 +1889,13 @@ div[style*="position: fixed"] .card {
           <table style="width:100%;font-size:10px" id="spec-disks-table">
             <thead>
               <tr>
-                <th>Perangkat</th>
+                <th>Device</th>
                 <th>Kapasitas</th>
                 <th>Tipe Media</th>
-                <th>S.M.A.R.T.</th>
-                <th>Suhu</th>
-                <th>Sisa Umur</th>
-                <th>Model / Detail</th>
+                <th>S.M.A.R.T. Health</th>
+                <th>Temp (°C)</th>
+                <th>Wearout / Endurance</th>
+                <th>Model / Vendor</th>
               </tr>
             </thead>
             <tbody>
@@ -1910,11 +1910,11 @@ div[style*="position: fixed"] .card {
                     {% if sm.is_virtual %}
                       <span class="badge badge-muted" style="font-size:8.5px;letter-spacing:0.2px">Virtual (Host)</span>
                     {% elif sm.health == 'healthy' %}
-                      <span class="badge badge-success" style="font-size:8.5px;font-weight:600">✓ Sehat</span>
+                      <span class="badge badge-success" style="font-size:8.5px;font-weight:600">✓ Healthy</span>
                     {% elif sm.health == 'warning' %}
                       <span class="badge badge-warning" style="font-size:8.5px;font-weight:600">Peringatan</span>
                     {% elif sm.health == 'critical' %}
-                      <span class="badge badge-danger" style="font-size:8.5px;font-weight:600">Rusak</span>
+                      <span class="badge badge-danger" style="font-size:8.5px;font-weight:600">Failing</span>
                     {% else %}
                       <span class="badge badge-muted" style="font-size:8.5px">—</span>
                     {% endif %}
@@ -1953,8 +1953,8 @@ div[style*="position: fixed"] .card {
   <div class="card" id="disks-wrap" style="display:none">
     <div class="card-header" style="align-items:center;justify-content:space-between">
       <div>
-        <h3 style="margin:0">Partisi Disk &amp; Laju I/O Storage</h3>
-        <span style="font-size:12px;color:var(--dim)">Pemakaian ruang filesystem dan kecepatan baca/tulis disk secara real-time</span>
+        <h3 style="margin:0">Partisi Filesystem &amp; Disk I/O</h3>
+        <span style="font-size:12px;color:var(--dim)">Kapasitas mount point filesystem dan throughput baca/tulis (Read/Write) real-time</span>
       </div>
     </div>
     <div style="overflow-x:auto">
@@ -1965,8 +1965,8 @@ div[style*="position: fixed"] .card {
             <th class="col-fixed-cell">Tipe</th>
             <th class="col-fixed-cell col-num-cell">Terpakai</th>
             <th class="col-hero-cell" title="Persentase pemakaian ruang dan proyeksi kapasitas storage / disk (Runway 24j)">Pemakaian &amp; Estimasi Laju</th>
-            <th class="col-fixed-cell col-num-cell" title="Kecepatan baca dan tulis disk saat ini">Laju I/O (R / W)</th>
-            <th class="col-fixed-cell col-center-cell" title="Persentase utilisasi waktu aktif disk (I/O util)">Util I/O</th>
+            <th class="col-fixed-cell col-num-cell" title="Throughput baca dan tulis disk saat ini (Read / Write)">Disk I/O (R / W)</th>
+            <th class="col-fixed-cell col-center-cell" title="Persentase utilisasi I/O disk (%util)">% Disk I/O</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -1978,8 +1978,8 @@ div[style*="position: fixed"] .card {
   <div class="card">
     <div class="card-header" style="align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
       <div>
-        <h3 style="margin:0">Konfigurasi &amp; Lalu Lintas Jaringan</h3>
-        <span style="font-size:12px;color:var(--dim)">Konfigurasi gateway, resolver DNS, dan statistik lalu lintas antarmuka secara real-time</span>
+        <h3 style="margin:0">Konfigurasi Jaringan &amp; Traffic Interface</h3>
+        <span style="font-size:12px;color:var(--dim)">Konfigurasi gateway, DNS resolver, dan statistik traffic network interface real-time</span>
       </div>
       <div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px">
         <span class="badge badge-muted mono" style="font-size:9.5px;padding:2px 7px;display:inline-flex;align-items:center;gap:4px" title="Default Gateway Server">
@@ -1998,15 +1998,15 @@ div[style*="position: fixed"] .card {
       <table id="net-table" style="display:none;width:100%">
         <thead>
           <tr>
-            <th>Antarmuka</th>
-            <th>Alamat IP</th>
-            <th>Alamat MAC</th>
-            <th>Kecepatan</th>
-            <th>Status</th>
+            <th>Network Interface</th>
+            <th>IP Address</th>
+            <th>MAC Address</th>
+            <th>Speed / Duplex</th>
+            <th>Status (Link)</th>
             <th title="Total akumulasi byte diterima sejak boot">RX Total</th>
             <th title="Total akumulasi byte dikirim sejak boot">TX Total</th>
-            <th title="Kecepatan download (RX) / lalu lintas masuk">Laju Masuk (RX)</th>
-            <th title="Kecepatan upload (TX) / lalu lintas keluar">Laju Keluar (TX)</th>
+            <th title="Throughput download traffic masuk (RX)">Traffic RX</th>
+            <th title="Throughput upload traffic keluar (TX)">Traffic TX</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -2018,8 +2018,8 @@ div[style*="position: fixed"] .card {
   <div class="card">
     <div class="card-header" style="align-items:center;justify-content:space-between">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <h3 style="margin:0">Riwayat Kinerja</h3>
-        <span style="font-size:12px;color:var(--dim)">Grafik utilisasi sumber daya mesin jangka panjang</span>
+        <h3 style="margin:0">Riwayat Metrik Performa</h3>
+        <span style="font-size:12px;color:var(--dim)">Grafik Tren Metrik Historis Host (CPU, RAM, Disk &amp; Network)</span>
       </div>
       <div id="perf-ranges" class="segmented-control">
         <button class="btn btn-sm" data-range="today">Hari Ini</button>
@@ -2624,7 +2624,7 @@ div[style*="position: fixed"] .card {
             Memori <span id="sysd-sort-memory" style="font-size:10px;opacity:0.6">↕</span>
           </th>
           <th class="col-hero-cell">Deskripsi</th>
-          <th class="col-fixed-cell col-act" style="text-align:center">Tindakan</th>
+          <th class="col-fixed-cell col-act" style="text-align:center">Aksi</th>
         </tr>
       </thead>
       <tbody id="sysd-tbody">
@@ -2655,7 +2655,7 @@ div[style*="position: fixed"] .card {
 </div>
 
 
-<!-- Tab: Packages (Manajemen Packages Perangkat Lunak OS) -->
+<!-- Tab: Packages (Manajemen Packages Software OS) -->
 <div class="tab-body" id="tab-packages" hidden>
   <div class="card">
     <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
@@ -2666,7 +2666,7 @@ div[style*="position: fixed"] .card {
           <span class="badge badge-info" id="pkg-total-badge" style="font-size:11px;cursor:pointer" onclick="setPkgStatusFilter('all')" title="Tampilkan semua packages">0 packages</span>
           <span class="badge badge-warn" id="pkg-upg-badge" style="display:none;font-size:11px;cursor:pointer" onclick="setPkgStatusFilter('upgradable')" title="Filter pembaruan tersedia (klik ulang untuk reset)">0 pembaruan</span>
         </h3>
-        <span style="font-size:12px;color:var(--dim)">Daftar packages perangkat lunak sistem operasi dan pustaka terpasang</span>
+        <span style="font-size:12px;color:var(--dim)">Inventaris packages APT/dpkg dan library sistem terpasang</span>
       </div>
       
       <!-- Toolbar Tombol Kontrol: Hanya Ikon + Tooltip -->
@@ -2837,10 +2837,10 @@ div[style*="position: fixed"] .card {
             PID <span id="sort-icon-pid" style="font-size:11px;opacity:0.6">↕</span>
           </th>
           <th style="width:110px;cursor:pointer" onclick="toggleProcSort('user')" title="Klik untuk mengurutkan Pengguna">
-            Pengguna <span id="sort-icon-user" style="font-size:11px;opacity:0.6">↕</span>
+            User <span id="sort-icon-user" style="font-size:11px;opacity:0.6">↕</span>
           </th>
           <th style="cursor:pointer" onclick="toggleProcSort('comm')" title="Klik untuk mengurutkan Nama Perintah">
-            Nama Perintah / Proses <span id="sort-icon-comm" style="font-size:11px;opacity:0.6">↕</span>
+            Command / Process <span id="sort-icon-comm" style="font-size:11px;opacity:0.6">↕</span>
           </th>
           <th style="width:100px;text-align:center;cursor:pointer" onclick="toggleProcSort('state')" title="Klik untuk mengurutkan Status">
             Status <span id="sort-icon-state" style="font-size:11px;opacity:0.6">↕</span>
@@ -2849,10 +2849,10 @@ div[style*="position: fixed"] .card {
             %CPU <span id="sort-icon-cpu" style="font-size:11px;color:var(--blue)">▼</span>
           </th>
           <th style="width:95px;min-width:90px;text-align:right;cursor:pointer" onclick="toggleProcSort('mem')" title="Klik untuk mengurutkan penggunaan Memori">
-            %Memori <span id="sort-icon-mem" style="font-size:11px;opacity:0.6">↕</span>
+            %MEM <span id="sort-icon-mem" style="font-size:11px;opacity:0.6">↕</span>
           </th>
           {% if user.has_perm('can_processes') %}
-          <th class="col-act" style="width:170px;text-align:center">Tindakan</th>
+          <th class="col-act" style="width:170px;text-align:center">Aksi</th>
           {% endif %}
         </tr>
       </thead>
@@ -2887,10 +2887,10 @@ div[style*="position: fixed"] .card {
           <tr>
             <th class="col-fixed-cell col-center-cell">Status</th>
             <th class="col-fixed-cell" title="Jadwal waktu eksekusi dalam format cron (menit jam tgl bln hari)">Jadwal (Cron)</th>
-            <th class="col-fixed-cell" title="Pengguna Linux yang menjalankan perintah">Pengguna</th>
+            <th class="col-fixed-cell" title="User Linux yang menjalankan perintah">User</th>
             <th class="col-hero-cell" title="Perintah atau skrip yang dieksekusi">Perintah (Command)</th>
             <th class="col-fixed-cell" title="Lokasi file konfigurasi cron pada server">Sumber File</th>
-            <th class="col-fixed-cell col-act" style="text-align:center">Tindakan</th>
+            <th class="col-fixed-cell col-act" style="text-align:center">Aksi</th>
           </tr>
         </thead>
         <tbody>
@@ -2998,7 +2998,7 @@ div[style*="position: fixed"] .card {
 
         {% if user.has_perm('can_firewall') %}
           {% if firewall.status == 'active' %}
-            <button type="button" class="btn btn-ghost btn-sm btn-noc-icon" id="btn-fw-reload" onclick="submitFirewallAction('reload', this)" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Muat ulang aturan UFW tanpa memutus koneksi"{% endif %} aria-label="Reload Aturan">
+            <button type="button" class="btn btn-ghost btn-sm btn-noc-icon" id="btn-fw-reload" onclick="submitFirewallAction('reload', this)" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Reload aturan UFW tanpa memutus koneksi aktif"{% endif %} aria-label="Reload Aturan">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
             </button>
             <button type="button" class="btn btn-warn btn-sm btn-noc-icon" id="btn-fw-disable" onclick="submitFirewallAction('disable', this)" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Nonaktifkan UFW"{% endif %} aria-label="Nonaktifkan Firewall">
@@ -3035,13 +3035,13 @@ div[style*="position: fixed"] .card {
       </div>
     </div>
 
-    <h4 style="margin:14px 14px 8px 14px;font-size:12.5px;font-weight:600;color:var(--text);letter-spacing:.3px">Aturan Port &amp; Kebijakan Akses (Rules)</h4>
+    <h4 style="margin:14px 14px 8px 14px;font-size:12.5px;font-weight:600;color:var(--text);letter-spacing:.3px">Firewall Rules &amp; Port Policies</h4>
     <div style="overflow-x:auto" id="fw-rules-wrap" style="display:{{ 'block' if (firewall and firewall.rules) else 'none' }}">
       <table id="fw-rules-table" class="noc-table-compact" style="width:100%">
         <thead>
           <tr>
             <th class="col-fixed-cell col-center-cell" style="width:40px">#</th>
-            <th class="col-hero-cell">Aturan / Deskripsi Akses Port</th>
+            <th class="col-hero-cell">Rule / Policy Deskripsi</th>
           </tr>
         </thead>
         <tbody>
@@ -3447,7 +3447,7 @@ div[style*="position: fixed"] .card {
             <th class="col-fixed-cell" data-col-title="Bind IP" title="Alamat IP yang di-bind oleh socket">Bind IP</th>
             <th class="col-fixed-cell" data-col-title="Akses" title="Cakupan akses: Publik (terbuka ke jaringan luar) atau Lokal (loopback)">Akses</th>
             <th class="col-hero-cell" data-col-title="Proses &amp; PID" title="Nama proses sistem dan PID yang membuka port ini">Proses &amp; PID</th>
-            <th class="col-fixed-cell col-act" data-col-title="Tindakan" style="text-align:center" title="Tindakan yang dapat dilakukan pada port ini">Tindakan</th>
+            <th class="col-fixed-cell col-act" data-col-title="Aksi" style="text-align:center" title="Aksi manajemen port / terminate proses">Aksi</th>
           </tr>
         </thead>
         <tbody>
@@ -3529,11 +3529,11 @@ div[style*="position: fixed"] .card {
           <tr>
             <th class="col-hero-cell" title="Domain atau Subdomain yang dilindungi oleh sertifikat">Domain / Subjek</th>
             <th class="col-fixed-cell" title="Otoritas penerbit sertifikat (Certificate Authority)">Penerbit (CA)</th>
-            <th class="col-fixed-cell" title="Batas waktu akhir masa berlaku sertifikat">Kedaluwarsa Pada</th>
+            <th class="col-fixed-cell" title="Batas waktu akhir masa berlaku sertifikat">Expiry Date</th>
             <th class="col-fixed-cell col-num-cell" title="Sisa hari sebelum sertifikat habis masa berlakunya">Sisa Hari</th>
-            <th class="col-fixed-cell col-center-cell" title="Status kesehatan sertifikat">Status</th>
+            <th class="col-fixed-cell col-center-cell" title="Status masa berlaku sertifikat SSL/TLS">Status</th>
             <th class="col-fixed-cell" title="Lokasi file sertifikat di filesystem server">Lokasi File</th>
-            <th class="col-fixed-cell col-act" style="text-align:center">Tindakan</th>
+            <th class="col-fixed-cell col-act" style="text-align:center">Aksi</th>
           </tr>
         </thead>
         <tbody>
@@ -3547,7 +3547,7 @@ div[style*="position: fixed"] .card {
             <td class="mono" style="font-size:12px">{{ c.not_after }}</td>
             <td class="mono" style="font-weight:700;color:{{ 'var(--red)' if c.is_expired or c.is_critical else ('var(--yellow)' if c.is_warning else 'var(--green)') }}">
               {% if c.is_expired %}
-                Kedaluwarsa
+                Expired
               {% else %}
                 {{ c.days_left }} hari lagi
               {% endif %}
@@ -3556,11 +3556,11 @@ div[style*="position: fixed"] .card {
               {% if c.is_expired %}
                 <span class="badge badge-danger">Expired</span>
               {% elif c.is_critical %}
-                <span class="badge badge-danger">Segera Expired (&lt;14 hr)</span>
+                <span class="badge badge-danger">Critical Expired (&lt;14 hari)</span>
               {% elif c.is_warning %}
-                <span class="badge badge-warn">Perlu Diperbarui (&lt;30 hr)</span>
+                <span class="badge badge-warn">Warning Expired (&lt;30 hari)</span>
               {% else %}
-                <span class="badge badge-up">Aktif Normal</span>
+                <span class="badge badge-up">Valid / Active</span>
               {% endif %}
             </td>
             <td class="mono" style="font-size:11px;color:var(--dim)">{{ c.path }}</td>
@@ -4083,7 +4083,7 @@ div[style*="position: fixed"] .card {
     </div>
     
     <p style="font-size:12.5px;color:var(--dim);margin:0 0 16px 0;line-height:1.5">
-      Akses shell interaktif memberikan wewenang <strong>root penuh</strong> pada sistem klien. Masukkan kata sandi akun Anda untuk membuka sesi.
+      Akses shell interaktif memberikan akses root pada sistem klien. Masukkan password akun Anda untuk membuka sesi.
     </p>
 
     <div id="term-unlock-error" style="display:none;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.4);border-radius:6px;padding:8px 12px;margin-bottom:14px;color:var(--red);font-size:12px;line-height:1.4"></div>
@@ -4091,7 +4091,7 @@ div[style*="position: fixed"] .card {
     <form id="term-unlock-form" data-no-loading onsubmit="submitTerminalUnlock(event)">
       <div style="margin-bottom:14px">
         <label for="term-unlock-pwd" style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text)">Password Akun User:</label>
-        <input type="password" id="term-unlock-pwd" required autocomplete="current-password" placeholder="Masukkan kata sandi login Anda" style="width:100%;padding:8px 12px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;box-sizing:border-box">
+        <input type="password" id="term-unlock-pwd" required autocomplete="current-password" placeholder="Masukkan password login Anda" style="width:100%;padding:8px 12px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;box-sizing:border-box">
       </div>
 
       <div id="term-unlock-totp-grp" style="display:none;margin-bottom:14px">
@@ -4136,7 +4136,7 @@ div[style*="position: fixed"] .card {
     </div>
     
     <p style="font-size:12.5px;color:var(--dim);margin:0 0 16px 0;line-height:1.5">
-      Akses File Manager memberikan wewenang <strong>root penuh</strong> untuk melihat dan memanipulasi file sistem klien. Masukkan kata sandi akun Anda untuk membuka sesi.
+      Akses File Manager memberikan akses root untuk melihat dan memodifikasi file sistem klien. Masukkan password akun Anda untuk membuka sesi.
     </p>
 
     <div id="fm-unlock-error" style="display:none;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.4);border-radius:6px;padding:8px 12px;margin-bottom:14px;color:var(--red);font-size:12px;line-height:1.4"></div>
@@ -4144,7 +4144,7 @@ div[style*="position: fixed"] .card {
     <form id="fm-unlock-form" data-no-loading onsubmit="submitFileManagerUnlock(event)">
       <div style="margin-bottom:14px">
         <label for="fm-unlock-pwd" style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text)">Password Akun User:</label>
-        <input type="password" id="fm-unlock-pwd" required autocomplete="current-password" placeholder="Masukkan kata sandi login Anda" style="width:100%;padding:8px 12px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;box-sizing:border-box">
+        <input type="password" id="fm-unlock-pwd" required autocomplete="current-password" placeholder="Masukkan password login Anda" style="width:100%;padding:8px 12px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;box-sizing:border-box">
       </div>
 
       <div id="fm-unlock-totp-grp" style="display:none;margin-bottom:14px">
@@ -9364,7 +9364,7 @@ function patch(data) {
       } else {
         poweroffBtn.style.opacity = '';
         poweroffBtn.style.cursor = '';
-        poweroffBtn.title = isEnHero ? 'Shut down client server machine completely (power off)' : 'Matikan daya mesin server klien secara penuh (shutdown/power off)';
+        poweroffBtn.title = isEnHero ? 'Shut down client server completely (power off)' : 'Matikan daya server host (power off / shutdown)';
         poweroffBtn.dataset.i18nTitle = 'poweroff_tooltip';
       }
     }
@@ -10353,7 +10353,7 @@ function renderSys(data) {
     if (_currentAccCategory !== 'all' || qAcc) {
       // Biarkan searchUsersTable memperbarui badge sesuai hasil filter
     } else {
-      let bText = acc.length + (isEn ? (acc.length === 1 ? ' User' : ' Users') : ' Pengguna');
+      let bText = acc.length + (acc.length === 1 ? ' User' : ' Users');
       if (sessCount > 0) {
         bText += isEn ? (' · ' + sessCount + ' Active Sessions (SSH)') : (' · ' + sessCount + ' Sesi Aktif (SSH)');
       }

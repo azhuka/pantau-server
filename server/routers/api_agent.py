@@ -1684,7 +1684,7 @@ def api_logs_request(
     if is_shell and not is_terminal_unlocked(user.id, sid):
         raise HTTPException(
             status_code=403,
-            detail="Terminal terkunci: Memerlukan otentikasi kata sandi untuk membuka sesi",
+            detail="Terminal terkunci: Memerlukan otentikasi password untuk membuka sesi",
         )
     if is_apt:
         busy = (

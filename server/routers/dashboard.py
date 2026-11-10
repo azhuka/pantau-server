@@ -599,7 +599,7 @@ def api_alerts(
     unack_average = [r for r in open_average if r.acknowledged_at is None]
     unack_warning = [r for r in open_warning if r.acknowledged_at is None]
 
-    # Filter Anti-Spike: Beban resource (CPU/RAM/Swap) yang menyentuh ambang batas
+    # Filter Anti-Spike: Beban resource (CPU/RAM/Swap) yang menyentuh threshold
     # ditahan selama 60 detik sebelum memicu Alert Banner & Audio darurat
     RESOURCE_ALERT_DELAY_SECS = 60
 
@@ -1079,7 +1079,7 @@ def api_system_version():
 @router.get("/api/system/status")
 @router.get("/api/system/overview")
 def api_system_status(user: User = Depends(require_user), db: Session = Depends(get_db)):
-    """Status sumber daya internal host server Pantau."""
+    """Status resource internal host server Pantau."""
     return {
         "hostname": socket.gethostname(),
         "uptime": _proc_uptime(),

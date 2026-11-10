@@ -2,8 +2,8 @@
 Router Pengaturan Sistem & Master Control Center Pantau Server.
 Menyediakan portal manajemen Master Control untuk Master Administrator:
 inspeksi dan optimasi database MySQL (reclaim fragmented storage, ukuran tabel),
-telemetri sumber daya host pusat, ambang batas insiden global (thresholds),
-serta tata kelola sistem berkepadatan tinggi.
+telemetri resource host pusat, threshold insiden global (thresholds),
+serta manajemen sistem berdensitas tinggi.
 """
 
 from datetime import datetime
@@ -59,7 +59,7 @@ def api_update_thresholds(
     user: User = Depends(require_user),
     db: Session = Depends(get_db),
 ):
-    """Perbarui ambang batas masalah global."""
+    """Perbarui threshold insiden global."""
     _verify_csrf_header(request)
     if not (user.is_master_admin() or user.has_perm("can_manage_servers")):
         raise HTTPException(status_code=403, detail="Akses ditolak")
@@ -112,14 +112,14 @@ def api_update_thresholds(
         if not (w_val <= a_val <= d_val):
             raise HTTPException(
                 status_code=400,
-                detail=f"Urutan ambang batas {lbl} tidak valid: Peringatan ({w_val:.0f}%) ≤ Gawat ({a_val:.0f}%) ≤ Kritis ({d_val:.0f}%)",
+                detail=f"Urutan threshold {lbl} tidak valid: Peringatan ({w_val:.0f}%) ≤ Gawat ({a_val:.0f}%) ≤ Kritis ({d_val:.0f}%)",
             )
     ssh_w = new_th.get("ssh_fail_warn", DEFAULT_THRESHOLDS["ssh_fail_warn"])
     ssh_d = new_th.get("ssh_fail_danger", DEFAULT_THRESHOLDS["ssh_fail_danger"])
     if ssh_w > ssh_d:
         raise HTTPException(
             status_code=400,
-            detail=f"Urutan ambang batas Login SSH tidak valid: Peringatan ({ssh_w}) ≤ Kritis ({ssh_d})",
+            detail=f"Urutan threshold Login SSH tidak valid: Peringatan ({ssh_w}) ≤ Kritis ({ssh_d})",
         )
 
     current_th = get_global_thresholds(db)
@@ -137,7 +137,7 @@ def api_update_thresholds(
         db,
         user.username,
         "settings_update",
-        target="Ambang Batas Insiden Global",
+        target="Threshold Insiden Global",
         result="disimpan",
     )
     db.commit()
@@ -150,7 +150,7 @@ def api_reset_thresholds(
     user: User = Depends(require_user),
     db: Session = Depends(get_db),
 ):
-    """Reset ambang batas masalah global ke bawaan pabrik."""
+    """Reset threshold insiden global ke default."""
     _verify_csrf_header(request)
     if not (user.is_master_admin() or user.has_perm("can_manage_servers")):
         raise HTTPException(status_code=403, detail="Akses ditolak")
@@ -162,7 +162,7 @@ def api_reset_thresholds(
             db,
             user.username,
             "settings_reset",
-            target="Ambang Batas Insiden Global",
+            target="Threshold Insiden Global",
             result="direset ke bawaan pabrik",
         )
         db.commit()

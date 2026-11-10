@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token }}">
 <title>{% block title %}Pantau Server{% endblock %}</title>
-<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.146' }}">
+<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.147' }}">
 {% block extra_head %}{% endblock %}
 <script>
 (function() {
@@ -2576,7 +2576,7 @@ body.show-alert-banner .main{padding-top:72px}
   </nav>
   <div class="sidebar-footer">
     <div style="display:flex;align-items:center;margin-bottom:6px">
-      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.146' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
+      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.147' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
     </div>
     {% if user %}
     <div style="margin-bottom:6px;line-height:1.4">
@@ -3569,7 +3569,7 @@ function getAlertGroupDesc(key, firstMsg) {
 
 function getCleanGlobalTip(key, firstTip) {
   if (key === 'agent_stale') {
-    return 'Segera lakukan inspeksi langsung pada fisik atau virtual mesin server, periksa suplai daya, dan verifikasi konektivitas jaringan.';
+    return 'Segera lakukan inspeksi server fisik atau VM, periksa power supply, dan verifikasi konektivitas jaringan.';
   }
   if (!firstTip) return '';
   return String(firstTip)
@@ -4350,7 +4350,7 @@ function renderProblemDetailModal(p) {
             'Inspect agent logs for detailed diagnosis: sudo journalctl -u agent_pantau -n 30 --no-pager'
           ]
         : [
-            'Verifikasi status daya fisik atau virtual mesin: pastikan server dalam kondisi aktif (Power ON).',
+            'Verifikasi status power server fisik atau VM: pastikan host dalam kondisi Power ON.',
             'Uji konektivitas jaringan: lakukan ping atau uji jangkauan SSH ke alamat host server.',
             'Lakukan inspeksi keamanan & firewall: pastikan port telemetri atau akses keluar server tidak diblokir.',
             'Bila server aktif dan dapat diakses, periksa status service agen: sudo systemctl status agent_pantau',
@@ -4583,7 +4583,7 @@ setInterval(alertFetch, 5000);
       <label style="display:block;font-size:11px;font-weight:600;color:var(--dim);margin-bottom:4px">
         Password Akun Operator
       </label>
-      <input type="password" id="guardrail-pwd-input" class="form-control" placeholder="Masukkan kata sandi akun Anda" autocomplete="current-password" style="width:100%;padding:7px 10px;font-size:12.5px;background:var(--input-bg, #0d1117);border:1px solid var(--modal-border, #30363d);border-radius:6px;color:var(--input-text, #fff)">
+      <input type="password" id="guardrail-pwd-input" class="form-control" placeholder="Masukkan password akun Anda" autocomplete="current-password" style="width:100%;padding:7px 10px;font-size:12.5px;background:var(--input-bg, #0d1117);border:1px solid var(--modal-border, #30363d);border-radius:6px;color:var(--input-text, #fff)">
     </div>
 
     <!-- Input Kode 2FA TOTP (Jika Akun Aktif 2FA) -->
@@ -4674,7 +4674,7 @@ setInterval(alertFetch, 5000);
     <!-- 2. Warna Aksen -->
     <div style="margin-bottom:16px">
       <label style="font-size:11.5px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:6px;margin-bottom:2px">
-        <span>Warna Aksen Antarmuka</span>
+        <span>Aksen Warna UI</span>
       </label>
       <div class="accent-pill-list">
         <div class="accent-pill" id="accent-pill-cyan" onclick="onAccentSelect('cyan')">
@@ -4707,7 +4707,7 @@ setInterval(alertFetch, 5000);
       </label>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div>
-          <label style="font-size:10.5px;color:var(--dim);display:block;margin-bottom:4px">Font Antarmuka (UI)</label>
+          <label style="font-size:10.5px;color:var(--dim);display:block;margin-bottom:4px">Font UI</label>
           <select id="theme-select-font-ui" onchange="onThemeFontUiChange(this.value)" style="width:100%;padding:7px 10px;border-radius:6px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-size:11.5px;outline:none;cursor:pointer">
             <option value="system">Sistem Bawaan (San Francisco/Segoe/Roboto)</option>
             <option value="inter">Inter (Modern &amp; Presisi)</option>

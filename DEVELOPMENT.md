@@ -354,6 +354,31 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.147
+
+- **Tipe Rilis:** Pembersihan Total & Penyelarasan Kalimat Robotik/Kaku ke Standar Bahasa Alami Sysadmin & NOC Seluruh Modul (*Full Elimination of Robotic Translations & Complete Natural Sysadmin/NOC Nomenclature Overhaul*)
+- **Fokus Utama:** Mengeliminasi seluruh kalimat terjemahan kaku buatan mesin dan menstandarisasikan bahasa di seluruh lapisan aplikasi (Dashboard, Server Detail, Insiden, Probing, Audit Log, File Manager, User Activity, Profile, Master Control, dan Router Backend):
+  1. **Eliminasi Frasa Kaku "Utilisasi Sumber Daya Mesin":**
+     - Mengubah kalimat kaku *"Grafik utilisasi sumber daya mesin jangka panjang"* menjadi bahasa teknis alami dan manusiawi: **`Grafik Tren Metrik Historis Host (CPU, RAM, Disk & Network)`**.
+     - Mengubah *"Performa Sekarang — Beban & Utilisasi Mesin"* menjadi **`Metrik Real-Time — Resource & Load Host`**.
+     - Mengubah *"Beban (1/5/15m)"* menjadi **`Load Avg (1/5/15m)`** sesuai standar industri Linux/UNIX.
+     - Mengubah *"Proses yang memakan sumber daya terbesar"* menjadi **`Proses dengan konsumsi resource CPU & RAM tertinggi`**.
+  2. **Standardisasi Hardware, Virtualisasi, & Network:**
+     - Mengubah *"Spesifikasi Perangkat Keras & Platform"* dan *"Platform & Mesin"* menjadi **`Spesifikasi Hardware & Platform OS`** dan **`Platform & Virtualisasi`**.
+     - Mengubah *"Konfigurasi & Lalu Lintas Jaringan"* dan *"Antarmuka"* menjadi **`Konfigurasi Jaringan & Traffic Interface`** dan **`Network Interface`**.
+     - Menstandarisasi metrik throughput menjadi **`Traffic RX`** dan **`Traffic TX`**.
+     - Menstandarisasi metrik disk menjadi **`Partisi Filesystem & Disk I/O`** dan **`% Disk I/O`**.
+  3. **Penegakan Istilah Threshold & Clipboard:**
+     - Mengubah seluruh penyebutan *"ambang batas"* pada modul Insiden, Probing, Form Server, Master Control, dan Dashboard menjadi istilah baku monitoring: **`Threshold`** (`Threshold Insiden`, `Threshold Insiden Global`, `Reset Threshold`).
+     - Mengubah seluruh penyebutan *"papan klip"* menjadi **`clipboard`** (`Salin ke clipboard`, `Gagal menyalin ke clipboard`).
+  4. **Penyelarasan Modal Otentikasi Step-Up & Power:**
+     - Memperbarui dialog konfirmasi otentikasi Web Terminal dan File Manager agar tidak lagi memuat kata sandi kaku: *"Akses shell interaktif memberikan akses root pada sistem klien. Masukkan password akun Anda untuk membuka sesi"*.
+     - Memperbarui aksi shutdown host: *"Matikan daya server (Power Off). Host tidak dapat dihidupkan kembali melalui dashboard (memerlukan IPMI / akses fisik)"*.
+  5. **Kompilasi, Restart Layanan, & Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.147` pada 7 berkas inti repositori.
+     - Kompilasi sintaksis Python (`py_compile`), template Jinja2, dan skrip Bash (`bash -n`) lolos 100%.
+     - Distribusi agen klien ke `/opt/pantau/agent/agent_pantau.py` dan restart daemon `pantau-server.service` serta `agent_pantau.service` berstatus aktif normal (*running*).
+
 ## Versi 4.8.146
 
 - **Tipe Rilis:** Penuntasan Menyeluruh Istilah Teknis Global Standar Komputer & Sysadmin di Seluruh Modul Pantau Server (*Complete End-to-End Technical Standardization of Global Sysadmin/NOC Nomenclature*)

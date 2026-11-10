@@ -203,7 +203,7 @@ def api_server_files_unlock(
     user: User = Depends(require_user),
     db: Session = Depends(get_db),
 ):
-    """Buka kunci akses File Manager dengan tantangan kata sandi (sudo step-up auth) + TOTP."""
+    """Buka kunci akses File Manager dengan tantangan password (sudo step-up auth) + TOTP."""
     _verify_csrf_header(request)
 
     if not user.has_perm("can_file_manager"):

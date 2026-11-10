@@ -212,7 +212,7 @@ def api_terminal_unlock(
     user: User = Depends(require_user),
     db: Session = Depends(get_db),
 ):
-    """Buka kunci akses Web Terminal dengan tantangan kata sandi (sudo step-up auth) + TOTP."""
+    """Buka kunci akses Web Terminal dengan tantangan password (sudo step-up auth) + TOTP."""
     _verify_csrf_header(request)
 
     if not user.has_perm("can_terminal"):

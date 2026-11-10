@@ -1,7 +1,7 @@
 """
 Router Manajemen Pengguna Operator & Profil Akun (RBAC 3-Tier).
 Menangani pendaftaran dan delegasi hak akses pengguna (Master Admin, Operator, Viewer),
-manajemen perizinan modular per-operator, reset kata sandi, aktivasi/deaktivasi akun,
+manajemen perizinan modular per-operator, reset password, aktivasi/deaktivasi akun,
 otentikasi dua faktor (TOTP RFC 6238) mandiri maupun terkelola,
 serta pengaturan branding & identitas organisasi.
 """

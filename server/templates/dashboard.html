@@ -1379,7 +1379,7 @@ body.popout-fleet_table #dash-fleet-card {
       </span>
       <div>
         <h3 style="font-size:13.5px;font-weight:600;margin:0">Status &amp; Kinerja</h3>
-        <div style="font-size:11px;color:var(--dim);margin-top:1px">Tinjauan cepat situasi, level prioritas, pemakaian hardware, dan kesehatan services per host secara real-time.</div>
+        <div style="font-size:11px;color:var(--dim);margin-top:1px">Status operasional host, level insiden, utilisasi hardware, dan status services real-time.</div>
       </div>
     </div>
 
@@ -1690,7 +1690,7 @@ body.popout-fleet_table #dash-fleet-card {
            data-card-group="{{ srv.group_name or '' }}"
            data-card-text="{{ (srv.hostname ~ ' ' ~ (srv.group_name or '') ~ ' ' ~ (srv.tags or '')) | lower }}"
            onclick="window.location.href='/servers/{{ srv.id }}'"
-           title="Klik untuk buka rincian server {{ srv.hostname }}">
+           title="Buka detail server {{ srv.hostname }}">
 
         <!-- Header Kartu -->
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
@@ -1903,7 +1903,7 @@ const SEV_CONFIG = {
     label: 'Peringatan',
     badgeCls: 'badge-warn',
     iconHtml: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>',
-    emptyMsg: 'Tidak ada anomali atau ambang batas Peringatan yang terlampaui.'
+    emptyMsg: 'Tidak ada anomali atau threshold Peringatan yang terlampaui.'
   },
   info: {
     label: 'Informasi',
@@ -2092,7 +2092,7 @@ document.addEventListener('keydown', function(e) {
   }
 });
 
-// 1. Threshold Evaluation Helper (Menyesuaikan dengan ambang batas konfigurasi global)
+// 1. Threshold Evaluation Helper (Menyesuaikan dengan threshold konfigurasi global)
 function getThreshold(val, type) {
   if (val == null || isNaN(val)) return { cls: 'green', color: 'var(--dim)' };
   let w = 85;
@@ -2437,7 +2437,7 @@ function createAndAppendDashGridCard(srv, gridEl) {
   card.dataset.cardGroup = srv.group_name || '';
   card.dataset.cardText = ((srv.hostname || '') + ' ' + (srv.group_name || '') + ' ' + (srv.tags || '')).toLowerCase();
   card.onclick = () => { window.location.href = '/servers/' + srv.id; };
-  card.title = 'Klik untuk buka rincian server ' + (srv.hostname || '');
+  card.title = 'Buka detail server ' + (srv.hostname || '');
 
   card.innerHTML = `
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
