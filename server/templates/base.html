@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token }}">
 <title>{% block title %}Pantau Server{% endblock %}</title>
-<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.147' }}">
+<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.148' }}">
 {% block extra_head %}{% endblock %}
 <script>
 (function() {
@@ -2576,7 +2576,7 @@ body.show-alert-banner .main{padding-top:72px}
   </nav>
   <div class="sidebar-footer">
     <div style="display:flex;align-items:center;margin-bottom:6px">
-      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.147' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
+      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.148' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
     </div>
     {% if user %}
     <div style="margin-bottom:6px;line-height:1.4">
@@ -4412,7 +4412,7 @@ function renderProblemDetailModal(p) {
     const tech = ctx.data_teknis || {};
     let techRows = [];
     if (p.hostname) techRows.push(`<tr><td style="color:var(--dim);width:150px;padding:4px 0">${isEn ? 'Server' : 'Server'}</td><td><strong>${_esc(p.hostname)}</strong> ${p.server_id ? '<span style="color:var(--dim);font-size:11px">(ID #' + _esc(p.server_id) + ')</span>' : ''}</td></tr>`);
-    if (tech.service_name) techRows.push(`<tr><td style="color:var(--dim);padding:4px 0">${isEn ? 'Service Name' : 'Nama Layanan'}</td><td><span class="mono">${_esc(tech.service_name)}</span></td></tr>`);
+    if (tech.service_name) techRows.push(`<tr><td style="color:var(--dim);padding:4px 0">${isEn ? 'Service Name' : 'Nama Service'}</td><td><span class="mono">${_esc(tech.service_name)}</span></td></tr>`);
     if (tech.port) techRows.push(`<tr><td style="color:var(--dim);padding:4px 0">${isEn ? 'Port / Process' : 'Port / Proses'}</td><td><span class="mono">:${_esc(tech.port)}</span> ${tech.process_name ? '(' + _esc(tech.process_name) + ')' : ''}</td></tr>`);
     if (tech.conflicting_ips && tech.conflicting_ips.length) {
       techRows.push(`<tr><td style="color:var(--dim);padding:4px 0">${isEn ? 'Conflicting IPs' : 'IP Konflik'}</td><td><span class="badge badge-danger">${_esc(tech.conflicting_ips.join(', '))}</span></td></tr>`);
@@ -4436,8 +4436,9 @@ function renderProblemDetailModal(p) {
     if (tech.agent_version) {
       techRows.push(`<tr><td style="color:var(--dim);padding:4px 0">${isEn ? 'Agent Version' : 'Versi Agen'}</td><td><span class="mono">${_esc(tech.agent_version)}</span> <span style="color:var(--dim)">(${isEn ? 'Latest: ' : 'Terbaru: '}${_esc(tech.dashboard_version || '')})</span></td></tr>`);
     }
-    if (tech.paket_upgradable !== undefined) {
-      techRows.push(`<tr><td style="color:var(--dim);padding:4px 0">${isEn ? 'OS Updates' : 'Packages OS Siap Upgrade'}</td><td><strong>${_esc(tech.paket_upgradable)} ${isEn ? 'packages' : 'packages'}</strong></td></tr>`);
+    const upgradableCount = tech.packages_upgradable !== undefined ? tech.packages_upgradable : tech.paket_upgradable;
+    if (upgradableCount !== undefined) {
+      techRows.push(`<tr><td style="color:var(--dim);padding:4px 0">${isEn ? 'OS Updates' : 'Packages OS Siap Upgrade'}</td><td><strong>${_esc(upgradableCount)} ${isEn ? 'packages' : 'packages'}</strong></td></tr>`);
     }
     if (tech.waktu_kejadian) {
       techRows.push(`<tr><td style="color:var(--dim);padding:4px 0">${isEn ? 'Event Timestamp' : 'Waktu Kejadian'}</td><td class="mono" style="font-size:11.5px">${_esc(tech.waktu_kejadian)}</td></tr>`);

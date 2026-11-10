@@ -479,7 +479,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.147"
+AGENT_VERSION = "4.8.148"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -3221,7 +3221,7 @@ elif command -v yum >/dev/null 2>&1; then
 elif command -v pacman >/dev/null 2>&1; then
     PKG_MGR="pacman"
 else
-    echo "pantau-apt: manajer paket yang didukung (apt-get, dnf, yum, pacman) tidak ditemukan di sistem ini." >&2
+    echo "pantau-apt: manajer packages yang didukung (apt-get, dnf, yum, pacman) tidak ditemukan di sistem ini." >&2
     exit 1
 fi
 
@@ -3273,12 +3273,12 @@ if [ "$PKG_MGR" = "apt" ]; then
         upgrade-pkg)
             pkg="${2:-}"
             if [ -z "$pkg" ]; then
-                echo "pantau-apt: nama paket target tidak boleh kosong" >&2
+                echo "pantau-apt: nama package target tidak boleh kosong" >&2
                 exit 2
             fi
             case "$pkg" in
                 *[!a-z0-9+.-]* | "" | -* | .* | +* )
-                    echo "pantau-apt: nama paket tidak valid: '$pkg'" >&2
+                    echo "pantau-apt: nama package tidak valid: '$pkg'" >&2
                     exit 2
                     ;;
             esac
@@ -3315,12 +3315,12 @@ elif [ "$PKG_MGR" = "dnf" ] || [ "$PKG_MGR" = "yum" ]; then
         upgrade-pkg)
             pkg="${2:-}"
             if [ -z "$pkg" ]; then
-                echo "pantau-apt: nama paket target tidak boleh kosong" >&2
+                echo "pantau-apt: nama package target tidak boleh kosong" >&2
                 exit 2
             fi
             case "$pkg" in
                 *[!a-zA-Z0-9+._-]* | "" | -* )
-                    echo "pantau-apt: nama paket tidak valid: '$pkg'" >&2
+                    echo "pantau-apt: nama package tidak valid: '$pkg'" >&2
                     exit 2
                     ;;
             esac
@@ -3356,12 +3356,12 @@ elif [ "$PKG_MGR" = "pacman" ]; then
         upgrade-pkg)
             pkg="${2:-}"
             if [ -z "$pkg" ]; then
-                echo "pantau-apt: nama paket target tidak boleh kosong" >&2
+                echo "pantau-apt: nama package target tidak boleh kosong" >&2
                 exit 2
             fi
             case "$pkg" in
                 *[!a-zA-Z0-9+._-]* | "" | -* )
-                    echo "pantau-apt: nama paket tidak valid: '$pkg'" >&2
+                    echo "pantau-apt: nama package tidak valid: '$pkg'" >&2
                     exit 2
                     ;;
             esac
@@ -3466,7 +3466,7 @@ def _apt_cmd(kind: str, detail: str = ""):
     if kind == "PKG_UPGRADE":
         pkg = (detail or "").strip()
         if not re.fullmatch(r"[a-z0-9][a-z0-9+.-]+", pkg):
-            raise ValueError(f"nama paket tidak valid untuk upgrade: '{pkg}'")
+            raise ValueError(f"nama package tidak valid untuk upgrade: '{pkg}'")
         return prefix + [PANTAU_APT_CMD, "upgrade-pkg", pkg], 600
     if kind == "PKG_CLEAN":
         return prefix + [PANTAU_APT_CMD, "clean"], 120
@@ -3708,19 +3708,19 @@ def clear_package_cache(pkg: str = "") -> str:
                             except OSError:
                                 pass
         mb_freed = bytes_freed / (1024 * 1024)
-        return f"Cache untuk paket '{pkg}' berhasil dibersihkan: {cleaned} berkas ({mb_freed:.2f} MB)."
+        return f"Cache untuk package '{pkg}' berhasil dibersihkan: {cleaned} berkas ({mb_freed:.2f} MB)."
     prefix = [] if IS_ROOT else ["/usr/bin/sudo", "-n"]
     res = _run_cmd(prefix + [PANTAU_APT_CMD, "clean"], timeout=30)
     if res and res.returncode == 0:
-        return "Seluruh cache paket sistem operasi berhasil dibersihkan."
-    return "Cache paket sistem dibersihkan."
+        return "Seluruh cache packages sistem operasi berhasil dibersihkan."
+    return "Cache packages sistem dibersihkan."
 
 
 def get_package_logs(pkg: str, lines: int = 100) -> str:
     """Membaca riwayat aktivitas paket spesifik dari dpkg.log, dnf.log, yum.log, atau pacman.log."""
     pkg = (pkg or "").strip()
     if not pkg or not re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9+._-]+", pkg):
-        return "Nama paket tidak valid."
+        return "Nama package tidak valid."
     matched_lines = []
     log_candidates = (
         "/var/log/dpkg.log.1", "/var/log/dpkg.log",
@@ -3738,7 +3738,7 @@ def get_package_logs(pkg: str, lines: int = 100) -> str:
         except OSError as e:
             matched_lines.append(f"[Gagal membaca {path}: {e}]")
     if not matched_lines:
-        return f"Belum ada riwayat aktivitas log untuk paket '{pkg}' pada berkas log sistem."
+        return f"Belum ada riwayat aktivitas log untuk package '{pkg}' pada berkas log sistem."
     return "\n".join(matched_lines[-lines:])
 
 
@@ -6069,7 +6069,7 @@ def poll_log_requests(cfg: dict):
                 pkgs = collect_installed_packages()
                 result = {"status": "success", "result": json.dumps(pkgs)}
             except Exception as e:
-                result = {"status": "failed", "result": f"Gagal membaca daftar paket: {e}"}
+                result = {"status": "failed", "result": f"Gagal membaca daftar packages: {e}"}
         elif unit == "SYSTEMD_LIST":
             try:
                 units = collect_systemd_units()
@@ -6082,14 +6082,14 @@ def poll_log_requests(cfg: dict):
                 res_msg = clear_package_cache(pkg_name)
                 result = {"status": "success", "result": res_msg}
             except Exception as e:
-                result = {"status": "failed", "result": f"Gagal membersihkan cache paket: {e}"}
+                result = {"status": "failed", "result": f"Gagal membersihkan cache packages: {e}"}
         elif unit == "PKG_LOGS":
             try:
                 pkg_name = str(req.get("detail", "") or "").strip()
                 log_out = get_package_logs(pkg_name, lines)
                 result = {"status": "success", "result": log_out}
             except Exception as e:
-                result = {"status": "failed", "result": f"Gagal membaca log paket: {e}"}
+                result = {"status": "failed", "result": f"Gagal membaca log package: {e}"}
         elif unit == "SHELL":
             # Terminal Bawaan: shell root interaktif milik admin dashboard.
             threading.Thread(

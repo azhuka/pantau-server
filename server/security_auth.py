@@ -32,11 +32,11 @@ OPERATOR_PERMISSIONS: Dict[str, Dict[str, str]] = {
         "desc": "Jelajahi, sunting berkas teks, unduh, dan unggah berkas pada server klien.",
     },
     "can_services": {
-        "label": "Kontrol Layanan Systemd",
-        "desc": "Mulai (start), hentikan (stop), restart, dan reload layanan sistem.",
+        "label": "Kontrol Services Systemd",
+        "desc": "Mulai (start), hentikan (stop), restart, dan reload services sistem.",
     },
     "can_processes": {
-        "label": "Manajer Tugas & Sinyal Proses",
+        "label": "Manajer Proses (Processes)",
         "desc": "Hentikan proses (kill), tangguhkan (SIGSTOP), atau lanjutkan proses (SIGCONT).",
     },
     "can_firewall": {
@@ -48,7 +48,7 @@ OPERATOR_PERMISSIONS: Dict[str, Dict[str, str]] = {
         "desc": "Buat akun Linux baru, kunci (lock), buka kunci (unlock), atau hapus akun Linux.",
     },
     "can_cron": {
-        "label": "Tugas Terjadwal (Cron)",
+        "label": "Cron Jobs (Tugas Terjadwal)",
         "desc": "Tambah jadwal cron baru, aktifkan/nonaktifkan, jalankan instan, atau hapus cron.",
     },
     "can_ssl": {
@@ -60,8 +60,8 @@ OPERATOR_PERMISSIONS: Dict[str, Dict[str, str]] = {
         "desc": "Jalankan restart atau matikan mesin server target.",
     },
     "can_apt": {
-        "label": "Pembaruan Paket OS (APT)",
-        "desc": "Jalankan pembaruan repositori (apt-get update) dan peningkatan paket (apt upgrade).",
+        "label": "Pembaruan Packages OS (APT)",
+        "desc": "Jalankan pembaruan repositori (apt-get update) dan peningkatan packages (apt upgrade).",
     },
     "can_ota": {
         "label": "Dorong Pembaruan Agen (OTA)",

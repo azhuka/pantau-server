@@ -172,7 +172,7 @@ def _build_problem_context(key: str, srv, **kwargs) -> str | None:
                 "diagnosa_en": "Agent API Key Conflict (Split-Brain Telemetry)",
                 "penyebab": f"Server {srv.hostname} menerima telemetri aktif dari {len(ips)} alamat IP berbeda ({', '.join(ips)}) secara bersamaan dalam waktu kurang dari 2 menit. Mesin kemungkinan telah dikloning atau API key dipasang pada lebih dari satu host.",
                 "penyebab_en": f"Server {srv.hostname} receives active telemetry from {len(ips)} distinct IP addresses ({', '.join(ips)}) simultaneously within 2 minutes. Likely caused by a cloned VM or duplicate agent installation with the same API key.",
-                "dampak": "Metrik status layanan dan performa sistem berfluktuasi/flapping tidak menentu karena host melaporkan status yang berbeda.",
+                "dampak": "Metrik status services dan performa sistem berfluktuasi/flapping tidak menentu karena host melaporkan status yang berbeda.",
                 "dampak_en": "Service status and system performance metrics flap erratically because different hosts report conflicting states.",
                 "data_teknis": {
                     "conflicting_ips": ips,
@@ -196,7 +196,7 @@ def _build_problem_context(key: str, srv, **kwargs) -> str | None:
                 ]
             }, ensure_ascii=False)
 
-        # 2. Layanan Mati (Service Down)
+        # 2. Service Down (Unit Service Tidak Aktif)
         if key.startswith("service_down:"):
             svc_name = kwargs.get("service_name") or key.split(":", 1)[1]
             port = kwargs.get("port")
@@ -208,16 +208,16 @@ def _build_problem_context(key: str, srv, **kwargs) -> str | None:
             op_deps = kwargs.get("operator_stopped_dependencies") or []
 
             if is_op_stop:
-                diagnosa = f"Layanan {svc_name} Dihentikan oleh Operator ({op_by})"
+                diagnosa = f"Service {svc_name} Dihentikan oleh Operator ({op_by})"
                 diagnosa_en = f"Service {svc_name} Stopped by Operator ({op_by})"
-                penyebab = f"Layanan {svc_name} sengaja dihentikan melalui panel kontrol oleh operator ({op_by}) untuk keperluan pemeliharaan atau operasional. Sistem mengenali tindakan ini sebagai pemeliharaan terencana dan menekan alarm darurat."
+                penyebab = f"Service {svc_name} sengaja dihentikan melalui panel kontrol oleh operator ({op_by}) untuk keperluan pemeliharaan atau operasional. Sistem mengenali tindakan ini sebagai pemeliharaan terencana dan menekan alarm darurat."
                 penyebab_en = f"Service {svc_name} was intentionally stopped via the control panel by operator ({op_by}) for maintenance or operations. Emergency alarms are suppressed."
-                dampak = f"Layanan {svc_name} sedang nonaktif sementara atas inisiatif operator. Layanan lain yang bergantung pada {svc_name} mungkin terpengaruh."
+                dampak = f"Service {svc_name} sedang nonaktif sementara atas inisiatif operator. Service lain yang bergantung pada {svc_name} mungkin terpengaruh."
                 dampak_en = f"Service {svc_name} is temporarily offline per operator action. Dependent services may be affected."
                 rekomendasi = [
-                    f"Nyalakan kembali layanan saat pekerjaan pemeliharaan selesai: sudo systemctl start {svc_name}",
+                    f"Nyalakan kembali service saat pekerjaan pemeliharaan selesai: sudo systemctl start {svc_name}",
                     f"Atau gunakan tombol Start pada antarmuka Pantau Server.",
-                    f"Periksa apakah ada layanan lain di server ini yang terpengaruh akibat penghentian {svc_name}."
+                    f"Periksa apakah ada service lain di server ini yang terpengaruh akibat penghentian {svc_name}."
                 ]
                 rekomendasi_en = [
                     f"Start the service when maintenance is completed: sudo systemctl start {svc_name}",
@@ -225,23 +225,23 @@ def _build_problem_context(key: str, srv, **kwargs) -> str | None:
                     f"Check if other services on this server are impacted by the stoppage of {svc_name}."
                 ]
             else:
-                diagnosa = f"Layanan {svc_name} Tidak Aktif (DOWN)"
+                diagnosa = f"Service {svc_name} Tidak Aktif (DOWN)"
                 diagnosa_en = f"Service {svc_name} Inactive (DOWN)"
-                penyebab = f"Layanan {svc_name} tidak mendengarkan (listening) pada port {port or 'terkait'} atau proses tidak ditemukan."
+                penyebab = f"Service {svc_name} tidak mendengarkan (listening) pada port {port or 'terkait'} atau proses tidak ditemukan."
                 penyebab_en = f"Service {svc_name} is not listening on port {port or 'associated'} or process was not found running."
                 if conflict_ips and len(conflict_ips) > 1:
-                    penyebab += f" Terdeteksi juga konflik multi-IP ({', '.join(conflict_ips)}) yang menyebabkan status layanan berfluktuasi."
+                    penyebab += f" Terdeteksi juga konflik multi-IP ({', '.join(conflict_ips)}) yang menyebabkan status service berfluktuasi."
                     penyebab_en += f" Multi-IP agent conflict ({', '.join(conflict_ips)}) detected, causing service status to flap."
                 elif health_msg:
                     penyebab += f" Rincian pesan: {health_msg}"
                     penyebab_en += f" Detail: {health_msg}"
-                dampak = f"Aplikasi atau pengguna tidak dapat mengakses layanan {svc_name}" + (f" pada port {port}." if port else ".")
+                dampak = f"Aplikasi atau pengguna tidak dapat mengakses service {svc_name}" + (f" pada port {port}." if port else ".")
                 dampak_en = f"Clients or dependent systems cannot access service {svc_name}" + (f" on port {port}." if port else ".")
                 rekomendasi = [
-                    f"Periksa status layanan: sudo systemctl status {svc_name}",
-                    f"Lihat riwayat log galat layanan: sudo journalctl -u {svc_name} -n 50 --no-pager",
+                    f"Periksa status service: sudo systemctl status {svc_name}",
+                    f"Lihat riwayat log galat service: sudo journalctl -u {svc_name} -n 50 --no-pager",
                     f"Pastikan port listening: ss -tulpn | grep :{port}" if port else f"Periksa proses: pgrep -fa {proc or svc_name}",
-                    f"Coba mulai ulang layanan: sudo systemctl restart {svc_name}"
+                    f"Coba mulai ulang service: sudo systemctl restart {svc_name}"
                 ]
                 rekomendasi_en = [
                     f"Check service status: sudo systemctl status {svc_name}",
@@ -280,16 +280,16 @@ def _build_problem_context(key: str, srv, **kwargs) -> str | None:
                 ]
             }, ensure_ascii=False)
 
-        # 3. Layanan Belum Ada Data (Service Unknown / No Data)
+        # 3. Service Belum Ada Data (Service Unknown / No Data)
         if key.startswith("svc_no_data:"):
             svc_name = kwargs.get("service_name") or key.split(":", 1)[1]
             port = kwargs.get("port")
             return json.dumps({
-                "diagnosa": f"Layanan {svc_name} Belum Memiliki Data",
+                "diagnosa": f"Service {svc_name} Belum Memiliki Data",
                 "diagnosa_en": f"Service {svc_name} Has No Reported Data",
-                "penyebab": f"Agen di server belum mendeteksi status atau metrik untuk layanan {svc_name}. Port atau proses mungkin belum aktif saat siklus pemindaian.",
+                "penyebab": f"Agen di server belum mendeteksi status atau metrik untuk service {svc_name}. Port atau proses mungkin belum aktif saat siklus pemindaian.",
                 "penyebab_en": f"Agent on the server has not captured status or metrics for service {svc_name}. The port or process might not have been open during scan.",
-                "dampak": "Metrik ketersediaan layanan belum dapat dihitung secara akurat.",
+                "dampak": "Metrik ketersediaan service belum dapat dihitung secara akurat.",
                 "dampak_en": "Service availability metrics cannot be accurately computed.",
                 "data_teknis": {
                     "service_name": svc_name,
@@ -298,7 +298,7 @@ def _build_problem_context(key: str, srv, **kwargs) -> str | None:
                     "waktu_kejadian": now_str,
                 },
                 "rekomendasi": [
-                    f"Pastikan layanan berjalan: sudo systemctl status {svc_name}",
+                    f"Pastikan service berjalan: sudo systemctl status {svc_name}",
                     f"Pastikan port listening: ss -tlnp | grep :{port}" if port else f"Cek proses: pgrep -fa {svc_name}",
                     "Tunggu siklus pemindaian agen berikutnya (berjalan tiap beberapa detik)."
                 ],
@@ -399,7 +399,7 @@ def _build_problem_context(key: str, srv, **kwargs) -> str | None:
                 "diagnosa_en": "Processor Saturation (CPU Saturated)" if is_crit else "High Processor Load (CPU High)",
                 "penyebab": f"Beban CPU rata-rata mencapai {cpu_avg:.1f}% (puncak {cpu_max:.1f}%) dalam rentang observasi terakhir.",
                 "penyebab_en": f"Average CPU utilization reached {cpu_avg:.1f}% (peak {cpu_max:.1f}%) during recent observation window.",
-                "dampak": "Antrean thread sistem melambat, response time layanan meningkat, potensi request timeout.",
+                "dampak": "Antrean thread sistem melambat, response time service meningkat, potensi request timeout.",
                 "dampak_en": "System thread queues stall, response latency deteriorates, elevated risk of connection timeouts.",
                 "data_teknis": {
                     "cpu_avg": round(cpu_avg, 1),
@@ -446,7 +446,7 @@ def _build_problem_context(key: str, srv, **kwargs) -> str | None:
                 "rekomendasi": [
                     f"Periksa penggunaan direktori terbesar: sudo du -xh --max-depth=2 {mount} | sort -rh | head -20",
                     "Bersihkan berkas log systemd lama: sudo journalctl --vacuum-size=200M",
-                    "Bersihkan cache paket: sudo apt clean",
+                    "Bersihkan cache packages: sudo apt clean",
                     "Hapus berkas temporary lama di /tmp dan /var/tmp."
                 ],
                 "rekomendasi_en": [
@@ -510,7 +510,7 @@ def _build_problem_context(key: str, srv, **kwargs) -> str | None:
                 "diagnosa_en": "Agent Not Reporting",
                 "penyebab": f"Agen Pantau pada server {srv.hostname} tidak mengirimkan telemetri ke server pusat. Kemungkinan penyebab mencakup server offline, shutdown, koneksi jaringan terputus, service agent_pantau terhenti, atau pemblokiran firewall.",
                 "penyebab_en": f"Monitoring agent on server {srv.hostname} stopped transmitting telemetry to central server. Causes include offline host, shutdown, network disconnection, halted agent service, or firewall blocking.",
-                "dampak": "Metrik kinerja hardware (CPU, RAM, Disk), status layanan, dan telemetri keamanan server tidak dapat diperbarui secara live di dashboard.",
+                "dampak": "Metrik kinerja hardware (CPU, RAM, Disk), status services, dan telemetri keamanan server tidak dapat diperbarui secara live di dashboard.",
                 "dampak_en": "Hardware performance metrics (CPU, RAM, Disk), service states, and security telemetry are no longer live on the dashboard.",
                 "data_teknis": {
                     "server_hostname": srv.hostname,
@@ -542,28 +542,29 @@ def _build_problem_context(key: str, srv, **kwargs) -> str | None:
                 ]
             }, ensure_ascii=False)
 
-        # 10. Paket OS Butuh Pembaruan (APT Updates)
+        # 10. Packages OS Butuh Pembaruan (APT Updates)
         if key == "apt_updates":
             upg_count = kwargs.get("upgradable", 0)
             return json.dumps({
-                "diagnosa": f"{upg_count} Paket Pembaruan OS Tersedia",
+                "diagnosa": f"{upg_count} Packages Pembaruan OS Tersedia",
                 "diagnosa_en": f"{upg_count} OS Package Updates Available",
-                "penyebab": f"Repositori sistem melaporkan terdapat {upg_count} paket software/kernel yang siap di-upgrade, termasuk potensi patch keamanan.",
+                "penyebab": f"Repositori sistem melaporkan terdapat {upg_count} packages software/kernel yang siap di-upgrade, termasuk potensi patch keamanan.",
                 "penyebab_en": f"System package repositories report {upg_count} upgradable software/kernel packages, potentially including critical security patches.",
                 "dampak": "Sistem berisiko terhadap kerentanan keamanan yang telah ditambal pada versi terbaru.",
                 "dampak_en": "Host remains vulnerable to publicly known CVEs and software defects resolved in upstream updates.",
                 "data_teknis": {
+                    "packages_upgradable": upg_count,
                     "paket_upgradable": upg_count,
                     "server_hostname": srv.hostname,
                     "waktu_kejadian": now_str,
                 },
                 "rekomendasi": [
-                    "Gunakan tombol 'Update OS' pada antarmuka Pantau Server untuk menjalankan pembaruan otomatis.",
+                    "Gunakan tombol 'Upgrade OS' pada antarmuka Pantau Server untuk menjalankan pembaruan otomatis.",
                     "Atau jalankan secara manual di server: sudo apt update && sudo apt upgrade -y",
-                    "Periksa apakah diperlukan reboot setelah kernel diperbarui."
+                    "Periksa apakah host perlu mulai ulang (reboot) setelah kernel packages diperbarui."
                 ],
                 "rekomendasi_en": [
-                    "Use the 'Update OS' button in the dashboard to execute automated package updates.",
+                    "Use the 'Upgrade OS' button in the dashboard to execute automated package updates.",
                     "Alternatively run manually on host: sudo apt update && sudo apt upgrade -y",
                     "Check if host reboot is required after kernel packages update."
                 ],
@@ -629,7 +630,7 @@ def _build_problem_context(key: str, srv, **kwargs) -> str | None:
                 "diagnosa_en": f"Active Remote SSH Session ({user}@{from_ip})",
                 "penyebab": penyebab,
                 "penyebab_en": penyebab_en,
-                "dampak": "Informasi keamanan dan telemetri aktivitas remote server. Tidak ada gangguan layanan jika akses ini sah.",
+                "dampak": "Informasi keamanan dan telemetri aktivitas remote server. Tidak ada gangguan operasional jika akses ini sah.",
                 "dampak_en": "Security telemetry and remote access tracking. No service disruption if access is authorized.",
                 "data_teknis": {
                     "user": user,
@@ -1336,7 +1337,7 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
             })
         if (extras.apt_upgradable or 0) > 0 and getattr(srv, "is_isolated_net", 0) != 1:
             inst.append({"key": "apt_updates", "severity": "info",
-                         "message": f"{extras.apt_upgradable} paket menunggu upgrade",
+                         "message": f"{extras.apt_upgradable} packages menunggu upgrade",
                          "tip": APT_TIP,
                          "context": _build_problem_context("apt_updates", srv, upgradable=extras.apt_upgradable)})
 
@@ -1687,13 +1688,13 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
 
         if st == "down":
             if is_op_action:
-                # Semua tindakan operator yang sengaja mematikan layanan
+                # Semua tindakan operator yang sengaja mematikan service
                 # diklasifikasikan sebagai insiden tingkat keparahan PERINGATAN (warning)
                 svc_sev = "warning"
-                svc_msg = f"Layanan {name} dimatikan oleh operator ({op_by})"
-                svc_tip = f"Unit layanan {name} sengaja dihentikan melalui panel kontrol oleh operator ({op_by}). Tindakan pemeliharaan tidak memicu alarm darurat."
+                svc_msg = f"Service {name} dimatikan oleh operator ({op_by})"
+                svc_tip = f"Unit service {name} sengaja dihentikan melalui panel kontrol oleh operator ({op_by}). Tindakan pemeliharaan tidak memicu alarm darurat."
             else:
-                # Periksa apakah layanan down karena dihentikan paksa oleh OOM Killer
+                # Periksa apakah service down karena dihentikan paksa oleh OOM Killer
                 oom_info = oom_event_map.get(name_lower) or oom_event_map.get(proc_lower)
                 if not oom_info:
                     for oom_key, o_info in oom_event_map.items():
@@ -1703,10 +1704,10 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
                             break
                 if oom_info:
                     svc_sev = "danger" if is_prod else "warning"
-                    svc_msg = f"Layanan {name} Down — Dihentikan paksa oleh Kernel (OOM Killer)"
-                    svc_tip = f"Layanan {name} tidak aktif karena proses utamanya ({oom_info.get('proc')}) dihentikan paksa oleh Kernel Linux akibat kehabisan memori RAM/Swap (OOM Killer). Jalankan: sudo systemctl restart {name} setelah memastikan ketersediaan RAM."
+                    svc_msg = f"Service {name} Down — Dihentikan paksa oleh Kernel (OOM Killer)"
+                    svc_tip = f"Service {name} tidak aktif karena proses utamanya ({oom_info.get('proc')}) dihentikan paksa oleh Kernel Linux akibat kehabisan memori RAM/Swap (OOM Killer). Jalankan: sudo systemctl restart {name} setelah memastikan ketersediaan RAM."
                 else:
-                    # Hitung durasi layanan telah down dari rekaman ServerProblem terbuka
+                    # Hitung durasi service telah down dari rekaman ServerProblem terbuka
                     down_secs = 0.0
                     if db is not None:
                         try:
@@ -1731,18 +1732,18 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
                         # - > 60 detik (>= 60s): KRITIS (danger — Memicu alarm, badge & banner merah)
                         if down_secs >= 60:
                             svc_sev = "danger"
-                            svc_msg = f"Layanan {name} Down (KRITIS)"
+                            svc_msg = f"Service {name} Down (KRITIS)"
                             svc_tip = SVC_DOWN_TIP.format(name=name)
                         else:
                             svc_sev = "average"
-                            svc_msg = f"Layanan {name} Down"
+                            svc_msg = f"Service {name} Down"
                             svc_tip = SVC_DOWN_TIP.format(name=name)
                     else:
                         # Server Non-Produksi (Lab / Pengujian / Uji Coba / Kloning / Dev):
                         # Seluruh services server non-produksi:
                         # - Hanya PERINGATAN (warning) tanpa eskalasi! Tenang tanpa sirene/banner merah.
                         svc_sev = "warning"
-                        svc_msg = f"Layanan {name} Down"
+                        svc_msg = f"Service {name} Down"
                         svc_tip = SVC_DOWN_TIP.format(name=name)
 
             inst.append({
@@ -1763,7 +1764,7 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
             })
         elif st == "unknown":
             inst.append({"key": f"svc_no_data:{name}", "severity": "info",
-                         "message": f"Layanan {name} belum ada data",
+                         "message": f"Service {name} belum ada data",
                          "tip": SVC_NODATA_TIP,
                          "context": _build_problem_context(f"svc_no_data:{name}", srv, service_name=name, port=d.get("port"))})
     return inst
@@ -1803,7 +1804,7 @@ def _problem_component(key: str) -> str:
         return "Sistem"
     if key.startswith("service_down:") or key.startswith("svc_no_data:"):
         svc = key.split(":", 1)[1]
-        return f"Layanan ({svc})"
+        return f"Service ({svc})"
     if key.startswith("oom_kill:"):
         proc = key.split(":", 1)[1] if ":" in key else ""
         return f"Kernel / OOM ({proc})" if proc else "Kernel (OOM Killer)"
@@ -1830,7 +1831,7 @@ def _problem_component(key: str) -> str:
     if key in ("security_danger", "failed_logins"):
         return "Keamanan (SSH)"
     if key == "apt_updates":
-        return "Paket OS (APT)"
+        return "Packages OS (APT)"
     if key == "agent_conflict":
         return "Jaringan / IP Agen"
     if key == "platform_conflict":
@@ -1872,7 +1873,7 @@ def _problem_row2dict(row) -> dict:
         res_type = "stale_closed"
         res_label = "Ditutup Otomatis (Host Terputus)"
         res_label_en = "Closed (Host Down)"
-        res_tip = "Insiden layanan ditutup sementara otomatis karena host terputus / agen berhenti melapor (supresi alarm bertingkat)"
+        res_tip = "Insiden service ditutup sementara otomatis karena host terputus / agen berhenti melapor (supresi alarm bertingkat)"
         res_tip_en = "Service incident closed automatically because host disconnected (alarm suppression)"
         res_badge_cls = "badge-muted"
     elif res_note_str == "server_online" or key == "agent_stale":
@@ -1884,9 +1885,9 @@ def _problem_row2dict(row) -> dict:
         res_badge_cls = "badge-up"
     elif res_note_str == "service_up":
         res_type = "service_up"
-        res_label = "✓ Layanan Berjalan Kembali"
+        res_label = "✓ Service Berjalan Kembali"
         res_label_en = "✓ Service Running"
-        res_tip = "Layanan sistem telah beroperasi normal kembali"
+        res_tip = "Service sistem telah beroperasi normal kembali"
         res_tip_en = "System service resumed and running normally"
         res_badge_cls = "badge-up"
     elif res_note_str == "session_closed":
@@ -1907,14 +1908,14 @@ def _problem_row2dict(row) -> dict:
         res_type = "manual"
         res_label = "✓ Dijalankan Operator"
         res_label_en = "✓ Started by Operator"
-        res_tip = "Layanan berhasil dihidupkan kembali melalui tindakan operator"
+        res_tip = "Service berhasil dihidupkan kembali melalui tindakan operator"
         res_tip_en = "Service restarted by operator action"
         res_badge_cls = "badge-up"
     elif "upgrade" in res_note_str:
         res_type = "auto"
         res_label = "✓ Pembaruan Selesai"
         res_label_en = "✓ Upgrade Completed"
-        res_tip = "Pembaruan paket sistem selesai dan kondisi kembali aman"
+        res_tip = "Pembaruan packages sistem selesai dan kondisi kembali aman"
         res_tip_en = "Package upgrade finished and condition secured"
         res_badge_cls = "badge-up"
     elif res_note_str in ("auto", "resolved", "auto (reset)", "ok", "normal"):

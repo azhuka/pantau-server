@@ -354,6 +354,23 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.148
+
+- **Tipe Rilis:** Penegakan Baku Distingsi Istilah Asli (Packages/Services/Processes/Cron Jobs) & Pemulihan Padanan Bahasa Indonesia Terstruktur (*Strict Technical Nomenclature Separation & Natural Indonesian System Terminology Enforcement*)
+- **Fokus Utama:** Menyelesaikan inkonsistensi terminologi di seluruh lapisan aplikasi (Backend Service, Database MariaDB, Audit Log, Hak Akses, Agen Klien, dan Seluruh Template UI):
+  1. **Penegakan Istilah Teknis Asli Dunia Komputer/Sysadmin/NOC:**
+     - Mengganti seluruh sisa teks `"Layanan"` menjadi **`Service`** / **`Services`** (pada pesan insiden backend `problem_service.py`, filter audit `audit_service.py`, izin operator `security_auth.py`, hingga komponen insiden).
+     - Mengganti seluruh sisa teks `"Paket"` menjadi **`Packages`** / **`Package`** (karena istilah paket rancu dengan packet loss/network frame; mencakup `packages menunggu upgrade`, `Packages OS (APT)`, `manajer packages`, `cache packages`).
+     - Menetapkan distingsi tegas pada **`Processes`** (bukan tugas) dan **`Cron Jobs`** (bukan tugas terjadwal kaku).
+  2. **Pemulihan Padanan Bahasa Indonesia yang Baku, Pas, dan Terstruktur:**
+     - Mengembalikan padanan baku yang mudah dipahami operator dan tidak menimbulkan salah tafsir: **`Unduh`**, **`Unggah`**, **`Salin`**, **`Ambang Batas`** (Ambang Batas Insiden), **`Performa`**, **`Muat Ulang`**, **`Mulai Ulang`**, **`Aktivitas`**, **`Penyimpanan`**, **`Kata Sandi`**, **`Basis Data`**, dan **`Cadangan`**.
+  3. **Migrasi Data Insiden Database MariaDB (`ServerProblem`):**
+     - Melakukan peremajaan data otomatis pada rekaman insiden aktif dan historis di tabel `server_problems` dari teks lama `"Layanan ... Down"` ke `"Service ... Down"` serta `"paket menunggu upgrade"` ke `"packages menunggu upgrade"`.
+  4. **Pembaruan Agen Klien & Wrapper Pantau-Apt:**
+     - Menyelaraskan teks respons dan pesan galat pada `package/opt/pantau/agent/agent_pantau.py` dan `agent/agent_pantau.py` (`clear_package_cache`, `get_package_logs`, `collect_installed_packages`).
+  5. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.148` pada 7 berkas inti repositori.
+
 ## Versi 4.8.147
 
 - **Tipe Rilis:** Pembersihan Total & Penyelarasan Kalimat Robotik/Kaku ke Standar Bahasa Alami Sysadmin & NOC Seluruh Modul (*Full Elimination of Robotic Translations & Complete Natural Sysadmin/NOC Nomenclature Overhaul*)
