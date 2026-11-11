@@ -5,7 +5,48 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token }}">
 <title>{% block title %}Pantau Server{% endblock %}</title>
-<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.188' }}">
+<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.189' }}">
+<style id="noc-act-dropdown-anti-cache">
+  /* Override Mutlak Anti-Cache untuk Tombol Dropdown Tindakan yang Non-Aktif (Disabled) */
+  .noc-act-dropdown-item:disabled,
+  .noc-act-dropdown-item[disabled],
+  .noc-act-dropdown-item.is-disabled {
+    opacity: 0.38 !important;
+    color: #64748b !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    cursor: not-allowed !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+  .noc-act-dropdown-item:disabled *,
+  .noc-act-dropdown-item[disabled] *,
+  .noc-act-dropdown-item.is-disabled * {
+    color: #64748b !important;
+    fill: #64748b !important;
+    stroke: #64748b !important;
+  }
+  .noc-act-dropdown-item:disabled:hover,
+  .noc-act-dropdown-item[disabled]:hover,
+  .noc-act-dropdown-item.is-disabled:hover {
+    background: transparent !important;
+    background-color: transparent !important;
+    color: #64748b !important;
+    cursor: not-allowed !important;
+    box-shadow: none !important;
+  }
+  .noc-act-dropdown-item:disabled:hover *,
+  .noc-act-dropdown-item[disabled]:hover *,
+  .noc-act-dropdown-item.is-disabled:hover * {
+    color: #64748b !important;
+    fill: #64748b !important;
+    stroke: #64748b !important;
+  }
+  .noc-act-dropdown-item:not(:disabled):not([disabled]):not(.is-disabled):hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: var(--text-bright, #ffffff) !important;
+  }
+</style>
 {% block extra_head %}{% endblock %}
 <script>
 (function() {
@@ -2823,7 +2864,7 @@ body.show-alert-banner .main{padding-top:72px}
   </nav>
   <div class="sidebar-footer">
     <div class="sb-footer-brand">Pantau Server</div>
-    <div class="sb-footer-ver">v{{ app_version or '4.8.188' }}</div>
+    <div class="sb-footer-ver">v{{ app_version or '4.8.189' }}</div>
     <div class="sb-footer-utc">UTC <span id="clockUtc" style="display:inline"></span></div>
   </div>
 </aside>

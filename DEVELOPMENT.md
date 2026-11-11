@@ -354,6 +354,20 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.189
+
+- **Tipe Rilis:** Penyempurnaan Visual Mutlak Anti-Cache Dropdown Tindakan, Penanda Status Label Kontekstual, dan Reduksi Menu Port Terlindungi (*Absolute Anti-Cache Dropdown Styling, Contextual Action Label Suffixes & Streamlined Protected Port Menu*)
+- **Fokus Utama:** Mengatasi masalah visual dan kognitif operator sysadmin pada menu dropdown tindakan di tab Services, Ports, dan Systemd Daemons:
+  1. **Anti-Cache Style Dropdown Disabled & Pencegahan Hover Palsu:**
+     - Menanamkan blok `<style id="noc-act-dropdown-anti-cache">` langsung pada `<head>` berkas `base.html` dan memperbarui `pantau-noc.css` untuk memastikan tombol non-aktif (`:disabled`, `[disabled]`, `.is-disabled`) tidak lagi mengalami efek *hover highlight* palsu (background tetap transparan, warna teks `#64748b`, opacity `0.38 !important`, cursor `not-allowed !important`, serta `onclick="event.stopPropagation(); return false;"`).
+     - Menambahkan header HTTP `Cache-Control: no-cache, must-revalidate` dan `Pragma: no-cache` pada aset statis `/static/` di `server/main.py`.
+  2. **Penanda Status Label Kontekstual Langsung:**
+     - Menambahkan sufiks status langsung pada teks tombol dropdown: `Nyalakan Service (Aktif)`, `Hentikan Service (Terhenti)`, `Abaikan Peringatan (Normal)`, `Hentikan Unit (Dilindungi)`, dsb., sehingga operator dapat membaca kondisi sistem secara instan tanpa perlu menunggu tooltip kursor muncul.
+  3. **Penyederhanaan Baris Port Terlindungi (`#ports-table`):**
+     - Menyederhanakan tampilan menu tindakan untuk port manajemen sistem (port 22 SSH dan 8400 Pantau Server) menjadi satu baris informatif tunggal yang bersih: `⛨ Port & Proses Terlindungi`, menghilangkan tombol redundan "Hentikan PID" atau "Blokir Port" yang dapat membingungkan operator.
+  4. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.189` pada seluruh 7 berkas inti repositori.
+
 ## Versi 4.8.188
 
 - **Tipe Rilis:** Perbaikan Kritis Logika Dropdown Tindakan, Standardisasi Status Layanan, Proteksi PID Krusial, dan Tooltip Informatif Menyeluruh (*Critical Action Dropdown Logic Fixes, Service State Standardization, Crucial PID Protection & Comprehensive Informative Tooltips*)

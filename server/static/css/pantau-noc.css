@@ -1348,28 +1348,49 @@ div:has(> table.noc-table-compact) {
   color: #334155;
 }
 .noc-act-dropdown-item:disabled,
-.noc-act-dropdown-item[disabled] {
+.noc-act-dropdown-item[disabled],
+.noc-act-dropdown-item.is-disabled {
   opacity: 0.38 !important;
   cursor: not-allowed !important;
   pointer-events: auto !important;
   background: transparent !important;
+  background-color: transparent !important;
   color: var(--dim, #64748b) !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+.noc-act-dropdown-item:disabled *,
+.noc-act-dropdown-item[disabled] *,
+.noc-act-dropdown-item.is-disabled * {
+  color: var(--dim, #64748b) !important;
+  fill: var(--dim, #64748b) !important;
+  stroke: var(--dim, #64748b) !important;
 }
 .noc-act-dropdown-item:disabled:hover,
-.noc-act-dropdown-item[disabled]:hover {
+.noc-act-dropdown-item[disabled]:hover,
+.noc-act-dropdown-item.is-disabled:hover {
   background: transparent !important;
+  background-color: transparent !important;
   color: var(--dim, #64748b) !important;
   cursor: not-allowed !important;
+  box-shadow: none !important;
 }
-.noc-act-dropdown-item:not(:disabled):not([disabled]):hover {
+.noc-act-dropdown-item:disabled:hover *,
+.noc-act-dropdown-item[disabled]:hover *,
+.noc-act-dropdown-item.is-disabled:hover * {
+  color: var(--dim, #64748b) !important;
+  fill: var(--dim, #64748b) !important;
+  stroke: var(--dim, #64748b) !important;
+}
+.noc-act-dropdown-item:not(:disabled):not([disabled]):not(.is-disabled):hover {
   background: rgba(255, 255, 255, 0.08);
   color: var(--text-bright, #ffffff);
 }
-[data-theme="light"] .noc-act-dropdown-item:not(:disabled):not([disabled]):hover {
+[data-theme="light"] .noc-act-dropdown-item:not(:disabled):not([disabled]):not(.is-disabled):hover {
   background: #f1f5f9;
   color: #0f172a;
 }
-.noc-act-dropdown-item.danger:not(:disabled):not([disabled]):hover {
+.noc-act-dropdown-item.danger:not(:disabled):not([disabled]):not(.is-disabled):hover {
   background: rgba(239, 68, 68, 0.18);
   color: #f87171;
 }

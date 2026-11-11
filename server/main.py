@@ -153,6 +153,9 @@ async def security_headers(request: Request, call_next):
         resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
         resp.headers["Pragma"] = "no-cache"
         resp.headers["Expires"] = "0"
+    elif request.url.path.startswith("/static/"):
+        resp.headers["Cache-Control"] = "no-cache, must-revalidate"
+        resp.headers["Pragma"] = "no-cache"
 
     sid = request.cookies.get(SESSION_COOKIE)
     if sid:

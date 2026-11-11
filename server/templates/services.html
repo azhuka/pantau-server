@@ -2770,26 +2770,23 @@ div[style*="position: fixed"] .card {
           <details class="noc-act-dropdown">
             <summary class="btn btn-xs btn-ghost btn-noc-act" title="Menu Aksi Service">Aksi ▾</summary>
             <div class="noc-act-dropdown-menu">
-              <button type="button" class="noc-act-dropdown-item"
-                      {% if is_pending or not is_online %}disabled style="opacity:0.35;cursor:not-allowed"{% endif %}
-                      title="{% if not is_online %}Server offline — aksi dinonaktifkan{% elif is_pending %}Perintah sedang diproses, mohon tunggu…{% else %}Restart service {{ svc.service_name }}{% endif %}"
-                      onclick="restartService({{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)">
+              <button type="button" class="noc-act-dropdown-item {% if is_pending or not is_online %}is-disabled{% endif %}"
+                      {% if is_pending or not is_online %}disabled style="opacity:0.35 !important;color:#64748b !important;background:transparent !important;cursor:not-allowed !important" onclick="event.stopPropagation(); return false;"{% else %}onclick="restartService({{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)"{% endif %}
+                      title="{% if not is_online %}Server offline — aksi dinonaktifkan{% elif is_pending %}Perintah sedang diproses, mohon tunggu…{% else %}Restart service {{ svc.service_name }}{% endif %}">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
                 <span>Restart Service</span>
               </button>
-              <button type="button" class="noc-act-dropdown-item"
-                      {% if is_pending or is_up or not is_online %}disabled style="opacity:0.35;cursor:not-allowed"{% endif %}
-                      onclick="svcAction('start', {{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)"
+              <button type="button" class="noc-act-dropdown-item {% if is_pending or is_up or not is_online %}is-disabled{% endif %}"
+                      {% if is_pending or is_up or not is_online %}disabled style="opacity:0.35 !important;color:#64748b !important;background:transparent !important;cursor:not-allowed !important" onclick="event.stopPropagation(); return false;"{% else %}onclick="svcAction('start', {{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)"{% endif %}
                       title="{% if not is_online %}Server offline — aksi dinonaktifkan{% elif is_pending %}Perintah sedang diproses, mohon tunggu…{% elif is_up %}Service sudah dalam kondisi aktif (RUNNING){% else %}Nyalakan service {{ svc.service_name }}{% endif %}">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
-                <span>Nyalakan Service</span>
+                <span>Nyalakan Service{% if is_up %} (Aktif){% endif %}</span>
               </button>
-              <button type="button" class="noc-act-dropdown-item"
-                      {% if is_pending or not is_up or not is_online %}disabled style="opacity:0.35;cursor:not-allowed"{% endif %}
-                      onclick="svcAction('stop', {{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)"
+              <button type="button" class="noc-act-dropdown-item {% if is_pending or not is_up or not is_online %}is-disabled{% endif %}"
+                      {% if is_pending or not is_up or not is_online %}disabled style="opacity:0.35 !important;color:#64748b !important;background:transparent !important;cursor:not-allowed !important" onclick="event.stopPropagation(); return false;"{% else %}onclick="svcAction('stop', {{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)"{% endif %}
                       title="{% if not is_online %}Server offline — aksi dinonaktifkan{% elif is_pending %}Perintah sedang diproses, mohon tunggu…{% elif not is_up %}Service sudah dalam kondisi terhenti (STOPPED){% else %}Hentikan service {{ svc.service_name }}{% endif %}">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect></svg>
-                <span>Hentikan Service</span>
+                <span>Hentikan Service{% if not is_up %} (Terhenti){% endif %}</span>
               </button>
               <button type="button" class="noc-act-dropdown-item" onclick='openServiceLogModal({{ svc.service_name|tojson }}, {{ (svc._status or "")|tojson }}, {{ (svc.port or "")|tojson }})' title="Buka konsol log kontekstual {{ svc.service_name }}">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
@@ -2801,13 +2798,13 @@ div[style*="position: fixed"] .card {
                   <span>Pantau Kembali</span>
                 </button>
               {% else %}
-                <button type="button" class="noc-act-dropdown-item" {% if is_up %}disabled style="opacity:0.35;cursor:not-allowed"{% endif %} data-id="{{ svc._problem.id if svc._problem else '' }}" data-svcid="{{ svc.id }}" data-sid="{{ server.id }}" data-msg="Abaikan pemantauan service {{ svc.service_name }}" onclick="openIgnoreModal(this)" title="{% if is_up %}Service berjalan normal — tidak ada insiden aktif untuk diabaikan{% else %}Abaikan peringatan insiden untuk service {{ svc.service_name }}{% endif %}">
+                <button type="button" class="noc-act-dropdown-item {% if is_up %}is-disabled{% endif %}" {% if is_up %}disabled style="opacity:0.35 !important;color:#64748b !important;background:transparent !important;cursor:not-allowed !important" onclick="event.stopPropagation(); return false;"{% else %}data-id="{{ svc._problem.id if svc._problem else '' }}" data-svcid="{{ svc.id }}" data-sid="{{ server.id }}" data-msg="Abaikan pemantauan service {{ svc.service_name }}" onclick="openIgnoreModal(this)"{% endif %} title="{% if is_up %}Service berjalan normal — tidak ada insiden aktif untuk diabaikan{% else %}Abaikan peringatan insiden untuk service {{ svc.service_name }}{% endif %}">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"></path><path d="M18.63 13A17.89 17.89 0 0 1 18 8"></path><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"></path><path d="M18 8a6 6 0 0 0-9.33-5"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
-                  <span>Abaikan Peringatan</span>
+                  <span>Abaikan Peringatan{% if is_up %} (Normal){% endif %}</span>
                 </button>
               {% endif %}
               {% if not user.is_viewer() and user.has_perm('can_services') %}
-              <button type="button" class="noc-act-dropdown-item danger" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed"{% endif %} onclick="deleteService({{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)" title="{% if not is_online %}Server offline — aksi dinonaktifkan{% else %}Lepas {{ svc.service_name }} dari pengawasan pantau{% endif %}">
+              <button type="button" class="noc-act-dropdown-item danger" {% if not is_online %}disabled style="opacity:0.35 !important;color:#64748b !important;background:transparent !important;cursor:not-allowed !important" onclick="event.stopPropagation(); return false;"{% else %}onclick="deleteService({{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)"{% endif %} title="{% if not is_online %}Server offline — aksi dinonaktifkan{% else %}Lepas {{ svc.service_name }} dari pengawasan pantau{% endif %}">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="8" y1="12" x2="16" y2="12"></line></svg>
                 <span>Lepas dari Pantau</span>
               </button>
@@ -3757,49 +3754,44 @@ div[style*="position: fixed"] .card {
               <details class="noc-act-dropdown">
                 <summary class="btn btn-xs btn-ghost btn-noc-act" title="Menu Aksi Port">Aksi ▾</summary>
                 <div class="noc-act-dropdown-menu">
-                  {% if user.has_perm('can_services') and not is_mgmt_port %}
-                  <button type="button" class="noc-act-dropdown-item" onclick="openAddSvcModal('{{ p.pname or p.proc or '' }}', '{{ p.port }}', '{{ p.pname or p.proc or '' }}')" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Tambahkan port {{ p.port }} ke daftar service yang dipantau"{% endif %}>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
-                    <span>Pantau Service</span>
-                  </button>
-                  {% endif %}
-                  {% if user.has_perm('can_processes') and p.pid %}
-                    {% if is_critical_proc %}
-                    <button type="button" class="noc-act-dropdown-item text-danger" disabled style="opacity:0.35;cursor:not-allowed" title="Proses krusial sistem ({{ p.pname or p.proc or 'PID ' ~ p.pid }}) dilindungi demi mencegah pemutusan akses remote atau gangguan stabilitas server">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                      <span>Hentikan PID ({{ p.pid }})</span>
-                    </button>
-                    {% else %}
-                    <button type="button" class="noc-act-dropdown-item text-danger" onclick="openKillProcModal('{{ p.pid }}','{{ p.pname or p.proc or 'proses' }}','TERM')" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Hentikan proses PID {{ p.pid }} ({{ p.pname or p.proc or '' }})"{% endif %}>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                      <span>Hentikan PID ({{ p.pid }})</span>
+                  {% if is_mgmt_port %}
+                  <div class="noc-act-dropdown-item" style="color:var(--dim) !important;cursor:default !important;display:flex;align-items:center;gap:6px;padding:6px 10px;font-size:11px" title="Port {{ p.port }} dan proses sistem ({{ p.pname or p.proc }}) dilindungi penuh oleh arsitektur Pantau Server demi keselamatan akses remote sysadmin.">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                    <span>⛨ Port &amp; Proses Terlindungi</span>
+                  </div>
+                  {% else %}
+                    {% if user.has_perm('can_services') %}
+                    <button type="button" class="noc-act-dropdown-item" onclick="openAddSvcModal('{{ p.pname or p.proc or '' }}', '{{ p.port }}', '{{ p.pname or p.proc or '' }}')" {% if not is_online %}disabled style="opacity:0.35 !important;color:#64748b !important;cursor:not-allowed !important" title="Server offline — aksi dinonaktifkan"{% else %}title="Tambahkan port {{ p.port }} ke daftar service yang dipantau"{% endif %}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                      <span>Pantau Service</span>
                     </button>
                     {% endif %}
-                  {% endif %}
-                  {% if user.has_perm('can_firewall') %}
-                    {% if is_mgmt_port %}
-                    <button type="button" class="noc-act-dropdown-item text-warn" disabled style="opacity:0.35;cursor:not-allowed" title="Port {{ p.port }} dilindungi dari pemblokiran firewall demi mencegah lockout koneksi remote/manajemen server">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
-                      <span>Blokir Port (Dilindungi)</span>
-                    </button>
-                    {% else %}
+                    {% if user.has_perm('can_processes') and p.pid %}
+                      {% if is_critical_proc %}
+                      <button type="button" class="noc-act-dropdown-item is-disabled" disabled style="opacity:0.35 !important;color:#64748b !important;background:transparent !important;cursor:not-allowed !important" onclick="event.stopPropagation(); return false;" title="Proses krusial sistem ({{ p.pname or p.proc or 'PID ' ~ p.pid }}) dilindungi demi mencegah pemutusan akses remote atau gangguan stabilitas server">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        <span>Hentikan PID ({{ p.pid }}) (Dilindungi)</span>
+                      </button>
+                      {% else %}
+                      <button type="button" class="noc-act-dropdown-item text-danger" onclick="openKillProcModal('{{ p.pid }}','{{ p.pname or p.proc or 'proses' }}','TERM')" {% if not is_online %}disabled style="opacity:0.35 !important;color:#64748b !important;cursor:not-allowed !important" title="Server offline — aksi dinonaktifkan"{% else %}title="Hentikan proses PID {{ p.pid }} ({{ p.pname or p.proc or '' }})"{% endif %}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        <span>Hentikan PID ({{ p.pid }})</span>
+                      </button>
+                      {% endif %}
+                    {% endif %}
+                    {% if user.has_perm('can_firewall') %}
                       {% if p.is_public %}
-                      <button type="button" class="noc-act-dropdown-item text-warn" onclick="submitPortRule('{{ p.port }}/{{ p.proto }}', 'deny', this)" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Blokir akses publik port {{ p.port }}/{{ p.proto }} via firewall"{% endif %}>
+                      <button type="button" class="noc-act-dropdown-item text-warn" onclick="submitPortRule('{{ p.port }}/{{ p.proto }}', 'deny', this)" {% if not is_online %}disabled style="opacity:0.35 !important;color:#64748b !important;cursor:not-allowed !important" title="Server offline — aksi dinonaktifkan"{% else %}title="Blokir akses publik port {{ p.port }}/{{ p.proto }} via firewall"{% endif %}>
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
                         <span>Blokir Port (Firewall)</span>
                       </button>
                       {% else %}
-                      <button type="button" class="noc-act-dropdown-item text-success" onclick="submitPortRule('{{ p.port }}/{{ p.proto }}', 'allow', this)" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Buka akses port {{ p.port }}/{{ p.proto }} via firewall"{% endif %}>
+                      <button type="button" class="noc-act-dropdown-item text-success" onclick="submitPortRule('{{ p.port }}/{{ p.proto }}', 'allow', this)" {% if not is_online %}disabled style="opacity:0.35 !important;color:#64748b !important;cursor:not-allowed !important" title="Server offline — aksi dinonaktifkan"{% else %}title="Buka akses port {{ p.port }}/{{ p.proto }} via firewall"{% endif %}>
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>
                         <span>Buka Port (Firewall)</span>
                       </button>
                       {% endif %}
                     {% endif %}
-                  {% endif %}
-                  {% if is_mgmt_port %}
-                  <div class="noc-act-dropdown-item" style="color:var(--dim);cursor:default" title="Port {{ p.port }} dilindungi secara otomatis oleh arsitektur Pantau Server">
-                    <span>⛨ Port Sistem Terlindungi</span>
-                  </div>
                   {% endif %}
                 </div>
               </details>
@@ -5538,20 +5530,23 @@ function renderServiceActions(sid, svcId, name, status, isPending, problem, isSe
   const svgBellOff = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"></path><path d="M18.63 13A17.89 17.89 0 0 1 18 8"></path><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"></path><path d="M18 8a6 6 0 0 0-9.33-5"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
   const svgDel = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="8" y1="12" x2="16" y2="12"></line></svg>';
 
+  const disStyle = 'opacity:0.35 !important;color:#64748b !important;background:transparent !important;cursor:not-allowed !important';
+  const noopClick = 'event.stopPropagation(); return false;';
+
   let items = '';
-  items += `<button type="button" class="noc-act-dropdown-item" ${rstDis ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${rstTitle}" onclick="restartService(${sid}, ${svcId}, '${escHtml(name)}', this)">${svgRst} <span>${isEn ? 'Restart Service' : 'Restart Service'}</span></button>`;
-  items += `<button type="button" class="noc-act-dropdown-item" ${startDis ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${startTitle}" onclick="svcAction('start', ${sid}, ${svcId}, '${escHtml(name)}', this)">${svgStart} <span>${isEn ? 'Start Service' : 'Nyalakan Service'}</span></button>`;
-  items += `<button type="button" class="noc-act-dropdown-item" ${stopDis ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${stopTitle}" onclick="svcAction('stop', ${sid}, ${svcId}, '${escHtml(name)}', this)">${svgStop} <span>${isEn ? 'Stop Service' : 'Hentikan Service'}</span></button>`;
+  items += `<button type="button" class="noc-act-dropdown-item ${rstDis ? 'is-disabled' : ''}" ${rstDis ? `disabled style="${disStyle}" onclick="${noopClick}"` : `onclick="restartService(${sid}, ${svcId}, '${escHtml(name)}', this)"`} title="${rstTitle}">${svgRst} <span>${isEn ? 'Restart Service' : 'Restart Service'}</span></button>`;
+  items += `<button type="button" class="noc-act-dropdown-item ${startDis ? 'is-disabled' : ''}" ${startDis ? `disabled style="${disStyle}" onclick="${noopClick}"` : `onclick="svcAction('start', ${sid}, ${svcId}, '${escHtml(name)}', this)"`} title="${startTitle}">${svgStart} <span>${isEn ? ('Start Service' + (isUp ? ' (Running)' : '')) : ('Nyalakan Service' + (isUp ? ' (Aktif)' : ''))}</span></button>`;
+  items += `<button type="button" class="noc-act-dropdown-item ${stopDis ? 'is-disabled' : ''}" ${stopDis ? `disabled style="${disStyle}" onclick="${noopClick}"` : `onclick="svcAction('stop', ${sid}, ${svcId}, '${escHtml(name)}', this)"`} title="${stopTitle}">${svgStop} <span>${isEn ? ('Stop Service' + (!isUp ? ' (Stopped)' : '')) : ('Hentikan Service' + (!isUp ? ' (Terhenti)' : ''))}</span></button>`;
   items += `<button type="button" class="noc-act-dropdown-item" onclick="openServiceLogModal('${escHtml(name)}', '${escHtml(status || '')}')" title="${logTitle}">${svgLog} <span>${isEn ? 'View Service Logs' : 'Lihat Log Service'}</span></button>`;
 
   if (isIgnored) {
     items += `<button type="button" class="noc-act-dropdown-item" data-id="${probId}" data-svcid="${svcId}" data-sid="${sid}" onclick="unignoreProblem(this)" title="${isEn ? 'Cancel ignore for this service' : 'Aktifkan kembali pemantauan insiden untuk service ini'}">${svgBell} <span>${isEn ? 'Monitor Again' : 'Pantau Kembali'}</span></button>`;
   } else {
-    items += `<button type="button" class="noc-act-dropdown-item" ${isUp ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} data-id="${probId}" data-svcid="${svcId}" data-sid="${sid}" data-msg="${escHtml(probMsg)}" onclick="openIgnoreModal(this)" title="${ignoreTitle}">${svgBellOff} <span>${isEn ? 'Ignore Warning' : 'Abaikan Peringatan'}</span></button>`;
+    items += `<button type="button" class="noc-act-dropdown-item ${isUp ? 'is-disabled' : ''}" ${isUp ? `disabled style="${disStyle}" onclick="${noopClick}"` : `data-id="${probId}" data-svcid="${svcId}" data-sid="${sid}" data-msg="${escHtml(probMsg)}" onclick="openIgnoreModal(this)"`} title="${ignoreTitle}">${svgBellOff} <span>${isEn ? ('Ignore Warning' + (isUp ? ' (Normal)' : '')) : ('Abaikan Peringatan' + (isUp ? ' (Normal)' : ''))}</span></button>`;
   }
 
   if (!IS_VIEWER && CAN_SERVICES) {
-    items += `<button type="button" class="noc-act-dropdown-item danger" ${!online ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} onclick="deleteService(${sid}, ${svcId}, '${escHtml(name)}', this)" title="${!online ? offlineTitle : (isEn ? 'Remove ' + name + ' from monitoring' : 'Lepas ' + name + ' dari pengawasan pantau')}">${svgDel} <span>${isEn ? 'Unmonitor' : 'Lepas dari Pantau'}</span></button>`;
+    items += `<button type="button" class="noc-act-dropdown-item danger ${!online ? 'is-disabled' : ''}" ${!online ? `disabled style="${disStyle}" onclick="${noopClick}"` : `onclick="deleteService(${sid}, ${svcId}, '${escHtml(name)}', this)"`} title="${!online ? offlineTitle : (isEn ? 'Remove ' + name + ' from monitoring' : 'Lepas ' + name + ' dari pengawasan pantau')}">${svgDel} <span>${isEn ? 'Unmonitor' : 'Lepas dari Pantau'}</span></button>`;
   }
 
   return `<details class="noc-act-dropdown">
@@ -10190,32 +10185,33 @@ function renderPorts(ports) {
     const monitoredPortSet = new Set(Array.from(document.querySelectorAll('#tbl-services tbody td.mono:nth-child(2)')).map(td => td.textContent.trim()));
     const isMonitored = monitoredPortSet.has(String(portInt));
 
-    if (!isMonitored && !isMgmtPort && CAN_SERVICES) {
-      const cleanProc = escHtml(p.pname || p.proc || '');
-      menuItems += `<button type="button" class="noc-act-dropdown-item" onclick="openAddSvcModal('${cleanProc}', '${portNum}', '${cleanProc}')" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed" title="' + (isEn ? 'Server offline — actions disabled' : 'Server offline — aksi dinonaktifkan') + '"' : 'title="' + (isEn ? 'Add port ' + portNum + ' to monitored services' : 'Tambahkan port ' + portNum + ' ke daftar service yang dipantau') + '"'}>${svgAddSvc} <span>${isEn ? 'Add to Monitored' : 'Pantau Service'}</span></button>`;
-    }
-
-    if (CAN_PROCESSES && p.pid) {
-      if (isCriticalProc) {
-        menuItems += `<button type="button" class="noc-act-dropdown-item text-danger" disabled style="opacity:0.35;cursor:not-allowed" title="${isEn ? 'Critical system process (' + escHtml(p.pname || p.proc || 'PID ' + p.pid) + ') is protected to prevent remote lockout or server instability' : 'Proses krusial sistem (' + escHtml(p.pname || p.proc || 'PID ' + p.pid) + ') dilindungi demi mencegah pemutusan akses remote atau gangguan stabilitas server'}">${svgKillPort} <span>${isEn ? 'Kill PID (' + p.pid + ')' : 'Hentikan PID (' + p.pid + ')'}</span></button>`;
-      } else {
-        menuItems += `<button type="button" class="noc-act-dropdown-item text-danger" onclick="openKillProcModal('${escHtml(String(p.pid))}','${escHtml(p.pname || p.proc || 'proses')}','TERM')" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed" title="' + (isEn ? 'Server offline — actions disabled' : 'Server offline — aksi dinonaktifkan') + '"' : 'title="' + (isEn ? 'Terminate process PID ' + p.pid + ' (' + escHtml(p.pname || p.proc || '') + ')' : 'Hentikan proses PID ' + p.pid + ' (' + escHtml(p.pname || p.proc || '') + ')') + '"'}>${svgKillPort} <span>${isEn ? 'Kill PID (' + p.pid + ')' : 'Hentikan PID (' + p.pid + ')'}</span></button>`;
+    if (isMgmtPort) {
+      menuItems += `<div class="noc-act-dropdown-item" style="color:var(--dim) !important;cursor:default !important;display:flex;align-items:center;gap:6px;padding:6px 10px;font-size:11px" title="${isEn ? 'Port ' + portInt + ' and system process (' + escHtml(p.pname || p.proc || '') + ') are fully protected by Pantau Server architecture to safeguard remote sysadmin access.' : 'Port ' + portInt + ' dan proses sistem (' + escHtml(p.pname || p.proc || '') + ') dilindungi penuh oleh arsitektur Pantau Server demi keselamatan akses remote sysadmin.'}">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+        <span>⛨ ${isEn ? 'Protected System Port' : 'Port & Proses Terlindungi'}</span>
+      </div>`;
+    } else {
+      if (!isMonitored && CAN_SERVICES) {
+        const cleanProc = escHtml(p.pname || p.proc || '');
+        menuItems += `<button type="button" class="noc-act-dropdown-item" onclick="openAddSvcModal('${cleanProc}', '${portNum}', '${cleanProc}')" ${!IS_ONLINE ? 'disabled style="opacity:0.35 !important;color:#64748b !important;cursor:not-allowed !important" title="' + (isEn ? 'Server offline — actions disabled' : 'Server offline — aksi dinonaktifkan') + '"' : 'title="' + (isEn ? 'Add port ' + portNum + ' to monitored services' : 'Tambahkan port ' + portNum + ' ke daftar service yang dipantau') + '"'}>${svgAddSvc} <span>${isEn ? 'Add to Monitored' : 'Pantau Service'}</span></button>`;
       }
-    }
-    if (CAN_FIREWALL) {
-      if (isMgmtPort) {
-        menuItems += `<button type="button" class="noc-act-dropdown-item text-warn" disabled style="opacity:0.35;cursor:not-allowed" title="${isEn ? 'Port ' + portInt + ' is a protected remote management socket and cannot be blocked via firewall' : 'Port ' + portInt + ' dilindungi dari pemblokiran firewall demi mencegah lockout koneksi remote/manajemen server'}">${svgBlockPort} <span>${isEn ? 'Block Port (Protected)' : 'Blokir Port (Dilindungi)'}</span></button>`;
-      } else {
-        const pProto = portInt + '/' + (p.proto || 'tcp').toLowerCase();
-        if (isPublic) {
-          menuItems += `<button type="button" class="noc-act-dropdown-item text-warn" onclick="submitPortRule('${escHtml(pProto)}', 'deny', this)" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed" title="' + (isEn ? 'Server offline — actions disabled' : 'Server offline — aksi dinonaktifkan') + '"' : 'title="' + (isEn ? 'Block public access to port ' + pProto + ' via firewall' : 'Blokir akses publik port ' + pProto + ' via firewall') + '"'}>${svgBlockPort} <span>${isEn ? 'Block Port (Firewall)' : 'Blokir Port (Firewall)'}</span></button>`;
+
+      if (CAN_PROCESSES && p.pid) {
+        if (isCriticalProc) {
+          menuItems += `<button type="button" class="noc-act-dropdown-item is-disabled" disabled style="opacity:0.35 !important;color:#64748b !important;background:transparent !important;cursor:not-allowed !important" onclick="event.stopPropagation(); return false;" title="${isEn ? 'Critical system process (' + escHtml(p.pname || p.proc || 'PID ' + p.pid) + ') is protected to prevent remote lockout or server instability' : 'Proses krusial sistem (' + escHtml(p.pname || p.proc || 'PID ' + p.pid) + ') dilindungi demi mencegah pemutusan akses remote atau gangguan stabilitas server'}">${svgKillPort} <span>${isEn ? 'Kill PID (' + p.pid + ') (Protected)' : 'Hentikan PID (' + p.pid + ') (Dilindungi)'}</span></button>`;
         } else {
-          menuItems += `<button type="button" class="noc-act-dropdown-item text-success" onclick="submitPortRule('${escHtml(pProto)}', 'allow', this)" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed" title="' + (isEn ? 'Server offline — actions disabled' : 'Server offline — aksi dinonaktifkan') + '"' : 'title="' + (isEn ? 'Allow access to port ' + pProto + ' via firewall' : 'Buka akses port ' + pProto + ' via firewall') + '"'}>${svgAllowPort} <span>${isEn ? 'Allow Port (Firewall)' : 'Buka Port (Firewall)'}</span></button>`;
+          menuItems += `<button type="button" class="noc-act-dropdown-item text-danger" onclick="openKillProcModal('${escHtml(String(p.pid))}','${escHtml(p.pname || p.proc || 'proses')}','TERM')" ${!IS_ONLINE ? 'disabled style="opacity:0.35 !important;color:#64748b !important;cursor:not-allowed !important" title="' + (isEn ? 'Server offline — actions disabled' : 'Server offline — aksi dinonaktifkan') + '"' : 'title="' + (isEn ? 'Terminate process PID ' + p.pid + ' (' + escHtml(p.pname || p.proc || '') + ')' : 'Hentikan proses PID ' + p.pid + ' (' + escHtml(p.pname || p.proc || '') + ')') + '"'}>${svgKillPort} <span>${isEn ? 'Kill PID (' + p.pid + ')' : 'Hentikan PID (' + p.pid + ')'}</span></button>`;
         }
       }
-    }
-    if (isMgmtPort) {
-      menuItems += `<div class="noc-act-dropdown-item" style="color:var(--dim);cursor:default" title="${isEn ? 'Port ' + portInt + ' is automatically protected by Pantau Server architecture' : 'Port ' + portInt + ' dilindungi secara otomatis oleh arsitektur Pantau Server'}"><span>⛨ ${isEn ? 'Protected System Port' : 'Port Sistem Terlindungi'}</span></div>`;
+
+      if (CAN_FIREWALL) {
+        const pProto = portInt + '/' + (p.proto || 'tcp').toLowerCase();
+        if (isPublic) {
+          menuItems += `<button type="button" class="noc-act-dropdown-item text-warn" onclick="submitPortRule('${escHtml(pProto)}', 'deny', this)" ${!IS_ONLINE ? 'disabled style="opacity:0.35 !important;color:#64748b !important;cursor:not-allowed !important" title="' + (isEn ? 'Server offline — actions disabled' : 'Server offline — aksi dinonaktifkan') + '"' : 'title="' + (isEn ? 'Block public access to port ' + pProto + ' via firewall' : 'Blokir akses publik port ' + pProto + ' via firewall') + '"'}>${svgBlockPort} <span>${isEn ? 'Block Port (Firewall)' : 'Blokir Port (Firewall)'}</span></button>`;
+        } else {
+          menuItems += `<button type="button" class="noc-act-dropdown-item text-success" onclick="submitPortRule('${escHtml(pProto)}', 'allow', this)" ${!IS_ONLINE ? 'disabled style="opacity:0.35 !important;color:#64748b !important;cursor:not-allowed !important" title="' + (isEn ? 'Server offline — actions disabled' : 'Server offline — aksi dinonaktifkan') + '"' : 'title="' + (isEn ? 'Allow access to port ' + pProto + ' via firewall' : 'Buka akses port ' + pProto + ' via firewall') + '"'}>${svgAllowPort} <span>${isEn ? 'Allow Port (Firewall)' : 'Buka Port (Firewall)'}</span></button>`;
+        }
+      }
     }
 
     const actions = `<details class="noc-act-dropdown">
@@ -13974,23 +13970,23 @@ function renderSystemdTable() {
                 <span>${isEn ? 'View Journalctl Logs' : 'Lihat Log Service'}</span>
               </button>
             ` : `
-              <button type="button" class="noc-act-dropdown-item" ${disAttr} onclick="systemdAction('restart', '${nameEsc}', this)" title="${!isOnline ? (isEn ? 'Server offline — actions disabled' : 'Server offline — aksi dinonaktifkan') : (isEn ? 'Restart service unit ' + nameEsc : 'Restart unit service ' + nameEsc)}">
+              <button type="button" class="noc-act-dropdown-item ${disAttr ? 'is-disabled' : ''}" ${disAttr} ${disAttr ? 'onclick="event.stopPropagation(); return false;"' : `onclick="systemdAction('restart', '${nameEsc}', this)"`} title="${!isOnline ? (isEn ? 'Server offline — actions disabled' : 'Server offline — aksi dinonaktifkan') : (isEn ? 'Restart service unit ' + nameEsc : 'Restart unit service ' + nameEsc)}">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
                 <span>Restart Unit</span>
               </button>
-              <button type="button" class="noc-act-dropdown-item" ${disAttr} ${isRunning ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} onclick="systemdAction('start', '${nameEsc}', this)" title="${!isOnline ? (isEn ? 'Server offline — actions disabled' : 'Server offline — aksi dinonaktifkan') : (isRunning ? (isEn ? 'Service unit is already active (RUNNING)' : 'Unit service sudah dalam kondisi aktif (RUNNING)') : (isEn ? 'Start service unit ' + nameEsc : 'Nyalakan unit service ' + nameEsc))}">
+              <button type="button" class="noc-act-dropdown-item ${(disAttr || isRunning) ? 'is-disabled' : ''}" ${disAttr} ${isRunning ? 'disabled style="opacity:0.35 !important;color:#64748b !important;background:transparent !important;cursor:not-allowed !important" onclick="event.stopPropagation(); return false;"' : `onclick="systemdAction('start', '${nameEsc}', this)"`} title="${!isOnline ? (isEn ? 'Server offline — actions disabled' : 'Server offline — aksi dinonaktifkan') : (isRunning ? (isEn ? 'Service unit is already active (RUNNING)' : 'Unit service sudah dalam kondisi aktif (RUNNING)') : (isEn ? 'Start service unit ' + nameEsc : 'Nyalakan unit service ' + nameEsc))}">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
-                <span>Nyalakan Unit</span>
+                <span>${isEn ? 'Start Unit' : 'Nyalakan Unit'}${isRunning ? (isEn ? ' (Running)' : ' (Aktif)') : ''}</span>
               </button>
-              <button type="button" class="noc-act-dropdown-item" ${disAttr} ${(!isRunning || isAgent) ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} onclick="systemdAction('stop', '${nameEsc}', this)" title="${!isOnline ? (isEn ? 'Server offline — actions disabled' : 'Server offline — aksi dinonaktifkan') : (isAgent ? (isEn ? 'Pantau Agent daemon is protected by system and cannot be stopped' : 'Daemon Agen Pantau dilindungi sistem dan tidak boleh dihentikan') : (!isRunning ? (isEn ? 'Service unit is already stopped (INACTIVE)' : 'Unit service sudah dalam kondisi terhenti (INACTIVE)') : (isEn ? 'Stop service unit ' + nameEsc : 'Hentikan unit service ' + nameEsc)))}">
+              <button type="button" class="noc-act-dropdown-item ${(disAttr || !isRunning || isAgent) ? 'is-disabled' : ''}" ${disAttr} ${(!isRunning || isAgent) ? 'disabled style="opacity:0.35 !important;color:#64748b !important;background:transparent !important;cursor:not-allowed !important" onclick="event.stopPropagation(); return false;"' : `onclick="systemdAction('stop', '${nameEsc}', this)"`} title="${!isOnline ? (isEn ? 'Server offline — actions disabled' : 'Server offline — aksi dinonaktifkan') : (isAgent ? (isEn ? 'Pantau Agent daemon is protected by system and cannot be stopped' : 'Daemon Agen Pantau dilindungi sistem dan tidak boleh dihentikan') : (!isRunning ? (isEn ? 'Service unit is already stopped (INACTIVE)' : 'Unit service sudah dalam kondisi terhenti (INACTIVE)') : (isEn ? 'Stop service unit ' + nameEsc : 'Hentikan unit service ' + nameEsc)))}">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect></svg>
-                <span>Hentikan Unit</span>
+                <span>${isEn ? 'Stop Unit' : 'Hentikan Unit'}${isAgent ? (isEn ? ' (Protected)' : ' (Dilindungi)') : (!isRunning ? (isEn ? ' (Stopped)' : ' (Terhenti)') : '')}</span>
               </button>
-              <button type="button" class="noc-act-dropdown-item" ${disAttr} ${!isRunning ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} onclick="systemdAction('reload', '${nameEsc}', this)" title="${!isOnline ? (isEn ? 'Server offline — actions disabled' : 'Server offline — aksi dinonaktifkan') : (!isRunning ? (isEn ? 'Service unit is inactive — reload configuration disabled' : 'Unit service tidak aktif — reload konfigurasi dinonaktifkan') : (isEn ? 'Reload configuration for ' + nameEsc : 'Reload konfigurasi unit service ' + nameEsc))}">
+              <button type="button" class="noc-act-dropdown-item ${(disAttr || !isRunning) ? 'is-disabled' : ''}" ${disAttr} ${!isRunning ? 'disabled style="opacity:0.35 !important;color:#64748b !important;background:transparent !important;cursor:not-allowed !important" onclick="event.stopPropagation(); return false;"' : `onclick="systemdAction('reload', '${nameEsc}', this)"`} title="${!isOnline ? (isEn ? 'Server offline — actions disabled' : 'Server offline — aksi dinonaktifkan') : (!isRunning ? (isEn ? 'Service unit is inactive — reload configuration disabled' : 'Unit service tidak aktif — reload konfigurasi dinonaktifkan') : (isEn ? 'Reload configuration for ' + nameEsc : 'Reload konfigurasi unit service ' + nameEsc))}">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
-                <span>Reload Unit</span>
+                <span>${isEn ? 'Reload Unit' : 'Reload Unit'}${!isRunning ? (isEn ? ' (Inactive)' : ' (Nonaktif)') : ''}</span>
               </button>
-              <button type="button" class="noc-act-dropdown-item" ${disAttr} onclick="systemdAction('${isEnabled ? 'disable' : 'enable'}', '${nameEsc}', this)" title="${!isOnline ? (isEn ? 'Server offline — actions disabled' : 'Server offline — aksi dinonaktifkan') : (isEnabled ? (isEn ? 'Disable auto-start on boot (systemctl disable ' + nameEsc + ')' : 'Nonaktifkan auto-start saat boot (systemctl disable ' + nameEsc + ')') : (isEn ? 'Enable auto-start on boot (systemctl enable ' + nameEsc + ')' : 'Aktifkan auto-start saat boot (systemctl enable ' + nameEsc + ')'))}">
+              <button type="button" class="noc-act-dropdown-item ${disAttr ? 'is-disabled' : ''}" ${disAttr} ${disAttr ? 'onclick="event.stopPropagation(); return false;"' : `onclick="systemdAction('${isEnabled ? 'disable' : 'enable'}', '${nameEsc}', this)"`} title="${!isOnline ? (isEn ? 'Server offline — actions disabled' : 'Server offline — aksi dinonaktifkan') : (isEnabled ? (isEn ? 'Disable auto-start on boot (systemctl disable ' + nameEsc + ')' : 'Nonaktifkan auto-start saat boot (systemctl disable ' + nameEsc + ')') : (isEn ? 'Enable auto-start on boot (systemctl enable ' + nameEsc + ')' : 'Aktifkan auto-start saat boot (systemctl enable ' + nameEsc + ')'))}">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
                 <span>${isEnabled ? 'Nonaktifkan Boot' : 'Aktifkan Boot'}</span>
               </button>
