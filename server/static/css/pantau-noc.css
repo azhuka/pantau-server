@@ -1347,15 +1347,29 @@ div:has(> table.noc-table-compact) {
 [data-theme="light"] .noc-act-dropdown-item {
   color: #334155;
 }
-.noc-act-dropdown-item:hover {
+.noc-act-dropdown-item:disabled,
+.noc-act-dropdown-item[disabled] {
+  opacity: 0.38 !important;
+  cursor: not-allowed !important;
+  pointer-events: auto !important;
+  background: transparent !important;
+  color: var(--dim, #64748b) !important;
+}
+.noc-act-dropdown-item:disabled:hover,
+.noc-act-dropdown-item[disabled]:hover {
+  background: transparent !important;
+  color: var(--dim, #64748b) !important;
+  cursor: not-allowed !important;
+}
+.noc-act-dropdown-item:not(:disabled):not([disabled]):hover {
   background: rgba(255, 255, 255, 0.08);
   color: var(--text-bright, #ffffff);
 }
-[data-theme="light"] .noc-act-dropdown-item:hover {
+[data-theme="light"] .noc-act-dropdown-item:not(:disabled):not([disabled]):hover {
   background: #f1f5f9;
   color: #0f172a;
 }
-.noc-act-dropdown-item.danger:hover {
+.noc-act-dropdown-item.danger:not(:disabled):not([disabled]):hover {
   background: rgba(239, 68, 68, 0.18);
   color: #f87171;
 }

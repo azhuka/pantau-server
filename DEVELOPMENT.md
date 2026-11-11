@@ -354,6 +354,24 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.188
+
+- **Tipe Rilis:** Perbaikan Kritis Logika Dropdown Tindakan, Standardisasi Status Layanan, Proteksi PID Krusial, dan Tooltip Informatif Menyeluruh (*Critical Action Dropdown Logic Fixes, Service State Standardization, Crucial PID Protection & Comprehensive Informative Tooltips*)
+- **Fokus Utama:** Menyempurnakan logika kondisi tombol dropdown tindakan di seluruh tabel manajemen server, menambahkan deskripsi tooltip yang jelas, serta memperkuat proteksi keamanan proses sistem:
+  1. **Standardisasi Status Layanan & Koreksi Tombol Tindakan (`#tbl-services`):**
+     - Memperbaiki normalisasi status layanan (`up`, `running`, `active`) di Jinja dan JavaScript (`renderServiceActions`). Tombol Nyalakan Service kini dinonaktifkan secara tepat saat layanan aktif/running, dan tombol Hentikan Service dinonaktifkan saat layanan terhenti/down.
+     - Menghubungkan kembali ID sel aksi `act-{{ svc.id }}` dan atribut data terkait agar pembaruan data telemetri berkala (polling/WebSocket) secara otomatis memperbarui status tombol aksi live.
+     - Memperbaiki kondisi tombol "Abaikan Peringatan" sehingga non-aktif saat layanan berjalan normal dan hanya dapat diklik jika terjadi insiden aktif.
+  2. **Tooltip Deskriptif & Pengendalian Gaya Disabled Dropdown:**
+     - Menambahkan pesan *tooltip* (`title="..."`) yang mendalam pada setiap tombol aksi di dropdown tabel Monitored Services dan Systemd Services (OS Daemons) sehingga operator memahami alasan status aktif/non-aktif tombol (misal: "Service sudah dalam kondisi aktif (RUNNING)", "Daemon Agen Pantau dilindungi sistem dan tidak boleh dihentikan", dsb.).
+     - Menyelaraskan CSS `.noc-act-dropdown-item:disabled` pada `pantau-noc.css` agar kursor konsisten `not-allowed`, warna tidak berubah saat di-hover, namun pesan tooltip bawaan browser tetap muncul dengan baik (`pointer-events: auto !important`).
+  3. **Proteksi Komprehensif Port & PID Krusial (`#ports-table` & Backend):**
+     - Menambahkan proteksi otomatis pada tab Ports dan backend `system_ops.py` terhadap proses sistem vital (`sshd`, `ssh`, `systemd`, `pantau-server`, `agent_pantau`, PID <= 1).
+     - Tombol "Hentikan PID" dinonaktifkan secara aman dengan tooltip proteksi jika mendeteksi proses krusial, mencegah operator memutus akses SSH atau memicu kegagalan sistem secara tidak sengaja.
+     - Tombol pemblokiran firewall pada port manajemen (22, 8400) dinonaktifkan demi mencegah *lockout* akses sysadmin.
+  4. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.188` pada seluruh 7 berkas inti repositori.
+
 ## Versi 4.8.187
 
 - **Tipe Rilis:** Inovasi Modal Log Kontekstual Layanan & Integrasi Langsung Tab Services (*Contextual Service Log Modal & Direct Tab Services Integration*)

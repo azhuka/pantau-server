@@ -530,12 +530,13 @@ def process_kill(
     if sig_clean not in ("TERM", "KILL", "15", "9", "STOP", "19", "CONT", "18"):
         sig_clean = "TERM"
 
-    if pid <= 1:
-        if request.headers.get("accept") == "application/json":
-            return JSONResponse({"ok": False, "detail": "PID dilindungi atau tidak valid!"}, status_code=400)
-        return RedirectResponse(f"/servers/{sid}?action=invalid_pid", status_code=303)
-
     pname_clean = (pname or "").strip()[:50]
+    pname_lower = pname_clean.lower()
+    critical_procs = ("sshd", "ssh", "agent_pantau", "agent-pantau", "pantau-server", "systemd", "init")
+    if pid <= 1 or any(cp in pname_lower for cp in critical_procs):
+        if request.headers.get("accept") == "application/json":
+            return JSONResponse({"ok": False, "detail": f"Proses krusial '{pname_clean}' (PID {pid}) dilindungi oleh sistem demi keselamatan dan stabilitas server!"}, status_code=400)
+        return RedirectResponse(f"/servers/{sid}?action=invalid_pid", status_code=303)
     _enqueue_mitigation(
         db,
         sid,
