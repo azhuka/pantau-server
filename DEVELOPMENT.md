@@ -354,6 +354,28 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.181
+
+- **Tipe Rilis:** Standardisasi Global Header Tabel (Title Case), Keseragaman Tingkat Tabel Dropdown Aksi, Sinkronisasi Penuh Render Klien/Server, & Eliminasi Konflik CSS Dimensi Dropdown (*Global Table Header Title Case Standardization, Table-Level Action Dropdown Uniformity, Full Dual-Render SSR/CSR Synchronization, & Dropdown Dimension CSS Conflict Elimination*)
+- **Fokus Utama:** Audit menyeluruh dan perbaikan menyeluruh pada seluruh tabel dan antarmuka operasional NOC berdasarkan 11 temuan screenshot pengguna dan penegakan Aturan Global Proyek (`GEMINI.md`):
+  1. **Standardisasi Global Kapitalisasi Header Tabel (Title Case):**
+     - Mengeliminasi seluruh pemaksaan huruf kapital (`text-transform: uppercase`) pada header tabel (`th`) di level stylesheet global (`pantau-noc.css`, `base.html`, `services.html`, `file_manager.html`, `users.html`, `probing.html`, `user_activity.html`).
+     - Seluruh nama kolom pada seluruh tabel diseragamkan dengan format Title Case: diawali huruf besar dan sisanya huruf kecil (contoh: `Tindakan`, `Waktu`, `Status`, `Service`, `Port`, `Proses`, `Koneksi`, `Respons (ms)`, `Keterangan`, `Uptime 24j`), dengan tetap mempertahankan singkatan teknis standar sysadmin (`CPU`, `RAM`, `UID / GID`, `PID`, `MAC`).
+  2. **Keseragaman Tingkat Tabel untuk Kolom Tindakan & Standardisasi Dropdown "Aksi ▾":**
+     - Seluruh header kolom kontrol tombol diseragamkan menjadi label tunggal baku **"Tindakan"**.
+     - Dropdown menu pada sel tindakan diseragamkan dengan label pemicu baku **"Aksi ▾"** (`<summary class="btn btn-xs btn-ghost btn-noc-act">Aksi ▾</summary>`).
+     - Menerapkan kepatuhan keseragaman skala tabel secara utuh (*table-level uniformity*): pada tabel dengan kapabilitas > 2 tombol aksi (seperti Monitored Services, Ports, Users/Akun, File Manager, Problems), seluruh baris secara konsisten dan seragam menggunakan dropdown `Aksi ▾` tanpa mencampuradukkan tombol langsung dengan dropdown.
+  3. **Sinkronisasi Penuh Arsitektur Render (Dual-Render Synchronization Jinja SSR & JS CSR):**
+     - Memperbaiki fungsi JavaScript `renderServiceActions` dan `renderSys` (tabel akun) pada `services.html` agar mengembalikan dropdown `Aksi ▾` yang identik 100% dengan render awal server Jinja HTML, mencegah kembalinya tombol inline saat polling realtime atau WebSocket berjalan.
+     - Memperbaiki `renderPorts` dan `renderProblemsTab` untuk memastikan konsistensi render dropdown `Aksi ▾` di sisi klien.
+     - Memperbaiki `renderSystemdTable` dengan penambahan deklarasi `isEn` yang sebelumnya memicu `ReferenceError` sehingga tabel daemons systemd kembali dirender sempurna.
+  4. **Resolusi Konflik Dimensi Tombol Dropdown CSS & Perapian Data Dense:**
+     - Menambahkan pengecualian eksplisit pada aturan CSS `.col-act .btn` agar elemen summary dropdown (`.btn-noc-act`, `.noc-act-dropdown summary`) tidak tertekan menjadi kotak sempit 26x26px, melainkan memiliki dimensi fleksibel (`width: auto !important; min-width: 58px !important; padding: 2px 8px !important`) sehingga teks label `Aksi ▾` tampil proporsional tanpa terpotong (*overflow*).
+     - Menghapus tag penutup duplikat `</td>` pada tabel Monitored Services dan tag `{% endif %}` liar pada `problems.html`.
+     - Standardisasi bahasa pada sertifikat SSL: mengubah `Expiry Date` menjadi `Kedaluwarsa` dan `Lokasi File` menjadi `Lokasi Berkas`, serta menyempurnakan parsing penerbit sertifikat (`commonName=`, `organizationName=`).
+  5. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.181` pada seluruh 7 berkas inti repositori.
+
 ## Versi 4.8.180
 
 - **Tipe Rilis:** Standardisasi Dropdown Tindakan, Paginasi Riwayat Insiden, Pengendalian Stacking Context NOC & Optimasi Kerapian Kolom (*Action Dropdown Standardization, Incident History Pagination, NOC Stacking Context Resolution & Column Density Optimization*)

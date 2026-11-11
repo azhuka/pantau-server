@@ -39,7 +39,7 @@
   font-size: 10.5px;
   font-weight: 700;
   color: var(--dim);
-  text-transform: uppercase;
+  text-transform: none;
   letter-spacing: 0.5px;
   display: flex;
   align-items: center;
@@ -71,7 +71,7 @@
   font-size: 10px;
   font-weight: 700;
   color: var(--dim);
-  text-transform: uppercase;
+  text-transform: none;
   letter-spacing: 0.5px;
   border-bottom: 1px solid var(--border);
   text-align: left;
@@ -601,13 +601,13 @@
     <table class="probe-table" id="probesTable">
       <thead>
         <tr>
-          <th class="col-status th-status">STATUS</th>
-          <th class="col-grow col-target th-target">ENDPOINT</th>
-          <th class="col-grow col-srv th-server">SERVER</th>
-          <th class="col-metric th-latency">LATENSI</th>
-          <th class="col-metric th-uptime">UPTIME<br>(24J / 30H)</th>
-          <th class="col-time th-freq">INTERVAL</th>
-          <th class="col-act th-actions">TINDAKAN</th>
+          <th class="col-status th-status">Status</th>
+          <th class="col-grow col-target th-target">Endpoint</th>
+          <th class="col-grow col-srv th-server">Server</th>
+          <th class="col-metric th-latency">Latensi</th>
+          <th class="col-metric th-uptime">Uptime (24j / 30h)</th>
+          <th class="col-time th-freq">Interval</th>
+          <th class="col-act th-actions">Tindakan</th>
         </tr>
       </thead>
       <tbody id="probesTbody">
@@ -1117,10 +1117,7 @@ function renderTable() {
           <div style="display:inline-flex;align-items:center;justify-content:center">
             ${CAN_MANAGE_PROBING ? `
             <details class="noc-act-dropdown">
-              <summary title="Menu Tindakan Endpoint">
-                <span>Tindakan</span>
-                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
-              </summary>
+              <summary class="btn btn-xs btn-ghost btn-noc-act" title="Menu Aksi Endpoint">Aksi ▾</summary>
               <div class="noc-act-dropdown-menu">
                 <button type="button" class="noc-act-dropdown-item" onclick="testProbeNow(${p.id}, this)">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue)"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>

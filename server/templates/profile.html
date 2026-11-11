@@ -408,10 +408,7 @@
                   'permissions': uperms
                 } %}
                 <details class="noc-act-dropdown">
-                  <summary title="Menu Tindakan Pengguna">
-                    <span>Tindakan</span>
-                    <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                  </summary>
+                  <summary class="btn btn-xs btn-ghost btn-noc-act" title="Menu Aksi Pengguna">Aksi ▾</summary>
                   <div class="noc-act-dropdown-menu">
                     <!-- 1. Detail Pengguna -->
                     <button type="button" class="noc-act-dropdown-item" onclick='openViewUserModal({{ u_payload|tojson }})' title="Lihat informasi akun">

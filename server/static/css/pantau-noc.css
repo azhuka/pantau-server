@@ -52,12 +52,15 @@ table.noc-table,
 }
 
 table.noc-table th,
-.table-noc th {
+.table-noc th,
+table.noc-table-dense th,
+table.noc-table-compact th,
+.tab-body .card table th {
   padding: 6px 10px;
   font-size: 10px;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  text-transform: none !important;
+  letter-spacing: 0.3px;
   color: var(--dim, #94a3b8);
   border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.1));
   white-space: nowrap;
@@ -215,8 +218,8 @@ table.noc-table tbody tr:hover td.col-act,
 .table-act-btn,
 .user-act-btn,
 .user-act-icon-btn,
-.prob-act-cell .btn,
-.col-act .btn {
+.prob-act-cell .btn:not(.btn-noc-act):not(.btn-action-label):not(.btn-action-text),
+.col-act .btn:not(.btn-noc-act):not(.btn-action-label):not(.btn-action-text):not(summary) {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -232,20 +235,28 @@ table.noc-table tbody tr:hover td.col-act,
   font-size: 11px !important;
 }
 
-/* Pengecualian Tombol Kolom Tindakan yang Memiliki Label Teks (misal Lepas Blokir) */
+/* Pengecualian Tombol Kolom Tindakan yang Memiliki Label Teks (misal Lepas Blokir) atau Menu Dropdown */
 .col-act .btn.btn-action-text,
 .col-act .btn:has(span),
-.col-act .btn-action-label {
+.col-act .btn-action-label,
+.col-act .btn.btn-noc-act,
+.col-act .noc-act-dropdown summary,
+.noc-act-dropdown summary,
+.noc-act-dropdown summary.btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   width: auto !important;
-  min-width: unset !important;
+  min-width: 58px !important;
   max-width: none !important;
   height: 24px !important;
   min-height: 24px !important;
   padding: 2px 8px !important;
-  gap: 5px !important;
+  gap: 4px !important;
   white-space: nowrap !important;
   font-size: 11px !important;
   font-weight: 500 !important;
+  box-sizing: border-box !important;
 }
 
 .noc-act-btn svg,
@@ -975,10 +986,10 @@ table.noc-table-dense td {
   box-sizing: border-box;
 }
 table.noc-table-dense th {
-  text-transform: uppercase;
-  font-size: 10px;
+  text-transform: none !important;
+  font-size: 10.5px;
   font-weight: 700;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
   color: var(--dim);
   border-bottom: 1px solid var(--border);
   white-space: nowrap;
@@ -1005,10 +1016,10 @@ table.noc-table-compact td {
   box-sizing: border-box;
 }
 table.noc-table-compact th {
-  text-transform: uppercase;
-  font-size: 10px;
+  text-transform: none !important;
+  font-size: 10.5px;
   font-weight: 700;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
   color: var(--dim);
   border-bottom: 1px solid var(--border);
 }
@@ -1208,18 +1219,19 @@ td.col-act.has-dropdown-open,
   align-items: center;
   justify-content: center;
   gap: 3.5px;
-  height: 22px;
-  padding: 1px 7px;
-  font-size: 10px;
-  font-weight: 600;
+  min-height: 24px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 500;
   color: var(--text-bright, #f8fafc);
   background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.15));
   border-radius: var(--radius-sm, 4px);
   cursor: pointer;
   user-select: none;
   transition: all 0.12s ease;
   white-space: nowrap;
+  box-sizing: border-box;
 }
 .noc-act-dropdown summary::-webkit-details-marker {
   display: none;
@@ -1231,6 +1243,19 @@ td.col-act.has-dropdown-open,
 .noc-act-dropdown[open] summary {
   background: var(--card-hover, #1b2642);
   border-color: var(--blue, #38bdf8);
+}
+[data-theme="light"] .noc-act-dropdown summary {
+  color: #1e293b;
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+[data-theme="light"] .noc-act-dropdown summary:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+[data-theme="light"] .noc-act-dropdown[open] summary {
+  background: #e2e8f0;
+  border-color: #0284c7;
 }
 .noc-act-dropdown-menu {
   position: absolute;

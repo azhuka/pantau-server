@@ -42,8 +42,8 @@
   font-size: 10px;
   font-weight: 600;
   color: var(--dim);
-  text-transform: uppercase;
-  letter-spacing: .5px;
+  text-transform: none;
+  letter-spacing: .3px;
 }
 #servers-table td {
   padding: 6px 10px;
@@ -412,12 +412,9 @@
       <td class="col-act">
         <div style="display:inline-flex;align-items:center;justify-content:center">
           {% if user.is_master_admin() or user.has_perm('can_manage_servers') %}
-          <!-- Tombol Aksi > 2: Gunakan Dropdown Cerdas NOC Berlabel 'Tindakan ▾' -->
+          <!-- Tombol Aksi > 2: Gunakan Dropdown Cerdas NOC Berlabel 'Aksi ▾' -->
           <details class="noc-act-dropdown">
-            <summary title="Menu Tindakan Server">
-              <span>Tindakan</span>
-              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
-            </summary>
+            <summary class="btn btn-xs btn-ghost btn-noc-act" title="Menu Aksi Server">Aksi ▾</summary>
             <div class="noc-act-dropdown-menu">
               <a href="/servers/{{ srv.id }}" class="noc-act-dropdown-item" title="Buka Detail Server">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
@@ -715,10 +712,7 @@ function createAndAppendServersRow(srv, tbody) {
       <div style="display:inline-flex;align-items:center;justify-content:center">
         ${CAN_MANAGE_SERVERS ? `
         <details class="noc-act-dropdown">
-          <summary title="${isEn ? 'Server Actions' : 'Menu Tindakan Server'}">
-            <span>${isEn ? 'Actions' : 'Tindakan'}</span>
-            <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
-          </summary>
+          <summary class="btn btn-xs btn-ghost btn-noc-act" title="${isEn ? 'Server Actions' : 'Menu Aksi Server'}">${isEn ? 'Actions ▾' : 'Aksi ▾'}</summary>
           <div class="noc-act-dropdown-menu">
             <a href="/servers/${srv.id}" class="noc-act-dropdown-item" title="${isEn ? 'Server Details' : 'Buka Detail Server'}">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>

@@ -936,7 +936,7 @@ body.show-alert-banner .tabbar {
   border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
   background: rgba(0, 0, 0, 0.18) !important;
   font-weight: 600 !important;
-  text-transform: uppercase !important;
+  text-transform: none !important;
   letter-spacing: .4px !important;
   color: var(--dim) !important;
 }
@@ -2191,49 +2191,29 @@ div[style*="position: fixed"] .card {
       </td>
       <td class="mono col-durasi" style="white-space:nowrap"{% if p.is_open %} data-start="{{ p.started_at.replace(tzinfo=None).isoformat() }}Z"{% endif %}>{{ p.durasi }}</td>
       <td class="col-act prob-act-cell" style="text-align:center">
-        {% if user.is_viewer() or not p.is_open %}
-          <div style="display:inline-flex;align-items:center;justify-content:center;gap:3px">
-            <button type="button" class="btn btn-ghost btn-sm" onclick="openProblemDetailModal(this.closest('tr'))" title="Lihat diagnosa &amp; rincian akar insiden" aria-label="Diagnosa">
+        <details class="noc-act-dropdown">
+          <summary class="btn btn-xs btn-ghost btn-noc-act" title="Menu Aksi Insiden">Aksi ▾</summary>
+          <div class="noc-act-dropdown-menu">
+            <!-- 1. Diagnosa -->
+            <button type="button" class="noc-act-dropdown-item" onclick="openProblemDetailModal(this.closest('tr'))" title="Lihat diagnosa &amp; rincian akar insiden">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <span>Diagnosa Masalah</span>
             </button>
+
+            <!-- 2. Log Unit -->
             {% if p.log_unit %}
-              <button type="button" class="btn btn-ghost btn-sm" onclick='jumpToLog({{ p.log_unit|tojson }})' title="Lihat log unit {{ p.log_unit }}" aria-label="Log unit">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
-              </button>
+            <button type="button" class="noc-act-dropdown-item" onclick='jumpToLog({{ p.log_unit|tojson }})' title="Lihat log unit {{ p.log_unit }}">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+              <span>Log {{ p.log_unit }}</span>
+            </button>
+            {% elif p.action == 'mitigate' %}
+            <button type="button" class="noc-act-dropdown-item" onclick="jumpToLog('AUTH')" title="Lihat log autentikasi SSH">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+              <span>Log Autentikasi</span>
+            </button>
             {% endif %}
-            {% if p.acknowledged_by %}
-              <span class="btn btn-success btn-sm btn-noc-icon prob-status-ack" title="Insiden Ditangani (oleh {{ p.acknowledged_by or op_name }})" aria-label="Insiden Ditangani">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              </span>
-            {% endif %}
-          </div>
-        {% else %}
-          <!-- Tombol Aksi > 2: Gunakan Dropdown Cerdas NOC 'Tindakan ▾' -->
-          <details class="noc-act-dropdown">
-            <summary title="Menu Tindakan Insiden">
-              <span>Tindakan</span>
-              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
-            </summary>
-            <div class="noc-act-dropdown-menu">
-              <!-- 1. Diagnosa -->
-              <button type="button" class="noc-act-dropdown-item" onclick="openProblemDetailModal(this.closest('tr'))" title="Lihat diagnosa &amp; rincian akar insiden">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                <span>Diagnosa Masalah</span>
-              </button>
 
-              <!-- 2. Log Unit -->
-              {% if p.log_unit %}
-              <button type="button" class="noc-act-dropdown-item" onclick='jumpToLog({{ p.log_unit|tojson }})' title="Lihat log unit {{ p.log_unit }}">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
-                <span>Log {{ p.log_unit }}</span>
-              </button>
-              {% elif p.action == 'mitigate' %}
-              <button type="button" class="noc-act-dropdown-item" onclick="jumpToLog('AUTH')" title="Lihat log autentikasi SSH">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
-                <span>Log Autentikasi</span>
-              </button>
-              {% endif %}
-
+            {% if p.is_open and not user.is_viewer() %}
               <!-- 3. Perintah Aksi Spesifik -->
               {% if p.action == 'restart' and p.svc_id %}
               <button type="button" class="noc-act-dropdown-item" onclick="restartService({{ server.id }}, {{ p.svc_id }}, '{{ p.log_unit or p.key }}', this)" title="Restart service">
@@ -2291,10 +2271,14 @@ div[style*="position: fixed"] .card {
                 <span>Abaikan Insiden</span>
               </button>
               {% endif %}
-            </div>
-          </details>
-        {% endif %}
-      </td>
+            {% elif p.acknowledged_by %}
+              <div class="noc-act-dropdown-item text-success prob-status-ack">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Insiden Ditangani</span>
+              </div>
+            {% endif %}
+          </div>
+        </details>
       </td>
       <td class="col-tips" style="font-size:11px;line-height:1.35;color:var(--dim)">{{ p.tip or '—' }}</td>
     </tr>
@@ -2348,14 +2332,21 @@ div[style*="position: fixed"] .card {
       {% if actions %}
         {% for a in actions %}
         <tr id="act-row-{{ a.id }}">
-          <td class="mono col-time-detailed" style="white-space:nowrap" title="Waktu Eksekusi: {{ a.time.strftime('%d %b %Y %H:%M:%S') if a.time else '—' }}">{{ a.time.strftime('%d %b %H:%M:%S') if a.time else '—' }}</td>
-          <td><span class="mono">{{ a.user }}</span></td>
+          <td class="mono col-time-detailed" style="white-space:nowrap" title="Waktu Eksekusi: {{ a.time.strftime('%d %b %Y %H:%M:%S') if a.time else '—' }}">{{ a.time.strftime('%d %b %H:%M') if a.time else '—' }}</td>
+          <td style="font-size:11px">
+            {% if a.user and ' ' in a.user %}
+              <div class="mono" style="font-weight:600;font-size:11px;line-height:1.2">{{ a.user.split(' ')[0] }}</div>
+              <div class="cell-sub" style="font-size:9px;color:var(--dim);line-height:1.2">{{ a.user.split(' ', 1)[1] }}</div>
+            {% else %}
+              <span class="mono" style="font-weight:600;font-size:11px">{{ a.user or '-' }}</span>
+            {% endif %}
+          </td>
           <td><span class="badge badge-muted">{{ a.action_label }}</span></td>
-          <td style="font-size:12.5px"><strong>{{ a.target }}</strong></td>
+          <td style="font-size:12px"><strong>{{ a.target }}</strong></td>
           <td class="col-center-cell" style="text-align:center">
             <span class="badge badge-{{ a.status_cls }}">{{ a.status_label }}</span>
           </td>
-          <td class="mono" style="font-size:11.5px;color:var(--dim);word-break:break-word">{{ a.result }}</td>
+          <td class="mono" style="font-size:11px;color:var(--dim);max-width:280px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="{{ a.result }}">{{ a.result }}</td>
         </tr>
         {% endfor %}
       {% else %}
@@ -2448,9 +2439,9 @@ div[style*="position: fixed"] .card {
       <th class="col-fixed-cell" data-col-title="Proses" title="Nama proses sistem operasi yang dieksekusi">Proses</th>
       <th class="col-fixed-cell col-center-cell" data-col-title="Status" title="Kondisi terkini service (up = aktif normal, down = terhenti)">Status</th>
       <th class="col-fixed-cell col-center-cell" data-col-title="Koneksi" title="Jumlah koneksi jaringan aktif yang saat ini terhubung ke service">Koneksi</th>
-      <th class="col-fixed-cell col-center-cell" data-col-title="Respons" title="Waktu respons service dalam satuan milidetik (ms)">Respons<br>(ms)</th>
+      <th class="col-fixed-cell col-center-cell" data-col-title="Respons" title="Waktu respons service dalam satuan milidetik (ms)">Respons (ms)</th>
       <th class="col-hero-cell" data-col-title="Keterangan" title="Keterangan atau hasil pemeriksaan status service">Keterangan</th>
-      <th class="col-fixed-cell col-center-cell" data-col-title="Uptime 24j" title="Persentase ketersediaan service dalam 24 jam terakhir">Uptime<br>24j</th>
+      <th class="col-fixed-cell col-center-cell" data-col-title="Uptime 24j" title="Persentase ketersediaan service dalam 24 jam terakhir">Uptime 24j</th>
       <th class="col-fixed-cell col-act" data-col-title="Tindakan" style="text-align:center" title="Kontrol service: Restart, Start, Stop, Log, Abaikan/Pantau, atau Lepas">Tindakan</th>
     </tr></thead>
     <tbody>
@@ -2496,10 +2487,7 @@ div[style*="position: fixed"] .card {
           {% set is_up = (svc._status == 'up') %}
           {% set is_pending = (svc._pending_cmd is not none and svc._pending_cmd) %}
           <details class="noc-act-dropdown">
-            <summary title="Menu Tindakan Service">
-              <span>Tindakan</span>
-              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
-            </summary>
+            <summary class="btn btn-xs btn-ghost btn-noc-act" title="Menu Aksi Service">Aksi ▾</summary>
             <div class="noc-act-dropdown-menu">
               <button type="button" class="noc-act-dropdown-item"
                       {% if is_pending or not is_online %}disabled style="opacity:0.35;cursor:not-allowed"{% endif %}
@@ -2546,7 +2534,6 @@ div[style*="position: fixed"] .card {
             </div>
           </details>
         {% endif %}
-      </td>
       </td>
     </tr>
     {% endfor %}
@@ -2883,11 +2870,11 @@ div[style*="position: fixed"] .card {
               {% if c.get('is_managed') %}<span class="badge badge-info" style="font-size:10px;margin-left:4px">Dikelola</span>{% endif %}
             </td>
             <td class="col-act" style="white-space:nowrap;text-align:center">
-              {% if user.has_perm('can_cron') and c.get('is_managed') %}
-                {% set cron_ident = c.get('ident', '') %}
-                <details class="noc-act-dropdown">
-                  <summary class="btn btn-xs btn-ghost btn-noc-act">Tindakan ▾</summary>
-                  <div class="noc-act-dropdown-menu">
+              {% set cron_ident = c.get('ident', '') %}
+              <details class="noc-act-dropdown">
+                <summary class="btn btn-xs btn-ghost btn-noc-act">Aksi ▾</summary>
+                <div class="noc-act-dropdown-menu">
+                  {% if user.has_perm('can_cron') and c.get('is_managed') %}
                     <button type="button" class="noc-act-dropdown-item {{ 'text-warn' if c.get('is_enabled', True) else 'text-primary' }}"
                             onclick="submitCronToggle('{{ cron_ident }}', '{{ 'disable' if c.get('is_enabled', True) else 'enable' }}', this)"
                             {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed"{% endif %}>
@@ -2911,11 +2898,21 @@ div[style*="position: fixed"] .card {
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                       <span>Hapus Cron</span>
                     </button>
-                  </div>
-                </details>
-              {% else %}
-                <span style="font-size:11px;color:var(--dim)">Sistem</span>
-              {% endif %}
+                  {% else %}
+                    {% if user.has_perm('can_cron') %}
+                    <button type="button" class="noc-act-dropdown-item"
+                            onclick="submitCronRun('{{ c.user }}', '{{ c.command | replace('\\', '\\\\') | replace('\'', '\\\'') }}', this)"
+                            {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed"{% endif %}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                      <span>Jalankan Uji Coba</span>
+                    </button>
+                    {% endif %}
+                    <div class="noc-act-dropdown-item" style="color:var(--dim);cursor:default">
+                      <span>⛨ Cron Sistem Terlindungi</span>
+                    </div>
+                  {% endif %}
+                </div>
+              </details>
             </td>
           </tr>
           {% endfor %}
@@ -3215,24 +3212,24 @@ div[style*="position: fixed"] .card {
               <div style="font-size:11px;color:var(--dim)">{{ a.last_login or '-' }}</div>
             </td>
             <td class="col-act" style="white-space:nowrap;text-align:center">
-              {% if user.has_perm('can_users_sys') and not a.is_protected %}
-                <details class="noc-act-dropdown">
-                  <summary class="btn btn-xs btn-ghost btn-noc-act">Tindakan ▾</summary>
-                  <div class="noc-act-dropdown-menu">
-                    <a href="/servers/{{ server.id }}/user/{{ a.user }}" class="noc-act-dropdown-item">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                      <span>Rincian Akun</span>
-                    </a>
-                    {% if a.sessions %}
-                      {% for s in a.sessions %}
-                        {% if s.tty %}
-                        <button type="button" class="noc-act-dropdown-item text-danger" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed"{% endif %} onclick="terminateSession({{ server.id }}, '{{ s.tty }}', '{{ a.user }}', this)">
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                          <span>Putus Sesi ({{ s.tty }})</span>
-                        </button>
-                        {% endif %}
-                      {% endfor %}
-                    {% endif %}
+              <details class="noc-act-dropdown">
+                <summary class="btn btn-xs btn-ghost btn-noc-act">Aksi ▾</summary>
+                <div class="noc-act-dropdown-menu">
+                  <a href="/servers/{{ server.id }}/user/{{ a.user }}" class="noc-act-dropdown-item">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    <span>Rincian Akun</span>
+                  </a>
+                  {% if a.sessions and (user.has_perm('can_users_sys') or user.has_perm('can_manage_servers') or user.is_master_admin()) %}
+                    {% for s in a.sessions %}
+                      {% if s.tty %}
+                      <button type="button" class="noc-act-dropdown-item text-danger" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed"{% endif %} onclick="terminateSession({{ server.id }}, '{{ s.tty }}', '{{ a.user }}', this)">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                        <span>Putus Sesi ({{ s.tty }})</span>
+                      </button>
+                      {% endif %}
+                    {% endfor %}
+                  {% endif %}
+                  {% if user.has_perm('can_users_sys') and not a.is_protected %}
                     {% if a.is_locked %}
                       <button type="button" class="noc-act-dropdown-item text-info" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed"{% endif %} onclick="submitUserAction('unlock', '{{ a.user }}', this)">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>
@@ -3248,24 +3245,9 @@ div[style*="position: fixed"] .card {
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                       <span>Hapus Akun</span>
                     </button>
-                  </div>
-                </details>
-              {% else %}
-                <div style="display:inline-flex;gap:4px;flex-wrap:nowrap;align-items:center">
-                  <a href="/servers/{{ server.id }}/user/{{ a.user }}" class="btn btn-ghost btn-sm btn-noc-icon" title="Buka Rincian Akun" aria-label="Rincian">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                  </a>
-                  {% if a.sessions and (user.has_perm('can_users_sys') or user.has_perm('can_manage_servers') or user.is_master_admin()) %}
-                    {% for s in a.sessions %}
-                      {% if s.tty %}
-                      <button type="button" class="btn btn-danger btn-sm btn-noc-icon" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Terminate session terminal {{ s.tty }} ({{ a.user }})"{% endif %} aria-label="Putus Sesi" onclick="terminateSession({{ server.id }}, '{{ s.tty }}', '{{ a.user }}', this)">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                      </button>
-                      {% endif %}
-                    {% endfor %}
                   {% endif %}
                 </div>
-              {% endif %}
+              </details>
             </td>
           </tr>
           {% endfor %}
@@ -3478,36 +3460,41 @@ div[style*="position: fixed"] .card {
             </td>
             <td class="mono" style="font-size:12px;color:var(--text)">{{ p.proc or '—' }}</td>
             <td class="col-act" style="white-space:nowrap;text-align:center">
-              <div style="display:inline-flex;gap:4px;flex-wrap:nowrap;align-items:center">
-                {% if user.has_perm('can_processes') and p.pid and p.port not in (22, 8400) %}
-                <button class="btn btn-sm btn-noc-icon btn-danger"
-                        onclick="openKillProcModal('{{ p.pid }}','{{ p.pname or p.proc or 'proses' }}','TERM')"
-                        {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Kirim sinyal ke proses yang mengelola port ini"{% endif %}
-                        aria-label="Kill PID">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                </button>
-                {% endif %}
-                {% if user.has_perm('can_firewall') %}
-                {% if p.is_public and p.port not in (22, 8400) %}
-                <button type="button" class="btn btn-sm btn-noc-icon btn-warn"
-                        onclick="submitPortRule('{{ p.port }}/{{ p.proto }}', 'deny', this)"
-                        {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Blokir port ini via UFW/iptables"{% endif %}
-                        aria-label="Blokir Port">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
-                </button>
-                {% elif not p.is_public and p.port not in (22, 8400) %}
-                <button type="button" class="btn btn-sm btn-noc-icon btn-success"
-                        onclick="submitPortRule('{{ p.port }}/{{ p.proto }}', 'allow', this)"
-                        {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Buka port ini (izinkan koneksi)"{% endif %}
-                        aria-label="Buka Port">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>
-                </button>
-                {% endif %}
-                {% endif %}
-                {% if p.port in (22, 8400) %}
-                <span style="font-size:11px;color:var(--dim);white-space:nowrap">⛨ Dilindungi</span>
-                {% endif %}
-              </div>
+              <details class="noc-act-dropdown">
+                <summary class="btn btn-xs btn-ghost btn-noc-act">Aksi ▾</summary>
+                <div class="noc-act-dropdown-menu">
+                  {% if user.has_perm('can_services') and p.port not in (22, 8400) %}
+                  <button type="button" class="noc-act-dropdown-item" onclick="openAddSvcModal('{{ p.pname or p.proc or '' }}', '{{ p.port }}', '{{ p.pname or p.proc or '' }}')" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed"{% endif %}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                    <span>Pantau Service</span>
+                  </button>
+                  {% endif %}
+                  {% if user.has_perm('can_processes') and p.pid and p.port not in (22, 8400) %}
+                  <button type="button" class="noc-act-dropdown-item text-danger" onclick="openKillProcModal('{{ p.pid }}','{{ p.pname or p.proc or 'proses' }}','TERM')" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed"{% endif %}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    <span>Hentikan PID ({{ p.pid }})</span>
+                  </button>
+                  {% endif %}
+                  {% if user.has_perm('can_firewall') and p.port not in (22, 8400) %}
+                    {% if p.is_public %}
+                    <button type="button" class="noc-act-dropdown-item text-warn" onclick="submitPortRule('{{ p.port }}/{{ p.proto }}', 'deny', this)" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed"{% endif %}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
+                      <span>Blokir Port (Firewall)</span>
+                    </button>
+                    {% else %}
+                    <button type="button" class="noc-act-dropdown-item text-success" onclick="submitPortRule('{{ p.port }}/{{ p.proto }}', 'allow', this)" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed"{% endif %}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>
+                      <span>Buka Port (Firewall)</span>
+                    </button>
+                    {% endif %}
+                  {% endif %}
+                  {% if p.port in (22, 8400) %}
+                  <div class="noc-act-dropdown-item" style="color:var(--dim);cursor:default">
+                    <span>⛨ Port Sistem Terlindungi</span>
+                  </div>
+                  {% endif %}
+                </div>
+              </details>
             </td>
           </tr>
           {% endfor %}
@@ -3542,10 +3529,10 @@ div[style*="position: fixed"] .card {
           <tr>
             <th class="col-hero-cell" title="Domain atau Subdomain yang dilindungi oleh sertifikat">Domain / Subjek</th>
             <th class="col-fixed-cell" style="min-width:130px;max-width:180px" title="Otoritas penerbit sertifikat (Certificate Authority)">Penerbit (CA)</th>
-            <th class="col-fixed-cell col-ssl-expiry" title="Batas waktu akhir masa berlaku sertifikat">Expiry Date</th>
+            <th class="col-fixed-cell col-ssl-expiry" title="Batas waktu akhir masa berlaku sertifikat">Kedaluwarsa</th>
             <th class="col-fixed-cell col-num-cell col-ssl-days" title="Sisa hari sebelum sertifikat habis masa berlakunya">Sisa Hari</th>
             <th class="col-fixed-cell col-center-cell" style="width:115px;min-width:110px" title="Status masa berlaku sertifikat SSL/TLS">Status</th>
-            <th class="col-fixed-cell" style="max-width:180px" title="Lokasi file sertifikat di filesystem server">Lokasi File</th>
+            <th class="col-fixed-cell" style="max-width:180px" title="Lokasi file sertifikat di filesystem server">Lokasi Berkas</th>
             <th class="col-fixed-cell col-act" style="text-align:center">Tindakan</th>
           </tr>
         </thead>
@@ -3558,28 +3545,32 @@ div[style*="position: fixed"] .card {
             </td>
             <td style="font-size:11px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px" title="{{ c.issuer }}">
               {% set ca_name = c.issuer %}
-              {% if 'CN=' in c.issuer %}
+              {% if 'commonName=' in c.issuer %}
+                {% set ca_name = c.issuer.split('commonName=')[-1].split('/')[0].split(',')[0].strip() %}
+              {% elif 'CN=' in c.issuer %}
                 {% set ca_name = c.issuer.split('CN=')[-1].split('/')[0].split(',')[0].strip() %}
+              {% elif 'organizationName=' in c.issuer %}
+                {% set ca_name = c.issuer.split('organizationName=')[-1].split('/')[0].split(',')[0].strip() %}
               {% elif 'O=' in c.issuer %}
                 {% set ca_name = c.issuer.split('O=')[-1].split('/')[0].split(',')[0].strip() %}
               {% endif %}
               <span style="font-weight:600;color:var(--text)">{{ ca_name }}</span>
             </td>
-            <td class="mono col-ssl-expiry">
+            <td class="mono col-ssl-expiry" style="white-space:nowrap">
               {% set raw_dt = c.not_after | string %}
               {% if 'T' in raw_dt %}
                 {% set dt_parts = raw_dt.split('T') %}
-                <div style="font-size:11px;font-weight:600">{{ dt_parts[0] }}</div>
-                <div class="cell-sub">{{ dt_parts[1][:5] if dt_parts|length > 1 else '' }} UTC</div>
+                <div style="font-size:11px;font-weight:600;white-space:nowrap">{{ dt_parts[0] }}</div>
+                <div class="cell-sub" style="white-space:nowrap">{{ dt_parts[1][:5] if dt_parts|length > 1 else '' }} UTC</div>
               {% elif ' ' in raw_dt %}
                 {% set dt_parts = raw_dt.split(' ') %}
-                <div style="font-size:11px;font-weight:600">{{ dt_parts[0] }}</div>
-                <div class="cell-sub">{{ dt_parts[1][:5] if dt_parts|length > 1 else '' }}</div>
+                <div style="font-size:11px;font-weight:600;white-space:nowrap">{{ dt_parts[0] }}</div>
+                <div class="cell-sub" style="white-space:nowrap">{{ dt_parts[1][:5] if dt_parts|length > 1 else '' }}</div>
               {% else %}
-                <div style="font-size:11px">{{ c.not_after }}</div>
+                <div style="font-size:11px;white-space:nowrap">{{ c.not_after }}</div>
               {% endif %}
             </td>
-            <td class="mono col-ssl-days" style="white-space:nowrap;font-weight:700;color:{{ 'var(--red)' if c.is_expired or c.is_critical else ('var(--yellow)' if c.is_warning else 'var(--green)') }}">
+            <td class="mono col-ssl-days" style="white-space:nowrap !important;min-width:85px;font-weight:700;color:{{ 'var(--red)' if c.is_expired or c.is_critical else ('var(--yellow)' if c.is_warning else 'var(--green)') }}">
               {% if c.is_expired %}
                 Expired
               {% else %}
@@ -5100,9 +5091,6 @@ function renderServiceActions(sid, svcId, name, status, isPending, problem, isSe
   const effectivelyPending = isPending || Boolean(op && Date.now() < op.expires);
   const effAction = pendingAction || (op ? op.action : null);
 
-  // Status & kontrol:
-  // - Saat proses 'stop' berjalan atau status service sudah 'down': tombol Stop dinonaktifkan, tombol Start siap dipakai
-  // - Saat proses 'start' berjalan atau status service sudah 'up': tombol Start dinonaktifkan, tombol Stop siap dipakai
   const isStopping = effAction === 'stop' || status === 'down';
   const isStarting = effAction === 'start' || (status === 'up' && effAction !== 'stop');
   const startDis = !online || isStarting || (status === 'up' && !effectivelyPending);
@@ -5115,23 +5103,9 @@ function renderServiceActions(sid, svcId, name, status, isPending, problem, isSe
 
   const offlineTitle = isEn ? 'Server offline — actions disabled' : 'Server offline — aksi dinonaktifkan';
 
-  let ignoreBtn = '';
-  const svgBell = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>';
-  const svgBellOff = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"></path><path d="M18.63 13A17.89 17.89 0 0 1 18 8"></path><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"></path><path d="M18 8a6 6 0 0 0-9.33-5"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
-
-  if (isIgnored) {
-    const ignTitle = isEn ? 'Cancel ignore for this service' : 'Pantau kembali service ini';
-    ignoreBtn = '<button type="button" class="btn btn-ghost btn-sm" data-id="' + probId + '" data-svcid="' + svcId + '" data-sid="' + sid + '" onclick="unignoreProblem(this)" title="' + ignTitle + '" aria-label="Pantau">' + svgBell + '</button>';
-  } else {
-    const abkDis = isUp ? 'disabled style="opacity:0.35;cursor:not-allowed" ' : '';
-    const abkTitle = isUp ? (isEn ? 'Service is running normally — ignore is only for stopped services' : 'Service aktif normal — opsi abaikan hanya untuk service bermasalah/berhenti') : (isEn ? 'Ignore monitoring for this service' : 'Abaikan pemantauan service ini');
-    ignoreBtn = '<button type="button" class="btn btn-ghost btn-sm" ' + abkDis + 'data-id="' + probId + '" data-svcid="' + svcId + '" data-sid="' + sid + '" data-msg="' + escHtml(probMsg) + '" onclick="openIgnoreModal(this)" title="' + abkTitle + '" aria-label="Abaikan">' + svgBellOff + '</button>';
-  }
-
   const rstTitle = !online ? offlineTitle : (isEn ? 'Restart service ' + name : 'Restart service ' + name);
-  const startTitle = !online ? offlineTitle : (isUp ? (isEn ? 'Service is already running' : 'Service sudah dalam kondisi aktif') : (isEn ? 'Start service' : 'Start service di OS host'));
-  const stopTitle = !online ? offlineTitle : (!isUp ? (isEn ? 'Service is stopped' : 'Service sudah nonaktif / berhenti') : (isEn ? 'Stop service' : 'Stop service'));
-  const disStyle = !online ? 'style="opacity:0.35;cursor:not-allowed" ' : '';
+  const startTitle = !online ? offlineTitle : (isUp ? (isEn ? 'Service is already running' : 'Service sudah dalam kondisi aktif') : (isEn ? 'Start service ' + name : 'Nyalakan service ' + name));
+  const stopTitle = !online ? offlineTitle : (!isUp ? (isEn ? 'Service is stopped' : 'Service sudah berhenti') : (isEn ? 'Stop service ' + name : 'Hentikan service ' + name));
 
   let pendingBadge = '';
   if (effectivelyPending) {
@@ -5145,27 +5119,32 @@ function renderServiceActions(sid, svcId, name, status, isPending, problem, isSe
   const svgRst = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>';
   const svgStart = '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>';
   const svgStop = '<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect></svg>';
+  const svgBell = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>';
+  const svgBellOff = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"></path><path d="M18.63 13A17.89 17.89 0 0 1 18 8"></path><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"></path><path d="M18 8a6 6 0 0 0-9.33-5"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
+  const svgDel = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="8" y1="12" x2="16" y2="12"></line></svg>';
 
-  return '<button type="button" class="btn btn-primary btn-sm btn-noc-icon btn-svc-restart" '
-    + disStyle
-    + (rstDis ? 'disabled ' : '')
-    + 'title="' + rstTitle + '" '
-    + 'aria-label="Restart" '
-    + 'onclick="restartService(' + sid + ', ' + svcId + ', \'' + escHtml(name) + '\', this)">' + svgRst + '</button>'
-    + '<button type="button" class="btn btn-ghost btn-sm btn-noc-icon btn-svc-start" style="' + (startDis ? 'opacity:0.35;cursor:not-allowed;' : '') + '" '
-    + (startDis ? 'disabled ' : '')
-    + 'onclick="svcAction(\'start\', ' + sid + ', ' + svcId + ', \'' + escHtml(name) + '\', this)" '
-    + 'aria-label="Start" '
-    + 'title="' + startTitle + '">' + svgStart + '</button>'
-    + '<button type="button" class="btn btn-ghost btn-sm btn-noc-icon btn-svc-stop" style="' + (stopDis ? 'opacity:0.35;cursor:not-allowed;' : '') + '" '
-    + (stopDis ? 'disabled ' : '')
-    + 'onclick="svcAction(\'stop\', ' + sid + ', ' + svcId + ', \'' + escHtml(name) + '\', this)" '
-    + 'aria-label="Stop" '
-    + 'title="' + stopTitle + '">' + svgStop + '</button>'
-    + '<span class="act-separator" title="Pemisah Kontrol Host &amp; Metadata Pemantauan"></span>'
-    + logBtn
-    + ignoreBtn
-    + pendingBadge;
+  let items = '';
+  items += `<button type="button" class="noc-act-dropdown-item" ${rstDis ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${rstTitle}" onclick="restartService(${sid}, ${svcId}, '${escHtml(name)}', this)">${svgRst} <span>${isEn ? 'Restart Service' : 'Restart Service'}</span></button>`;
+  items += `<button type="button" class="noc-act-dropdown-item" ${startDis ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${startTitle}" onclick="svcAction('start', ${sid}, ${svcId}, '${escHtml(name)}', this)">${svgStart} <span>${isEn ? 'Start Service' : 'Nyalakan Service'}</span></button>`;
+  items += `<button type="button" class="noc-act-dropdown-item" ${stopDis ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${stopTitle}" onclick="svcAction('stop', ${sid}, ${svcId}, '${escHtml(name)}', this)">${svgStop} <span>${isEn ? 'Stop Service' : 'Hentikan Service'}</span></button>`;
+  items += `<button type="button" class="noc-act-dropdown-item" onclick="jumpToLog('${escHtml(name)}')" title="${isEn ? 'View logs for ' + name : 'Lihat log service ' + name}">${svgLog} <span>${isEn ? 'View Service Logs' : 'Lihat Log Service'}</span></button>`;
+
+  if (isIgnored) {
+    items += `<button type="button" class="noc-act-dropdown-item" data-id="${probId}" data-svcid="${svcId}" data-sid="${sid}" onclick="unignoreProblem(this)" title="${isEn ? 'Cancel ignore for this service' : 'Pantau kembali service ini'}">${svgBell} <span>${isEn ? 'Monitor Again' : 'Pantau Kembali'}</span></button>`;
+  } else {
+    items += `<button type="button" class="noc-act-dropdown-item" ${isUp ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} data-id="${probId}" data-svcid="${svcId}" data-sid="${sid}" data-msg="${escHtml(probMsg)}" onclick="openIgnoreModal(this)" title="${isUp ? (isEn ? 'Service is running normally' : 'Service aktif normal') : (isEn ? 'Ignore monitoring for this service' : 'Abaikan pemantauan service ini')}">${svgBellOff} <span>${isEn ? 'Ignore Warning' : 'Abaikan Peringatan'}</span></button>`;
+  }
+
+  if (!IS_VIEWER && CAN_SERVICES) {
+    items += `<button type="button" class="noc-act-dropdown-item danger" ${!online ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} onclick="deleteService(${sid}, ${svcId}, '${escHtml(name)}', this)" title="${isEn ? 'Remove ' + name + ' from monitoring' : 'Lepas ' + name + ' dari pengawasan'}">${svgDel} <span>${isEn ? 'Unmonitor' : 'Lepas dari Pantau'}</span></button>`;
+  }
+
+  return `<details class="noc-act-dropdown">
+    <summary class="btn btn-xs btn-ghost btn-noc-act" title="${isEn ? 'Service Actions' : 'Menu Aksi Service'}">${isEn ? 'Actions ▾' : 'Aksi ▾'}</summary>
+    <div class="noc-act-dropdown-menu">
+      ${items}
+    </div>
+  </details>${pendingBadge}`;
 }
 
 function showSvcConfirmModal(opts) {
@@ -8829,21 +8808,21 @@ function renderProblemsTab(level, openList, histList) {
       opsHtml += `<span class="btn btn-success btn-sm btn-noc-icon prob-status-ack" title="${isEn ? 'Incident Handled' : 'Insiden Ditangani'} (${isEn ? 'by ' : 'oleh '}${escapeHtml(ackDisplay)})" aria-label="${isEn ? 'Incident Handled' : 'Insiden Ditangani'}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>`;
     }
 
-    let actHtml = '';
-    if (isOpen && !IS_VIEWER) {
-      let menuItems = '';
-      menuItems += `<button type="button" class="noc-act-dropdown-item" onclick="openProblemDetailModal(this.closest('tr'))">
-        ${svgDiag} <span>${isEn ? 'Diagnose &amp; Details' : 'Diagnosa &amp; Rincian'}</span>
+    let menuItems = '';
+    menuItems += `<button type="button" class="noc-act-dropdown-item" onclick="openProblemDetailModal(this.closest('tr'))">
+      ${svgDiag} <span>${isEn ? 'Diagnose &amp; Details' : 'Diagnosa &amp; Rincian'}</span>
+    </button>`;
+    if (p.log_unit) {
+      menuItems += `<button type="button" class="noc-act-dropdown-item" onclick="jumpToLog('${escapeHtml(p.log_unit)}')">
+        ${svgLog} <span>${isEn ? 'View Unit Logs' : 'Lihat Log Unit'}</span>
       </button>`;
-      if (p.log_unit) {
-        menuItems += `<button type="button" class="noc-act-dropdown-item" onclick="jumpToLog('${escapeHtml(p.log_unit)}')">
-          ${svgLog} <span>${isEn ? 'View Unit Logs' : 'Lihat Log Unit'}</span>
-        </button>`;
-      } else if (p.action === 'mitigate') {
-        menuItems += `<button type="button" class="noc-act-dropdown-item" onclick="jumpToLog('AUTH')">
-          ${svgLog} <span>${isEn ? 'View SSH Auth Logs' : 'Lihat Log Auth SSH'}</span>
-        </button>`;
-      }
+    } else if (p.action === 'mitigate') {
+      menuItems += `<button type="button" class="noc-act-dropdown-item" onclick="jumpToLog('AUTH')">
+        ${svgLog} <span>${isEn ? 'View SSH Auth Logs' : 'Lihat Log Auth SSH'}</span>
+      </button>`;
+    }
+
+    if (isOpen && !IS_VIEWER) {
       if (p.action === 'restart' && p.svc_id && CAN_SERVICES) {
         menuItems += `<button type="button" class="noc-act-dropdown-item text-primary" onclick="restartService(${SID}, ${p.svc_id}, '${escapeHtml(p.log_unit || p.key || 'service')}', this)">
           ${svgRestart} <span>${isEn ? 'Restart Service' : 'Restart Service'}</span>
@@ -8892,18 +8871,20 @@ function renderProblemsTab(level, openList, histList) {
           ${svgBellOff} <span>${isEn ? 'Ignore Incident' : 'Abaikan Insiden'}</span>
         </button>`;
       }
-
-      actHtml = `<details class="noc-act-dropdown">
-        <summary class="btn btn-xs btn-ghost btn-noc-act">${isEn ? 'Actions ▾' : 'Tindakan ▾'}</summary>
-        <div class="noc-act-dropdown-menu">
-          ${menuItems}
-        </div>
-      </details>`;
-    } else {
-      let simpleHtml = toolsHtml;
-      if (opsHtml) simpleHtml += ' ' + opsHtml;
-      actHtml = `<div style="display:inline-flex;gap:4px;align-items:center">${simpleHtml}</div>`;
+    } else if (p.acknowledged_by || isIgnored) {
+      const ackDisplay = p.acknowledged_by ? p.acknowledged_by : (p.ignored_by || 'operator');
+      menuItems += `<div class="noc-act-dropdown-item text-success prob-status-ack">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        <span>${isEn ? 'Handled by ' : 'Ditangani oleh '} ${escapeHtml(ackDisplay)}</span>
+      </div>`;
     }
+
+    const actHtml = `<details class="noc-act-dropdown">
+      <summary class="btn btn-xs btn-ghost btn-noc-act">${isEn ? 'Actions ▾' : 'Aksi ▾'}</summary>
+      <div class="noc-act-dropdown-menu">
+        ${menuItems}
+      </div>
+    </details>`;
 
     const ctxAttr = typeof p.context === 'object' && p.context !== null ? JSON.stringify(p.context) : (p.context || '');
 
@@ -9173,13 +9154,18 @@ function renderActionHistory(actions) {
 
   tbody.innerHTML = actions.map(a => {
     const f = formatActionRowI18n(a, isEn);
+    let userHtml = `<span class="mono" style="font-weight:600;font-size:11px">${escHtml(a.user || '-')}</span>`;
+    if (a.user && a.user.includes(' ')) {
+      const parts = a.user.split(' ');
+      userHtml = `<div class="mono" style="font-weight:600;font-size:11px;line-height:1.2">${escHtml(parts[0])}</div><div class="cell-sub" style="font-size:9px;color:var(--dim);line-height:1.2">${escHtml(parts.slice(1).join(' '))}</div>`;
+    }
     return `<tr id="act-row-${escHtml(a.id || '')}">
       <td class="mono col-time-detailed" style="white-space:nowrap" title="${isEn ? 'Execution Time: ' : 'Waktu Eksekusi: '}${escHtml(fmtProbDate(a.time) || a.time || '—')}">${escHtml(fmtProbDateShort(a.time) || a.time || '—')}</td>
-      <td><span class="mono">${escHtml(a.user || '-')}</span></td>
+      <td style="font-size:11px">${userHtml}</td>
       <td><span class="badge badge-muted">${escHtml(f.act)}</span></td>
-      <td style="font-size:12.5px"><strong>${escHtml(f.tgt)}</strong></td>
+      <td style="font-size:12px"><strong>${escHtml(f.tgt)}</strong></td>
       <td class="col-center-cell" style="text-align:center"><span class="badge badge-${escHtml(a.status_cls || 'muted')}">${escHtml(f.st)}</span></td>
-      <td class="mono" style="font-size:11.5px;color:var(--dim);word-break:break-word">${escHtml(f.res)}</td>
+      <td class="mono" style="font-size:11px;color:var(--dim);max-width:280px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${escHtml(f.res || '')}">${escHtml(f.res || '—')}</td>
     </tr>`;
   }).join('');
 
@@ -9759,7 +9745,7 @@ function renderPorts(ports) {
       : `<span class="badge badge-up" title="${isEn ? 'Locally accessible only' : 'Hanya dapat diakses secara lokal dari dalam server'}">${isEn ? 'Local (Loopback)' : 'Lokal (Loopback)'}</span>`;
     const procStr = escHtml(p.proc || '—');
 
-    let actions = '';
+    let menuItems = '';
     const portInt = parseInt(p.port, 10);
     const isProtected = (portInt === 22 || portInt === 8400);
 
@@ -9773,23 +9759,30 @@ function renderPorts(ports) {
 
     if (!isMonitored && !isProtected && CAN_SERVICES) {
       const cleanProc = escHtml(p.pname || p.proc || '');
-      actions += `<button type="button" class="btn btn-sm btn-noc-icon btn-ghost" onclick="openAddSvcModal('${cleanProc}', '${portNum}', '${cleanProc}')" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Add this active socket to Monitored Services' : 'Tambahkan socket/daemon ini ke Monitored Services'}" aria-label="Pantau">${svgAddSvc}</button> `;
+      menuItems += `<button type="button" class="noc-act-dropdown-item" onclick="openAddSvcModal('${cleanProc}', '${portNum}', '${cleanProc}')" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''}>${svgAddSvc} <span>${isEn ? 'Add to Monitored' : 'Pantau Service'}</span></button>`;
     }
 
     if (CAN_PROCESSES && p.pid && !isProtected) {
-      actions += `<button class="btn btn-sm btn-noc-icon btn-danger" onclick="openKillProcModal('${escHtml(String(p.pid))}','${escHtml(p.pname || p.proc || 'proses')}','TERM')" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Send signal to process' : 'Kirim sinyal ke proses yang mengelola port ini'}" aria-label="Kill PID">${svgKillPort}</button> `;
+      menuItems += `<button type="button" class="noc-act-dropdown-item text-danger" onclick="openKillProcModal('${escHtml(String(p.pid))}','${escHtml(p.pname || p.proc || 'proses')}','TERM')" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''}>${svgKillPort} <span>${isEn ? 'Kill PID (' + p.pid + ')' : 'Hentikan PID (' + p.pid + ')'}</span></button>`;
     }
-    if (CAN_FIREWALL) {
+    if (CAN_FIREWALL && !isProtected) {
       const pProto = portInt + '/' + (p.proto || 'tcp').toLowerCase();
-      if (isPublic && !isProtected) {
-        actions += `<button type="button" class="btn btn-sm btn-noc-icon btn-warn" onclick="submitPortRule('${escHtml(pProto)}', 'deny', this)" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Block this port via UFW/iptables' : 'Blokir port ini via UFW/iptables'}" aria-label="Blokir Port">${svgBlockPort}</button> `;
-      } else if (!isPublic && !isProtected) {
-        actions += `<button type="button" class="btn btn-sm btn-noc-icon btn-success" onclick="submitPortRule('${escHtml(pProto)}', 'allow', this)" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Allow this port via UFW/iptables' : 'Buka port ini (izinkan koneksi)'}" aria-label="Buka Port">${svgAllowPort}</button> `;
+      if (isPublic) {
+        menuItems += `<button type="button" class="noc-act-dropdown-item text-warn" onclick="submitPortRule('${escHtml(pProto)}', 'deny', this)" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''}>${svgBlockPort} <span>${isEn ? 'Block Port (Firewall)' : 'Blokir Port (Firewall)'}</span></button>`;
+      } else {
+        menuItems += `<button type="button" class="noc-act-dropdown-item text-success" onclick="submitPortRule('${escHtml(pProto)}', 'allow', this)" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''}>${svgAllowPort} <span>${isEn ? 'Allow Port (Firewall)' : 'Buka Port (Firewall)'}</span></button>`;
       }
     }
     if (isProtected) {
-      actions += `<span style="font-size:11px;color:var(--dim);white-space:nowrap">⛨ ${isEn ? 'Protected' : 'Dilindungi'}</span>`;
+      menuItems += `<div class="noc-act-dropdown-item" style="color:var(--dim);cursor:default"><span>⛨ ${isEn ? 'Protected System Port' : 'Port Sistem Terlindungi'}</span></div>`;
     }
+
+    const actions = `<details class="noc-act-dropdown">
+      <summary class="btn btn-xs btn-ghost btn-noc-act">${isEn ? 'Actions ▾' : 'Aksi ▾'}</summary>
+      <div class="noc-act-dropdown-menu">
+        ${menuItems}
+      </div>
+    </details>`;
 
     const rowSearch = `${p.proto || ''} ${portNum} ${ipStr} ${p.proc || ''}`.toLowerCase();
     return `<tr data-proto="${(p.proto || '').toLowerCase()}" data-is-public="${isPublic ? '1' : '0'}" data-search="${escHtml(rowSearch)}">
@@ -9798,7 +9791,7 @@ function renderPorts(ports) {
       <td class="mono" style="color:var(--dim)">${ipStr}</td>
       <td>${accessBadge}</td>
       <td class="mono" style="font-size:10px;color:var(--text)">${procStr}</td>
-      <td class="col-act" style="white-space:nowrap;text-align:center"><div style="display:inline-flex;gap:4px;flex-wrap:nowrap;align-items:center">${actions}</div></td>
+      <td class="col-act" style="white-space:nowrap;text-align:center">${actions}</td>
     </tr>`;
   }).join('');
 
@@ -10052,8 +10045,28 @@ function renderSsl(sslList) {
     const domStr = escHtml(c.domains && c.domains.length ? c.domains.join(', ') : (c.subject || ''));
     const isCustom = Boolean(c.is_custom);
     const customBadge = isCustom ? `<span class="badge badge-muted" title="${isEn ? 'Custom path added via Pantau' : 'Ditambahkan secara manual via Pantau'}" style="font-size:10px;margin-left:4px">${isEn ? 'Custom' : 'Kustom'}</span>` : '';
-    const issuerStr = escHtml(c.issuer || '—');
-    const notAfterStr = escHtml(c.not_after || '—');
+    let ca_name = c.issuer || '—';
+    if (c.issuer) {
+      if (c.issuer.includes('commonName=')) {
+        ca_name = c.issuer.split('commonName=')[1].split('/')[0].split(',')[0].trim();
+      } else if (c.issuer.includes('CN=')) {
+        ca_name = c.issuer.split('CN=')[1].split('/')[0].split(',')[0].trim();
+      } else if (c.issuer.includes('organizationName=')) {
+        ca_name = c.issuer.split('organizationName=')[1].split('/')[0].split(',')[0].trim();
+      } else if (c.issuer.includes('O=')) {
+        ca_name = c.issuer.split('O=')[1].split('/')[0].split(',')[0].trim();
+      }
+    }
+
+    let notAfterHtml = `<div style="font-size:11px;white-space:nowrap">${escHtml(c.not_after || '—')}</div>`;
+    if (c.not_after && c.not_after.includes('T')) {
+      const parts = c.not_after.split('T');
+      notAfterHtml = `<div style="font-size:11px;font-weight:600;white-space:nowrap">${escHtml(parts[0])}</div><div class="cell-sub" style="white-space:nowrap">${escHtml(parts[1].slice(0, 5))} UTC</div>`;
+    } else if (c.not_after && c.not_after.includes(' ')) {
+      const parts = c.not_after.split(' ');
+      notAfterHtml = `<div style="font-size:11px;font-weight:600;white-space:nowrap">${escHtml(parts[0])}</div><div class="cell-sub" style="white-space:nowrap">${escHtml(parts[1].slice(0, 5))}</div>`;
+    }
+
     const daysColor = (c.is_expired || c.is_critical) ? 'var(--red)' : (c.is_warning ? 'var(--yellow)' : 'var(--green)');
     const daysStr = c.is_expired ? (isEn ? 'Expired' : 'Kedaluwarsa') : `${c.days_left} ${isEn ? 'days left' : 'hari lagi'}`;
 
@@ -10072,11 +10085,11 @@ function renderSsl(sslList) {
 
     return `<tr>
       <td><strong>${domStr}</strong>${customBadge}</td>
-      <td style="font-size:10px;color:var(--dim)">${issuerStr}</td>
-      <td class="mono" style="font-size:10px">${notAfterStr}</td>
-      <td class="mono" style="font-weight:700;color:${daysColor}">${daysStr}</td>
+      <td style="font-size:11px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px" title="${escHtml(c.issuer || '')}"><span style="font-weight:600;color:var(--text)">${escHtml(ca_name)}</span></td>
+      <td class="mono col-ssl-expiry" style="white-space:nowrap">${notAfterHtml}</td>
+      <td class="mono col-ssl-days" style="white-space:nowrap !important;min-width:85px;font-weight:700;color:${daysColor}">${daysStr}</td>
       <td>${statusBadge}</td>
-      <td class="mono" style="font-size:9.5px;color:var(--dim)">${pathClean}</td>
+      <td class="mono" style="font-size:10px;color:var(--dim);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${pathClean}">${pathClean}</td>
       <td class="col-act" style="white-space:nowrap;text-align:center">${actHtml}</td>
     </tr>`;
   }).join('');
@@ -10526,23 +10539,28 @@ function renderSys(data) {
       const svgDel = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>';
       const svgLogout = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>';
 
-      let actions = '<a href="/servers/' + SID + '/user/' + userEnc + '" class="btn btn-ghost btn-sm btn-noc-icon" title="' + (isEn ? 'Details' : 'Rincian') + '" aria-label="' + (isEn ? 'Details' : 'Rincian') + '">' + svgRincian + '</a>';
+      let menuItems = '<a href="/servers/' + SID + '/user/' + userEnc + '" class="noc-act-dropdown-item">' + svgRincian + ' <span>' + (isEn ? 'Account Details' : 'Rincian Akun') + '</span></a>';
       if ((CAN_USERS_SYS || CAN_SERVICES) && a.sessions && a.sessions.length) {
         for (const s of a.sessions) {
           if (s.tty) {
             const ttyEsc = escHtml(s.tty);
-            actions += ' <button type="button" class="btn btn-danger btn-sm btn-noc-icon" title="' + (isEn ? ('Force terminate session ' + ttyEsc + ' (' + userEsc + ')') : ('Terminate session ' + ttyEsc + ' (' + userEsc + ')')) + '" aria-label="Putus Sesi" onclick="terminateSession(' + SID + ', \'' + ttyEsc + '\', \'' + userEsc + '\', this)">' + svgLogout + '</button>';
+            menuItems += '<button type="button" class="noc-act-dropdown-item text-danger" ' + (!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : '') + ' onclick="terminateSession(' + SID + ', \'' + ttyEsc + '\', \'' + userEsc + '\', this)">' + svgLogout + ' <span>' + (isEn ? ('Terminate Session (' + ttyEsc + ')') : ('Putus Sesi (' + ttyEsc + ')')) + '</span></button>';
           }
         }
       }
       if (CAN_USERS_SYS && !isProtected) {
         if (isLocked) {
-          actions += ' <button type="button" class="btn btn-info btn-sm btn-noc-icon" title="' + (isEn ? 'Unlock account (enable login)' : 'Buka kunci akun (aktifkan login)') + '" aria-label="Buka Kunci" onclick="submitUserAction(\'unlock\', \'' + userEsc + '\', this)">' + svgUnlock + '</button>';
+          menuItems += '<button type="button" class="noc-act-dropdown-item text-info" ' + (!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : '') + ' onclick="submitUserAction(\'unlock\', \'' + userEsc + '\', this)">' + svgUnlock + ' <span>' + (isEn ? 'Unlock Account' : 'Buka Kunci Akun') + '</span></button>';
         } else {
-          actions += ' <button type="button" class="btn btn-warn btn-sm btn-noc-icon" title="' + (isEn ? 'Lock account (disable login)' : 'Kunci akun (disable login)') + '" aria-label="Kunci" onclick="submitUserAction(\'lock\', \'' + userEsc + '\', this)">' + svgLock + '</button>';
+          menuItems += '<button type="button" class="noc-act-dropdown-item text-warn" ' + (!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : '') + ' onclick="submitUserAction(\'lock\', \'' + userEsc + '\', this)">' + svgLock + ' <span>' + (isEn ? 'Lock Account' : 'Kunci Akun') + '</span></button>';
         }
-        actions += ' <button type="button" class="btn btn-danger btn-sm btn-noc-icon" title="' + (isEn ? 'Delete this account' : 'Hapus akun ini') + '" aria-label="Hapus" onclick="submitUserAction(\'delete\', \'' + userEsc + '\', this)">' + svgDel + '</button>';
+        menuItems += '<button type="button" class="noc-act-dropdown-item text-danger" ' + (!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : '') + ' onclick="submitUserAction(\'delete\', \'' + userEsc + '\', this)">' + svgDel + ' <span>' + (isEn ? 'Delete Account' : 'Hapus Akun') + '</span></button>';
       }
+
+      const actions = '<details class="noc-act-dropdown">'
+        + '<summary class="btn btn-xs btn-ghost btn-noc-act" title="' + (isEn ? 'User Actions' : 'Menu Aksi Pengguna') + '">' + (isEn ? 'Actions ▾' : 'Aksi ▾') + '</summary>'
+        + '<div class="noc-act-dropdown-menu">' + menuItems + '</div>'
+        + '</details>';
 
       let groupsHtml = '<strong class="mono" style="color:var(--text)">' + escHtml(a.group || '-') + '</strong>';
       if (a.groups && a.groups.length) {
@@ -10573,7 +10591,7 @@ function renderSys(data) {
             return '<span class="badge badge-up" style="font-size:9.5px;font-family:monospace;padding:1px 5px"><span class="dot up" style="margin-right:3px"></span>' + ttyEsc + fromEsc + '</span>';
           }).join(' ') + '</div>') : '')
         + '<div style="font-size:11px;color:var(--dim)">' + escHtml(a.last_login || '-') + '</div></td>'
-        + '<td class="col-act" style="white-space:nowrap;text-align:center"><div style="display:inline-flex;gap:4px;flex-wrap:nowrap;align-items:center">' + actions + '</div></td></tr>';
+        + '<td class="col-act" style="white-space:nowrap;text-align:center">' + actions + '</td></tr>';
     }).join('');
     if (typeof searchUsersTable === 'function') {
       searchUsersTable(false);
@@ -12107,7 +12125,7 @@ function renderPackagesTable() {
       <td style="font-size:10px;color:var(--text);line-height:1.4">${summaryStr}</td>
       <td class="col-act" style="white-space:nowrap;text-align:center">
         <details class="noc-act-dropdown">
-          <summary class="btn btn-xs btn-ghost btn-noc-act">Tindakan ▾</summary>
+          <summary class="btn btn-xs btn-ghost btn-noc-act">Aksi ▾</summary>
           <div class="noc-act-dropdown-menu">
             ${upgradeActionItem}
             ${showLogsActionItem}
@@ -12516,6 +12534,7 @@ function filterSystemdTable() {
 }
 
 function renderSystemdTable() {
+  const isEn = isEnPage();
   const totalBadge = document.getElementById('sysd-total-badge');
   const runningBadge = document.getElementById('sysd-running-badge');
   const failedBadge = document.getElementById('sysd-failed-badge');
@@ -12664,15 +12683,15 @@ function renderSystemdTable() {
       <td style="text-align:right;padding:4px 8px;white-space:nowrap">${memHtml}</td>
       <td style="padding:4px 8px;font-size:10px;color:var(--dim);line-height:1.3;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${descEsc}">${descEsc}</td>
       <td class="col-act" style="text-align:center;padding:5px 8px;white-space:nowrap">
-        ${(isViewer || !canSvc) ? `
-          ${logBtn}
-        ` : `
-          <details class="noc-act-dropdown">
-            <summary title="${isEn ? 'Unit Actions' : 'Menu Tindakan Unit'}">
-              <span>${isEn ? 'Actions' : 'Tindakan'}</span>
-              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
-            </summary>
-            <div class="noc-act-dropdown-menu">
+        <details class="noc-act-dropdown">
+          <summary class="btn btn-xs btn-ghost btn-noc-act" title="${isEn ? 'Unit Actions' : 'Menu Aksi Unit'}">${isEn ? 'Actions ▾' : 'Aksi ▾'}</summary>
+          <div class="noc-act-dropdown-menu">
+            ${(isViewer || !canSvc) ? `
+              <button type="button" class="noc-act-dropdown-item" onclick="jumpToLog('${baseNameEsc}')">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                <span>${isEn ? 'View Journalctl Logs' : 'Lihat Log Journalctl'}</span>
+              </button>
+            ` : `
               <button type="button" class="noc-act-dropdown-item" ${disAttr} onclick="systemdAction('restart', '${nameEsc}', this)" title="Restart unit service ${nameEsc}">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
                 <span>Restart Unit</span>
@@ -12697,9 +12716,9 @@ function renderSystemdTable() {
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
                 <span>Lihat Log Journalctl</span>
               </button>
-            </div>
-          </details>
-        `}
+            `}
+          </div>
+        </details>
       </td>
     </tr>`;
   }).join('');

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token }}">
 <title>{% block title %}Pantau Server{% endblock %}</title>
-<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.180' }}">
+<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.181' }}">
 {% block extra_head %}{% endblock %}
 <script>
 (function() {
@@ -1014,7 +1014,7 @@ td .badge-count {
 .chip-warn{background:var(--yellow-bg);color:var(--yellow);border:1px solid rgba(251,191,36,0.3)}
 
 table{width:100%;border-collapse:collapse}
-th{text-align:left;padding:7px 12px;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;font-weight:600;border-bottom:1px solid var(--border)}
+th{text-align:left;padding:7px 12px;font-size:10px;color:var(--dim);text-transform:none;letter-spacing:.5px;font-weight:600;border-bottom:1px solid var(--border)}
 td{padding:6px 12px;font-size:11px;border-bottom:1px solid var(--border-subtle);vertical-align:middle}
 tr:last-child td{border-bottom:none}
 .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:11px;color:var(--dim);font-variant-numeric:tabular-nums}
@@ -2304,7 +2304,7 @@ body.show-alert-banner .main{padding-top:72px}
 .alert-info-tip{color:#fde047}
 .alert-servers-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:6px;border:1px solid rgba(255,255,255,0.08);background:rgba(0,0,0,0.25)}
 .alert-servers-table{width:100%;border-collapse:collapse;font-size:12px}
-.alert-servers-table th{padding:8px 12px;border-bottom:1px solid rgba(255,255,255,0.1);color:var(--dim);font-size:11px;text-transform:uppercase;font-weight:600;text-align:left}
+.alert-servers-table th{padding:8px 12px;border-bottom:1px solid rgba(255,255,255,0.1);color:var(--dim);font-size:11px;text-transform:none;font-weight:600;text-align:left}
 .alert-servers-table td{padding:9px 12px;border-bottom:1px solid rgba(255,255,255,0.05);vertical-align:middle}
 .alert-servers-table tr:last-child td{border-bottom:none}
 .alert-srv-cell{display:flex;align-items:center;gap:7px}
@@ -2806,7 +2806,7 @@ body.show-alert-banner .main{padding-top:72px}
   </nav>
   <div class="sidebar-footer">
     <div class="sb-footer-brand">Pantau Server</div>
-    <div class="sb-footer-ver">v{{ app_version or '4.8.180' }}</div>
+    <div class="sb-footer-ver">v{{ app_version or '4.8.181' }}</div>
     <div class="sb-footer-utc">UTC <span id="clockUtc" style="display:inline"></span></div>
   </div>
 </aside>
@@ -6197,7 +6197,7 @@ if (document.readyState === 'loading') {
   makeTablesResponsive();
 }
 
-// Global auto-close & z-index elevation untuk dropdown tindakan cerdas NOC (.noc-act-dropdown)
+// Global smart positioning & auto-close untuk dropdown tindakan cerdas NOC (.noc-act-dropdown)
 document.addEventListener('click', function(e) {
   if (!e.target.closest('.noc-act-dropdown')) {
     document.querySelectorAll('.noc-act-dropdown[open]').forEach(function(d) {
@@ -6206,23 +6206,94 @@ document.addEventListener('click', function(e) {
       const tr = d.closest('tr');
       if (td) { td.style.zIndex = ''; td.classList.remove('has-dropdown-open'); }
       if (tr) { tr.style.zIndex = ''; tr.classList.remove('has-dropdown-open'); }
+      const menu = d.querySelector('.noc-act-dropdown-menu');
+      if (menu) { menu.style.position = ''; menu.style.top = ''; menu.style.bottom = ''; menu.style.left = ''; menu.style.right = ''; }
     });
   }
 });
 
 document.addEventListener('toggle', function(e) {
   if (e.target && e.target.classList && e.target.classList.contains('noc-act-dropdown')) {
-    const td = e.target.closest('td');
-    const tr = e.target.closest('tr');
-    if (e.target.open) {
+    const details = e.target;
+    const td = details.closest('td');
+    const tr = details.closest('tr');
+    const menu = details.querySelector('.noc-act-dropdown-menu');
+    const summary = details.querySelector('summary');
+
+    if (details.open) {
+      // Tutup dropdown lain yang terbuka agar tidak tumpang tindih
+      document.querySelectorAll('.noc-act-dropdown[open]').forEach(function(other) {
+        if (other !== details) {
+          other.removeAttribute('open');
+          const otd = other.closest('td');
+          const otr = other.closest('tr');
+          if (otd) { otd.style.zIndex = ''; otd.classList.remove('has-dropdown-open'); }
+          if (otr) { otr.style.zIndex = ''; otr.classList.remove('has-dropdown-open'); }
+          const om = other.querySelector('.noc-act-dropdown-menu');
+          if (om) { om.style.position = ''; om.style.top = ''; om.style.bottom = ''; om.style.left = ''; om.style.right = ''; }
+        }
+      });
+
       if (td) { td.style.zIndex = '9999'; td.classList.add('has-dropdown-open'); }
       if (tr) { tr.style.zIndex = '9999'; tr.classList.add('has-dropdown-open'); }
+
+      if (menu && summary) {
+        // Gunakan koordinat fixed agar menu TIDAK PERNAH terpotong oleh overflow-x / overflow:hidden tabel/card
+        const rect = summary.getBoundingClientRect();
+        menu.style.position = 'fixed';
+        menu.style.zIndex = '99999';
+
+        const menuHeight = menu.offsetHeight || 160;
+        const menuWidth = menu.offsetWidth || 150;
+
+        // Vertikal: jika mentok bawah layar, buka ke atas
+        if (rect.bottom + menuHeight > window.innerHeight - 10 && rect.top > menuHeight + 10) {
+          menu.style.top = Math.max(10, rect.top - menuHeight - 4) + 'px';
+          menu.style.bottom = 'auto';
+        } else {
+          menu.style.top = (rect.bottom + 4) + 'px';
+          menu.style.bottom = 'auto';
+        }
+
+        // Horizontal: sejajarkan sisi kanan dengan summary, cegah overflow kiri/kanan layar
+        const rightEdge = window.innerWidth - rect.right;
+        if (rect.right - menuWidth < 10) {
+          menu.style.left = '10px';
+          menu.style.right = 'auto';
+        } else if (rightEdge < 10) {
+          menu.style.right = '10px';
+          menu.style.left = 'auto';
+        } else {
+          menu.style.right = rightEdge + 'px';
+          menu.style.left = 'auto';
+        }
+      }
     } else {
       if (td) { td.style.zIndex = ''; td.classList.remove('has-dropdown-open'); }
       if (tr) { tr.style.zIndex = ''; tr.classList.remove('has-dropdown-open'); }
+      if (menu) {
+        menu.style.position = '';
+        menu.style.top = '';
+        menu.style.bottom = '';
+        menu.style.left = '';
+        menu.style.right = '';
+      }
     }
   }
 }, true);
+
+// Tutup dropdown saat user melakukan scroll pada tabel atau jendela
+window.addEventListener('scroll', function() {
+  document.querySelectorAll('.noc-act-dropdown[open]').forEach(function(d) {
+    d.removeAttribute('open');
+    const td = d.closest('td');
+    const tr = d.closest('tr');
+    if (td) { td.style.zIndex = ''; td.classList.remove('has-dropdown-open'); }
+    if (tr) { tr.style.zIndex = ''; tr.classList.remove('has-dropdown-open'); }
+    const menu = d.querySelector('.noc-act-dropdown-menu');
+    if (menu) { menu.style.position = ''; menu.style.top = ''; menu.style.bottom = ''; menu.style.left = ''; menu.style.right = ''; }
+  });
+}, { passive: true, capture: true });
 
 // -----------------------------------------------------------------------------
 // Pantau Table Column Visibility Manager (PantauColManager)

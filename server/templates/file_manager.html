@@ -55,7 +55,7 @@
   .fm-disk-fill { height: 100%; background: var(--blue); border-radius: 4px; transition: width 0.3s ease; }
 
   .fm-table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
-  .fm-table th { padding: 7px 12px; text-align: left; color: var(--dim); font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); background: var(--bg); position: sticky; top: 0; }
+  .fm-table th { padding: 7px 12px; text-align: left; color: var(--dim); font-size: 10px; text-transform: none; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); background: var(--bg); position: sticky; top: 0; }
   .fm-table th.sortable { cursor: pointer; }
   .fm-table th.sortable:hover { color: var(--blue); }
   .fm-table td { padding: 6px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; font-size: 11px; }
@@ -1338,14 +1338,19 @@ function fmRenderItems(items) {
       <td>${modeStr}</td>
       <td style="font-size:12px">${ownerStr}</td>
       <td>${dateStr}</td>
-      <td class="col-act fm-actions-cell">
-        ${!item.is_dir ? `<button type="button" class="fm-act-btn" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'View & Edit File' : 'Lihat & Edit Berkas'}" onclick="fmOpenFile('${safePath}')">${FM_ICONS.edit}</button>` : ''}
-        ${!item.is_dir ? `<button type="button" class="fm-act-btn" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Download File' : 'Download File'}" onclick="fmDownloadFile('${safePath}')">${FM_ICONS.download}</button>` : ''}
-        <button type="button" class="fm-act-btn" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Copy' : 'Salin (Copy)'}" onclick="fmCopySingle('${safePath}')">${FM_ICONS.copy}</button>
-        <button type="button" class="fm-act-btn" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Cut' : 'Potong (Cut)'}" onclick="fmCutSingle('${safePath}')">${FM_ICONS.cut}</button>
-        <button type="button" class="fm-act-btn" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Change Permissions & Owner (chmod/chown)' : 'Ubah Hak Akses & Pemilik (chmod/chown)'}" onclick="fmOpenChmod('${safePath}', '${item.mode_octal || '0644'}', '${escapeHtml(item.owner || '')}', '${escapeHtml(item.group || '')}')">${FM_ICONS.chmod}</button>
-        <button type="button" class="fm-act-btn" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Rename' : 'Ganti Nama'}" onclick="fmOpenRename('${safePath}', '${safeName}')">${FM_ICONS.rename}</button>
-        <button type="button" class="fm-act-btn" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} style="color:var(--red)" title="${isEn ? 'Delete' : 'Hapus'}" onclick="fmOpenDelete('${safePath}', ${item.is_dir})">${FM_ICONS.delete}</button>
+      <td class="col-act fm-actions-cell" style="text-align:center">
+        <details class="noc-act-dropdown">
+          <summary class="btn btn-xs btn-ghost btn-noc-act">Aksi ▾</summary>
+          <div class="noc-act-dropdown-menu">
+            ${!item.is_dir ? `<button type="button" class="noc-act-dropdown-item" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} onclick="fmOpenFile('${safePath}')">${FM_ICONS.edit} <span>${isEn ? 'View & Edit' : 'Lihat & Edit'}</span></button>` : ''}
+            ${!item.is_dir ? `<button type="button" class="noc-act-dropdown-item" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} onclick="fmDownloadFile('${safePath}')">${FM_ICONS.download} <span>Download</span></button>` : ''}
+            <button type="button" class="noc-act-dropdown-item" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} onclick="fmCopySingle('${safePath}')">${FM_ICONS.copy} <span>${isEn ? 'Copy' : 'Salin'}</span></button>
+            <button type="button" class="noc-act-dropdown-item" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} onclick="fmCutSingle('${safePath}')">${FM_ICONS.cut} <span>${isEn ? 'Cut' : 'Potong'}</span></button>
+            <button type="button" class="noc-act-dropdown-item" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} onclick="fmOpenChmod('${safePath}', '${item.mode_octal || '0644'}', '${escapeHtml(item.owner || '')}', '${escapeHtml(item.group || '')}')">${FM_ICONS.chmod} <span>${isEn ? 'Permissions' : 'Ubah Hak Akses'}</span></button>
+            <button type="button" class="noc-act-dropdown-item" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} onclick="fmOpenRename('${safePath}', '${safeName}')">${FM_ICONS.rename} <span>${isEn ? 'Rename' : 'Ganti Nama'}</span></button>
+            <button type="button" class="noc-act-dropdown-item text-danger" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} onclick="fmOpenDelete('${safePath}', ${item.is_dir})">${FM_ICONS.delete} <span>${isEn ? 'Delete' : 'Hapus'}</span></button>
+          </div>
+        </details>
       </td>
     `;
     tbody.appendChild(tr);
