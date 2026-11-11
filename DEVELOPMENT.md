@@ -507,6 +507,26 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
   3. **Sinkronisasi SemVer 7 Berkas:**
      - Sinkronisasi versi SemVer `4.8.157` pada 7 berkas inti repositori.
 
+## Versi 4.8.178
+
+- **Tipe Rilis:** Optimalisasi Tipografi, Hierarki Data Esensial & Tooltip Progresif Tabel NOC (*NOC Table Essential Data Hierarchy & Progressive Disclosure Polish*)
+- **Fokus Utama:** Menyempurnakan keterbacaan antarmuka tabel dengan hierarki data esensial vs sekunder, tipografi proporsional, dan pengakomodasian teks panjang via tooltip:
+  1. **Tipografi Baku & Proporsional NOC (`server/static/css/pantau-noc.css`):**
+     - Menambahkan token utilitas tipografi sel terstandar: `.cell-primary` (11.5px semibold untuk data inti), `.cell-sub` (9.5px warna redup untuk data pelengkap), `.cell-mono` (11px tabular numbers), `.cell-mono-sub` (9.5px tabular sekunder), `.cell-trunc-sub` (potongan elipsis rapi max 170px), `.cell-clamp-2` (maksimal 2 baris rapi), dan `.cell-badge` (8.5px rapat).
+     - Menghilangkan font mikro tidak terbaca (font < 8.5px dinaikkan ke ukuran baku 8.5px badge / 9.5px sub-teks / 11px-11.5px data utama) untuk mencegah kelelahan mata operator NOC.
+     - Menetapkan cursor help/pointer kontekstual pada elemen yang memiliki atribut `title`.
+  2. **Hierarki Data Esensial & Tooltip Progresif di 5 Halaman Tabel Utama:**
+     - `servers.html`: Data esensial (Host, IP, OS, Core, RAM, Uptime, Status) tampil tegas; data sekunder (Notes panjang, model hardware mentah, partisi disk panjang, versi kernel, waktu boot persis, dan timestamp laporan ISO) dipotong rapi dengan informasi lengkap di tooltip `title="..."`.
+     - `problems.html`: Panduan solusi (`p.tip`) dibatasi rapi ke maksimal 2 baris (`.cell-clamp-2`) dengan tooltip `title` menyimpan solusi utuh baik pada render Jinja maupun update live JavaScript; waktu mulai dan selesai insiden dilengkapi tooltip tanggal dan detik presisi.
+     - `probing.html`: Target URL panjang dibatasi rapi 1 baris (`.cell-trunc-sub`) dengan tooltip `title` menampilkan URL lengkap tanpa memecah tinggi baris tabel.
+     - `maintenance.html`: Keterangan pemeliharaan panjang dibatasi rapi ke 2 baris (`.cell-clamp-2`) dengan tooltip deskripsi lengkap.
+     - `audit.html`: Kolom entitas sasaran (`Target`) dan keluaran log/respons shell panjang (`Hasil / Respons`) dibatasi rapi (`.cell-trunc-md`, `.cell-trunc-lg`) dengan pesan lengkap tersimpan di tooltip `title="..."`.
+     - `users.html` & `profile.html`: Penyelarasan ukuran font username, badge izin, dan tooltip waktu login terakhir lengkap dengan detik.
+  3. **Pematuhan Batasan Ruang Lingkup:**
+     - Halaman dasbor (`dashboard.html`) dipertahankan utuh tanpa perubahan sesuai instruksi khusus.
+  4. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.178` pada 7 berkas inti repositori.
+
 ## Versi 4.8.177
 
 - **Tipe Rilis:** Perbaikan Struktur Tag Aksi Tabel Riwayat Insiden (*Resolved Problems Table Syntax Fix*)

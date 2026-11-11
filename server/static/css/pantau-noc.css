@@ -1115,6 +1115,67 @@ th.col-title-info, td.col-title-info { min-width: 220px; }
 }
 .noc-cell-secondary { color: var(--dim, #94a3b8); font-size: 10px; }
 
+/* Tipografi & Progressive Disclosure Sel Data NOC Baku */
+.cell-primary {
+  font-size: 11.5px !important;
+  font-weight: 600 !important;
+  color: var(--text-bright, #f8fafc) !important;
+  line-height: 1.35 !important;
+}
+.cell-sub {
+  font-size: 9.5px !important;
+  color: var(--dim, #94a3b8) !important;
+  line-height: 1.3 !important;
+}
+.cell-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  font-variant-numeric: tabular-nums !important;
+  line-height: 1.3 !important;
+}
+.cell-mono-sub {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-size: 9.5px !important;
+  color: var(--dim, #94a3b8) !important;
+  font-variant-numeric: tabular-nums !important;
+  line-height: 1.3 !important;
+}
+.cell-trunc-sub {
+  max-width: 170px;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  font-size: 9.5px;
+  color: var(--dim, #94a3b8);
+  line-height: 1.3;
+}
+.cell-trunc-md {
+  max-width: 260px;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+.cell-trunc-lg {
+  max-width: 380px;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+.cell-badge {
+  font-size: 8.5px !important;
+  padding: 1px 5px !important;
+  font-weight: 600 !important;
+  border-radius: var(--radius-sm, 4px) !important;
+  letter-spacing: 0.25px !important;
+}
+[title] {
+  cursor: help;
+}
+a[title], button[title], .btn[title], input[title], select[title], .copyable-ip[title], [onclick][title] {
+  cursor: pointer;
+}
+
 /* Token Tombol Mikro Aksi Tabel */
 .tbl-action-btn {
   display: inline-flex;

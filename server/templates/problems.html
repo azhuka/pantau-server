@@ -514,7 +514,7 @@
           data-prob-sid="{{ p.server_id }}"
           data-prob-context='{{ p.context or "" }}'>
         <td class="col-time cell-nowrap">
-          <span class="mono" style="font-size:11px;font-weight:600;color:var(--text);letter-spacing:0.2px" title="Waktu Mulai: {{ p.started_at.strftime('%d %b %Y %H:%M:%S') if p.started_at else '—' }}">{{ p.started_at.strftime('%d %b %H:%M:%S') if p.started_at else '—' }}</span>
+          <span class="mono" style="font-size:11px;font-weight:600;color:var(--text-bright);letter-spacing:0.2px" title="Waktu Mulai: {{ p.started_at.strftime('%d %b %Y %H:%M:%S') if p.started_at else '—' }}">{{ p.started_at.strftime('%d %b %H:%M') if p.started_at else '—' }}</span>
         </td>
         <td class="col-grow col-srv cell-nowrap">
           <div style="display:inline-flex;align-items:center;gap:6px;max-width:100%">
@@ -525,7 +525,7 @@
             {% endif %}
             <span style="font-size:11.5px;font-weight:600;color:var(--text-bright)">{{ p.hostname }}</span>
             {% if p.group_name %}
-            <span class="badge badge-muted" style="font-size:8px;padding:0.5px 4.5px;font-weight:500;flex-shrink:0">{{ p.group_name }}</span>
+            <span class="badge badge-muted" style="font-size:8.5px;padding:1px 5px;font-weight:500;flex-shrink:0" title="Grup Server: {{ p.group_name }}">{{ p.group_name }}</span>
             {% endif %}
           </div>
         </td>
@@ -540,10 +540,10 @@
               {{ base_badge | safe }}
               <div style="display:inline-flex;align-items:center;justify-content:flex-start;gap:3px">
                 {% if p.is_ignored %}
-                  <span class="badge badge-muted badge-sub" style="font-size:7.5px;padding:0.5px 4.5px;font-weight:600;letter-spacing:0.2px" title="{{ 'Alasan: ' ~ p.ignored_reason if p.ignored_reason else ('Diabaikan oleh ' ~ op_name) }}">DIABAIKAN</span>
+                  <span class="badge badge-muted badge-sub" style="font-size:8px;padding:1px 5px;font-weight:600;letter-spacing:0.2px" title="{{ 'Alasan: ' ~ p.ignored_reason if p.ignored_reason else ('Diabaikan oleh ' ~ op_name) }}">DIABAIKAN</span>
                 {% endif %}
                 {% if p.acknowledged_by or p.is_ignored %}
-                  <span class="badge badge-up badge-sub" style="font-size:7.5px;padding:0.5px 4.5px;font-weight:600;letter-spacing:0.2px" title="Ditangani oleh {{ ack_op if p.acknowledged_by else op_name }}">✓ DITANGANI</span>
+                  <span class="badge badge-up badge-sub" style="font-size:8px;padding:1px 5px;font-weight:600;letter-spacing:0.2px" title="Ditangani oleh {{ ack_op if p.acknowledged_by else op_name }}">✓ DITANGANI</span>
                 {% endif %}
               </div>
             </div>
@@ -554,19 +554,19 @@
         <td class="col-grow col-event">
           <span style="font-size:11.5px;font-weight:500;line-height:1.35;color:var(--text-bright)">{{ p.message }}</span>
           {% if p.is_ignored and p.ignored_reason and p.ignored_reason != p.message and ('DIMATIKAN OLEH OPERATOR' not in p.ignored_reason and 'DIHENTIKAN OLEH OPERATOR' not in p.ignored_reason and 'DI-REBOOT OLEH OPERATOR' not in p.ignored_reason and 'DI-RESTART OLEH OPERATOR' not in p.ignored_reason) %}
-            <span class="badge badge-muted" style="margin-left:5px;font-size:8px;padding:0.5px 4.5px" title="Alasan: {{ p.ignored_reason }}">{{ p.ignored_reason }}</span>
+            <span class="badge badge-muted" style="margin-left:5px;font-size:8.5px;padding:1px 5px" title="Alasan: {{ p.ignored_reason }}">{{ p.ignored_reason }}</span>
           {% endif %}
           {% if p.is_ignored and p.ignored_until %}
-            <span class="badge badge-muted" style="margin-left:5px;font-size:8px;padding:0.5px 4.5px" title="Batas waktu pengabaian">s/d {{ p.ignored_until.strftime('%d %b %H:%M') }}</span>
+            <span class="badge badge-muted" style="margin-left:5px;font-size:8.5px;padding:1px 5px" title="Batas waktu pengabaian">s/d {{ p.ignored_until.strftime('%d %b %H:%M') }}</span>
           {% endif %}
-          {% if p.count_24h and p.count_24h > 1 %}<span class="badge badge-muted" style="margin-left:5px;font-size:8px;padding:0.5px 4px;font-weight:500;color:var(--dim)" title="Kejadian berulang dalam 24 jam terakhir">kambuh {{ p.count_24h }}×</span>{% endif %}
+          {% if p.count_24h and p.count_24h > 1 %}<span class="badge badge-muted" style="margin-left:5px;font-size:8.5px;padding:1px 5px;font-weight:500;color:var(--dim)" title="Kejadian berulang dalam 24 jam terakhir">kambuh {{ p.count_24h }}×</span>{% endif %}
         </td>
         <td class="col-metric" data-start="{{ p.started_at.replace(tzinfo=None).isoformat() }}Z">
           <span class="mono" style="font-size:10.5px;font-weight:600;color:var(--text);background:rgba(148,163,184,0.08);padding:1.5px 7px;border-radius:4px;border:1px solid rgba(148,163,184,0.18);display:inline-block">{{ p.durasi }}</span>
         </td>
         <td class="col-grow col-guide">
           {% if p.tip %}
-            <div class="prob-tip-text" style="font-size:11px;color:var(--dim);line-height:1.35">{{ p.tip }}</div>
+            <div class="prob-tip-text cell-clamp-2" style="font-size:11px;color:var(--dim);line-height:1.35" title="Panduan Solusi: {{ p.tip }}">{{ p.tip }}</div>
           {% else %}
             <span style="color:var(--dim);font-size:11px">—</span>
           {% endif %}
@@ -768,8 +768,8 @@
           data-prob-sid="{{ p.server_id }}">
         <!-- 1. Waktu Selesai -->
         <td class="col-time cell-nowrap">
-          <span class="mono" style="font-size:11px;color:var(--text-bright);font-weight:600" title="Mulai: {{ p.started_at.strftime('%d %b %Y %H:%M:%S') if p.started_at else '—' }} | Selesai: {{ p.resolved_at.strftime('%d %b %Y %H:%M:%S') if p.resolved_at else '—' }}">
-            {{ p.resolved_at.strftime('%d %b %H:%M:%S') if p.resolved_at else (p.started_at.strftime('%d %b %H:%M:%S') if p.started_at else '—') }}
+          <span class="mono" style="font-size:11px;color:var(--text-bright);font-weight:600" title="Waktu Mulai: {{ p.started_at.strftime('%d %b %Y %H:%M:%S') if p.started_at else '—' }}&#10;Waktu Selesai: {{ p.resolved_at.strftime('%d %b %Y %H:%M:%S') if p.resolved_at else '—' }}">
+            {{ p.resolved_at.strftime('%d %b %H:%M') if p.resolved_at else (p.started_at.strftime('%d %b %H:%M') if p.started_at else '—') }}
           </span>
         </td>
         <!-- 2. Server & Grup -->
@@ -777,13 +777,13 @@
           <div style="font-size:11.5px;font-weight:600;color:var(--text-bright)">{{ p.hostname }}</div>
           {% if p.group_name %}
           <div style="margin-top:2px">
-            <span class="badge badge-muted" style="font-size:7.5px;padding:0.5px 3.5px">{{ p.group_name }}</span>
+            <span class="badge badge-muted" style="font-size:8.5px;padding:1px 5px" title="Grup Server: {{ p.group_name }}">{{ p.group_name }}</span>
           </div>
           {% endif %}
         </td>
         <!-- 3. Tingkat / Keparahan -->
         <td class="col-status">
-          <span class="badge badge-{{ {'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info') }}" style="font-size:8px;padding:1px 4.5px;border-radius:3px">
+          <span class="badge badge-{{ {'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info') }}" style="font-size:8.5px;padding:1px 6px;border-radius:3px;font-weight:700">
             {{ 'KRITIS' if p.severity == 'danger' else ('GAWAT' if p.severity == 'average' else ('PERINGATAN' if p.severity == 'warning' else p.severity | upper)) }}
           </span>
         </td>
@@ -795,15 +795,15 @@
         </td>
         <!-- 5. Deskripsi Insiden -->
         <td class="col-grow col-event">
-          <span style="color:var(--dim)">{{ p.message }}</span>
+          <span style="font-size:11px;color:var(--dim);line-height:1.35">{{ p.message }}</span>
         </td>
         <!-- 6. Durasi Gangguan (Downtime) -->
         <td class="col-metric">
-          <span style="font-size:11px;color:var(--dim);letter-spacing:-0.02em" title="Total waktu insiden berlangsung hingga teratasi">{{ p.durasi or '—' }}</span>
+          <span class="mono" style="font-size:10.5px;font-weight:600;color:var(--dim);letter-spacing:-0.02em" title="Total durasi downtime hingga sistem pulih">{{ p.durasi or '—' }}</span>
         </td>
         <!-- 7. Resolusi -->
         <td class="col-status">
-          <span class="badge {{ p.res_badge_cls or 'badge-up' }}" style="font-size:10px;padding:1px 5px" title="{{ p.res_tip }}">{{ p.res_label }}</span>
+          <span class="badge {{ p.res_badge_cls or 'badge-up' }}" style="font-size:9.5px;padding:1px 6px;font-weight:600" title="Catatan Resolusi: {{ p.res_tip }}">{{ p.res_label }}</span>
         </td>
         <td class="col-act">
           <a href="/servers/{{ p.server_id }}" class="btn btn-ghost btn-sm" title="Buka Detail Server" aria-label="Rincian">
@@ -1644,7 +1644,7 @@ window.poll = async function(opts = {}) {
                 <span class="mono" style="font-size:10.5px;font-weight:600;color:var(--text);background:rgba(148,163,184,0.08);padding:1.5px 7px;border-radius:4px;border:1px solid rgba(148,163,184,0.18);display:inline-block">${_esc(p.durasi || '')}</span>
               </td>
               <td class="col-grow col-guide">
-                ${pTip && pTip !== '—' ? `<div class="prob-tip-text" style="font-size:11px;color:var(--dim);line-height:1.35">${_esc(pTip)}</div>` : '<span style="color:var(--dim);font-size:11px">—</span>'}
+                ${pTip && pTip !== '—' ? `<div class="prob-tip-text cell-clamp-2" style="font-size:11px;color:var(--dim);line-height:1.35" title="${_esc(pTip)}">${_esc(pTip)}</div>` : '<span style="color:var(--dim);font-size:11px">—</span>'}
               </td>
               <td class="prob-act-cell col-act">
                 <div class="prob-act-wrap" style="display:inline-flex;align-items:center;justify-content:center;gap:4px">

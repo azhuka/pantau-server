@@ -89,10 +89,10 @@
         {% for u in users %}
         <tr style="border-bottom:1px solid rgba(255,255,255,0.04)" data-username="{{ u.username|lower }}" data-role="{{ 'admin' if u.is_master_admin() else ('operator' if u.is_operator() else 'viewer') }}">
           <td class="col-grow col-srv cell-nowrap" style="padding:6px 12px">
-            <div style="font-weight:700;color:var(--text);font-family:ui-monospace,monospace">
+            <div style="font-weight:700;color:var(--text-bright);font-family:ui-monospace,monospace;font-size:11.5px">
               {{ u.username }}
               {% if u.id == user.id %}
-              <span style="font-size:10px;color:var(--blue);font-weight:normal">(Anda)</span>
+              <span style="font-size:9.5px;color:var(--blue);font-weight:normal">(Anda)</span>
               {% endif %}
             </div>
             {% if u.role == 'operator' %}
@@ -132,7 +132,7 @@
               {% endif %}
             </div>
           </td>
-          <td class="col-time mono cell-nowrap" style="padding:6px 12px;font-size:11px;letter-spacing:-0.025em;color:var(--dim)">
+          <td class="col-time mono cell-nowrap" style="padding:6px 12px;font-size:11px;letter-spacing:-0.025em;color:var(--dim)" title="Login Terakhir: {{ u.last_login_at.strftime('%d %b %Y %H:%M:%S') if u.last_login_at else 'Belum pernah login' }}">
             {% if u.last_login_at %}
             {{ u.last_login_at.strftime('%d %b %Y %H:%M') }}
             {% else %}-{% endif %}

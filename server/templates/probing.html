@@ -1088,10 +1088,10 @@ function renderTable() {
         <td class="col-grow col-target td-target">
           <div style="display:flex;align-items:center;gap:6px">
             <span class="type-badge ${typeClass}">${typeLabel}</span>
-            <strong style="color:var(--text-heading, #fff);font-size:12px">${escapeHtml(p.name)}</strong>
+            <strong style="color:var(--text-bright, #fff);font-size:12px">${escapeHtml(p.name)}</strong>
             ${tierBadge}
           </div>
-          <div style="margin-top:2px;font-family:ui-monospace,monospace;font-size:11px;color:var(--dim);word-break:break-all">
+          <div class="cell-trunc-sub" style="max-width:320px;margin-top:2px;font-family:ui-monospace,monospace;font-size:10.5px;color:var(--dim)" title="Target Endpoint: ${escapeHtml(p.target)}">
             ${escapeHtml(p.target)}
           </div>
           ${sslBadge}

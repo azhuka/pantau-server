@@ -261,9 +261,9 @@
       
       <!-- Col 0: Server / Hostname (Informatif Hero) -->
       <td class="col-grow col-srv cell-nowrap">
-        <div style="display:inline-flex;align-items:center;gap:5px;white-space:nowrap">
+        <div style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap">
           <span id="srv-dot-{{ srv.id }}" class="dot {{ 'warn' if srv.is_maintenance else ('up' if srv._status_cls == 'badge-up' else 'down') }}" style="flex-shrink:0" title="{{ srv._status_label }}"></span>
-          <a href="/servers/{{ srv.id }}" style="color:var(--text);font-weight:700;font-size:11px;text-decoration:none" class="hover-underline" id="srv-host-{{ srv.id }}">{{ srv.hostname }}</a>
+          <a href="/servers/{{ srv.id }}" style="color:var(--text-bright);font-weight:700;font-size:11.5px;text-decoration:none" class="hover-underline" id="srv-host-{{ srv.id }}">{{ srv.hostname }}</a>
           {% if s_tier == 1 %}
             <span class="badge" title="Server level Produksi" style="display:inline-flex;align-items:center;justify-content:center;padding:2px 5px;background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.3);border-radius:4px">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
@@ -275,21 +275,21 @@
           {% endif %}
         </div>
         {% if srv.notes %}
-        <div style="font-size:8.5px;color:var(--dim);margin-top:1px" title="{{ srv.notes }}">{{ srv.notes }}</div>
+        <div class="cell-trunc-sub" style="max-width:180px;font-size:9.5px;color:var(--dim);margin-top:1.5px" title="Catatan: {{ srv.notes }}">{{ srv.notes }}</div>
         {% endif %}
       </td>
 
       <!-- Col 1: IP & Interface (Informatif) -->
       <td class="col-grow col-ip cell-nowrap">
         <div>
-          <span class="copyable-ip mono" id="srv-ip-{{ srv.id }}" style="font-size:9.5px;color:#58a6ff;font-weight:600" onclick="copyIp('{{ srv.ip_address }}', event)" title="Klik untuk salin IP">{{ srv.ip_address }}</span>
+          <span class="copyable-ip mono" id="srv-ip-{{ srv.id }}" style="font-size:11px;color:#58a6ff;font-weight:600" onclick="copyIp('{{ srv.ip_address }}', event)" title="Klik untuk menyalin IP {{ srv.ip_address }}">{{ srv.ip_address }}</span>
         </div>
-        <div style="display:inline-flex;align-items:center;gap:3.5px;margin-top:1px">
+        <div style="display:inline-flex;align-items:center;gap:4px;margin-top:1.5px">
           {% if srv._prim_iface %}
-          <span class="mono" style="font-size:8px;color:var(--dim);background:rgba(255,255,255,0.06);padding:0.5px 3.5px;border-radius:3px;border:1px solid rgba(255,255,255,0.08)" id="srv-iface-{{ srv.id }}" title="Antarmuka Primer">{{ srv._prim_iface }}</span>
+          <span class="mono" style="font-size:9px;color:var(--dim);background:rgba(255,255,255,0.06);padding:0.5px 4px;border-radius:3px;border:1px solid rgba(255,255,255,0.08)" id="srv-iface-{{ srv.id }}" title="Antarmuka Jaringan Primer: {{ srv._prim_iface }}">{{ srv._prim_iface }}</span>
           {% endif %}
           {% if srv.is_isolated_net %}
-          <span class="badge" style="font-size:7.5px;background:rgba(100,116,139,0.15);color:#94a3b8;border:1px solid rgba(100,116,139,0.3);padding:0.5px 3px;display:inline-flex;align-items:center;gap:2px;font-weight:600" title="Jaringan Terisolasi">
+          <span class="badge" style="font-size:8px;background:rgba(100,116,139,0.15);color:#94a3b8;border:1px solid rgba(100,116,139,0.3);padding:0.5px 3.5px;display:inline-flex;align-items:center;gap:2px;font-weight:600" title="Jaringan Host Terisolasi">
             Lokal
           </span>
           {% endif %}
@@ -298,9 +298,9 @@
 
       <!-- Col 2: Platform & Mesin (Informatif) -->
       <td class="col-grow col-plat cell-nowrap">
-        <div style="display:inline-flex;align-items:center;gap:3px">
+        <div style="display:inline-flex;align-items:center;gap:3.5px">
           {% if srv._platform %}
-            <span class="badge" style="font-size:8px;background:{{ srv._platform.badge_bg }};color:{{ srv._platform.badge_color }};border:1px solid {{ srv._platform.badge_border }};padding:0.5px 4px;display:inline-flex;align-items:center;gap:2.5px;font-weight:600" title="Platform: {{ srv._platform.label }}">
+            <span class="badge" style="font-size:8.5px;background:{{ srv._platform.badge_bg }};color:{{ srv._platform.badge_color }};border:1px solid {{ srv._platform.badge_border }};padding:1px 5px;display:inline-flex;align-items:center;gap:3px;font-weight:600" title="Platform: {{ srv._platform.label }}">
               {% if srv._platform.type == 'lxc' %}
                 <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
               {% elif srv._platform.type == 'vm' %}
@@ -314,42 +314,42 @@
             </span>
           {% endif %}
           {% if srv.is_proxmox_ha %}
-            <span class="badge" style="font-size:7.5px;background:rgba(234,179,8,0.12);color:#d97706;border:1px solid rgba(234,179,8,0.25);padding:0.5px 3px;display:inline-flex;align-items:center;gap:2px;font-weight:600" title="Server terproteksi Proxmox HA">
+            <span class="badge" style="font-size:8px;background:rgba(234,179,8,0.12);color:#d97706;border:1px solid rgba(234,179,8,0.25);padding:1px 4px;display:inline-flex;align-items:center;gap:2px;font-weight:600" title="Server terproteksi Proxmox High Availability (HA)">
               <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
               HA
             </span>
           {% endif %}
         </div>
-        <div style="font-size:8.5px;color:var(--dim);margin-top:1px" id="srv-hw-{{ srv.id }}" title="{{ srv._hw_model }}">{{ srv._hw_model }}</div>
+        <div class="cell-trunc-sub" style="max-width:145px;font-size:9.5px;color:var(--dim);margin-top:2px" id="srv-hw-{{ srv.id }}" title="Perangkat Keras: {{ srv._hw_model }}">{{ srv._hw_model }}</div>
       </td>
 
       <!-- Col 3: Sistem Operasi (Informatif) -->
       <td class="col-grow col-os cell-nowrap">
-        <div style="font-weight:600;font-size:9.5px;white-space:nowrap" id="srv-os-{{ srv.id }}">{{ srv._os_name }}</div>
-        <div class="mono" style="font-size:8.5px;color:var(--dim);white-space:nowrap" id="srv-kernel-{{ srv.id }}" title="Kernel: {{ srv._kernel }} ({{ srv._arch }})">{{ srv._kernel }} <span style="opacity:0.7">({{ srv._arch }})</span></div>
+        <div style="font-weight:600;font-size:11px;color:var(--text-bright);white-space:nowrap" id="srv-os-{{ srv.id }}">{{ srv._os_name }}</div>
+        <div class="mono cell-trunc-sub" style="max-width:140px;font-size:9.5px;color:var(--dim);white-space:nowrap" id="srv-kernel-{{ srv.id }}" title="Kernel: {{ srv._kernel }} ({{ srv._arch }})">{{ srv._kernel }} <span style="opacity:0.7">({{ srv._arch }})</span></div>
       </td>
 
       <!-- Col 4: Prosesor (Informatif) -->
       <td class="col-grow col-cpu cell-nowrap">
-        <div style="font-weight:600;font-size:9.5px" id="srv-cpumodel-{{ srv.id }}" title="{{ srv._cpu_model }}">{{ srv._cpu_model }}</div>
-        <div class="mono" style="font-size:8.5px;color:var(--dim)" id="srv-cpucores-{{ srv.id }}">{{ srv._cpu_cores }} Cores</div>
+        <div class="cell-trunc-sub" style="max-width:150px;font-weight:600;font-size:11px;color:var(--text-bright)" id="srv-cpumodel-{{ srv.id }}" title="Model CPU: {{ srv._cpu_model }}">{{ srv._cpu_model }}</div>
+        <div class="mono" style="font-size:9.5px;color:var(--dim)" id="srv-cpucores-{{ srv.id }}">{{ srv._cpu_cores }} Cores</div>
       </td>
 
       <!-- Col 5: Memori (Ringkas Metrik) -->
       <td class="col-metric col-num-cell">
-        <div class="mono" style="font-weight:600;font-size:9.5px" id="srv-ramtot-{{ srv.id }}">{{ srv._ram_total_str }}</div>
-        <div class="mono" style="font-size:8.5px;color:var(--dim)" id="srv-swaptot-{{ srv.id }}">Swap: {{ srv._swap_total_str }}</div>
+        <div class="mono" style="font-weight:600;font-size:11px;color:var(--text-bright)" id="srv-ramtot-{{ srv.id }}">{{ srv._ram_total_str }}</div>
+        <div class="mono" style="font-size:9.5px;color:var(--dim)" id="srv-swaptot-{{ srv.id }}" title="Kapasitas Swap Virtual: {{ srv._swap_total_str }}">Swap: {{ srv._swap_total_str }}</div>
       </td>
 
       <!-- Col 6: Penyimpanan (Ringkas Metrik) -->
       <td class="col-metric col-num-cell" style="text-align:left !important">
-        <div class="mono" style="font-size:9px" id="srv-disk-{{ srv.id }}" title="{{ srv._disk_str }}">{{ srv._disk_str }}</div>
+        <div class="mono cell-trunc-sub" style="max-width:150px;font-size:10px;color:var(--text)" id="srv-disk-{{ srv.id }}" title="Partisi Penyimpanan: {{ srv._disk_str }}">{{ srv._disk_str }}</div>
       </td>
 
       <!-- Col 7: Uptime & Boot (Ringkas Waktu) -->
       <td class="col-uptime col-center-cell">
-        <div class="mono" style="font-weight:600;font-size:9.5px" id="srv-uptime-{{ srv.id }}">{{ srv._uptime_str }}</div>
-        <div class="mono" style="font-size:8px;color:var(--dim);white-space:nowrap" id="srv-boot-{{ srv.id }}" title="Boot Time">{{ srv._boot_time }}</div>
+        <div class="mono" style="font-weight:600;font-size:11px;color:var(--text-bright)" id="srv-uptime-{{ srv.id }}">{{ srv._uptime_str }}</div>
+        <div class="mono" style="font-size:9.5px;color:var(--dim);white-space:nowrap" id="srv-boot-{{ srv.id }}" title="Waktu Boot Sistem: {{ srv._boot_time }}">{{ srv._boot_time }}</div>
       </td>
 
       <!-- Col 8: Agen & APT (Ringkas Badge) -->
@@ -357,23 +357,23 @@
         <div>
           {% if srv._agent_version %}
             {% if srv._agent_outdated %}
-              <span class="badge" style="font-size:7.5px;background:rgba(217,119,6,0.15);color:#d97706;border:1px solid rgba(217,119,6,0.3);padding:0.5px 3.5px;font-family:var(--font-mono);font-weight:600" id="srv-agent-{{ srv.id }}" title="Perlu pembaruan agen">v{{ srv._agent_version }} ↑</span>
+              <span class="badge" style="font-size:8.5px;background:rgba(217,119,6,0.15);color:#d97706;border:1px solid rgba(217,119,6,0.3);padding:1px 5px;font-family:var(--font-mono);font-weight:600" id="srv-agent-{{ srv.id }}" title="Perlu pembaruan agen">v{{ srv._agent_version }} ↑</span>
             {% else %}
-              <span class="badge" style="font-size:7.5px;background:rgba(59,130,246,0.12);color:var(--blue);border:1px solid rgba(59,130,246,0.25);padding:0.5px 3.5px;font-family:var(--font-mono)" id="srv-agent-{{ srv.id }}" title="Versi agen mutakhir">v{{ srv._agent_version }}</span>
+              <span class="badge" style="font-size:8.5px;background:rgba(59,130,246,0.12);color:var(--blue);border:1px solid rgba(59,130,246,0.25);padding:1px 5px;font-family:var(--font-mono)" id="srv-agent-{{ srv.id }}" title="Versi agen mutakhir">v{{ srv._agent_version }}</span>
             {% endif %}
           {% else %}
-            <span style="color:var(--dim);font-size:8px" id="srv-agent-{{ srv.id }}">—</span>
+            <span style="color:var(--dim);font-size:9px" id="srv-agent-{{ srv.id }}">—</span>
           {% endif %}
         </div>
         <div style="margin-top:2px" id="srv-apt-{{ srv.id }}">
           {% if srv._apt_upgradable is not none %}
             {% if srv._apt_upgradable > 0 %}
-              <span class="badge badge-warn" style="font-size:7.5px;padding:0.5px 3.5px" title="{{ srv._apt_upgradable }} packages tersedia">{{ srv._apt_upgradable }} packages</span>
+              <span class="badge badge-warn" style="font-size:8.5px;padding:1px 5px" title="{{ srv._apt_upgradable }} packages tersedia untuk diperbarui">{{ srv._apt_upgradable }} packages</span>
             {% else %}
-              <span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px">mutakhir</span>
+              <span class="badge badge-up" style="font-size:8.5px;padding:1px 5px" title="Seluruh paket perangkat lunak mutakhir">mutakhir</span>
             {% endif %}
           {% else %}
-            <span style="color:var(--dim);font-size:8px">—</span>
+            <span style="color:var(--dim);font-size:9px">—</span>
           {% endif %}
         </div>
       </td>
@@ -384,26 +384,26 @@
         <div style="display:inline-flex;align-items:center;gap:3px;flex-wrap:wrap">
           {% for tag in (srv.tags or '').split(',') %}
             {% if tag.strip() %}
-            <span class="badge" style="font-size:7.5px;padding:0.5px 3.5px;background:rgba(255,255,255,0.06);color:var(--dim);display:inline-flex;align-items:center;gap:2.5px">
+            <span class="badge" style="font-size:8.5px;padding:1px 5px;background:rgba(255,255,255,0.06);color:var(--dim);display:inline-flex;align-items:center;gap:2.5px" title="Tag: {{ tag.strip() }}">
               {{ tag.strip() }}
             </span>
             {% endif %}
           {% endfor %}
         </div>
         {% else %}
-        <span style="color:var(--dim-subtle);font-size:9px">—</span>
+        <span style="color:var(--dim-subtle);font-size:9.5px">—</span>
         {% endif %}
       </td>
 
       <!-- Col 10: Status & Lapor (Ringkas Status) -->
       <td class="col-status col-center-cell">
         <div>
-          <span class="badge {{ srv._status_cls }}" id="srv-sts-{{ srv.id }}" style="font-size:8px;padding:0.5px 4.5px;font-weight:700;letter-spacing:0.25px">{{ srv._status_label }}</span>
+          <span class="badge {{ srv._status_cls }}" id="srv-sts-{{ srv.id }}" style="font-size:8.5px;padding:1px 5.5px;font-weight:700;letter-spacing:0.25px">{{ srv._status_label }}</span>
           {% if srv.is_maintenance and srv.maintenance_reason %}
-          <span style="display:inline-flex;align-items:center;vertical-align:middle;color:var(--yellow);margin-left:3px" title="{{ srv.maintenance_reason }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></span>
+          <span style="display:inline-flex;align-items:center;vertical-align:middle;color:var(--yellow);margin-left:3px" title="Alasan Pemeliharaan: {{ srv.maintenance_reason }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></span>
           {% endif %}
         </div>
-        <div class="mono" style="font-size:8.5px;color:var(--dim);margin-top:2px" id="srv-seen-{{ srv.id }}" data-ts="{{ srv.last_seen.isoformat() if srv.last_seen else '' }}">
+        <div class="mono" style="font-size:9.5px;color:var(--dim);margin-top:2px" id="srv-seen-{{ srv.id }}" data-ts="{{ srv.last_seen.isoformat() if srv.last_seen else '' }}" title="Laporan Terakhir: {{ srv.last_seen.strftime('%Y-%m-%d %H:%M:%S') if srv.last_seen else 'Belum pernah' }}">
           {{ srv.last_seen.strftime('%d %b %H:%M') if srv.last_seen else 'belum pernah' }}
         </div>
       </td>

@@ -908,7 +908,7 @@ function renderTable(list) {
         <td class="col-status col-maint-status" style="vertical-align:middle">${statusBadge}</td>
         <td class="col-grow col-title-info col-maint-title" style="vertical-align:middle">
           <div style="font-weight:700;color:var(--text-bright);font-size:12px">${escapeHtml(w.title)}</div>
-          ${w.description ? `<div style="font-size:10.5px;color:var(--dim);margin-top:2px;line-height:1.35;word-break:break-word">${escapeHtml(w.description)}</div>` : ''}
+          ${w.description ? `<div class="cell-clamp-2" style="font-size:10.5px;color:var(--dim);margin-top:2px;line-height:1.35" title="Keterangan: ${escapeHtml(w.description)}">${escapeHtml(w.description)}</div>` : ''}
         </td>
         <td class="col-badge col-maint-scope" style="vertical-align:middle">${scopeBadge}</td>
         <td class="col-snug col-maint-sched" style="vertical-align:middle">${scheduleDesc}</td>
