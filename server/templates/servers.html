@@ -101,7 +101,7 @@
   </div>
 </div>
 
-<div class="pantau-filter-panel" style="margin-bottom:14px">
+<div class="pantau-filter-panel">
   <div class="filter-row-main">
     {% if servers %}
     <!-- Filter Grup -->
@@ -152,16 +152,16 @@
     </div>
 
     <!-- Tombol Reset -->
-    <button type="button" class="btn btn-ghost btn-sm" id="servers-filter-reset" onclick="resetServersFilters()" title="Reset semua filter ke default"
-            style="display:none;height:32px;padding:0 12px;font-size:11.5px;border-radius:var(--radius-sm);flex-shrink:0">
+    <button type="button" class="btn btn-ghost btn-toolbar" id="servers-filter-reset" onclick="resetServersFilters()" title="Reset semua filter ke default"
+            style="display:none">
       Reset
     </button>
 
-    <div class="filter-divider" style="width:1px;height:24px;background:rgba(255,255,255,0.1);margin:0 2px;flex-shrink:0"></div>
+    <div class="filter-divider filter-divider-vertical"></div>
 
     <!-- Kolom Toggler -->
     <div class="pantau-col-dropdown" data-table-id="servers-table" style="flex-shrink:0">
-      <button type="button" class="pantau-col-btn" onclick="PantauColManager.toggleDropdown('servers-table', this)" title="Sesuaikan kolom tabel server" style="height:32px">
+      <button type="button" class="pantau-col-btn" onclick="PantauColManager.toggleDropdown('servers-table', this)" title="Sesuaikan kolom tabel server">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
           <line x1="9" y1="3" x2="9" y2="21"></line>
@@ -175,7 +175,7 @@
     {% endif %}
 
     {% if user.is_master_admin() or user.has_perm('can_manage_servers') %}
-    <a href="/servers/add" class="btn btn-primary btn-sm" style="display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;font-size:11.5px;flex-shrink:0">
+    <a href="/servers/add" class="btn btn-primary btn-toolbar">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
       <span data-i18n="add_server">Tambah Server</span>
     </a>

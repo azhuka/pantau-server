@@ -298,14 +298,6 @@
       Rencanakan jadwal pemeliharaan terencana, tekan alarm darurat palsu selama masa pemeliharaan, dan pertahankan kedaulatan operasional NOC.
     </div>
   </div>
-  <div class="page-header-actions">
-    {% if user and (user.is_master_admin() or user.has_perm('can_manage_servers') or user.is_operator()) %}
-    <button type="button" class="btn btn-primary btn-sm" onclick="openAddModal()">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-      <span>Tambah Jadwal Pemeliharaan</span>
-    </button>
-    {% endif %}
-  </div>
 </div>
 
 <!-- 3 Stat Tiles Ringkasan Metrik -->
@@ -345,9 +337,9 @@
 </div>
 
 <!-- Controls Bar: Search & Status Filter -->
-<div class="pantau-filter-panel" style="margin-bottom:14px">
-  <div class="filter-row-main" style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:10px">
-    <div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;flex:1">
+<div class="pantau-filter-panel">
+  <div class="filter-row-main">
+    <div class="filter-row-fields">
       <!-- 1. Filter Status -->
       <div class="filter-col">
         <span class="filter-col-label">Status</span>
@@ -384,7 +376,15 @@
       </div>
     </div>
 
-    <span style="font-size:11.5px;color:var(--dim);white-space:nowrap;padding-bottom:6px" id="maintCountInfo">Memuat daftar jadwal…</span>
+    <div class="filter-row-actions">
+      <span class="filter-count" id="maintCountInfo">Memuat daftar jadwal…</span>
+      {% if user and (user.is_master_admin() or user.has_perm('can_manage_servers') or user.is_operator()) %}
+      <button type="button" class="btn btn-primary btn-toolbar" onclick="openAddModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        <span>Tambah Jadwal Pemeliharaan</span>
+      </button>
+      {% endif %}
+    </div>
   </div>
 </div>
 

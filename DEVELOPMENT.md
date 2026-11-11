@@ -507,6 +507,31 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
   3. **Sinkronisasi SemVer 7 Berkas:**
      - Sinkronisasi versi SemVer `4.8.157` pada 7 berkas inti repositori.
 
+## Versi 4.8.172
+
+- **Tipe Rilis:** Relokasi Tombol Aksi Tambah ke Bilah Filter & Standardisasi Toolbar Aksi Halaman (*Add-Action Relocation into Filter Toolbar & Action Toolbar Standardization*)
+- **Fokus Utama:** Memindahkan tombol aksi "Tambah Endpoint" (halaman Pemantauan Endpoint) dan "Tambah Jadwal Pemeliharaan" (halaman Jendela Pemeliharaan) dari kepala halaman ke bilah filter daftar, mengikuti pola baku yang sudah dipakai halaman Daftar Server:
+  1. **Primitif Toolbar Baru (`server/static/css/pantau-noc.css`):**
+     - `.btn-toolbar`: tinggi 32px, padding horizontal 12px, dan ukuran font 11.5px sehingga sejajar presisi dengan kontrol filter (`.filter-select`, `.filter-search-box`, `.segmented-control`).
+     - `.filter-row-fields`: kelompok kontrol filter di sisi kiri bilah filter (`flex: 1 1 auto`, `align-items: flex-end`, `flex-wrap: wrap`).
+     - `.filter-row-actions`: kelompok aksi di sisi kanan bilah filter (`margin-left: auto`, `align-items: center`, `flex-wrap: wrap`).
+     - `.filter-count`: teks hitungan data dengan tipografi dan warna muted baku.
+     - `.filter-divider-vertical`: varian pemisah vertikal 1×24px untuk memisahkan kelompok kontrol dan aksi.
+     - `.pantau-filter-panel .pantau-col-btn`: tombol pengelola kolom pada bilah filter ikut tinggi baku 32px.
+  2. **Halaman Pemantauan Endpoint (`server/templates/probing.html`):**
+     - Menghapus blok `.page-header-actions` beserta tombol "Tambah Endpoint" dari kepala halaman.
+     - Menata ulang panel filter menjadi struktur baku `filter-row-main` → `filter-row-fields` + `filter-row-actions`.
+     - Tombol muat ulang dan "Tambah Endpoint" kini berada di kluster aksi kanan dengan kelas `.btn-toolbar` (bebas atribut `style` inline).
+  3. **Halaman Jendela Pemeliharaan (`server/templates/maintenance.html`):**
+     - Menghapus blok `.page-header-actions` beserta tombol "Tambah Jadwal Pemeliharaan" dari kepala halaman.
+     - Indikator jumlah jadwal (`#maintCountInfo`) dan tombol "Tambah Jadwal Pemeliharaan" dibungkus dalam `.filter-row-actions` dengan kelas `.filter-count` dan `.btn-primary.btn-toolbar`.
+     - Menghapus atribut `style` inline pada `filter-row-main` dan pembungkus kontrol filter (digantikan `.filter-row-fields`).
+  4. **Halaman Daftar Server (`server/templates/servers.html`):**
+     - Tombol "Tambah Server" memakai `.btn-primary.btn-toolbar` (menggantikan atribut `style` inline).
+     - Tombol "Reset" memakai `.btn-ghost.btn-toolbar`; pemisah memakai varian `.filter-divider-vertical`; tombol "Kolom" mengandalkan aturan tinggi baku pada `.pantau-filter-panel .pantau-col-btn`.
+  5. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.172` pada 7 berkas inti repositori.
+
 ## Versi 4.8.171
 
 - **Tipe Rilis:** Standardisasi Global Tata Letak Page Header & Penyelarasan Tipografi Judul Halaman (*Global Page Header Layout Standardization & Page Title Typography Alignment*)

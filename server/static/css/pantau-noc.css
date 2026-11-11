@@ -300,6 +300,54 @@ table.noc-table tbody tr:hover td.col-act,
   white-space: nowrap;
 }
 
+/* Aksi utama pada bilah filter: tinggi sejajar kontrol filter (32px) */
+.btn-toolbar {
+  height: 32px !important;
+  padding: 0 12px !important;
+  font-size: 11.5px !important;
+  flex-shrink: 0 !important;
+}
+
+/* Kelompok kontrol filter di sisi kiri bilah filter */
+.filter-row-fields {
+  display: flex !important;
+  align-items: flex-end !important;
+  gap: 10px !important;
+  flex-wrap: wrap !important;
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+
+/* Kelompok aksi di sisi kanan bilah filter (hitungan data + tombol aksi) */
+.filter-row-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  flex-wrap: wrap !important;
+  margin-left: auto !important;
+}
+
+.filter-count {
+  font-size: 11.5px !important;
+  color: var(--dim) !important;
+  white-space: nowrap !important;
+}
+
+/* Kontrol pelengkap pada bilah filter ikut tinggi baku kontrol filter (32px) */
+.pantau-filter-panel .pantau-col-btn {
+  height: 32px !important;
+  padding: 0 9px !important;
+}
+
+/* Varian pemisah vertikal antar kelompok kontrol/aksi pada bilah filter */
+.pantau-filter-panel .filter-divider-vertical {
+  width: 1px !important;
+  height: 24px !important;
+  margin: 0 2px !important;
+  background: var(--filter-divider, rgba(255, 255, 255, 0.1)) !important;
+  flex-shrink: 0 !important;
+}
+
 /* =============================================================================
    4. NOC VIEWPORT-SAFE MODAL ENGINE (MATEMATIS TERKUNCI DALAM VIEWPORT)
    ============================================================================= */
