@@ -29,6 +29,7 @@
 
     <!-- Baris 1: Filter Operasional Multi-Kriteria Berlabel Rapi & Presisi -->
     <div class="filter-row-main">
+      <div class="filter-row-fields">
       <!-- 1. Filter Pengguna -->
       <div class="filter-col" title="Filter menurut operator / user yang mengeksekusi">
         <label class="filter-col-label" for="audit-user-filter">Pengguna</label>
@@ -96,32 +97,35 @@
           <input type="search" name="q" id="audit-search-input" value="{{ q }}" oninput="debounceAuditFilter()" placeholder="Cari target, hasil, perintah…">
         </div>
       </div>
+      </div>
 
-      <!-- 7. Tombol Reset Filter -->
-      <button type="button" class="btn btn-ghost btn-sm" onclick="resetAuditFilters()" style="height:32px;padding:0 12px;font-size:11.5px;display:inline-flex;align-items:center;gap:4px;flex-shrink:0" title="Hapus semua filter riwayat tindakan">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
-        <span>Reset</span>
-      </button>
+      <div class="filter-row-actions">
+        <!-- 7. Tombol Reset Filter -->
+        <button type="button" class="btn btn-ghost btn-toolbar" onclick="resetAuditFilters()" title="Hapus semua filter riwayat tindakan">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+          <span>Reset</span>
+        </button>
+      </div>
     </div>
 
     <!-- Divider Pemisah Halus -->
     <div class="filter-divider"></div>
 
     <!-- Baris 2: Tombol Kecil Quick Presets (Dibawahnya) & Status Periode -->
-    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-      <div style="display:inline-flex;align-items:center;gap:8px">
-        <span style="font-size:10px;color:var(--dim);font-weight:700;letter-spacing:0.4px;text-transform:uppercase">Preset:</span>
+    <div class="filter-row-sub">
+      <div class="filter-preset-group">
+        <span class="filter-preset-label">Preset:</span>
         <div class="segmented-control" id="audit-period-pills" style="display:inline-flex;gap:3px">
-          <button type="button" class="btn btn-sm {% if not period and not start_date and not end_date %}is-on{% endif %}" onclick="setAuditPeriod('', this)" style="padding:2px 10px;font-size:11px" title="Tampilkan seluruh catatan">Semua</button>
-          <button type="button" class="btn btn-sm {% if period == 'today' %}is-on{% endif %}" onclick="setAuditPeriod('today', this)" style="padding:2px 10px;font-size:11px" title="Catatan aktivitas sejak jam 00:00 UTC hari ini">Hari Ini</button>
-          <button type="button" class="btn btn-sm {% if period == '24h' %}is-on{% endif %}" onclick="setAuditPeriod('24h', this)" style="padding:2px 10px;font-size:11px" title="Catatan aktivitas 24 jam terakhir">24 Jam</button>
-          <button type="button" class="btn btn-sm {% if period == '7d' %}is-on{% endif %}" onclick="setAuditPeriod('7d', this)" style="padding:2px 10px;font-size:11px" title="Catatan aktivitas 7 hari terakhir">7 Hari</button>
-          <button type="button" class="btn btn-sm {% if period == '30d' %}is-on{% endif %}" onclick="setAuditPeriod('30d', this)" style="padding:2px 10px;font-size:11px" title="Catatan aktivitas 30 hari terakhir">30 Hari</button>
-          <button type="button" id="btn-audit-custom" class="btn btn-sm {% if period == 'custom' or start_date or end_date %}is-on{% endif %}" onclick="setAuditPeriod('custom', this)" style="padding:2px 10px;font-size:11px;{% if period != 'custom' and not start_date and not end_date %}display:none;{% endif %}" title="Rentang tanggal kustom aktif">Kustom</button>
+          <button type="button" class="btn btn-sm btn-preset {% if not period and not start_date and not end_date %}is-on{% endif %}" onclick="setAuditPeriod('', this)" title="Tampilkan seluruh catatan">Semua</button>
+          <button type="button" class="btn btn-sm btn-preset {% if period == 'today' %}is-on{% endif %}" onclick="setAuditPeriod('today', this)" title="Catatan aktivitas sejak jam 00:00 UTC hari ini">Hari Ini</button>
+          <button type="button" class="btn btn-sm btn-preset {% if period == '24h' %}is-on{% endif %}" onclick="setAuditPeriod('24h', this)" title="Catatan aktivitas 24 jam terakhir">24 Jam</button>
+          <button type="button" class="btn btn-sm btn-preset {% if period == '7d' %}is-on{% endif %}" onclick="setAuditPeriod('7d', this)" title="Catatan aktivitas 7 hari terakhir">7 Hari</button>
+          <button type="button" class="btn btn-sm btn-preset {% if period == '30d' %}is-on{% endif %}" onclick="setAuditPeriod('30d', this)" title="Catatan aktivitas 30 hari terakhir">30 Hari</button>
+          <button type="button" id="btn-audit-custom" class="btn btn-sm btn-preset {% if period == 'custom' or start_date or end_date %}is-on{% endif %}" onclick="setAuditPeriod('custom', this)" style="{% if period != 'custom' and not start_date and not end_date %}display:none;{% endif %}" title="Rentang tanggal kustom aktif">Kustom</button>
         </div>
       </div>
-      <span style="color:var(--border);font-size:11px;opacity:0.6">|</span>
-      <div id="audit-summary-info" style="font-size:11.5px;color:var(--dim)">
+      <div class="filter-divider-vertical"></div>
+      <div id="audit-summary-info" class="filter-count">
         {% if period == 'today' %}Menampilkan catatan sejak jam 00:00 UTC hari ini
         {% elif period == '24h' %}Menampilkan catatan 24 jam terakhir
         {% elif period == '7d' %}Menampilkan catatan 7 hari terakhir

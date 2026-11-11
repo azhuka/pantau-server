@@ -267,37 +267,71 @@ table.noc-table tbody tr:hover td.col-act,
   background: var(--filter-panel-bg, rgba(13, 19, 33, 0.72));
   border: 1px solid var(--filter-panel-border, rgba(255, 255, 255, 0.08));
   border-radius: var(--radius-sm, 6px);
-  padding: 10px 14px;
-  margin-bottom: 14px;
+  padding: 12px 14px !important;
+  margin-bottom: 14px !important;
   box-sizing: border-box;
 }
 
+/* Baris utama bilah filter: label di atas, kontrol sejajar pada garis dasar yang sama */
 .noc-filter-row,
-.pantau-filter-panel .filter-row-main {
+.pantau-filter-panel .filter-row-main,
+.filter-row-main {
   display: flex !important;
   align-items: flex-end !important;
   gap: 10px 12px !important;
   flex-wrap: wrap !important;
-  overflow-x: visible !important;
+  padding-bottom: 0 !important;
+  overflow: visible !important;
 }
 
 .noc-filter-col,
-.pantau-filter-panel .filter-col {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  flex-shrink: 0;
+.pantau-filter-panel .filter-col,
+.filter-row-fields > .filter-col {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  flex-shrink: 0 !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
 }
 
 .noc-filter-label,
 .pantau-filter-panel .filter-col-label {
-  font-size: 9.5px;
-  font-weight: 700;
-  color: var(--dim, #94a3b8);
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  line-height: 1.2;
-  white-space: nowrap;
+  display: block !important;
+  margin: 0 !important;
+  font-size: 9.5px !important;
+  font-weight: 700 !important;
+  color: var(--dim, #94a3b8) !important;
+  letter-spacing: 0.5px !important;
+  text-transform: uppercase !important;
+  line-height: 12px !important;
+  white-space: nowrap !important;
+}
+
+/* Kontrol filter: tinggi, radius, dan tipografi seragam */
+.pantau-filter-panel .filter-select,
+.pantau-filter-panel .filter-search-box,
+.pantau-filter-panel .pantau-date-range,
+.pantau-filter-panel .segmented-control {
+  height: 32px !important;
+}
+
+.pantau-filter-panel .filter-select:hover,
+.pantau-filter-panel .filter-search-box:hover,
+.pantau-filter-panel .pantau-date-range:hover {
+  border-color: var(--border-hover, #4b5563) !important;
+}
+
+/* Kolom pencarian: tumbuh mengisi ruang namun dibatasi agar tidak melebar berlebihan */
+.pantau-filter-panel .filter-col-search,
+.filter-row-fields > .filter-col-search {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  flex: 1 1 220px !important;
+  min-width: 200px !important;
+  max-width: 420px !important;
+  box-sizing: border-box !important;
 }
 
 /* Aksi utama pada bilah filter: tinggi sejajar kontrol filter (32px) */
@@ -312,7 +346,7 @@ table.noc-table tbody tr:hover td.col-act,
 .filter-row-fields {
   display: flex !important;
   align-items: flex-end !important;
-  gap: 10px !important;
+  gap: 10px 12px !important;
   flex-wrap: wrap !important;
   flex: 1 1 auto !important;
   min-width: 0 !important;
@@ -322,15 +356,54 @@ table.noc-table tbody tr:hover td.col-act,
 .filter-row-actions {
   display: flex !important;
   align-items: center !important;
-  gap: 10px !important;
+  gap: 8px !important;
   flex-wrap: wrap !important;
   margin-left: auto !important;
+  flex-shrink: 0 !important;
 }
 
 .filter-count {
   font-size: 11.5px !important;
   color: var(--dim) !important;
   white-space: nowrap !important;
+}
+
+/* Kelompok aksi yang tampil/sembunyi bersama (mis. Reset + pemisah) */
+.filter-action-group {
+  align-items: center !important;
+  gap: 8px !important;
+  flex-shrink: 0 !important;
+}
+
+/* Baris sekunder bilah filter (preset periode + ringkasan data) */
+.filter-row-sub {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px 12px !important;
+  flex-wrap: wrap !important;
+}
+
+.filter-preset-group {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+}
+
+.filter-preset-label {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.4px !important;
+  text-transform: uppercase !important;
+  color: var(--dim) !important;
+  white-space: nowrap !important;
+}
+
+.btn-preset {
+  height: 24px !important;
+  padding: 0 10px !important;
+  font-size: 11px !important;
 }
 
 /* Kontrol pelengkap pada bilah filter ikut tinggi baku kontrol filter (32px) */
@@ -340,7 +413,8 @@ table.noc-table tbody tr:hover td.col-act,
 }
 
 /* Varian pemisah vertikal antar kelompok kontrol/aksi pada bilah filter */
-.pantau-filter-panel .filter-divider-vertical {
+.pantau-filter-panel .filter-divider-vertical,
+.filter-row-sub .filter-divider-vertical {
   width: 1px !important;
   height: 24px !important;
   margin: 0 2px !important;

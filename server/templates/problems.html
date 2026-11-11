@@ -411,8 +411,9 @@
       <span id="pill-label-ignored">Diabaikan</span> <span class="prob-pill-count" id="pill-count-ignored">{{ ignored_open }}</span>
     </button>
   </div>
-  <div class="pantau-filter-panel" style="margin-bottom:14px">
+  <div class="pantau-filter-panel">
     <div class="filter-row-main">
+      <div class="filter-row-fields">
       <form method="get" action="/problems" style="display:contents">
         <div class="filter-col" title="Filter berdasarkan Server">
           <label class="filter-col-label" for="prob-open-filter-server">Server</label>
@@ -452,30 +453,29 @@
           <input type="search" id="prob-search" oninput="probFilter()" placeholder="Cari server / grup / kejadian…">
         </div>
       </div>
+      </div>
 
+      <div class="filter-row-actions">
       <!-- Tombol Penyesuai Kolom Insiden -->
-      <div class="filter-col" style="justify-content:flex-end">
-        <div class="pantau-col-dropdown" data-table-id="probtable">
-          <button type="button" class="pantau-col-btn" onclick="PantauColManager.toggleDropdown('probtable', this)" title="Sesuaikan kolom tabel insiden" style="height:32px">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-              <line x1="9" y1="3" x2="9" y2="21"></line>
-              <line x1="15" y1="3" x2="15" y2="21"></line>
-            </svg>
-            <span>Kolom</span>
-            <span class="pantau-col-badge" style="display:none"></span>
-          </button>
-          <div class="pantau-col-menu" style="display:none"></div>
-        </div>
+      <div class="pantau-col-dropdown" data-table-id="probtable">
+        <button type="button" class="pantau-col-btn" onclick="PantauColManager.toggleDropdown('probtable', this)" title="Sesuaikan kolom tabel insiden">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="9" y1="3" x2="9" y2="21"></line>
+            <line x1="15" y1="3" x2="15" y2="21"></line>
+          </svg>
+          <span>Kolom</span>
+          <span class="pantau-col-badge" style="display:none"></span>
+        </button>
+        <div class="pantau-col-menu" style="display:none"></div>
       </div>
 
       {% if filter_sid or filter_group %}
-      <div class="filter-col" style="justify-content:flex-end">
-        <a href="/problems" class="btn btn-ghost btn-sm" style="height:32px;display:inline-flex;align-items:center">Reset Filter</a>
-      </div>
+      <a href="/problems" class="btn btn-ghost btn-toolbar">Reset Filter</a>
       {% endif %}
 
-      <span style="font-size:11px;color:var(--dim);align-self:flex-end;padding-bottom:8px" id="prob-count"></span>
+      <span class="filter-count" id="prob-count"></span>
+      </div>
     </div>
   </div>
   {% endif %}
@@ -645,6 +645,7 @@
   <div class="pantau-filter-panel">
     <!-- Baris 1: Filter Multi-Kriteria Berlabel Rapi & Presisi -->
     <div class="filter-row-main">
+      <div class="filter-row-fields">
       <!-- 1. Filter Server -->
       <div class="filter-col" title="Filter berdasarkan Server">
         <label for="res-filter-server" class="filter-col-label">Server</label>
@@ -701,30 +702,33 @@
           <input type="search" id="res-search-input" value="{{ res_q }}" oninput="onResFilterChange()" placeholder="Cari insiden, pesan, komponen…">
         </div>
       </div>
+      </div>
 
-      <!-- 6. Tombol Reset Filter -->
-      <button type="button" class="btn btn-ghost btn-sm" onclick="resetResFilters()" style="height:32px;padding:0 12px;font-size:11.5px;display:inline-flex;align-items:center;gap:4px;flex-shrink:0" title="Hapus semua filter riwayat insiden">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
-        <span>Reset</span>
-      </button>
+      <div class="filter-row-actions">
+        <!-- 6. Tombol Reset Filter -->
+        <button type="button" class="btn btn-ghost btn-toolbar" onclick="resetResFilters()" title="Hapus semua filter riwayat insiden">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+          <span>Reset</span>
+        </button>
+      </div>
     </div>
 
     <!-- Divider Pemisah Halus -->
     <div class="filter-divider"></div>
 
     <!-- Baris 2: Tombol Kecil Quick Presets (Dibawahnya) & Info Data -->
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-      <div style="display:inline-flex;align-items:center;gap:8px">
-        <span style="font-size:10px;color:var(--dim);font-weight:700;letter-spacing:0.4px;text-transform:uppercase">Preset:</span>
+    <div class="filter-row-sub">
+      <div class="filter-preset-group">
+        <span class="filter-preset-label">Preset:</span>
         <div class="segmented-control" id="prob-res-ranges" style="display:inline-flex;gap:3px">
-          <button type="button" class="btn btn-sm {% if res_period == 'today' %}is-on{% endif %}" onclick="setResolvedPeriod('today', this)" style="padding:2px 10px;font-size:11px" title="Insiden teratasi sejak jam 00:00 UTC hari ini">Hari Ini</button>
-          <button type="button" class="btn btn-sm {% if res_period == '24h' or not res_period %}is-on{% endif %}" onclick="setResolvedPeriod('24h', this)" style="padding:2px 10px;font-size:11px" title="Insiden teratasi dalam 24 jam terakhir">24 Jam</button>
-          <button type="button" class="btn btn-sm {% if res_period == '7d' %}is-on{% endif %}" onclick="setResolvedPeriod('7d', this)" style="padding:2px 10px;font-size:11px" title="Insiden teratasi dalam 7 hari terakhir">7 Hari</button>
-          <button type="button" class="btn btn-sm {% if res_period == '30d' %}is-on{% endif %}" onclick="setResolvedPeriod('30d', this)" style="padding:2px 10px;font-size:11px" title="Insiden teratasi dalam 30 hari terakhir">30 Hari</button>
-          <button type="button" id="btn-res-custom" class="btn btn-sm {% if res_period == 'custom' or res_start or res_end %}is-on{% endif %}" onclick="setResolvedPeriod('custom', this)" style="padding:2px 10px;font-size:11px;{% if res_period != 'custom' and not res_start and not res_end %}display:none;{% endif %}" title="Rentang tanggal kustom aktif">Kustom</button>
+          <button type="button" class="btn btn-sm btn-preset {% if res_period == 'today' %}is-on{% endif %}" onclick="setResolvedPeriod('today', this)" title="Insiden teratasi sejak jam 00:00 UTC hari ini">Hari Ini</button>
+          <button type="button" class="btn btn-sm btn-preset {% if res_period == '24h' or not res_period %}is-on{% endif %}" onclick="setResolvedPeriod('24h', this)" title="Insiden teratasi dalam 24 jam terakhir">24 Jam</button>
+          <button type="button" class="btn btn-sm btn-preset {% if res_period == '7d' %}is-on{% endif %}" onclick="setResolvedPeriod('7d', this)" title="Insiden teratasi dalam 7 hari terakhir">7 Hari</button>
+          <button type="button" class="btn btn-sm btn-preset {% if res_period == '30d' %}is-on{% endif %}" onclick="setResolvedPeriod('30d', this)" title="Insiden teratasi dalam 30 hari terakhir">30 Hari</button>
+          <button type="button" id="btn-res-custom" class="btn btn-sm btn-preset {% if res_period == 'custom' or res_start or res_end %}is-on{% endif %}" onclick="setResolvedPeriod('custom', this)" style="{% if res_period != 'custom' and not res_start and not res_end %}display:none;{% endif %}" title="Rentang tanggal kustom aktif">Kustom</button>
         </div>
       </div>
-      <div id="res-filter-summary-info" style="font-size:11.5px;color:var(--dim)">
+      <div id="res-filter-summary-info" class="filter-count">
         Menampilkan {{ recent_resolved|length }} dari {{ recent_resolved|length }} insiden teratasi
       </div>
     </div>

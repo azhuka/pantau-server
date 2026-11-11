@@ -507,6 +507,24 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
   3. **Sinkronisasi SemVer 7 Berkas:**
      - Sinkronisasi versi SemVer `4.8.157` pada 7 berkas inti repositori.
 
+## Versi 4.8.174
+
+- **Tipe Rilis:** Standardisasi Geometri Bilah Filter NOC (*NOC Filter Bar Geometry Standardization*)
+- **Fokus Utama:** Menjadikan area bilah filter presisi, rapi, dan profesional melalui primitif design system, bukan penimpaan gaya per elemen:
+  1. **`server/static/css/pantau-noc.css` (Seksi 3):** Primitif bilah filter ditulis ulang secara baku:
+     - Panel: padding seragam `12px 14px`, margin bawah `14px`, `box-sizing: border-box`.
+     - Baris utama: `align-items: flex-end`, jarak `10px 12px`, `padding-bottom: 0` sehingga label dan kontrol duduk pada satu garis dasar.
+     - Label kolom: tinggi baris tetap `12px`, margin `0`, sehingga jarak label ke kontrol selalu `4px` di semua halaman.
+     - Kontrol (select, kotak pencarian, rentang tanggal, segmented control): tinggi seragam `32px` dengan border hover konsisten.
+     - Kolom pencarian: `flex: 1 1 220px`, `min-width: 200px`, `max-width: 420px` agar mengisi ruang tanpa melebar berlebihan.
+     - Kelompok aksi (`.filter-row-actions`): rata kanan (`margin-left: auto`), jarak `8px`, tidak menyusut; tombol toolbar `.btn-toolbar` tinggi `32px`.
+     - Primitif baru: `.filter-row-fields`, `.filter-count`, `.filter-row-sub`, `.filter-preset-group`, `.filter-preset-label`, `.btn-preset`, `.filter-action-group`, serta varian `.filter-divider-vertical` (tinggi `24px`).
+  2. **`server/templates/servers.html`:** Filter dibungkus `.filter-row-fields`, aksi dikelompokkan pada `.filter-row-actions`. Tombol Reset dan pemisah vertikal dibungkus `.filter-action-group` sehingga tampil/sembunyi bersama (tidak ada pemisah menggantung saat filter kosong). Tombol tambah diringkas menjadi **"+ Tambah"** dengan tooltip "Tambah server baru".
+  3. **`server/templates/problems.html`:** Kedua panel filter (insiden terbuka dan riwayat teratasi) memakai primitif baku: `.filter-row-fields`, `.filter-row-actions`, `.filter-count`, `.filter-row-sub`, `.filter-preset-group`, `.btn-preset`. Gaya inline berulang dihapus.
+  4. **`server/templates/audit.html`:** Filter dibungkus `.filter-row-fields` dan aksi pada `.filter-row-actions`; baris preset memakai `.filter-row-sub` + `.filter-preset-group` + `.btn-preset`; pemisah karakter pipa diganti `.filter-divider-vertical`; ringkasan memakai `.filter-count`.
+  5. **`server/templates/probing.html`:** Aturan lokal `.probe-controls` yang memaksa panel menjadi flex container dihapus, sehingga `.filter-row-actions` kembali rata kanan dan bilah filter tidak lagi terbelah dua baris pada lebar desktop.
+  6. **Sinkronisasi SemVer 7 Berkas:** Sinkronisasi versi `4.8.174` pada 7 berkas inti repositori.
+
 ## Versi 4.8.173
 
 - **Tipe Rilis:** Peringkasan Label Tombol Aksi Tambah & Tooltip Kontekstual (*Add-Action Label Compaction & Contextual Tooltip*)
