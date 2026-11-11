@@ -507,6 +507,18 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
   3. **Sinkronisasi SemVer 7 Berkas:**
      - Sinkronisasi versi SemVer `4.8.157` pada 7 berkas inti repositori.
 
+## Versi 4.8.177
+
+- **Tipe Rilis:** Perbaikan Struktur Tag Aksi Tabel Riwayat Insiden (*Resolved Problems Table Syntax Fix*)
+- **Fokus Utama:** Memperbaiki tag elemen aksi HTML pada tabel riwayat insiden teratasi (`server/templates/problems.html`):
+  1. **Peniadaan Tag Aksi Duplikat & Penutupan Ganda:**
+     - Menghapus tag `<a>` duplikat yang berada di luar elemen `<td>` serta penutupan `</td>` ganda pada baris riwayat insiden selesai (`recent_resolved`).
+     - Mengatasi fenomena *foster-parenting* oleh browser HTML5 parser yang menendang keluar ratusan tombol aksi berikon mata ke atas kontainer tabel.
+  2. **Integritas Struktur Tabel:**
+     - Memastikan seluruh baris `<tr>` pada tabel riwayat insiden memiliki pasangan tag `<td>` yang presisi, valid, dan bersih.
+  3. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.177` pada 7 berkas inti repositori.
+
 ## Versi 4.8.176
 
 - **Tipe Rilis:** Standardisasi Sistem Kolom Tabel NOC Proporsional (*NOC Table Semantic Column Architecture*)
