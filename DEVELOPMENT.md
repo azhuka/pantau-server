@@ -354,6 +354,34 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.190
+
+- **Tipe Rilis:** Perbaikan Komprehensif Antarmuka Pengguna (UI/UX), Restrukturisasi Tabel Masalah, Kontras Multi-Tema, Presisi Tabbar Sticky, dan Modernisasi Grafik Interaktif Layanan (*Comprehensive UI/UX Enhancements, Problem Table Restructuring, Multi-Theme Contrast, Precision Sticky Tabbar & Interactive Service Telemetry Charts*)
+- **Fokus Utama:** Menyelesaikan 7 temuan visual, ergonomi, dan interaktivitas NOC secara menyeluruh:
+  1. **Penataan Vertikal Lencana Tingkat Masalah (`/problems`):**
+     - Mengubah orientasi lencana status keparahan (`KRITIS`/`GAWAT`/`PERINGATAN`) bersama sub-lencana (`DIABAIKAN` / `✓ DITANGANI`) menjadi susunan vertikal bertingkat (`display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px;`).
+     - Mencegah pelebaran kolom yang memicu scrollbar horizontal tabel dan memastikan hierarki visual terbaca lugas pada server-side Jinja dan re-render JavaScript.
+  2. **Perbaikan Kontras Kotak Peran Pengguna pada Tema Terang (`/profile` & `pantau-noc.css`):**
+     - Mengganti styling inline hardcoded pada modal detail pengguna dengan kelas semantik CSS `.role-summary-box.role-admin`, `.role-operator`, dan `.role-viewer`.
+     - Mengatasi masalah keterbacaan pada Mode Terang (*Light Mode*) dengan kontras warna teks gelap kontras tinggi (`#0369a1` di atas latar `#f0f9ff` untuk operator, `#991b1b` di atas `#fef2f2` untuk admin, dan `#334155` di atas `#f8fafc` untuk viewer).
+  3. **Presisi Offset Sticky Tabbar (`services.html`):**
+     - Mengoreksi nilai offset sticky pada `.tabbar` menjadi `top: 38px !important;` (dan `top: 86px` saat banner peringatan aktif) agar sejajar tepat di bawah `.noc-global-topbar` (`height: 38px`).
+     - Menghilangkan cacat visual di mana tabbar terpotong atau tertutup saat halaman digulir (*scroll*).
+  4. **Eliminasi Ruang Kosong Artifisial Tabel Baris Tunggal (`pantau-noc.css`):**
+     - Menghapus aturan CSS artifisial `div:has(> table...): min-height: 140px;` dan `.table-responsive: min-height: 140px;` yang sebelumnya menimbulkan whitespace kosong ~100px pada tabel 1-baris (Perangkat Penyimpanan, Partisi Filesystem, Antarmuka Jaringan).
+     - Menjadikan kontainer tabel membungkus data secara rapat dan presisi sesuai filosofi kepadatan data NOC.
+  5. **Restrukturisasi Tabel Masalah Server (`#tab-masalah` di `services.html`):**
+     - Memindahkan kolom `Tindakan` ke posisi paling kanan (kolom terakhir) sesuai standar baku tabel NOC.
+     - Menyederhanakan tampilan kolom `Waktu` menjadi `%d %b %H:%M` tanpa detik yang berlebihan, sementara detail detik lengkap tetap tersedia pada tooltip kursor.
+     - Menata kolom `Kejadian` menjadi susunan judul terstruktur dengan lencana sub-kejadian di bawahnya.
+  6. **Modernisasi Grafik Telemetri Layanan Interaktif (`#tab-layanan` di `services.html`):**
+     - Memigrasikan grafik Waktu Respon (`#chart-svc-rt`) dan Koneksi Aktif (`#chart-svc-conn`) menggunakan pustaka `NocMetricChart`.
+     - Menghadirkan garis crosshair interaktif, tooltip melayang saat kursor melintas, gradasi dinamis, dan scaling otomatis yang identik dengan grafik performa sistem.
+  7. **Rasionalisasi Proporsi Ketinggian Grafik Layanan:**
+     - Menyesuaikan kontainer grafik layanan menjadi ketinggian proporsional (`height: 120px; class="noc-chart-box"`), menghadirkan visual yang ramping, seimbang, dan tidak memakan ruang pandang tabel layanan di bawahnya.
+  8. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.190` pada seluruh 7 berkas inti repositori.
+
 ## Versi 4.8.189
 
 - **Tipe Rilis:** Penyempurnaan Visual Mutlak Anti-Cache Dropdown Tindakan, Penanda Status Label Kontekstual, dan Reduksi Menu Port Terlindungi (*Absolute Anti-Cache Dropdown Styling, Contextual Action Label Suffixes & Streamlined Protected Port Menu*)

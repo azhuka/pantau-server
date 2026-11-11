@@ -536,7 +536,7 @@
           {% set base_badge_text = 'KRITIS' if p.severity == 'danger' else ('GAWAT' if p.severity == 'average' else ('PERINGATAN' if p.severity == 'warning' else p.severity | upper)) %}
           {% set base_badge = '<span class="' ~ base_badge_cls ~ '" style="font-size:7.5px;padding:0.5px 4.5px;letter-spacing:0.2px;font-weight:700">' ~ base_badge_text ~ '</span>' %}
           {% if p.is_ignored or p.acknowledged_by %}
-            <div style="display:inline-flex;align-items:center;gap:3px;flex-wrap:nowrap;white-space:nowrap">
+            <div style="display:inline-flex;flex-direction:column;align-items:flex-start;gap:2px">
               {{ base_badge | safe }}
               {% if p.is_ignored %}
                 <span class="badge badge-muted badge-sub" style="font-size:7px;padding:0.5px 3.5px;font-weight:700;letter-spacing:0.2px" title="{{ 'Alasan: ' ~ p.ignored_reason if p.ignored_reason else ('Diabaikan oleh ' ~ op_name) }}">DIABAIKAN</span>
@@ -1579,7 +1579,7 @@ window.poll = async function(opts = {}) {
               if (p.acknowledged_by) {
                 subBadges += `<span class="badge badge-up badge-sub" style="font-size:7px;padding:0.5px 3.5px;font-weight:700;letter-spacing:0.2px" title="${(isEn ? 'Handled by ' : 'Ditangani oleh ') + _esc(ackOp)}">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span>`;
               }
-              sevCellHtml = `<div style="display:inline-flex;align-items:center;gap:3px;flex-wrap:nowrap;white-space:nowrap">${baseBadge}${subBadges}</div>`;
+              sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:flex-start;gap:2px">${baseBadge}${subBadges}</div>`;
             } else {
               sevCellHtml = baseBadge;
             }

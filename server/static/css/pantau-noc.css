@@ -1315,15 +1315,44 @@ tr.is-disabled > td:not(.col-act) {
   opacity: 1 !important;
 }
 
-/* Ruang vertikal aman pada kontainer scroll agar menu dropdown tidak terpotong */
-#prob-table-wrapper,
-#ssl-wrap,
-.table-responsive,
-div:has(> table.noc-table),
-div:has(> table.noc-table-dense),
-div:has(> table.noc-table-compact) {
-  min-height: 140px;
+/* Kotak Ringkasan Peran Pengguna (User Detail Modal) Multi-Tema */
+.role-summary-box {
+  border-radius: 8px;
+  padding: 12px 14px;
+  line-height: 1.5;
+  font-size: 12px;
 }
+.role-summary-box.role-admin {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #fca5a5;
+}
+.role-summary-box.role-operator {
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  color: #bae6fd;
+}
+.role-summary-box.role-viewer {
+  background: rgba(148, 163, 184, 0.08);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  color: #cbd5e1;
+}
+[data-theme="light"] .role-summary-box.role-admin {
+  background: #fef2f2 !important;
+  border-color: #fecaca !important;
+  color: #991b1b !important;
+}
+[data-theme="light"] .role-summary-box.role-operator {
+  background: #f0f9ff !important;
+  border-color: #bae6fd !important;
+  color: #0369a1 !important;
+}
+[data-theme="light"] .role-summary-box.role-viewer {
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+  color: #334155 !important;
+}
+
 .noc-act-dropdown-item {
   display: inline-flex;
   align-items: center;

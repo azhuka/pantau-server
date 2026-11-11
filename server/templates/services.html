@@ -773,8 +773,8 @@
 }
 .tabbar {
   position: sticky !important;
-  top: 0 !important;
-  z-index: 85 !important;
+  top: 38px !important;
+  z-index: 90 !important;
   margin: 0 0 8px !important;
   border-radius: 6px !important;
   padding: 4px 6px !important;
@@ -785,14 +785,14 @@
   transition: top .2s ease;
 }
 body.show-alert-banner .tabbar {
-  top: 48px !important;
+  top: 86px !important;
 }
 @media (max-width: 992px) {
   .tabbar {
-    top: 48px !important;
+    top: 86px !important;
   }
   body.show-alert-banner .tabbar {
-    top: 96px !important;
+    top: 134px !important;
   }
 }
 [data-theme="light"] .tabbar {
@@ -2425,12 +2425,12 @@ div[style*="position: fixed"] .card {
   <div style="overflow-x:auto">
   <table id="probtable" class="noc-table-compact" style="width:100%">
     <thead><tr>
-      <th class="col-time-detailed" style="width:135px;min-width:125px">Waktu</th>
+      <th class="col-time-detailed" style="width:115px;min-width:105px">Waktu</th>
       <th class="col-sev" style="width:92px;min-width:86px;text-align:center">Keparahan</th>
       <th class="col-event" style="min-width:240px;max-width:500px">Kejadian</th>
       <th class="col-durasi" style="width:85px;min-width:78px;text-align:center">Durasi</th>
-      <th class="col-act" style="width:125px;min-width:120px;text-align:left">Tindakan</th>
       <th class="col-tips" style="min-width:220px">Saran</th>
+      <th class="col-act" style="width:105px;min-width:95px;text-align:center">Tindakan</th>
     </tr></thead>
     <tbody>
     {% for p in rows %}
@@ -2451,7 +2451,7 @@ div[style*="position: fixed"] .card {
         data-prob-sid="{{ server.id }}"
         data-prob-context='{{ p.context or "" }}'>
       <td style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis" class="mono col-time-detailed" title="Mulai: {{ p.started_at.strftime('%d %b %Y %H:%M:%S') if p.started_at else '—' }}{{ ' | Selesai: ' ~ p.resolved_at.strftime('%d %b %Y %H:%M:%S') if p.resolved_at else '' }}">
-        {{ p.started_at.strftime('%d %b %H:%M:%S') if p.started_at else '—' }}
+        {{ p.started_at.strftime('%d %b %H:%M') if p.started_at else '—' }}
       </td>
       <td class="col-sev" style="text-align:center">
         {% set base_badge_cls = 'badge badge-' ~ ({'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info')) %}
@@ -2459,17 +2459,21 @@ div[style*="position: fixed"] .card {
         <span class="{{ base_badge_cls }}">{{ base_badge_text }}</span>
       </td>
       <td class="col-event">
-        {% if not p.is_open %}<span style="color:var(--green)">✓</span> {% endif %}
-        <span{% if not p.is_open %} style="color:var(--dim)"{% endif %}>{{ p.message }}</span>
-        {% if p.is_ignored and p.ignored_reason and p.ignored_reason != p.message and ('DIMATIKAN OLEH OPERATOR' not in p.ignored_reason and 'DIHENTIKAN OLEH OPERATOR' not in p.ignored_reason and 'DI-REBOOT OLEH OPERATOR' not in p.ignored_reason and 'DI-RESTART OLEH OPERATOR' not in p.ignored_reason) and ('dimatikan oleh operator' not in (p.message or '').lower() and 'dihentikan oleh operator' not in (p.message or '').lower()) %}
-          <span class="badge badge-muted" style="margin-left:5px;font-size:7.5px;padding:0.5px 3.5px" title="Alasan: {{ p.ignored_reason }}">{{ p.ignored_reason }}</span>
+        <div style="font-weight:500;line-height:1.35;color:var(--text-bright)">{% if not p.is_open %}<span style="color:var(--green)">✓</span> {% endif %}<span{% if not p.is_open %} style="color:var(--dim)"{% endif %}>{{ p.message }}</span></div>
+        {% if (p.is_ignored and (p.ignored_reason or p.ignored_until)) or (p.count_24h and p.count_24h > 1) %}
+        <div style="display:inline-flex;gap:4px;align-items:center;margin-top:3px;flex-wrap:wrap">
+          {% if p.is_ignored and p.ignored_reason and p.ignored_reason != p.message and ('DIMATIKAN OLEH OPERATOR' not in p.ignored_reason and 'DIHENTIKAN OLEH OPERATOR' not in p.ignored_reason and 'DI-REBOOT OLEH OPERATOR' not in p.ignored_reason and 'DI-RESTART OLEH OPERATOR' not in p.ignored_reason) and ('dimatikan oleh operator' not in (p.message or '').lower() and 'dihentikan oleh operator' not in (p.message or '').lower()) %}
+            <span class="badge badge-muted" style="font-size:7.5px;padding:0.5px 3.5px" title="Alasan: {{ p.ignored_reason }}">{{ p.ignored_reason }}</span>
+          {% endif %}
+          {% if p.is_ignored and p.ignored_until %}
+            <span class="badge badge-muted" style="font-size:7.5px;padding:0.5px 3.5px" title="Batas waktu pengabaian">s/d {{ p.ignored_until.strftime('%d %b %H:%M') }}</span>
+          {% endif %}
+          {% if p.count_24h and p.count_24h > 1 %}<span class="badge badge-muted" style="font-size:7.5px;padding:0.5px 3px;font-weight:normal" title="Kejadian berulang dalam 24 jam terakhir">kambuh {{ p.count_24h }}×</span>{% endif %}
+        </div>
         {% endif %}
-        {% if p.is_ignored and p.ignored_until %}
-          <span class="badge badge-muted" style="margin-left:5px;font-size:7.5px;padding:0.5px 3.5px" title="Batas waktu pengabaian">s/d {{ p.ignored_until.strftime('%d %b %H:%M') }}</span>
-        {% endif %}
-        {% if p.count_24h and p.count_24h > 1 %}<span class="badge badge-muted" style="margin-left:5px;font-size:7.5px;padding:0.5px 3px;font-weight:normal" title="Kejadian berulang dalam 24 jam terakhir">kambuh {{ p.count_24h }}×</span>{% endif %}
       </td>
       <td class="mono col-durasi" style="white-space:nowrap"{% if p.is_open %} data-start="{{ p.started_at.replace(tzinfo=None).isoformat() }}Z"{% endif %}>{{ p.durasi }}</td>
+      <td class="col-tips" style="font-size:11px;line-height:1.35;color:var(--dim)">{{ p.tip or '—' }}</td>
       <td class="col-act prob-act-cell" style="text-align:center">
         <details class="noc-act-dropdown">
           <summary class="btn btn-xs btn-ghost btn-noc-act" title="Menu Aksi Insiden">Aksi ▾</summary>
@@ -2560,7 +2564,6 @@ div[style*="position: fixed"] .card {
           </div>
         </details>
       </td>
-      <td class="col-tips" style="font-size:11px;line-height:1.35;color:var(--dim)">{{ p.tip or '—' }}</td>
     </tr>
     {% endfor %}
     </tbody>
@@ -2679,11 +2682,11 @@ div[style*="position: fixed"] .card {
   <div class="grid-2" style="padding:0 14px 14px 14px;gap:14px">
     <div>
       <div style="font-size:11px;font-weight:600;color:var(--dim);letter-spacing:.3px;margin-bottom:6px">Waktu Respon (ms)</div>
-      <div id="chart-svc-rt"></div>
+      <div id="chart-svc-rt" class="noc-chart-box" style="height:120px"></div>
     </div>
     <div>
       <div style="font-size:11px;font-weight:600;color:var(--dim);letter-spacing:.3px;margin-bottom:6px">Koneksi Aktif</div>
-      <div id="chart-svc-conn"></div>
+      <div id="chart-svc-conn" class="noc-chart-box" style="height:120px"></div>
     </div>
   </div>
 </div>
@@ -4823,6 +4826,8 @@ function showTab(name) {
           .catch(() => {});
       }
     }
+    if (typeof _chartSvcRt !== 'undefined' && _chartSvcRt) _chartSvcRt.render();
+    if (typeof _chartSvcConn !== 'undefined' && _chartSvcConn) _chartSvcConn.render();
   }
   if (name === 'berkas' && typeof initFileManager === 'function') {
     initFileManager();
@@ -9039,9 +9044,16 @@ function fmtProbDate(isoStr) {
 
 function fmtProbDateShort(isoStr) {
   if (!isoStr) return '—';
-  const full = fmtProbDate(isoStr);
-  if (!full) return '—';
-  return full.replace(/\s*\d{4}\s*/, ' ');
+  const d = new Date(isoStr);
+  if (isNaN(d.getTime())) return '—';
+  const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+  const monthsEn = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
+  const day = d.getDate();
+  const mon = (isEn ? monthsEn[d.getMonth()] : months[d.getMonth()]) || '';
+  const h = String(d.getHours()).padStart(2, '0');
+  const m = String(d.getMinutes()).padStart(2, '0');
+  return `${day} ${mon} ${h}:${m}`;
 }
 
 function getServicesI18nText(text) {
@@ -9140,12 +9152,12 @@ function renderProblemsTab(level, openList, histList) {
   <div style="overflow-x:auto">
   <table id="probtable" class="noc-table-compact" style="width:100%">
     <thead><tr>
-      <th class="col-time-detailed" style="width:135px;min-width:125px">${isEn ? 'Time' : 'Waktu'}</th>
+      <th class="col-time-detailed" style="width:115px;min-width:105px">${isEn ? 'Time' : 'Waktu'}</th>
       <th class="col-sev" style="width:92px;min-width:86px;text-align:center">${isEn ? 'Severity' : 'Keparahan'}</th>
       <th class="col-event" style="min-width:240px;max-width:500px">${isEn ? 'Event' : 'Kejadian'}</th>
       <th class="col-durasi" style="width:85px;min-width:78px;text-align:center">${isEn ? 'Duration' : 'Durasi'}</th>
-      <th class="col-act" style="width:125px;min-width:120px;text-align:left">${isEn ? 'Action' : 'Tindakan'}</th>
       <th class="col-tips" style="min-width:220px">${isEn ? 'Advice' : 'Saran'}</th>
+      <th class="col-act" style="width:105px;min-width:95px;text-align:center">${isEn ? 'Action' : 'Tindakan'}</th>
     </tr></thead>
     <tbody>`;
 
@@ -9313,10 +9325,13 @@ function renderProblemsTab(level, openList, histList) {
       data-prob-context="${escapeHtml(ctxAttr)}">
       <td style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis" class="mono col-time-detailed" title="${escapeHtml(fullTimeTip)}">${escapeHtml(displayTime)}</td>
       <td class="col-sev" style="text-align:center">${sevCellHtml}</td>
-      <td class="col-event">${checkMark}<span${msgStyle}>${escapeHtml(pMsg || '')}</span> ${ignoredBadge} ${kambuhBadge}</td>
+      <td class="col-event">
+        <div style="font-weight:500;line-height:1.35;color:var(--text-bright)">${checkMark}<span${msgStyle}>${escapeHtml(pMsg || '')}</span></div>
+        ${(ignoredBadge || kambuhBadge) ? `<div style="display:inline-flex;gap:4px;align-items:center;margin-top:3px;flex-wrap:wrap">${ignoredBadge}${kambuhBadge}</div>` : ''}
+      </td>
       <td class="mono col-durasi" style="white-space:nowrap"${dataStart}>${escapeHtml(p.durasi || '')}</td>
-      <td class="col-act prob-act-cell">${actHtml}</td>
       <td class="col-tips" style="font-size:11px;line-height:1.35;color:var(--dim)">${escapeHtml(pTip || '—')}</td>
+      <td class="col-act prob-act-cell">${actHtml}</td>
     </tr>`;
   }
 
@@ -11350,6 +11365,52 @@ function renderSvcStrip(elId, points, rangeFrom, rangeTo) {
   el.innerHTML = s;
 }
 
+let _chartSvcRt = null;
+let _chartSvcConn = null;
+
+function initSvcCharts() {
+  if (typeof NocMetricChart !== 'function') return;
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+  if (!_chartSvcRt && document.getElementById('chart-svc-rt')) {
+    _chartSvcRt = new NocMetricChart({
+      container: 'chart-svc-rt',
+      title: isEn ? 'Response Time' : 'Waktu Respon',
+      unit: 'ms',
+      fixedMin: 0,
+      fixedMax: null,
+      showLegend: false,
+      series: [
+        {
+          id: 'rt',
+          name: isEn ? 'Response Time' : 'Waktu Respon',
+          color: '#38bdf8',
+          getValue: p => (p.rt !== null && p.rt !== undefined && !isNaN(p.rt)) ? p.rt : null,
+          tooltipLabel: v => (isEn ? `Response: ${v.toFixed(1)} ms` : `Waktu Respon: ${v.toFixed(1)} ms`)
+        }
+      ]
+    });
+  }
+  if (!_chartSvcConn && document.getElementById('chart-svc-conn')) {
+    _chartSvcConn = new NocMetricChart({
+      container: 'chart-svc-conn',
+      title: isEn ? 'Active Connections' : 'Koneksi Aktif',
+      unit: '',
+      fixedMin: 0,
+      fixedMax: null,
+      showLegend: false,
+      series: [
+        {
+          id: 'conns',
+          name: isEn ? 'Active Connections' : 'Koneksi Aktif',
+          color: '#22c55e',
+          getValue: p => (p.conns !== null && p.conns !== undefined && !isNaN(p.conns)) ? p.conns : null,
+          tooltipLabel: v => (isEn ? `Connections: ${Math.round(v)}` : `Koneksi Aktif: ${Math.round(v)}`)
+        }
+      ]
+    });
+  }
+}
+
 async function loadSvcHistory() {
   const sel = document.getElementById('svc-graph-sel');
   if (!sel || !sel.value) return;
@@ -11372,8 +11433,18 @@ async function loadSvcHistory() {
     (svc.name || '') + ' — ' + (isEn ? 'now: ' : 'sekarang: ') + (now.status || '-')
     + (now.connections ? ' · ' + now.connections + (isEn ? ' connections' : ' koneksi') : '')
     + (now.response_time_ms !== null && now.response_time_ms !== undefined ? ' · ' + now.response_time_ms + ' ms' : '');
-  renderLineChart('chart-svc-rt', pts, p => p.rt, v => v.toFixed(0) + ' ms', 'var(--blue)', 0);
-  renderLineChart('chart-svc-conn', pts, p => p.conns, v => Math.round(v) + '', 'var(--green)', 0);
+
+  initSvcCharts();
+  if (_chartSvcRt) {
+    _chartSvcRt.setData(pts);
+  } else {
+    renderLineChart('chart-svc-rt', pts, p => p.rt, v => v.toFixed(0) + ' ms', 'var(--blue)', 0);
+  }
+  if (_chartSvcConn) {
+    _chartSvcConn.setData(pts);
+  } else {
+    renderLineChart('chart-svc-conn', pts, p => p.conns, v => Math.round(v) + '', 'var(--green)', 0);
+  }
   renderSvcStrip('svc-status-strip', pts, tMin, tMax);
 }
 
