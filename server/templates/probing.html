@@ -992,6 +992,9 @@ let probesPagination = null;
 function renderTable() {
   const tbody = document.getElementById('probesTbody');
   if (!tbody) return;
+  if (tbody.querySelector('.noc-act-dropdown[open]')) {
+    return; // Tunda render ulang saat operator sedang membuka dropdown aksi endpoint
+  }
 
   const list = getFilteredProbes();
   if (list.length === 0) {

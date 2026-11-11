@@ -1277,12 +1277,10 @@ tr.is-disabled > td:not(.col-act) {
   border-color: #0284c7;
 }
 .noc-act-dropdown-menu {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 4px);
-  min-width: 145px;
+  position: fixed !important;
+  min-width: 150px;
   width: max-content;
-  max-width: 260px;
+  max-width: 270px;
   white-space: nowrap;
   background: #0b111e !important;
   color: #f8fafc !important;
@@ -1290,7 +1288,7 @@ tr.is-disabled > td:not(.col-act) {
   border-radius: var(--radius-sm, 4px) !important;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9), 0 2px 8px rgba(0, 0, 0, 0.5) !important;
   padding: 4px !important;
-  z-index: 100002 !important;
+  z-index: 100005 !important;
   opacity: 1 !important;
   display: flex;
   flex-direction: column;
@@ -1315,12 +1313,6 @@ tr.is-disabled > td:not(.col-act) {
   border-color: #263554 !important;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9) !important;
   opacity: 1 !important;
-}
-
-/* Dukungan Dropup: Buka ke atas bila baris berada di dasar layar */
-.noc-act-dropdown.dropup .noc-act-dropdown-menu {
-  top: auto !important;
-  bottom: calc(100% + 4px) !important;
 }
 
 /* Ruang vertikal aman pada kontainer scroll agar menu dropdown tidak terpotong */
@@ -1376,8 +1368,6 @@ div:has(> table.noc-table-compact) {
 .col-ssl-days {
   white-space: nowrap !important;
   min-width: 85px !important;
-}
-  cursor: pointer;
 }
 
 /* Token Tombol Mikro Aksi Tabel */

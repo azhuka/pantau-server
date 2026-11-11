@@ -9738,6 +9738,7 @@ function renderPorts(ports) {
 
   const tbody = table.querySelector('tbody');
   if (!tbody) return;
+  if (tbody.querySelector('.noc-act-dropdown[open]')) return;
 
   tbody.innerHTML = pList.map(p => {
     const isTcp = (p.proto || '').toLowerCase() === 'tcp';
@@ -10529,8 +10530,10 @@ function renderSys(data) {
     if (at && ae) {
       at.style.display = acc.length ? 'table' : 'none';
       ae.style.display = acc.length ? 'none' : 'block';
-    const csrf = getCsrf();
-    at.querySelector('tbody').innerHTML = acc.map(a => {
+    const accTbody = at.querySelector('tbody');
+    if (accTbody && !accTbody.querySelector('.noc-act-dropdown[open]')) {
+      const csrf = getCsrf();
+      accTbody.innerHTML = acc.map(a => {
       const isProtected = a.is_protected === true;
       const isLocked = a.is_locked === true;
       const isSudo = a.is_sudo === true;
@@ -10603,8 +10606,9 @@ function renderSys(data) {
     } else if (_servicesTabPagination['acc']) {
       _servicesTabPagination['acc'].update();
     }
+    }
   }
-  }
+}
 
   // grup sistem (hanya perbarui jika payload menyertakan data grup)
   if (Array.isArray(data.system_groups)) {
@@ -12141,6 +12145,7 @@ function renderPackagesTable() {
     </tr>`;
   }).join('');
 
+  if (tbody.querySelector('.noc-act-dropdown[open]')) return;
   tbody.innerHTML = rowsHtml;
   if (_servicesTabPagination && _servicesTabPagination['packages']) {
     _servicesTabPagination['packages'].update();
@@ -12728,6 +12733,7 @@ function renderSystemdTable() {
     </tr>`;
   }).join('');
 
+  if (tbody.querySelector('.noc-act-dropdown[open]')) return;
   tbody.innerHTML = rowsHtml;
   if (_servicesTabPagination && _servicesTabPagination['systemd']) {
     _servicesTabPagination['systemd'].update();

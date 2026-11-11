@@ -354,6 +354,30 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.184
+
+- **Tipe Rilis:** Arsitektur Global Viewport-Fixed Smart Floating Dropdown & Eliminasi Tuntas Pemotongan Menu Kontainer Tabel (*Global Viewport-Fixed Smart Floating Dropdown Engine & Complete Table Container Overflow Clipping Elimination*)
+- **Fokus Utama:** Audit menyeluruh dan resolusi tuntas atas masalah pemotongan menu dropdown oleh batas kontainer kartu/tabel (`Screenshot from 2026-11-11 21-08-01.png`) serta eliminasi instabilitas menu di seluruh antarmuka Pantau Server:
+  1. **Resolusi Tuntas Pemotongan Menu Dropdown oleh Batas Kontainer / Card (*Zero-Clipping Floating Architecture*):**
+     - Mengubah arsitektur positioning `.noc-act-dropdown-menu` di level global stylesheet (`pantau-noc.css`) menjadi `position: fixed !important; z-index: 100005 !important;` dengan latar belakang solid kedap pandang (`opacity: 1 !important`) di seluruh tema (Dark: `#0b111e`, Light: `#ffffff`, Obsidian: `#141419`, Navy: `#162035`).
+     - Karena berinduk langsung pada Viewport, menu dropdown kebal 100% terhadap batasan pemotongan (`overflow: hidden`, `overflow-x: auto`, atau border-radius) pada `.card`, `<div style="overflow-x:auto">`, maupun `.table-responsive` pada tabel dengan jumlah baris sedikit (seperti pada tabel akun pengguna di `profile.html` dan `users.html`, tabel probing, file manager, dan maintenance).
+  2. **Eliminasi 1-Frame Jitter / Flicker (Pre-Render Anchor Calculation):**
+     - Menghitung koordinat target menu (`top`, `bottom`, `left`, `right`, dan penentuan otomatis `dropup`) pada event `pointerdown` / `mousedown` dengan tangkapan fase awal (`capture: true`), SEBELUM browser melukis frame pertama saat elemen `<details>` dibuka. Menu langsung terproyeksi di posisi yang tepat dengan 0ms latency dan 0 visual jump.
+  3. **Penempelan Solid saat Scroll Halaman & Tabel (Live Scroll-Follow Engine):**
+     - Memasang event listener `scroll` dan `resize` pasif (`{ passive: true, capture: true }`) yang secara mulus memperbarui posisi menu fixed mengikuti tombol summary pemicu saat tabel atau jendela digulir.
+     - Mengeliminasi penutupan mendadak akibat sentuhan trackpad atau mouse wheel; menu hanya ditutup jika tombol pemicu tergulung keluar dari batas pandang layar (*offscreen*).
+  4. **Audit Menyeluruh Proteksi Polling Realtime Seluruh Template:**
+     - Menerapkan guard anti-penimpaan DOM berkala `if (tbody.querySelector('.noc-act-dropdown[open]')) return;` di seluruh titik polling yang tersisa:
+       - Tabel Pemantauan Endpoint Probing (`probing.html`): fungsi `renderTable()` menunda update saat menu aksi endpoint sedang terbuka.
+       - Tabel Port Aktif (`services.html`): fungsi `renderPorts()` menunda penimpaan DOM saat menu aksi port sedang dibuka.
+       - Tabel Akun Pengguna Sistem (`services.html`): fungsi `renderSys()` memproteksi tabel `#acc-table`.
+       - Tabel APT Packages (`services.html`): fungsi `renderPackagesTable()` memproteksi daftar paket.
+       - Tabel Daemons Systemd (`services.html`): fungsi `renderSystemdTable()` memproteksi daftar unit.
+  5. **Pembersihan Kesalahan Sintaksis CSS Global:**
+     - Membersihkan deklarasi `cursor: pointer; }` liar pada `pantau-noc.css`.
+  6. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.184` pada seluruh 7 berkas inti repositori.
+
 ## Versi 4.8.183
 
 - **Tipe Rilis:** Stabilisasi Dropdown Aksi Solid, Proteksi DOM Anti-Polling Realtime, dan Eliminasi Penutupan Prematur (*Solid Action Dropdowns Stabilization, Realtime Polling DOM Guard, and Premature Closure Elimination*)

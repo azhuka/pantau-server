@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token }}">
 <title>{% block title %}Pantau Server{% endblock %}</title>
-<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.183' }}">
+<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.184' }}">
 {% block extra_head %}{% endblock %}
 <script>
 (function() {
@@ -2823,7 +2823,7 @@ body.show-alert-banner .main{padding-top:72px}
   </nav>
   <div class="sidebar-footer">
     <div class="sb-footer-brand">Pantau Server</div>
-    <div class="sb-footer-ver">v{{ app_version or '4.8.183' }}</div>
+    <div class="sb-footer-ver">v{{ app_version or '4.8.184' }}</div>
     <div class="sb-footer-utc">UTC <span id="clockUtc" style="display:inline"></span></div>
   </div>
 </aside>
@@ -6214,90 +6214,126 @@ if (document.readyState === 'loading') {
   makeTablesResponsive();
 }
 
-// Global smart positioning & auto-close untuk dropdown tindakan cerdas NOC (.noc-act-dropdown)
-document.addEventListener('click', function(e) {
-  // Jika klik di luar dropdown, tutup semua dropdown yang sedang terbuka
-  if (!e.target.closest('.noc-act-dropdown')) {
-    document.querySelectorAll('.noc-act-dropdown[open]').forEach(function(d) {
-      d.removeAttribute('open');
-      d.classList.remove('dropup');
-      const td = d.closest('td');
-      const tr = d.closest('tr');
-      if (td) { td.style.removeProperty('z-index'); td.classList.remove('has-dropdown-open'); }
-      if (tr) { tr.style.removeProperty('z-index'); tr.style.removeProperty('position'); tr.classList.remove('has-dropdown-open'); }
-    });
-    return;
+// Global smart floating positioning & auto-close untuk dropdown tindakan cerdas NOC (.noc-act-dropdown)
+function positionNocDropdown(details) {
+  if (!details) return;
+  const summary = details.querySelector('summary');
+  const menu = details.querySelector('.noc-act-dropdown-menu');
+  if (!summary || !menu) return;
+
+  const rect = summary.getBoundingClientRect();
+  const vh = window.innerHeight;
+  const vw = window.innerWidth;
+
+  // Dapatkan dimensi menu
+  let menuHeight = menu.offsetHeight;
+  if (!menuHeight || menuHeight < 30) {
+    const count = menu.children.length || 4;
+    menuHeight = Math.max(120, count * 32 + 10);
+  }
+  let menuWidth = menu.offsetWidth;
+  if (!menuWidth || menuWidth < 50) {
+    menuWidth = 160;
   }
 
-  // Jika item menu di-klik, jadwalkan penutupan dropdown setelah aksi terpanggil
-  const item = e.target.closest('.noc-act-dropdown-item');
-  if (item) {
-    const d = item.closest('.noc-act-dropdown');
-    if (d) {
-      setTimeout(() => {
-        d.removeAttribute('open');
-        d.classList.remove('dropup');
-        const td = d.closest('td');
-        const tr = d.closest('tr');
-        if (td) { td.style.removeProperty('z-index'); td.classList.remove('has-dropdown-open'); }
-        if (tr) { tr.style.removeProperty('z-index'); tr.style.removeProperty('position'); tr.classList.remove('has-dropdown-open'); }
-      }, 80);
+  const spaceBelow = vh - rect.bottom;
+  const spaceAbove = rect.top;
+  const isDropup = (spaceBelow < menuHeight + 10) && (spaceAbove > spaceBelow);
+
+  menu.style.setProperty('position', 'fixed', 'important');
+  menu.style.setProperty('z-index', '100005', 'important');
+
+  if (isDropup) {
+    menu.style.top = 'auto';
+    menu.style.bottom = Math.max(8, (vh - rect.top) + 4) + 'px';
+    details.classList.add('dropup');
+  } else {
+    menu.style.bottom = 'auto';
+    menu.style.top = Math.max(8, rect.bottom + 4) + 'px';
+    details.classList.remove('dropup');
+  }
+
+  // Penyelarasan horizontal (sisi kanan menu sejajar dengan sisi kanan tombol summary)
+  let rightOffset = Math.max(8, vw - rect.right);
+  if (vw - rightOffset - menuWidth < 8) {
+    menu.style.right = 'auto';
+    menu.style.left = '8px';
+  } else {
+    menu.style.left = 'auto';
+    menu.style.right = rightOffset + 'px';
+  }
+}
+
+// 1. Tangkap saat tombol ditekan (pointerdown/mousedown) sebelum browser melukis frame pertama open
+document.addEventListener('pointerdown', function(e) {
+  const summary = e.target.closest('.noc-act-dropdown summary');
+  if (summary) {
+    const details = summary.closest('.noc-act-dropdown');
+    if (details && !details.open) {
+      positionNocDropdown(details);
     }
   }
-});
+}, { capture: true, passive: true });
 
+// 2. Tangkap saat details terbuka (dukungan aksesibilitas keyboard Space/Enter atau toggle native)
 document.addEventListener('toggle', function(e) {
   if (e.target && e.target.classList && e.target.classList.contains('noc-act-dropdown')) {
     const details = e.target;
-    const td = details.closest('td');
-    const tr = details.closest('tr');
-
     if (details.open) {
       // Tutup dropdown lain yang terbuka agar tidak tumpang tindih
       document.querySelectorAll('.noc-act-dropdown[open]').forEach(function(other) {
         if (other !== details) {
           other.removeAttribute('open');
           other.classList.remove('dropup');
-          const otd = other.closest('td');
-          const otr = other.closest('tr');
-          if (otd) { otd.style.removeProperty('z-index'); otd.classList.remove('has-dropdown-open'); }
-          if (otr) { otr.style.removeProperty('z-index'); otr.style.removeProperty('position'); otr.classList.remove('has-dropdown-open'); }
         }
       });
-
-      if (td) {
-        td.style.setProperty('z-index', '100001', 'important');
-        td.classList.add('has-dropdown-open');
-      }
-      if (tr) {
-        tr.style.setProperty('z-index', '100000', 'important');
-        tr.style.setProperty('position', 'relative', 'important');
-        tr.classList.add('has-dropdown-open');
-      }
-
-      // Deteksi dropup (buka ke atas jika berada dekat dasar layar)
-      const rect = details.getBoundingClientRect();
-      const menu = details.querySelector('.noc-act-dropdown-menu');
-      const menuHeight = (menu && menu.offsetHeight) ? menu.offsetHeight : 170;
-      if (rect.bottom + menuHeight > window.innerHeight - 15 && rect.top > menuHeight + 15) {
-        details.classList.add('dropup');
-      } else {
-        details.classList.remove('dropup');
-      }
+      positionNocDropdown(details);
     } else {
       details.classList.remove('dropup');
-      if (td) {
-        td.style.removeProperty('z-index');
-        td.classList.remove('has-dropdown-open');
-      }
-      if (tr) {
-        tr.style.removeProperty('z-index');
-        tr.style.removeProperty('position');
-        tr.classList.remove('has-dropdown-open');
-      }
     }
   }
 }, true);
+
+// 3. Listener scroll & resize pasif: secara dinamis dan mulus memperbarui posisi menu agar tetap menempel solid pada tombol
+function updateOpenNocDropdown() {
+  const openDd = document.querySelector('.noc-act-dropdown[open]');
+  if (!openDd) return;
+  const summary = openDd.querySelector('summary');
+  if (!summary) return;
+  const rect = summary.getBoundingClientRect();
+  // Hanya tutup jika tombol pemicu tergulung jauh keluar batas pandang layar
+  if (rect.bottom < -20 || rect.top > window.innerHeight + 20 || rect.right < -20 || rect.left > window.innerWidth + 20) {
+    openDd.removeAttribute('open');
+    openDd.classList.remove('dropup');
+    return;
+  }
+  positionNocDropdown(openDd);
+}
+
+window.addEventListener('scroll', updateOpenNocDropdown, { passive: true, capture: true });
+window.addEventListener('resize', updateOpenNocDropdown, { passive: true });
+
+// 4. Auto-close saat klik di luar area dropdown (click outside) atau saat aksi dipilih
+document.addEventListener('click', function(e) {
+  const openDd = document.querySelector('.noc-act-dropdown[open]');
+  if (!openDd) return;
+
+  // Jika klik di luar dropdown
+  if (!openDd.contains(e.target)) {
+    openDd.removeAttribute('open');
+    openDd.classList.remove('dropup');
+    return;
+  }
+
+  // Jika item aksi dipilih, beri jeda 80ms sebelum menutup agar pemicu aksi selesai dieksekusi
+  const item = e.target.closest('.noc-act-dropdown-item');
+  if (item) {
+    setTimeout(() => {
+      openDd.removeAttribute('open');
+      openDd.classList.remove('dropup');
+    }, 80);
+  }
+});
 
 // -----------------------------------------------------------------------------
 // Pantau Table Column Visibility Manager (PantauColManager)
