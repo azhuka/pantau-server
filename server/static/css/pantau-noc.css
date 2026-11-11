@@ -284,6 +284,21 @@ table.noc-table tbody tr:hover td.col-act,
   overflow: visible !important;
 }
 
+/* Varian dua kolom: kelompok filter (kiri) dan kelompok aksi (kanan, rata bawah).
+   Mencegah tombol aksi turun sendirian ke baris baru ketika ruang menyempit
+   (mis. zoom peramban 150%): aksi selalu menempel pada baris kontrol terakhir. */
+.filter-row-main.filter-row-split {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: end !important;
+}
+
+.filter-row-main.filter-row-split > .filter-row-actions {
+  margin-left: 0 !important;
+  align-self: end !important;
+  justify-content: flex-end !important;
+}
+
 .noc-filter-col,
 .pantau-filter-panel .filter-col,
 .filter-row-fields > .filter-col {

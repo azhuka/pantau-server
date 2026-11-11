@@ -28,7 +28,7 @@
     <input type="hidden" name="period" id="audit-period-input" value="{{ period }}">
 
     <!-- Baris 1: Filter Operasional Multi-Kriteria Berlabel Rapi & Presisi -->
-    <div class="filter-row-main">
+    <div class="filter-row-main filter-row-split">
       <div class="filter-row-fields">
       <!-- 1. Filter Pengguna -->
       <div class="filter-col" title="Filter menurut operator / user yang mengeksekusi">
@@ -124,7 +124,6 @@
           <button type="button" id="btn-audit-custom" class="btn btn-sm btn-preset {% if period == 'custom' or start_date or end_date %}is-on{% endif %}" onclick="setAuditPeriod('custom', this)" style="{% if period != 'custom' and not start_date and not end_date %}display:none;{% endif %}" title="Rentang tanggal kustom aktif">Kustom</button>
         </div>
       </div>
-      <div class="filter-divider-vertical"></div>
       <div id="audit-summary-info" class="filter-count">
         {% if period == 'today' %}Menampilkan catatan sejak jam 00:00 UTC hari ini
         {% elif period == '24h' %}Menampilkan catatan 24 jam terakhir

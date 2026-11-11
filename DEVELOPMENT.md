@@ -507,6 +507,16 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
   3. **Sinkronisasi SemVer 7 Berkas:**
      - Sinkronisasi versi SemVer `4.8.157` pada 7 berkas inti repositori.
 
+## Versi 4.8.175
+
+- **Tipe Rilis:** Penstabilan Tata Letak Bilah Filter pada Zoom 150% (*Filter Bar Reflow Hardening*)
+- **Fokus Utama:** Memastikan bilah filter tetap rapi dan profesional ketika peramban diperbesar hingga 150% (ruang efektif menyempit), tanpa tombol aksi yang turun sendirian ke baris baru:
+  1. **Varian tata letak `.filter-row-split` (`server/static/css/pantau-noc.css`):** Baris utama memakai grid dua kolom `minmax(0, 1fr) auto` dengan `align-items: end`. Kelompok filter mengisi kolom kiri dan kelompok aksi menempel pada kolom kanan yang rata bawah, sehingga tombol aksi selalu sejajar dengan baris kontrol terakhir — bukan menjadi baris yatim.
+  2. **Penerapan varian:** `servers.html`, `problems.html` (dua panel), `audit.html`, `probing.html`, dan `maintenance.html`. Tinggi panel Audit pada lebar 1280 px turun dari 225 px menjadi 183 px karena baris aksi yatim hilang.
+  3. **`audit.html`:** Pemisah vertikal pada baris preset dihapus karena melayang di tengah ruang kosong; pemisahan preset dan ringkasan kini memakai `justify-content: space-between` yang sudah baku.
+  4. **Verifikasi zoom:** Diuji pada 100% / 125% / 150% (lebar CSS 1631 / 1305 / 1087 px) serta rentang lebar 480–1631 px untuk lima halaman: tidak ada baris aksi yatim, tidak ada overflow horizontal, tinggi kontrol tetap 32 px, dan jarak label–kontrol tetap 4 px.
+  5. **Sinkronisasi SemVer 7 Berkas:** Sinkronisasi versi `4.8.175` pada 7 berkas inti repositori.
+
 ## Versi 4.8.174
 
 - **Tipe Rilis:** Standardisasi Geometri Bilah Filter NOC (*NOC Filter Bar Geometry Standardization*)
