@@ -354,6 +354,30 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.186
+
+- **Tipe Rilis:** Deteksi Dinamis Berkas Log Nyata dari Agen Klien & Arsitektur Baris Terminal Log Presisi (*Dynamic Client-Agent Log Discovery Telemetry & Precision Row-by-Row NOC Log Console Architecture*)
+- **Fokus Utama:** Mengeliminasi opsi sumber log fiktif (seperti Apache pada server yang hanya menjalankan Nginx) dan merombak UX serta mesin perenderan baris Tab Log rincian server:
+  1. **Deteksi Dinamis Berkas Log Nyata dari Agen Klien (`collect_available_logs`):**
+     - Agen klien (`agent_pantau.py`) secara mandiri memeriksa keberadaan fisik berkas log di disk host (`/var/log/nginx/*`, `/var/log/apache2/*`, `/var/log/mysql/*`, `/var/log/auth.log`, `/var/log/syslog`, `/var/log/dpkg.log`).
+     - Mengirimkan metadata log yang tersedia secara murni dari hasil audit lokal ke server melalui telemetri periodik (`available_logs`).
+     - Mengeliminasi opsi fiktif: server yang tidak menginstal Apache/HTTPD tidak akan menampilkan opsi Apache sama sekali.
+  2. **Skema Basis Data & Telemetri Server:**
+     - Penambahan kolom `available_logs` (`MEDIUMTEXT`) pada tabel `server_extras` di basis data MariaDB dan model SQLAlchemy `ServerExtras`.
+     - Ingestion dan sanitasi telemetri aman pada `server/routers/api_agent.py`.
+     - Logika fallback cerdas berbasis unit & service nyata yang terdaftar pada `server/routers/servers.py` tanpa pernah menambahkan layanan yang tidak ada.
+  3. **Arsitektur Konsol Terminal Row-by-Row Presisi (Eliminasi Phantom Line Numbers):**
+     - Mengubah arsitektur DOM viewport konsol log dari dua elemen paralel (`#log-gutter` dan `#log-content`) menjadi baris flex terpadu (`.noc-log-row` yang membungkus `.noc-log-num` dan `.noc-log-line`).
+     - Menjamin sinkronisasi vertikal 1:1 antara nomor baris dan teks isi log secara native, mengeliminasi desinkronisasi atau nomor baris melayang (*phantom gutter numbers*) saat baris teks panjang mengalami pembungkusan (*word-wrap*).
+     - Menjaga kenyamanan salin teks dengan atribut `user-select: none` pada kolom nomor baris.
+  4. **Penyederhanaan UX Bilah Filter Terpadu (Single-Row Filter Bar):**
+     - Menyatukan pemilihan berkas log ke dalam satu dropdown tunggal terstruktur dengan `<optgroup>` (Web Server, Database, Keamanan & Sistem, Runtime Service).
+     - Mengeliminasi tombol segmented pill 4-kategori yang membingungkan dan tabel duplikat di bawah konsol.
+     - Memindahkan kontrol *Live Tail* `[ ↓ Ke Baris Terbaru ]` ke bilah status bawah (*statusbar footer*), menghilangkan tombol melayang yang menutupi teks konsol.
+  5. **Kemandirian Agen & Sinkronisasi SemVer 7 Berkas:**
+     - Mempertahankan prinsip *zero external dependency* pada agen klien (`agent_pantau.py`).
+     - Sinkronisasi versi SemVer `4.8.186` pada seluruh 7 berkas inti repositori.
+
 ## Versi 4.8.185
 
 - **Tipe Rilis:** Transformasi Konsol Observabilitas Tab Log Server Klien Terpadu (4 Pilar Log & NOC Terminal Viewport Engine) (*Unified Client Server Log Observability Terminal Console & 4-Pillar Multi-Source Engine*)

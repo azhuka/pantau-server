@@ -934,6 +934,20 @@ def agent_report(
         ]
         extras.system_logs = json.dumps(clean_logs)
 
+    # Validasi & Simpan Available Logs (Daftar sumber log yang nyata ada di klien)
+    if isinstance(body.get("available_logs"), list):
+        clean_avail_logs = [
+            {
+                "id": _clean_str(al.get("id"), "", 64),
+                "group": _clean_str(al.get("group"), "Sistem", 64),
+                "name": _clean_str(al.get("name"), "", 100),
+                "desc": _clean_str(al.get("desc"), "", 150),
+            }
+            for al in body["available_logs"][:40]
+            if isinstance(al, dict) and al.get("id")
+        ]
+        extras.available_logs = json.dumps(clean_avail_logs)
+
     # Validasi & Simpan Kernel Events (OOM killer, disk I/O error, segfault, panic)
     if isinstance(body.get("kernel_events"), dict):
         ke = body["kernel_events"]

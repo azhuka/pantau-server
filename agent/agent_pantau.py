@@ -479,7 +479,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.185"
+AGENT_VERSION = "4.8.186"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -608,6 +608,7 @@ def send_report(cfg: dict, services: list, system: dict,
     payload["listening_ports"] = collect_listening_ports()
     payload["ssl_certs"] = collect_ssl_certs()
     payload["system_logs"] = collect_system_logs()
+    payload["available_logs"] = collect_available_logs()
     payload["kernel_events"] = collect_kernel_events(syslogs=payload["system_logs"])
     payload["hardware_specs"] = collect_hardware_specs()
     payload["groups"] = collect_groups()
@@ -6008,6 +6009,68 @@ def collect_system_logs(lines: int = 25) -> list[dict]:
     _syslog_cache["data"] = events
     _syslog_cache["at"] = now
     return events
+
+
+_avail_logs_cache: dict = {"at": 0.0, "data": []}
+
+
+def collect_available_logs() -> list[dict]:
+    """Mendeteksi berkas log yang secara nyata ada di filesystem host klien (bukan tebak-tebak)."""
+    now = time.monotonic()
+    if _avail_logs_cache["data"] and now - _avail_logs_cache["at"] < 45:
+        return _avail_logs_cache["data"]
+
+    avail: list[dict] = []
+
+    # 1. Web Servers (hanya jika berkas nyata ada di disk)
+    if os.path.isfile("/var/log/nginx/access.log"):
+        avail.append({"id": "NGINX_ACCESS", "group": "Web Server", "name": "Nginx Access Log", "desc": "/var/log/nginx/access.log"})
+    elif os.path.isfile("/var/log/nginx/access_log"):
+        avail.append({"id": "NGINX_ACCESS", "group": "Web Server", "name": "Nginx Access Log", "desc": "/var/log/nginx/access_log"})
+
+    if os.path.isfile("/var/log/nginx/error.log"):
+        avail.append({"id": "NGINX_ERROR", "group": "Web Server", "name": "Nginx Error Log", "desc": "/var/log/nginx/error.log"})
+    elif os.path.isfile("/var/log/nginx/error_log"):
+        avail.append({"id": "NGINX_ERROR", "group": "Web Server", "name": "Nginx Error Log", "desc": "/var/log/nginx/error_log"})
+
+    if os.path.isfile("/var/log/apache2/access.log"):
+        avail.append({"id": "APACHE_ACCESS", "group": "Web Server", "name": "Apache Access Log", "desc": "/var/log/apache2/access.log"})
+    elif os.path.isfile("/var/log/httpd/access_log"):
+        avail.append({"id": "APACHE_ACCESS", "group": "Web Server", "name": "HTTPD Access Log", "desc": "/var/log/httpd/access_log"})
+
+    if os.path.isfile("/var/log/apache2/error.log"):
+        avail.append({"id": "APACHE_ERROR", "group": "Web Server", "name": "Apache Error Log", "desc": "/var/log/apache2/error.log"})
+    elif os.path.isfile("/var/log/httpd/error_log"):
+        avail.append({"id": "APACHE_ERROR", "group": "Web Server", "name": "HTTPD Error Log", "desc": "/var/log/httpd/error_log"})
+
+    # 2. Database (hanya jika berkas nyata ada di disk)
+    if os.path.isfile("/var/log/mysql/error.log"):
+        avail.append({"id": "MARIADB_ERROR", "group": "Database", "name": "MySQL/MariaDB Error Log", "desc": "/var/log/mysql/error.log"})
+    elif os.path.isfile("/var/log/mariadb/mariadb.log"):
+        avail.append({"id": "MARIADB_ERROR", "group": "Database", "name": "MariaDB Error Log", "desc": "/var/log/mariadb/mariadb.log"})
+
+    if os.path.isfile("/var/log/mysql/mariadb-slow.log"):
+        avail.append({"id": "MARIADB_SLOW", "group": "Database", "name": "MariaDB Slow Query Log", "desc": "/var/log/mysql/mariadb-slow.log"})
+    elif os.path.isfile("/var/log/mysql/mysql-slow.log"):
+        avail.append({"id": "MARIADB_SLOW", "group": "Database", "name": "MySQL Slow Query Log", "desc": "/var/log/mysql/mysql-slow.log"})
+
+    # 3. Keamanan & Sistem
+    auth_file = AUTH_FILE if os.path.isfile(AUTH_FILE) else ("/var/log/secure" if os.path.isfile("/var/log/secure") else "")
+    if auth_file:
+        avail.append({"id": "AUTH", "group": "Keamanan & Sistem", "name": "Log Autentikasi SSH & Sudo", "desc": auth_file})
+
+    syslog_file = SYSLOG_FILE if os.path.isfile(SYSLOG_FILE) else ("/var/log/messages" if os.path.isfile("/var/log/messages") else "")
+    if syslog_file:
+        avail.append({"id": "SYSLOG", "group": "Keamanan & Sistem", "name": "Syslog Sistem", "desc": syslog_file})
+
+    if os.path.isfile("/var/log/dpkg.log"):
+        avail.append({"id": "DPKG", "group": "Keamanan & Sistem", "name": "Riwayat Paket (dpkg.log)", "desc": "/var/log/dpkg.log"})
+
+    avail.append({"id": "SYSTEM_ERRORS", "group": "Keamanan & Sistem", "name": "Jurnal Galat Kritis Sistem", "desc": "journalctl -p 0..3"})
+
+    _avail_logs_cache["at"] = now
+    _avail_logs_cache["data"] = avail
+    return avail
 
 
 # ---------------------------------------------------------------------------

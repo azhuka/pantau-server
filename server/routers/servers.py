@@ -1078,6 +1078,45 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
             except Exception:
                 db.rollback()
 
+    available_logs_data = []
+    if extra and getattr(extra, "available_logs", None):
+        try:
+            available_logs_data = json.loads(extra.available_logs)
+        except Exception:
+            available_logs_data = []
+
+    # Fallback cerdas: HANYA berdasarkan service / unit nyata yang dilaporkan mesin klien ini!
+    if not available_logs_data:
+        detected_units = []
+        if extra and extra.units:
+            try:
+                detected_units = [str(u).lower() for u in json.loads(extra.units)]
+            except Exception:
+                pass
+
+        # Nginx HANYA jika nyata ada di units atau services server ini
+        has_nginx = any("nginx" in u for u in detected_units) or any("nginx" in (s.service_name or "").lower() for s in services)
+        if has_nginx:
+            available_logs_data.append({"id": "NGINX_ACCESS", "group": "Web Server", "name": "Nginx Access Log", "desc": "/var/log/nginx/access.log"})
+            available_logs_data.append({"id": "NGINX_ERROR", "group": "Web Server", "name": "Nginx Error Log", "desc": "/var/log/nginx/error.log"})
+
+        # Apache HANYA jika nyata ada di units atau services server ini!
+        has_apache = any(u in ("apache2", "httpd") for u in detected_units) or any((s.service_name or "").lower() in ("apache2", "httpd") for s in services)
+        if has_apache:
+            available_logs_data.append({"id": "APACHE_ACCESS", "group": "Web Server", "name": "Apache Access Log", "desc": "/var/log/apache2/access.log"})
+            available_logs_data.append({"id": "APACHE_ERROR", "group": "Web Server", "name": "Apache Error Log", "desc": "/var/log/apache2/error.log"})
+
+        # MySQL / MariaDB
+        has_mysql = any(u in ("mariadb", "mysql", "mysqld") for u in detected_units) or any((s.service_name or "").lower() in ("mariadb", "mysql", "mysqld") for s in services)
+        if has_mysql:
+            available_logs_data.append({"id": "MARIADB_ERROR", "group": "Database", "name": "MySQL/MariaDB Error Log", "desc": "/var/log/mysql/error.log"})
+
+        # Log Keamanan & Sistem bawaan Linux
+        available_logs_data.append({"id": "SYSTEM_ERRORS", "group": "Keamanan & Sistem", "name": "Jurnal Galat Kritis Sistem", "desc": "journalctl -p 0..3"})
+        available_logs_data.append({"id": "AUTH", "group": "Keamanan & Sistem", "name": "Log Autentikasi SSH & Sudo", "desc": "/var/log/auth.log"})
+        available_logs_data.append({"id": "SYSLOG", "group": "Keamanan & Sistem", "name": "Syslog Sistem", "desc": "/var/log/syslog"})
+        available_logs_data.append({"id": "DPKG", "group": "Keamanan & Sistem", "name": "Riwayat Paket (dpkg.log)", "desc": "/var/log/dpkg.log"})
+
     return tpl(
         request,
         "services.html",
@@ -1112,6 +1151,7 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
             "oom_kill_count": oom_count,
             "hardware_specs": hw_specs,
             "platform_info": platform_info,
+            "available_logs": available_logs_data,
         },
     )
 

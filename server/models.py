@@ -275,6 +275,7 @@ class ServerExtras(Base):
     installed_packages = Column(MEDIUMTEXT, nullable=True) # JSON: inventaris paket sistem terpasang (dpkg-query)
     systemd_units = Column(MEDIUMTEXT, nullable=True)      # JSON: inventaris unit service systemd (systemctl list-units)
     backup_status = Column(MEDIUMTEXT, nullable=True)      # JSON: telemetri status berkas cadangan database & sistem
+    available_logs = Column(MEDIUMTEXT, nullable=True)     # JSON: daftar sumber berkas log yang nyata ada di klien
     updated_at = Column(DateTime, default=datetime.utcnow)
 
 

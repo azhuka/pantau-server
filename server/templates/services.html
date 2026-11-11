@@ -1334,7 +1334,6 @@ div[style*="position: fixed"] .card {
 }
 
 .noc-term-viewport {
-  display: flex;
   height: 58vh;
   min-height: 380px;
   max-height: 720px;
@@ -1343,37 +1342,60 @@ div[style*="position: fixed"] .card {
   position: relative;
   font-family: ui-monospace, 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
   font-size: 11.5px;
-  line-height: 1.55;
+  line-height: 1.5;
   scroll-behavior: auto;
 }
 
-.noc-term-gutter {
-  flex: 0 0 auto;
-  min-width: 46px;
-  padding: 8px 8px 8px 6px;
+.noc-term-rows {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 100%;
+}
+
+.noc-log-row {
+  display: flex;
+  align-items: flex-start;
+  min-height: 22px;
+  line-height: 1.55;
+  transition: background .1s ease;
+}
+.noc-log-row:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+[data-theme="light"] .noc-log-row:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.noc-log-num {
+  flex: 0 0 46px;
+  width: 46px;
+  padding: 1px 8px 1px 4px;
   text-align: right;
+  color: #64748b;
   user-select: none;
   -webkit-user-select: none;
-  color: #64748b;
-  background: rgba(0, 0, 0, 0.28);
+  background: rgba(0, 0, 0, 0.25);
   border-right: 1px solid rgba(255, 255, 255, 0.08);
-  white-space: pre;
+  font-family: ui-monospace, 'JetBrains Mono', monospace;
+  font-size: 11px;
 }
-[data-theme="light"] .noc-term-gutter {
+[data-theme="light"] .noc-log-num {
   color: #94a3b8;
   background: #f1f5f9;
   border-right-color: #cbd5e1;
 }
 
-.noc-term-lines {
+.noc-log-line {
   flex: 1 1 auto;
-  padding: 8px 12px;
+  padding: 1px 12px;
   white-space: pre-wrap;
   word-break: break-all;
   color: #e2e8f0;
-  overflow-x: auto;
+  font-family: ui-monospace, 'JetBrains Mono', monospace;
+  font-size: 11.5px;
 }
-[data-theme="light"] .noc-term-lines {
+[data-theme="light"] .noc-log-line {
   color: #1e293b;
 }
 
@@ -1428,63 +1450,6 @@ div[style*="position: fixed"] .card {
 .log-method { color: #a78bfa; font-weight: 600; }
 .log-ts { color: #64748b; }
 .log-hl-match { background: #facc15; color: #000; font-weight: 700; padding: 0 2px; border-radius: 2px; }
-
-/* Resume Live Tail Floating Button */
-.noc-term-resume-btn {
-  position: absolute;
-  bottom: 14px;
-  right: 18px;
-  z-index: 10;
-  background: #2563eb;
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 20px;
-  padding: 5px 13px;
-  font-size: 11px;
-  font-weight: 600;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  transition: all .15s ease;
-}
-.noc-term-resume-btn:hover {
-  background: #1d4ed8;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.55);
-}
-
-/* Category segmented navigation */
-.noc-log-cat-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 12px;
-  font-size: 12px;
-  font-weight: 500;
-  border-radius: 6px;
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--dim);
-  cursor: pointer;
-  transition: all .15s ease;
-}
-.noc-log-cat-btn:hover {
-  color: var(--text);
-  background: rgba(255, 255, 255, 0.05);
-}
-.noc-log-cat-btn.is-active {
-  color: var(--text-heading);
-  background: rgba(37, 99, 235, 0.16);
-  border-color: rgba(37, 99, 235, 0.4);
-  font-weight: 600;
-}
-[data-theme="light"] .noc-log-cat-btn.is-active {
-  background: #e0e7ff;
-  border-color: #a5b4fc;
-  color: #1e3a8a;
-}
 </style>
 {% endblock %}
 {% block content %}
@@ -3790,7 +3755,7 @@ div[style*="position: fixed"] .card {
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
         <span>Log Aktivitas Server</span>
       </h3>
-      <span style="font-size:11.5px;color:var(--dim)">Konsol Observabilitas NOC Klien Terpadu</span>
+      <span style="font-size:11.5px;color:var(--dim)">Konsol Log Klien Terpadu</span>
     </div>
 
     <!-- Kontrol Toolbar Kanan: Live Tail, Segarkan, Salin, Unduh -->
@@ -3819,44 +3784,15 @@ div[style*="position: fixed"] .card {
     </div>
   </div>
 
-  <!-- 2. Bilah Navigasi Kategori Sumber (4 Pilar Observabilitas) -->
-  <div class="noc-log-cat-nav" style="display:flex;gap:6px;padding:8px 14px;border-bottom:1px solid var(--border);background:var(--bg-subtle);flex-wrap:wrap;align-items:center">
-    <button type="button" class="noc-log-cat-btn is-active" id="log-cat-traffic" onclick="selectLogCategory('traffic')">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>
-      <span>Akses &amp; Traffic</span>
-    </button>
-    <button type="button" class="noc-log-cat-btn" id="log-cat-error" onclick="selectLogCategory('error')">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-      <span>Galat &amp; Diagnostik</span>
-    </button>
-    <button type="button" class="noc-log-cat-btn" id="log-cat-svc" onclick="selectLogCategory('svc')">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-      <span>Runtime Service</span>
-    </button>
-    <button type="button" class="noc-log-cat-btn" id="log-cat-sec" onclick="selectLogCategory('sec')">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-      <span>Keamanan &amp; Paket</span>
-    </button>
-
-    <!-- Tombol Sub-tampilan Tabel Journal Tercatat (Opsional) -->
-    <button type="button" class="btn btn-sm btn-ghost" id="log-cat-sys-table" onclick="toggleSystemLogsTable()" style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;font-size:11.5px">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
-      <span>Tabel Jurnal Kritis</span>
-      {% if system_logs %}
-      <span class="badge badge-muted mono" style="font-size:9.5px;padding:1px 5px">{{ system_logs|length }}</span>
-      {% endif %}
-    </button>
-  </div>
-
-  <!-- 3. Bilah Filter Terpadu (Unified NOC Filter Bar) -->
+  <!-- 2. Bilah Filter Terpadu & Pemilihan Sumber Log (Unified Single-Row NOC Filter Bar) -->
   <div style="padding:10px 14px 0">
     <div class="pantau-filter-panel" style="margin-bottom:10px;padding:8px 12px">
       <div class="filter-row-main" style="align-items:flex-end;gap:10px;display:flex;flex-wrap:wrap">
-        <!-- Dropdown Unit / Target Berkas Log -->
-        <div class="filter-col" style="flex:1.6;min-width:240px;max-width:380px">
-          <label class="filter-col-label" for="log-unit">Sumber / Berkas Log</label>
+        <!-- Dropdown Sumber Log Terpadu (Optgroup Sesuai Laporan Nyata Agen Klien) -->
+        <div class="filter-col" style="flex:1.8;min-width:260px;max-width:440px">
+          <label class="filter-col-label" for="log-unit">Sumber / Berkas Log Server</label>
           <select id="log-unit" class="filter-select" onchange="changeUnit()" style="width:100%;font-size:12px;padding:5px 8px;background:var(--input-bg);color:var(--input-text);border:1px solid var(--input-border);border-radius:5px">
-            <!-- Diisi secara dinamis oleh selectLogCategory() -->
+            <!-- Diisi secara dinamis oleh populateLogSourcesSelect() HANYA dengan log yang ada di server ini -->
           </select>
         </div>
 
@@ -3906,14 +3842,12 @@ div[style*="position: fixed"] .card {
     </div>
   </div>
 
-  <!-- 4. Konsol Terminal NOC Viewport Engine -->
+  <!-- 3. Konsol Terminal NOC Viewport Engine (Row-by-Row Presisi) -->
   <div style="padding:0 14px 14px">
     <div class="noc-term-card" id="noc-term-card">
       <div id="log-terminal-wrap" class="noc-term-viewport">
-        <!-- Kolom Nomor Baris (Gutter) -->
-        <div id="log-gutter" class="noc-term-gutter" aria-hidden="true"></div>
-        <!-- Kolom Konten Log dengan Syntax Highlighting -->
-        <div id="log-content" class="noc-term-lines"></div>
+        <!-- Wadah Baris Log: Setiap baris adalah .noc-log-row yang memuat nomor baris + teks presisi -->
+        <div id="log-terminal-rows" class="noc-term-rows"></div>
 
         <!-- Overlay Memuat / Kosong -->
         <div id="log-overlay" class="noc-term-overlay" style="display:none">
@@ -3922,12 +3856,6 @@ div[style*="position: fixed"] .card {
           </span>
           <span id="log-overlay-text">Memuat data log dari Agen Pantau…</span>
         </div>
-
-        <!-- Floating Button: Gulir ke Log Terbaru saat Live Tail Terjeda -->
-        <button type="button" id="log-resume-tail-btn" class="noc-term-resume-btn" onclick="resumeTailToBottom()" style="display:none">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
-          <span>Gulir ke Log Terbaru</span>
-        </button>
       </div>
 
       <!-- Status Bar Bawah Konsol -->
@@ -3938,73 +3866,18 @@ div[style*="position: fixed"] .card {
           <span>&middot;</span>
           <span id="log-stats-count" class="mono">0 baris</span>
           <span>&middot;</span>
-          <span>Target: <strong id="log-stats-target" class="mono" style="color:var(--blue)">-</strong></span>
+          <span>Sumber: <strong id="log-stats-target" class="mono" style="color:var(--blue)">-</strong></span>
         </div>
-        <div style="display:flex;align-items:center;gap:12px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <!-- Tombol Gulir ke Terbaru (Hanya Muncul saat Tail Terjeda di Footer, Tidak Menutupi Teks!) -->
+          <button type="button" id="log-scroll-bottom-btn" class="btn btn-xs btn-ghost" onclick="resumeTailToBottom()" style="display:none;padding:1px 8px;font-size:10.5px;color:var(--blue);border:1px solid rgba(56,189,248,0.3);border-radius:4px">
+            &darr; Ke Baris Terbaru
+          </button>
           <span id="log-state" style="color:var(--dim)"></span>
           <span style="color:rgba(255,255,255,0.2)">|</span>
           <span style="color:var(--dim)">Auto Tail Polling 4s</span>
         </div>
       </div>
-    </div>
-
-    <!-- 5. Sub-Panel Tabel Journal Galat Sistem (Tercatat snapshot di DB) -->
-    <div id="sublog-panel-sys" style="display:none;margin-top:14px;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--card)">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding:6px 10px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:6px;flex-wrap:wrap;gap:8px">
-        <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:12px;color:var(--dim)">Rekaman kejadian kegagalan dan peringatan kritis sistem tercatat (journalctl err, crit, alert, emerg)</span>
-          {% if (oom_kill_count or 0) > 0 %}
-          <span class="badge badge-danger mono" style="font-size:9px">{{ oom_kill_count }} OOM Terdeteksi</span>
-          {% endif %}
-        </div>
-        <button type="button" class="btn btn-ghost btn-xs" onclick="toggleSystemLogsTable()" style="font-size:11px">Tutup Tabel</button>
-      </div>
-      {% if system_logs %}
-      <div style="overflow-x:auto">
-        <table id="tbl-system-logs" class="noc-table-compact" style="width:100%">
-          <thead>
-            <tr>
-              <th style="width:190px" title="Waktu kejadian tercatat di sistem">Waktu (Terbaru di Atas)</th>
-              <th style="width:125px" title="Tingkat keparahan event journald">Prioritas</th>
-              <th style="width:200px" title="Unit services atau proses penghasil log">Unit / Identitas</th>
-              <th title="Pesan rincian galat">Pesan Galat</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for log in system_logs %}
-            <tr>
-              <td class="mono" style="font-size:12px;color:var(--dim)">{{ log.time }}</td>
-              <td>
-                {% if log.priority <= 2 %}
-                  <span class="badge badge-danger">CRIT / EMERG</span>
-                {% elif log.priority == 3 %}
-                  <span class="badge badge-warn">ERROR</span>
-                {% else %}
-                  <span class="badge badge-muted">PRIO {{ log.priority }}</span>
-                {% endif %}
-                {% set lmsg = (log.message or '')|lower %}
-                {% if 'out of memory' in lmsg or 'oom-kill' in lmsg or 'oom killer' in lmsg %}
-                  <span class="badge badge-danger" style="font-size:8px;padding:1px 4px;margin-left:3px;font-weight:700">OOM</span>
-                {% elif 'i/o error' in lmsg or 'ext4-fs error' in lmsg or 'buffer i/o error' in lmsg %}
-                  <span class="badge badge-danger" style="font-size:8px;padding:1px 4px;margin-left:3px;font-weight:700">DISK I/O</span>
-                {% elif 'segfault at' in lmsg %}
-                  <span class="badge badge-warn" style="font-size:8px;padding:1px 4px;margin-left:3px">SEGFAULT</span>
-                {% elif 'kernel panic' in lmsg %}
-                  <span class="badge badge-danger" style="font-size:8px;padding:1px 4px;margin-left:3px;font-weight:700">PANIC</span>
-                {% endif %}
-              </td>
-              <td class="mono" style="font-size:12px"><strong>{{ log.unit }}</strong></td>
-              <td class="mono" style="font-size:12px;white-space:pre-wrap;word-break:break-all;color:var(--text)">{{ log.message }}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      {% else %}
-      <div class="empty-msg">
-        Tidak ada rekaman log galat sistem kritis (journalctl) yang terdeteksi. Sistem berjalan normal!
-      </div>
-      {% endif %}
     </div>
   </div>
 </div>
@@ -11233,69 +11106,152 @@ const RAW_SERVER_SERVICES = [
   {% endif %}
 ];
 
-const LOG_CATEGORIES = {
-  traffic: {
-    label: 'Akses & Traffic',
-    units: [
-      { id: 'NGINX_ACCESS', label: 'Nginx Access Log (/var/log/nginx/access.log)' },
-      { id: 'APACHE_ACCESS', label: 'Apache Access Log (/var/log/apache2/access.log)' }
-    ]
-  },
-  error: {
-    label: 'Galat & Diagnostik',
-    units: [
-      { id: 'NGINX_ERROR', label: 'Nginx Error Log (/var/log/nginx/error.log)' },
-      { id: 'APACHE_ERROR', label: 'Apache Error Log (/var/log/apache2/error.log)' },
-      { id: 'MARIADB_ERROR', label: 'MariaDB / MySQL Error Log (/var/log/mysql/error.log)' },
-      { id: 'MARIADB_SLOW', label: 'MariaDB Slow Query Log (/var/log/mysql/mariadb-slow.log)' },
-      { id: 'SYSTEM_ERRORS', label: 'Jurnal Galat Kritis Sistem (journalctl err/crit)' }
-    ]
-  },
-  svc: {
-    label: 'Runtime Service',
-    units: []
-  },
-  sec: {
-    label: 'Keamanan & Paket',
-    units: [
-      { id: 'AUTH', label: 'Autentikasi SSH & Sudo (/var/log/auth.log / secure)' },
-      { id: 'SYSLOG', label: 'Syslog Sistem (/var/log/syslog)' },
-      { id: 'DPKG', label: 'Riwayat Paket Sistem (/var/log/dpkg.log)' }
-    ]
-  }
-};
-
-(function initSvcLogUnits() {
-  const seen = new Set();
-  const list = [];
-  if (Array.isArray(RAW_SERVER_SERVICES)) {
-    RAW_SERVER_SERVICES.forEach(u => {
-      if (u && !seen.has(u)) {
-        seen.add(u);
-        list.push({ id: u, label: u + '.service' });
-      }
-    });
-  }
-  if (!list.length) {
-    ['nginx', 'mariadb', 'mysql', 'sshd', 'docker', 'redis', 'cron'].forEach(u => {
-      if (!seen.has(u)) {
-        seen.add(u);
-        list.push({ id: u, label: u + '.service' });
-      }
-    });
-  }
-  LOG_CATEGORIES.svc.units = list;
-})();
+const SERVER_AVAILABLE_LOGS = {{ (available_logs or []) | tojson }};
 
 let logVersion = 0;
 let logRunning = false;
 let _rawLogBuf = '';
-let _logActiveCategory = 'traffic';
 let _liveTailActive = true;
 let _logSearchQuery = '';
 let _logLevelFilter = 'all';
 let _cachedLogUnits = [];
 let _cachedLogExtras = [];
+
+function populateLogSourcesSelect(preferredUnit) {
+  const sel = document.getElementById('log-unit');
+  if (!sel) return;
+
+  const currentVal = preferredUnit || sel.value || localStorage.getItem('pantau-unit-' + SID) || '';
+  sel.innerHTML = '';
+
+  const groups = {};
+  if (Array.isArray(SERVER_AVAILABLE_LOGS)) {
+    SERVER_AVAILABLE_LOGS.forEach(item => {
+      const g = item.group || 'Lainnya';
+      if (!groups[g]) groups[g] = [];
+      groups[g].push(item);
+    });
+  }
+
+  // 1. Web Server (HANYA jika nyata terdeteksi dari agen klien)
+  if (groups['Web Server'] && groups['Web Server'].length > 0) {
+    const grp = document.createElement('optgroup');
+    grp.label = '── Web Server ──';
+    groups['Web Server'].forEach(item => {
+      const opt = document.createElement('option');
+      opt.value = item.id;
+      opt.textContent = `${item.name} (${item.desc || item.path || item.id})`;
+      grp.appendChild(opt);
+    });
+    sel.appendChild(grp);
+  }
+
+  // 2. Database (HANYA jika nyata terdeteksi dari agen klien)
+  if (groups['Database'] && groups['Database'].length > 0) {
+    const grp = document.createElement('optgroup');
+    grp.label = '── Database ──';
+    groups['Database'].forEach(item => {
+      const opt = document.createElement('option');
+      opt.value = item.id;
+      opt.textContent = `${item.name} (${item.desc || item.path || item.id})`;
+      grp.appendChild(opt);
+    });
+    sel.appendChild(grp);
+  }
+
+  // 3. Keamanan & Sistem
+  if (groups['Keamanan & Sistem'] && groups['Keamanan & Sistem'].length > 0) {
+    const grp = document.createElement('optgroup');
+    grp.label = '── Keamanan & Sistem ──';
+    groups['Keamanan & Sistem'].forEach(item => {
+      const opt = document.createElement('option');
+      opt.value = item.id;
+      opt.textContent = `${item.name} (${item.desc || item.path || item.id})`;
+      grp.appendChild(opt);
+    });
+    sel.appendChild(grp);
+  }
+
+  // Grup Kustom / Lainnya
+  Object.keys(groups).forEach(g => {
+    if (!['Web Server', 'Database', 'Keamanan & Sistem'].includes(g) && groups[g].length > 0) {
+      const grp = document.createElement('optgroup');
+      grp.label = `── ${g} ──`;
+      groups[g].forEach(item => {
+        const opt = document.createElement('option');
+        opt.value = item.id;
+        opt.textContent = `${item.name} (${item.desc || item.path || item.id})`;
+        grp.appendChild(opt);
+      });
+      sel.appendChild(grp);
+    }
+  });
+
+  // 4. Runtime Service (Systemd) dari service/unit yang nyata ada di host klien
+  const svcGrp = document.createElement('optgroup');
+  svcGrp.label = '── Runtime Service (Systemd) ──';
+  const seenSvc = new Set();
+  if (Array.isArray(RAW_SERVER_SERVICES) && RAW_SERVER_SERVICES.length > 0) {
+    RAW_SERVER_SERVICES.forEach(u => {
+      if (u && !seenSvc.has(u)) {
+        seenSvc.add(u);
+        const opt = document.createElement('option');
+        opt.value = u;
+        opt.textContent = u.endsWith('.service') ? u : u + '.service';
+        svcGrp.appendChild(opt);
+      }
+    });
+  }
+  if (svcGrp.children.length > 0) {
+    sel.appendChild(svcGrp);
+  }
+
+  // Pemilihan Opsi Default Cerdas
+  let selected = false;
+  if (currentVal) {
+    for (let i = 0; i < sel.options.length; i++) {
+      if (sel.options[i].value === currentVal) {
+        sel.selectedIndex = i;
+        selected = true;
+        break;
+      }
+    }
+  }
+
+  if (!selected) {
+    const priority = ['NGINX_ACCESS', 'APACHE_ACCESS', 'SYSTEM_ERRORS', 'AUTH', 'SYSLOG'];
+    for (const p of priority) {
+      for (let i = 0; i < sel.options.length; i++) {
+        if (sel.options[i].value === p) {
+          sel.selectedIndex = i;
+          selected = true;
+          break;
+        }
+      }
+      if (selected) break;
+    }
+    if (!selected && sel.options.length > 0) {
+      sel.selectedIndex = 0;
+    }
+  }
+
+  const targetLabel = document.getElementById('log-stats-target');
+  if (targetLabel && sel.value) {
+    targetLabel.textContent = sel.value;
+  }
+}
+
+// Shim kompatibilitas untuk pemanggil terdahulu
+function selectLogCategory(cat, targetUnit) {
+  populateLogSourcesSelect(targetUnit);
+  if (targetUnit) {
+    const sel = document.getElementById('log-unit');
+    if (sel && sel.value !== targetUnit) {
+      sel.value = targetUnit;
+    }
+  }
+  changeUnit();
+}
 
 function sleepMs(ms) { return new Promise(r => setTimeout(r, ms)); }
 
@@ -11348,18 +11304,18 @@ function formatLogLine(rawLine, query) {
 }
 
 function renderLogTerminal() {
-  const gutterEl = document.getElementById('log-gutter');
-  const contentEl = document.getElementById('log-content');
+  const rowsEl = document.getElementById('log-terminal-rows');
   const overlayEl = document.getElementById('log-overlay');
   const matchCountEl = document.getElementById('log-match-count');
   const statsCountEl = document.getElementById('log-stats-count');
   const statsTargetEl = document.getElementById('log-stats-target');
   const wrapEl = document.getElementById('log-terminal-wrap');
 
-  if (!contentEl || !gutterEl) return;
+  if (!rowsEl) return;
 
-  const unit = document.getElementById('log-unit')?.value || '-';
-  if (statsTargetEl) statsTargetEl.textContent = unit;
+  const sel = document.getElementById('log-unit');
+  const currentUnitVal = sel ? sel.value : '-';
+  if (statsTargetEl) statsTargetEl.textContent = currentUnitVal;
 
   if (!_rawLogBuf) {
     if (overlayEl) {
@@ -11367,21 +11323,23 @@ function renderLogTerminal() {
       const ot = document.getElementById('log-overlay-text');
       if (ot) ot.textContent = 'Memuat log dari agen…';
     }
-    gutterEl.textContent = '';
-    contentEl.textContent = '';
+    rowsEl.innerHTML = '';
     return;
   }
 
   if (overlayEl) overlayEl.style.display = 'none';
 
-  const rawLines = _rawLogBuf.split('\n');
+  let rawLines = _rawLogBuf.split('\n');
+  if (rawLines.length > 1 && rawLines[rawLines.length - 1] === '') {
+    rawLines.pop();
+  }
   const totalCount = rawLines.length;
 
   const q = (_logSearchQuery || '').toLowerCase().trim();
   const lvl = _logLevelFilter || 'all';
 
-  const filteredLines = [];
-  const lineNumbers = [];
+  const rowsHtml = [];
+  let matchedCount = 0;
 
   for (let i = 0; i < rawLines.length; i++) {
     const line = rawLines[i];
@@ -11391,10 +11349,10 @@ function renderLogTerminal() {
     if (lvl === 'err') {
       const isErr = lLower.includes('err') || lLower.includes('crit') || lLower.includes('emerg') ||
                     lLower.includes('alert') || lLower.includes('fatal') || lLower.includes('panic') ||
-                    lLower.includes('500') || lLower.includes('502') || lLower.includes('503') || lLower.includes('504');
+                    /\b(5\d\d)\b/.test(line);
       if (!isErr) continue;
     } else if (lvl === 'warn') {
-      const isWarn = lLower.includes('warn') || lLower.includes('400') || lLower.includes('403') || lLower.includes('404');
+      const isWarn = lLower.includes('warn') || /\b(4\d\d)\b/.test(line);
       if (!isWarn) continue;
     } else if (lvl === 'http_err') {
       const isHttpErr = /\b(4\d\d|5\d\d)\b/.test(line);
@@ -11409,75 +11367,34 @@ function renderLogTerminal() {
       continue;
     }
 
-    lineNumbers.push(i + 1);
-    filteredLines.push(formatLogLine(line, q));
+    matchedCount++;
+    const formatted = formatLogLine(line, q);
+    rowsHtml.push(`<div class="noc-log-row"><div class="noc-log-num">${i + 1}</div><div class="noc-log-line">${formatted}</div></div>`);
   }
 
   if (matchCountEl) {
     if (q || lvl !== 'all') {
-      matchCountEl.textContent = `${filteredLines.length} / ${totalCount} cocok`;
-      matchCountEl.style.color = filteredLines.length ? 'var(--blue)' : 'var(--red)';
+      matchCountEl.textContent = `${matchedCount} / ${totalCount} cocok`;
+      matchCountEl.style.color = matchedCount ? 'var(--blue)' : 'var(--red)';
     } else {
       matchCountEl.textContent = '';
     }
   }
 
   if (statsCountEl) {
-    statsCountEl.textContent = `${filteredLines.length} baris`;
+    statsCountEl.textContent = `${matchedCount} baris`;
   }
 
-  if (filteredLines.length === 0) {
-    gutterEl.textContent = '-';
-    contentEl.innerHTML = '<span style="color:var(--dim);font-style:italic">[Tidak ada baris yang sesuai dengan kriteria filter]</span>';
+  if (matchedCount === 0) {
+    rowsEl.innerHTML = '<div style="padding:16px;color:var(--dim);font-style:italic;font-family:var(--font-mono);font-size:12px;text-align:center">[Tidak ada baris yang sesuai dengan kriteria filter]</div>';
     return;
   }
 
-  gutterEl.textContent = lineNumbers.join('\n');
-  contentEl.innerHTML = filteredLines.join('\n');
+  rowsEl.innerHTML = rowsHtml.join('');
 
   if (_liveTailActive && wrapEl) {
     wrapEl.scrollTop = wrapEl.scrollHeight;
   }
-}
-
-function selectLogCategory(cat, targetUnit) {
-  if (!LOG_CATEGORIES[cat]) cat = 'traffic';
-  _logActiveCategory = cat;
-
-  ['traffic', 'error', 'svc', 'sec'].forEach(c => {
-    const btn = document.getElementById('log-cat-' + c);
-    if (btn) btn.classList.toggle('is-active', c === cat);
-  });
-
-  const sysTablePanel = document.getElementById('sublog-panel-sys');
-  if (sysTablePanel) sysTablePanel.style.display = 'none';
-  const sysTableBtn = document.getElementById('log-cat-sys-table');
-  if (sysTableBtn) sysTableBtn.classList.remove('is-active');
-
-  const sel = document.getElementById('log-unit');
-  if (!sel) return;
-
-  const units = LOG_CATEGORIES[cat].units || [];
-  sel.innerHTML = '';
-  units.forEach(u => {
-    const opt = document.createElement('option');
-    opt.value = u.id;
-    opt.textContent = u.label;
-    sel.appendChild(opt);
-  });
-
-  if (targetUnit && units.some(u => u.id === targetUnit)) {
-    sel.value = targetUnit;
-  } else {
-    const saved = localStorage.getItem('pantau-unit-' + cat + '-' + SID);
-    if (saved && units.some(u => u.id === saved)) {
-      sel.value = saved;
-    } else if (units.length > 0) {
-      sel.value = units[0].id;
-    }
-  }
-
-  changeUnit();
 }
 
 function changeUnit() {
@@ -11485,7 +11402,6 @@ function changeUnit() {
   if (!sel || !sel.value) return;
 
   try {
-    localStorage.setItem('pantau-unit-' + _logActiveCategory + '-' + SID, sel.value);
     localStorage.setItem('pantau-unit-' + SID, sel.value);
   } catch (e) {}
 
@@ -11602,7 +11518,7 @@ function startAutoLog(units, extras) {
 
   const sel = document.getElementById('log-unit');
   if (!sel || !sel.options.length) {
-    selectLogCategory(_logActiveCategory);
+    populateLogSourcesSelect();
   }
   if (!sel || !sel.value) return;
 
@@ -11656,10 +11572,14 @@ function setupLiveTailTracking() {
 }
 
 function updateLiveTailUI() {
+  const scrollBtn = document.getElementById('log-scroll-bottom-btn');
   const resumeBtn = document.getElementById('log-resume-tail-btn');
   const tailBadge = document.getElementById('log-tail-badge');
   const tailDot = document.getElementById('log-tail-dot');
 
+  if (scrollBtn) {
+    scrollBtn.style.display = _liveTailActive ? 'none' : 'inline-flex';
+  }
   if (resumeBtn) {
     resumeBtn.style.display = _liveTailActive ? 'none' : 'inline-flex';
   }
@@ -11764,20 +11684,29 @@ function filterLog(q) {
 // Pintasan Lintas Tab (Global Jump To Log)
 window.jumpToLog = function(unit, filterText) {
   if (!unit) return;
-  const uUpper = String(unit).toUpperCase();
-
-  let targetCat = 'svc';
-  if (uUpper.includes('ACCESS')) {
-    targetCat = 'traffic';
-  } else if (uUpper.includes('ERROR') || uUpper.includes('SLOW') || uUpper === 'SYSTEM_ERRORS') {
-    targetCat = 'error';
-  } else if (uUpper === 'AUTH' || uUpper === 'SYSLOG' || uUpper === 'DPKG' || uUpper === 'PKG_LOGS') {
-    targetCat = 'sec';
-  }
-
   if (window.showTab) showTab('log');
 
-  selectLogCategory(targetCat, unit);
+  populateLogSourcesSelect(unit);
+
+  const sel = document.getElementById('log-unit');
+  if (sel) {
+    let found = false;
+    for (let i = 0; i < sel.options.length; i++) {
+      if (sel.options[i].value === unit) {
+        sel.selectedIndex = i;
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      const opt = document.createElement('option');
+      opt.value = unit;
+      opt.textContent = unit.endsWith('.service') ? unit : unit + '.service';
+      sel.appendChild(opt);
+      sel.value = unit;
+    }
+    changeUnit();
+  }
 
   if (filterText) {
     const fInp = document.getElementById('log-filter');
@@ -11794,7 +11723,7 @@ window.jumpToLog = function(unit, filterText) {
 // Inisialisasi awal listener scroll konsol log
 document.addEventListener('DOMContentLoaded', () => {
   setupLiveTailTracking();
-  selectLogCategory('traffic');
+  populateLogSourcesSelect();
 });
 
 // ---------- Universal NOC Metric Charts (CPU, Memory, Disk, Load Average, Network) ----------
