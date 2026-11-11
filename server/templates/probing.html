@@ -153,12 +153,12 @@
 .status-pill {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 2.5px 8px;
+  gap: 3.5px;
+  padding: 1px 5.5px;
   border-radius: 999px;
-  font-size: 10px;
+  font-size: 7.5px;
   font-weight: 700;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.25px;
   text-transform: uppercase;
   line-height: 1.2;
 }
@@ -166,20 +166,20 @@
   background: rgba(52, 211, 153, 0.16);
   color: #34d399;
   border: 1px solid rgba(52, 211, 153, 0.35);
-  box-shadow: 0 0 8px rgba(52, 211, 153, 0.15);
+  box-shadow: 0 0 6px rgba(52, 211, 153, 0.12);
 }
 .status-pill-down {
   background: rgba(248, 113, 113, 0.18);
   color: #f87171;
   border: 1px solid rgba(248, 113, 113, 0.4);
-  box-shadow: 0 0 8px rgba(248, 113, 113, 0.2);
+  box-shadow: 0 0 6px rgba(248, 113, 113, 0.15);
   animation: pulseGlow 1.8s infinite;
 }
 .status-pill-degraded {
   background: rgba(251, 191, 36, 0.16);
   color: #fbbf24;
   border: 1px solid rgba(251, 191, 36, 0.35);
-  box-shadow: 0 0 8px rgba(251, 191, 36, 0.15);
+  box-shadow: 0 0 6px rgba(251, 191, 36, 0.12);
 }
 .status-pill-paused {
   background: rgba(148, 163, 184, 0.12);
@@ -193,18 +193,18 @@
 }
 
 @keyframes pulseGlow {
-  0%, 100% { box-shadow: 0 0 8px rgba(248, 113, 113, 0.2); }
-  50% { box-shadow: 0 0 16px rgba(248, 113, 113, 0.5); }
+  0%, 100% { box-shadow: 0 0 6px rgba(248, 113, 113, 0.15); }
+  50% { box-shadow: 0 0 12px rgba(248, 113, 113, 0.4); }
 }
 
 /* Badge Tipe Target */
 .type-badge {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  padding: 1px 6px;
-  border-radius: 4px;
-  font-size: 9.5px;
+  gap: 2.5px;
+  padding: 0.5px 4.5px;
+  border-radius: 3px;
+  font-size: 7.5px;
   font-weight: 700;
   font-family: ui-monospace, monospace;
 }
@@ -601,13 +601,13 @@
     <table class="probe-table" id="probesTable">
       <thead>
         <tr>
-          <th class="col-status th-status">Status</th>
-          <th class="col-grow col-target th-target">Nama &amp; Target</th>
-          <th class="col-grow col-srv th-server">Server Terkait</th>
-          <th class="col-metric th-latency">Latensi &amp; Respons</th>
-          <th class="col-metric th-uptime">Ketersediaan (24j / 30h)</th>
-          <th class="col-time th-freq">Pemeriksaan</th>
-          <th class="col-act th-actions">Tindakan</th>
+          <th class="col-status th-status">STATUS</th>
+          <th class="col-grow col-target th-target">ENDPOINT</th>
+          <th class="col-grow col-srv th-server">SERVER</th>
+          <th class="col-metric th-latency">LATENSI</th>
+          <th class="col-metric th-uptime">UPTIME<br>(24J / 30H)</th>
+          <th class="col-time th-freq">INTERVAL</th>
+          <th class="col-act th-actions">AKSI</th>
         </tr>
       </thead>
       <tbody id="probesTbody">
@@ -1111,30 +1111,51 @@ function renderTable() {
         </td>
         <td class="col-time td-freq">
           <div style="font-size:11px;color:var(--text)">${lastCheckStr}</div>
-          <div style="font-size:10px;color:var(--dim)">tiap ${p.interval_seconds}d</div>
+          <div style="font-size:8.5px;color:var(--dim)">tiap ${p.interval_seconds}d</div>
         </td>
         <td class="col-act td-actions">
-          <div style="display:inline-flex;gap:4px;align-items:center">
-            <button type="button" class="btn btn-ghost btn-sm" onclick="testProbeNow(${p.id}, this)" title="Uji Sambungan" aria-label="Uji Sambungan">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color:var(--blue)"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-            </button>
-            <button type="button" class="btn btn-ghost btn-sm" onclick="openHistoryModal(${p.id})" title="Grafik &amp; Riwayat" aria-label="Grafik &amp; Riwayat">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color:var(--green)"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
-            </button>
+          <div style="display:inline-flex;align-items:center;justify-content:center">
             ${CAN_MANAGE_PROBING ? `
-            <button type="button" class="btn btn-ghost btn-sm" onclick="toggleProbeActive(${p.id})" title="${isPaused ? 'Lanjutkan Pemantauan' : 'Jeda Pemantauan'}" aria-label="Jeda/Lanjutkan">
-              ${isPaused 
-                ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color:var(--green)"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>' 
-                : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color:var(--yellow)"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>'
-              }
-            </button>
-            <button type="button" class="btn btn-ghost btn-sm" onclick="openEditProbeModal(${p.id})" title="Sunting Endpoint" aria-label="Sunting">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-            </button>
-            <button type="button" class="btn btn-ghost btn-sm" onclick="deleteProbe(${p.id})" title="Hapus Endpoint" aria-label="Hapus">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color:var(--red)"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-            </button>
-            ` : ''}
+            <details class="noc-act-dropdown">
+              <summary title="Menu Tindakan Endpoint">
+                <span>Aksi</span>
+                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </summary>
+              <div class="noc-act-dropdown-menu">
+                <button type="button" class="noc-act-dropdown-item" onclick="testProbeNow(${p.id}, this)">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue)"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                  <span>Uji Sambungan</span>
+                </button>
+                <button type="button" class="noc-act-dropdown-item" onclick="openHistoryModal(${p.id})">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--green)"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                  <span>Grafik &amp; Riwayat</span>
+                </button>
+                <button type="button" class="noc-act-dropdown-item" onclick="toggleProbeActive(${p.id})">
+                  ${isPaused 
+                    ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--green)"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg><span>Lanjutkan Pantau</span>' 
+                    : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--yellow)"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg><span>Jeda Pantau</span>'
+                  }
+                </button>
+                <button type="button" class="noc-act-dropdown-item" onclick="openEditProbeModal(${p.id})">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                  <span>Sunting Endpoint</span>
+                </button>
+                <button type="button" class="noc-act-dropdown-item danger" onclick="deleteProbe(${p.id})">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--red)"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                  <span>Hapus Endpoint</span>
+                </button>
+              </div>
+            </details>
+            ` : `
+            <div style="display:inline-flex;gap:3px;align-items:center">
+              <button type="button" class="btn btn-ghost btn-sm" onclick="testProbeNow(${p.id}, this)" title="Uji Sambungan" aria-label="Uji Sambungan">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color:var(--blue)"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+              </button>
+              <button type="button" class="btn btn-ghost btn-sm" onclick="openHistoryModal(${p.id})" title="Grafik &amp; Riwayat" aria-label="Grafik &amp; Riwayat">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color:var(--green)"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+              </button>
+            </div>
+            `}
           </div>
         </td>
       </tr>

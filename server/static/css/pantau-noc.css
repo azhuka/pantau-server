@@ -1123,9 +1123,9 @@ th.col-title-info, td.col-title-info { min-width: 220px; }
   line-height: 1.35 !important;
 }
 .cell-sub {
-  font-size: 9.5px !important;
+  font-size: 8.5px !important;
   color: var(--dim, #94a3b8) !important;
-  line-height: 1.3 !important;
+  line-height: 1.25 !important;
 }
 .cell-mono {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
@@ -1136,19 +1136,19 @@ th.col-title-info, td.col-title-info { min-width: 220px; }
 }
 .cell-mono-sub {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
-  font-size: 9.5px !important;
+  font-size: 8.5px !important;
   color: var(--dim, #94a3b8) !important;
   font-variant-numeric: tabular-nums !important;
-  line-height: 1.3 !important;
+  line-height: 1.25 !important;
 }
 .cell-trunc-sub {
   max-width: 170px;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
   white-space: nowrap !important;
-  font-size: 9.5px;
-  color: var(--dim, #94a3b8);
-  line-height: 1.3;
+  font-size: 8.5px !important;
+  color: var(--dim, #94a3b8) !important;
+  line-height: 1.25 !important;
 }
 .cell-trunc-md {
   max-width: 260px;
@@ -1163,16 +1163,110 @@ th.col-title-info, td.col-title-info { min-width: 220px; }
   white-space: nowrap !important;
 }
 .cell-badge {
-  font-size: 8.5px !important;
-  padding: 1px 5px !important;
-  font-weight: 600 !important;
-  border-radius: var(--radius-sm, 4px) !important;
-  letter-spacing: 0.25px !important;
+  font-size: 7.5px !important;
+  padding: 0.5px 4px !important;
+  font-weight: 700 !important;
+  border-radius: 3px !important;
+  letter-spacing: 0.2px !important;
+  line-height: 1.2 !important;
 }
 [title] {
   cursor: help;
 }
 a[title], button[title], .btn[title], input[title], select[title], .copyable-ip[title], [onclick][title] {
+  cursor: pointer;
+}
+
+/* Dukungan Header Multi-Baris Ringkas NOC */
+table.noc-table th,
+.table-noc th,
+table.noc-table-dense th,
+table.noc-table-compact th {
+  line-height: 1.2 !important;
+  vertical-align: middle !important;
+}
+
+/* =============================================================================
+   KOMPONEN DROPDOWN TINDAKAN CERDAS NOC (AKTIF JIKA TOMBOL AKSI > 2)
+   ============================================================================= */
+.noc-act-dropdown {
+  position: relative;
+  display: inline-block;
+  text-align: left;
+}
+.noc-act-dropdown summary {
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3.5px;
+  height: 22px;
+  padding: 1px 7px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-bright, #f8fafc);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+  border-radius: var(--radius-sm, 4px);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.12s ease;
+  white-space: nowrap;
+}
+.noc-act-dropdown summary::-webkit-details-marker {
+  display: none;
+}
+.noc-act-dropdown summary:hover {
+  background: var(--card-hover, #1b2642);
+  border-color: rgba(56, 189, 248, 0.4);
+}
+.noc-act-dropdown[open] summary {
+  background: var(--card-hover, #1b2642);
+  border-color: var(--blue, #38bdf8);
+}
+.noc-act-dropdown-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 3px);
+  min-width: 135px;
+  background: var(--col-act-bg, #0b111e);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.15));
+  border-radius: var(--radius-sm, 4px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.65);
+  padding: 3px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5px;
+  box-sizing: border-box;
+}
+.noc-act-dropdown-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--text, #cbd5e1);
+  text-decoration: none;
+  border-radius: 3px;
+  background: transparent;
+  border: none;
+  width: 100%;
+  box-sizing: border-box;
+  cursor: pointer;
+  text-align: left;
+  line-height: 1.25;
+  transition: background 0.1s ease, color 0.1s ease;
+}
+.noc-act-dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-bright, #ffffff);
+}
+.noc-act-dropdown-item.danger:hover {
+  background: rgba(239, 68, 68, 0.18);
+  color: #f87171;
+}
   cursor: pointer;
 }
 

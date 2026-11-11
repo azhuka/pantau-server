@@ -394,10 +394,10 @@
       <thead>
         <tr>
           <th class="col-status col-maint-status">STATUS</th>
-          <th class="col-grow col-title-info col-maint-title">JUDUL &amp; KETERANGAN</th>
-          <th class="col-badge col-maint-scope">CAKUPAN SERVER</th>
-          <th class="col-snug col-maint-sched">POLA JADWAL</th>
-          <th class="col-time col-maint-time">WAKTU &amp; HITUNG MUNDUR</th>
+          <th class="col-grow col-title-info col-maint-title">JADWAL &amp;<br>KETERANGAN</th>
+          <th class="col-badge col-maint-scope">CAKUPAN</th>
+          <th class="col-snug col-maint-sched">POLA</th>
+          <th class="col-time col-maint-time">WAKTU &amp;<br>HITUNG MUNDUR</th>
           <th class="col-snug col-maint-author">PEMBUAT</th>
           <th class="col-act col-maint-act" style="text-align:right">AKSI</th>
         </tr>
@@ -846,40 +846,40 @@ function renderTable(list) {
   list.forEach(w => {
     let statusBadge = '';
     if (w.status === 'active') {
-      statusBadge = '<span class="badge badge-warn" style="font-size:9.5px;padding:2px 7px;font-weight:700"><span class="dot-pulse-warn" style="width:6px;height:6px;margin-right:4px"></span>AKTIF</span>';
+      statusBadge = '<span class="badge badge-warn" style="font-size:7.5px;padding:1px 5px;font-weight:700"><span class="dot-pulse-warn" style="width:5px;height:5px;margin-right:3px"></span>AKTIF</span>';
     } else if (w.status === 'scheduled') {
-      statusBadge = '<span class="badge badge-info" style="font-size:9.5px;padding:2px 7px;font-weight:600">MENDATANG</span>';
+      statusBadge = '<span class="badge badge-info" style="font-size:7.5px;padding:1px 5px;font-weight:700">MENDATANG</span>';
     } else if (w.status === 'completed') {
-      statusBadge = '<span class="badge badge-muted" style="font-size:9.5px;padding:2px 7px">SELESAI</span>';
+      statusBadge = '<span class="badge badge-muted" style="font-size:7.5px;padding:1px 5px;font-weight:700">SELESAI</span>';
     } else {
-      statusBadge = '<span class="badge badge-danger" style="font-size:9.5px;padding:2px 7px">DIBATALKAN</span>';
+      statusBadge = '<span class="badge badge-danger" style="font-size:7.5px;padding:1px 5px;font-weight:700">DIBATALKAN</span>';
     }
 
     let scopeBadge = '';
     if (w.scope_type === 'all') {
-      scopeBadge = '<span class="badge badge-purple mono" style="font-size:9.5px">SEMUA SERVER</span>';
+      scopeBadge = '<span class="badge badge-purple mono" style="font-size:7.5px;padding:0.5px 3.5px">SEMUA SERVER</span>';
     } else if (w.scope_type === 'group') {
-      scopeBadge = `<span class="badge badge-info mono" style="font-size:9.5px">Grup: ${escapeHtml(w.server_group || '-')}</span>`;
+      scopeBadge = `<span class="badge badge-info mono" style="font-size:7.5px;padding:0.5px 3.5px">Grup: ${escapeHtml(w.server_group || '-')}</span>`;
     } else if (w.scope_type === 'servers' || w.scope_type === 'custom') {
       const names = w.server_hostnames || [];
       if (names.length === 0) {
-        scopeBadge = '<span class="badge badge-blue mono" style="font-size:9.5px">Multi Server</span>';
+        scopeBadge = '<span class="badge badge-blue mono" style="font-size:7.5px;padding:0.5px 3.5px">Multi Server</span>';
       } else if (names.length <= 2) {
-        scopeBadge = `<span class="badge badge-blue mono" style="font-size:9.5px" title="${escapeHtml(names.join(', '))}">${escapeHtml(names.join(', '))}</span>`;
+        scopeBadge = `<span class="badge badge-blue mono" style="font-size:7.5px;padding:0.5px 3.5px" title="${escapeHtml(names.join(', '))}">${escapeHtml(names.join(', '))}</span>`;
       } else {
-        scopeBadge = `<span class="badge badge-blue mono" style="font-size:9.5px" title="${escapeHtml(names.join(', '))}">${escapeHtml(names.slice(0, 2).join(', '))} +${names.length - 2} host</span>`;
+        scopeBadge = `<span class="badge badge-blue mono" style="font-size:7.5px;padding:0.5px 3.5px" title="${escapeHtml(names.join(', '))}">${escapeHtml(names.slice(0, 2).join(', '))} +${names.length - 2} host</span>`;
       }
     } else {
-      scopeBadge = `<strong style="font-size:12px;color:var(--text-bright)">${escapeHtml(w.server_hostname || 'Server #' + w.server_id)}</strong>`;
+      scopeBadge = `<strong style="font-size:11.5px;color:var(--text-bright)">${escapeHtml(w.server_hostname || 'Server #' + w.server_id)}</strong>`;
     }
 
     let scheduleDesc = '';
     if (w.schedule_type === 'once') {
-      scheduleDesc = '<span class="badge badge-muted" style="font-size:9px">Sekali Jalan</span>';
+      scheduleDesc = '<span class="badge badge-muted" style="font-size:7.5px;padding:0.5px 3.5px">Sekali Jalan</span>';
     } else if (w.schedule_type === 'weekly') {
-      scheduleDesc = `<span class="badge badge-blue" style="font-size:9px">Mingguan (${escapeHtml(w.repeat_days || '')})</span><div class="mono" style="font-size:9.5px;color:var(--dim);margin-top:2px">${escapeHtml(w.repeat_time_start)} - ${escapeHtml(w.repeat_time_end)} UTC</div>`;
+      scheduleDesc = `<span class="badge badge-blue" style="font-size:7.5px;padding:0.5px 3.5px">Mingguan (${escapeHtml(w.repeat_days || '')})</span><div class="mono" style="font-size:8px;color:var(--dim);margin-top:1.5px">${escapeHtml(w.repeat_time_start)} - ${escapeHtml(w.repeat_time_end)} UTC</div>`;
     } else {
-      scheduleDesc = `<span class="badge badge-blue" style="font-size:9px">Harian</span><div class="mono" style="font-size:9.5px;color:var(--dim);margin-top:2px">${escapeHtml(w.repeat_time_start)} - ${escapeHtml(w.repeat_time_end)} UTC</div>`;
+      scheduleDesc = `<span class="badge badge-blue" style="font-size:7.5px;padding:0.5px 3.5px">Harian</span><div class="mono" style="font-size:8px;color:var(--dim);margin-top:1.5px">${escapeHtml(w.repeat_time_start)} - ${escapeHtml(w.repeat_time_end)} UTC</div>`;
     }
 
     // Waktu & Countdown
@@ -913,7 +913,7 @@ function renderTable(list) {
         <td class="col-badge col-maint-scope" style="vertical-align:middle">${scopeBadge}</td>
         <td class="col-snug col-maint-sched" style="vertical-align:middle">${scheduleDesc}</td>
         <td class="col-time col-maint-time" style="vertical-align:middle">${timeCol}</td>
-        <td class="col-snug col-maint-author" style="vertical-align:middle;color:var(--dim);font-size:11px">${escapeHtml(w.created_by || 'SISTEM')}</td>
+        <td class="col-snug col-maint-author" style="vertical-align:middle;color:var(--dim);font-size:8.5px">${escapeHtml(w.created_by || 'SISTEM')}</td>
         <td class="col-act col-maint-act" style="vertical-align:middle;text-align:right">${actionBtns}</td>
       </tr>
     `;

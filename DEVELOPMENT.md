@@ -507,6 +507,27 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
   3. **Sinkronisasi SemVer 7 Berkas:**
      - Sinkronisasi versi SemVer `4.8.157` pada 7 berkas inti repositori.
 
+## Versi 4.8.179
+
+- **Tipe Rilis:** Optimalisasi Lebar Kolom Baku, Header Ringkas 2 Baris, Font Sel Berwarna & Dropdown Aksi NOC (*NOC Column Width Optimization, 2-Row Compact Headers, Color Badge Font Sizing & Action Dropdown*)
+- **Fokus Utama:** Merampingkan layout tabel operasional NOC agar proporsional, hemat ruang horizontal, dan efisien:
+  1. **Optimalisasi Font Sel Berwarna & Data Sekunder (`server/static/css/pantau-noc.css`):**
+     - Memperkecil ukuran font badge status berwarna (`.cell-badge`) ke `7.5px` dengan padding mikro rapat `0.5px 4px`, karena warna (hijau/merah/kuning/oranye/biru) sudah memberikan sinyal kognitif instan bagi operator NOC tanpa membutuhkan teks besar.
+     - Menyesuaikan ukuran font data sekunder/non-esensial (`.cell-sub`, `.cell-mono-sub`, `.cell-trunc-sub`) ke `8.5px` untuk membedakan secara tegas dengan data esensial (`11px - 11.5px`).
+     - Menyediakan token CSS dropdown aksi NOC (`.noc-act-dropdown`, `.noc-act-dropdown-menu`, `.noc-act-dropdown-item`) berbasis HTML5 native `<details>` tanpa dependensi eksternal.
+  2. **Header Kolom Ringkas & Multi-Baris 2 Baris (`<th>`):**
+     - Memangkas teks header yang terlalu panjang agar tidak melebarkan kolom secara tidak perlu (misal: `Platform & Virtualisasi` menjadi `Platform`, `Sistem Operasi` menjadi `OS`, `Disk / Storage` menjadi `Storage`, `Ketersediaan (24j / 30h)` menjadi `UPTIME<br>(24J / 30H)`).
+     - Menambahkan penanganan CSS `line-height: 1.2` dan `vertical-align: middle` pada header multi-baris agar tetap rapi dan ringkas di seluruh halaman tabel.
+  3. **Pola Dropdown Aksi Cerdas Kolom Tindakan:**
+     - Menerapkan aturan: jika aksi pada kolom tindakan hanya 1 atau 2 tombol, tombol ditampilkan langsung; jika terdapat lebih dari 2 tombol aksi, tombol dikelompokkan ke dalam dropdown `Aksi ▾`.
+     - Diterapkan pada `servers.html` (Admin memiliki 3 tombol aksi: Rincian, Edit, Hapus) dan `probing.html` (Admin memiliki 5 tombol aksi: Uji, Riwayat, Jeda, Edit, Hapus).
+     - Menambahkan event listener global di `base.html` untuk menutup dropdown secara otomatis saat operator mengklik di luar area menu (*auto-close click-outside*).
+  4. **Penerapan Terpadu di Seluruh Halaman Tabel NOC:**
+     - Diselaraskan di `servers.html`, `problems.html`, `probing.html`, `maintenance.html`, `audit.html`, `users.html`, dan `profile.html`.
+     - Halaman dasbor (`dashboard.html`) tetap dijaga utuh tanpa modifikasi sesuai batasan ruang lingkup khusus.
+  5. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.179` pada 7 berkas inti repositori.
+
 ## Versi 4.8.178
 
 - **Tipe Rilis:** Optimalisasi Tipografi, Hierarki Data Esensial & Tooltip Progresif Tabel NOC (*NOC Table Essential Data Hierarchy & Progressive Disclosure Polish*)

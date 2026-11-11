@@ -485,12 +485,12 @@
     <table id="probtable" class="noc-table-dense" style="width:100%;margin:0;border-collapse:collapse">
       <thead>
         <tr style="border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015)">
-          <th class="col-time" data-col-title="Waktu Mulai" title="Waktu saat insiden mulai terdeteksi">WAKTU MULAI</th>
+          <th class="col-time" data-col-title="Waktu Mulai" title="Waktu saat insiden mulai terdeteksi">MULAI</th>
           <th class="col-grow col-srv" data-col-title="Server" title="Host atau server tempat anomali atau gangguan terjadi">SERVER</th>
-          <th class="col-status" data-col-title="Keparahan" style="text-align:left !important" title="Tingkat keparahan: Kritis, Gawat, Peringatan, atau Info">KEPARAHAN</th>
+          <th class="col-status" data-col-title="Keparahan" style="text-align:left !important" title="Tingkat keparahan: Kritis, Gawat, Peringatan, atau Info">TINGKAT</th>
           <th class="col-grow col-event" data-col-title="Kejadian" title="Deskripsi ringkas mengenai anomali yang terjadi">KEJADIAN</th>
           <th class="col-metric" data-col-title="Durasi" title="Lama waktu insiden berlangsung hingga sekarang">DURASI</th>
-          <th class="col-grow col-guide" data-col-title="Panduan Solusi" title="Saran langkah penanganan praktis untuk menyelesaikan insiden">PANDUAN SOLUSI</th>
+          <th class="col-grow col-guide" data-col-title="Panduan Solusi" title="Saran langkah penanganan praktis untuk menyelesaikan insiden">SOLUSI</th>
           <th class="col-act" data-col-title="Aksi" title="Aksi penanganan: Rincian, Tangani Insiden, atau Abaikan Insiden">AKSI</th>
         </tr>
       </thead>
@@ -534,16 +534,16 @@
           {% set ack_op = 'master-admin' if p.acknowledged_by == 'admin' else (p.acknowledged_by or 'operator') %}
           {% set base_badge_cls = 'badge badge-' ~ ({'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info')) %}
           {% set base_badge_text = 'KRITIS' if p.severity == 'danger' else ('GAWAT' if p.severity == 'average' else ('PERINGATAN' if p.severity == 'warning' else p.severity | upper)) %}
-          {% set base_badge = '<span class="' ~ base_badge_cls ~ '" style="font-size:8.5px;padding:1px 6.5px;letter-spacing:0.3px;font-weight:700">' ~ base_badge_text ~ '</span>' %}
+          {% set base_badge = '<span class="' ~ base_badge_cls ~ '" style="font-size:7.5px;padding:0.5px 4.5px;letter-spacing:0.2px;font-weight:700">' ~ base_badge_text ~ '</span>' %}
           {% if p.is_ignored or p.acknowledged_by %}
-            <div style="display:inline-flex;flex-direction:column;align-items:flex-start;gap:2.5px">
+            <div style="display:inline-flex;flex-direction:column;align-items:flex-start;gap:2px">
               {{ base_badge | safe }}
-              <div style="display:inline-flex;align-items:center;justify-content:flex-start;gap:3px">
+              <div style="display:inline-flex;align-items:center;justify-content:flex-start;gap:2.5px">
                 {% if p.is_ignored %}
-                  <span class="badge badge-muted badge-sub" style="font-size:8px;padding:1px 5px;font-weight:600;letter-spacing:0.2px" title="{{ 'Alasan: ' ~ p.ignored_reason if p.ignored_reason else ('Diabaikan oleh ' ~ op_name) }}">DIABAIKAN</span>
+                  <span class="badge badge-muted badge-sub" style="font-size:7px;padding:0.5px 3.5px;font-weight:700;letter-spacing:0.2px" title="{{ 'Alasan: ' ~ p.ignored_reason if p.ignored_reason else ('Diabaikan oleh ' ~ op_name) }}">DIABAIKAN</span>
                 {% endif %}
                 {% if p.acknowledged_by or p.is_ignored %}
-                  <span class="badge badge-up badge-sub" style="font-size:8px;padding:1px 5px;font-weight:600;letter-spacing:0.2px" title="Ditangani oleh {{ ack_op if p.acknowledged_by else op_name }}">✓ DITANGANI</span>
+                  <span class="badge badge-up badge-sub" style="font-size:7px;padding:0.5px 3.5px;font-weight:700;letter-spacing:0.2px" title="Ditangani oleh {{ ack_op if p.acknowledged_by else op_name }}">✓ DITANGANI</span>
                 {% endif %}
               </div>
             </div>
@@ -554,12 +554,12 @@
         <td class="col-grow col-event">
           <span style="font-size:11.5px;font-weight:500;line-height:1.35;color:var(--text-bright)">{{ p.message }}</span>
           {% if p.is_ignored and p.ignored_reason and p.ignored_reason != p.message and ('DIMATIKAN OLEH OPERATOR' not in p.ignored_reason and 'DIHENTIKAN OLEH OPERATOR' not in p.ignored_reason and 'DI-REBOOT OLEH OPERATOR' not in p.ignored_reason and 'DI-RESTART OLEH OPERATOR' not in p.ignored_reason) %}
-            <span class="badge badge-muted" style="margin-left:5px;font-size:8.5px;padding:1px 5px" title="Alasan: {{ p.ignored_reason }}">{{ p.ignored_reason }}</span>
+            <span class="badge badge-muted" style="margin-left:4px;font-size:7.5px;padding:0.5px 3.5px" title="Alasan: {{ p.ignored_reason }}">{{ p.ignored_reason }}</span>
           {% endif %}
           {% if p.is_ignored and p.ignored_until %}
-            <span class="badge badge-muted" style="margin-left:5px;font-size:8.5px;padding:1px 5px" title="Batas waktu pengabaian">s/d {{ p.ignored_until.strftime('%d %b %H:%M') }}</span>
+            <span class="badge badge-muted" style="margin-left:4px;font-size:7.5px;padding:0.5px 3.5px" title="Batas waktu pengabaian">s/d {{ p.ignored_until.strftime('%d %b %H:%M') }}</span>
           {% endif %}
-          {% if p.count_24h and p.count_24h > 1 %}<span class="badge badge-muted" style="margin-left:5px;font-size:8.5px;padding:1px 5px;font-weight:500;color:var(--dim)" title="Kejadian berulang dalam 24 jam terakhir">kambuh {{ p.count_24h }}×</span>{% endif %}
+          {% if p.count_24h and p.count_24h > 1 %}<span class="badge badge-muted" style="margin-left:4px;font-size:7.5px;padding:0.5px 3px;font-weight:500;color:var(--dim)" title="Kejadian berulang dalam 24 jam terakhir">kambuh {{ p.count_24h }}×</span>{% endif %}
         </td>
         <td class="col-metric" data-start="{{ p.started_at.replace(tzinfo=None).isoformat() }}Z">
           <span class="mono" style="font-size:10.5px;font-weight:600;color:var(--text);background:rgba(148,163,184,0.08);padding:1.5px 7px;border-radius:4px;border:1px solid rgba(148,163,184,0.18);display:inline-block">{{ p.durasi }}</span>
@@ -741,9 +741,9 @@
         <tr style="border-bottom:1px solid var(--border)">
           <th class="col-time" style="color:var(--dim)" title="Waktu insiden mulai terdeteksi hingga berhasil teratasi">Waktu</th>
           <th class="col-grow col-srv" style="color:var(--dim)" title="Nama host dan grup server">Server</th>
-          <th class="col-status" style="color:var(--dim)" title="Tingkat keparahan insiden saat terjadi">Keparahan</th>
+          <th class="col-status" style="color:var(--dim)" title="Tingkat keparahan insiden saat terjadi">Tingkat</th>
           <th class="col-badge" style="color:var(--dim)" title="Komponen yang terdampak (services, host/agen, CPU, dll.)">Komponen</th>
-          <th class="col-grow col-event" style="color:var(--dim)" title="Deskripsi anomali yang telah selesai">Deskripsi Insiden</th>
+          <th class="col-grow col-event" style="color:var(--dim)" title="Deskripsi anomali yang telah selesai">Insiden</th>
           <th class="col-metric" style="color:var(--dim)" title="Total durasi downtime hingga sistem pulih kembali">Durasi</th>
           <th class="col-status" style="color:var(--dim)" title="Catatan status penanganan atau pemulihan">Resolusi</th>
           <th class="col-act" style="color:var(--dim)" title="Aksi &amp; Detail Server">Aksi</th>
@@ -777,13 +777,13 @@
           <div style="font-size:11.5px;font-weight:600;color:var(--text-bright)">{{ p.hostname }}</div>
           {% if p.group_name %}
           <div style="margin-top:2px">
-            <span class="badge badge-muted" style="font-size:8.5px;padding:1px 5px" title="Grup Server: {{ p.group_name }}">{{ p.group_name }}</span>
+            <span class="badge badge-muted" style="font-size:7.5px;padding:0.5px 3.5px" title="Grup Server: {{ p.group_name }}">{{ p.group_name }}</span>
           </div>
           {% endif %}
         </td>
         <!-- 3. Tingkat / Keparahan -->
         <td class="col-status">
-          <span class="badge badge-{{ {'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info') }}" style="font-size:8.5px;padding:1px 6px;border-radius:3px;font-weight:700">
+          <span class="badge badge-{{ {'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info') }}" style="font-size:7.5px;padding:0.5px 4.5px;border-radius:3px;font-weight:700">
             {{ 'KRITIS' if p.severity == 'danger' else ('GAWAT' if p.severity == 'average' else ('PERINGATAN' if p.severity == 'warning' else p.severity | upper)) }}
           </span>
         </td>
@@ -803,7 +803,7 @@
         </td>
         <!-- 7. Resolusi -->
         <td class="col-status">
-          <span class="badge {{ p.res_badge_cls or 'badge-up' }}" style="font-size:9.5px;padding:1px 6px;font-weight:600" title="Catatan Resolusi: {{ p.res_tip }}">{{ p.res_label }}</span>
+          <span class="badge {{ p.res_badge_cls or 'badge-up' }}" style="font-size:8px;padding:1px 5px;font-weight:700" title="Catatan Resolusi: {{ p.res_tip }}">{{ p.res_label }}</span>
         </td>
         <td class="col-act">
           <a href="/servers/{{ p.server_id }}" class="btn btn-ghost btn-sm" title="Buka Detail Server" aria-label="Rincian">
@@ -1527,13 +1527,13 @@ window.poll = async function(opts = {}) {
           wrapper.innerHTML = `<table id="probtable" class="noc-table-dense" style="width:100%;margin:0;border-collapse:collapse">
             <thead>
               <tr style="border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015)">
-                <th class="col-time" data-col-title="Waktu Mulai" title="${isEn ? 'Time when incident was first detected' : 'Waktu saat insiden mulai terdeteksi'}">${isEn ? 'START TIME' : 'WAKTU MULAI'}</th>
+                <th class="col-time" data-col-title="Waktu Mulai" title="${isEn ? 'Time when incident was first detected' : 'Waktu saat insiden mulai terdeteksi'}">${isEn ? 'START' : 'MULAI'}</th>
                 <th class="col-grow col-srv" data-col-title="Server" title="${isEn ? 'Server machine where anomaly occurred' : 'Host server tempat anomali atau gangguan terjadi'}">SERVER</th>
-                <th class="col-status" data-col-title="Keparahan" style="text-align:left !important" title="${isEn ? 'Urgency level: Critical, High, Warning, or Info' : 'Tingkat keparahan: Kritis, Gawat, Peringatan, atau Info'}">${isEn ? 'SEVERITY' : 'KEPARAHAN'}</th>
+                <th class="col-status" data-col-title="Keparahan" style="text-align:left !important" title="${isEn ? 'Urgency level: Critical, High, Warning, or Info' : 'Tingkat keparahan: Kritis, Gawat, Peringatan, atau Info'}">${isEn ? 'LEVEL' : 'TINGKAT'}</th>
                 <th class="col-grow col-event" data-col-title="Kejadian" title="${isEn ? 'Brief description of the anomaly' : 'Deskripsi ringkas mengenai anomali yang terjadi'}">${isEn ? 'EVENT' : 'KEJADIAN'}</th>
                 <th class="col-metric" data-col-title="Durasi" title="${isEn ? 'Duration of incident up to now' : 'Lama waktu insiden berlangsung hingga sekarang'}">${isEn ? 'DURATION' : 'DURASI'}</th>
-                <th class="col-grow col-guide" data-col-title="Panduan Solusi" title="${isEn ? 'Practical solution guidance' : 'Saran langkah penanganan praktis untuk menyelesaikan insiden'}">${isEn ? 'SOLUTION GUIDE' : 'PANDUAN SOLUSI'}</th>
-                <th class="col-act" data-col-title="Tindakan" title="${isEn ? 'Action: Details, Mark Acknowledged, or Ignore' : 'Tindakan penanganan: Rincian, Tandai Ditangani, atau Abaikan Insiden'}">${isEn ? 'ACTIONS' : 'TINDAKAN'}</th>
+                <th class="col-grow col-guide" data-col-title="Panduan Solusi" title="${isEn ? 'Practical solution guidance' : 'Saran langkah penanganan praktis untuk menyelesaikan insiden'}">${isEn ? 'SOLUTION' : 'SOLUSI'}</th>
+                <th class="col-act" data-col-title="Tindakan" title="${isEn ? 'Action: Details, Mark Acknowledged, or Ignore' : 'Tindakan penanganan: Rincian, Tandai Ditangani, atau Abaikan Insiden'}">${isEn ? 'ACTIONS' : 'AKSI'}</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -1558,21 +1558,27 @@ window.poll = async function(opts = {}) {
 
             const ignStr = String(p.ignored_reason || '');
             const isOpActionIgn = ignStr && (ignStr.includes('DIMATIKAN OLEH OPERATOR') || ignStr.includes('DIHENTIKAN OLEH OPERATOR') || ignStr.includes('DI-REBOOT OLEH OPERATOR') || ignStr.includes('DI-RESTART OLEH OPERATOR') || ignStr === p.message);
-            const ignReasonBadge = (isIgn && p.ignored_reason && !isOpActionIgn) ? `<span class="badge badge-muted" style="margin-left:5px;font-size:8px;padding:0.5px 4.5px" title="${_esc(p.ignored_reason)}">${_esc(p.ignored_reason)}</span>` : '';
-            const ignUntilBadge = (isIgn && p.ignored_until_str) ? `<span class="badge badge-muted" style="margin-left:5px;font-size:8px;padding:0.5px 4.5px">${(isEn ? 'until ' : 's/d ') + _esc(p.ignored_until_str)}</span>` : '';
-            const count24 = (p.count_24h && p.count_24h > 1) ? ` <span class="badge badge-muted" style="margin-left:5px;font-size:8px;padding:0.5px 4px;font-weight:500;color:var(--dim)" title="${isEn ? 'Recurring event within last 24 hours' : 'Kejadian berulang dalam 24 jam terakhir'}">${isEn ? 'relapsed ' : 'kambuh '}${p.count_24h}×</span>` : '';
+            const ignReasonBadge = (isIgn && p.ignored_reason && !isOpActionIgn) ? `<span class="badge badge-muted" style="margin-left:4px;font-size:7.5px;padding:0.5px 3.5px" title="${_esc(p.ignored_reason)}">${_esc(p.ignored_reason)}</span>` : '';
+            const ignUntilBadge = (isIgn && p.ignored_until_str) ? `<span class="badge badge-muted" style="margin-left:4px;font-size:7.5px;padding:0.5px 3.5px">${(isEn ? 'until ' : 's/d ') + _esc(p.ignored_until_str)}</span>` : '';
+            const count24 = (p.count_24h && p.count_24h > 1) ? ` <span class="badge badge-muted" style="margin-left:4px;font-size:7.5px;padding:0.5px 3px;font-weight:500;color:var(--dim)" title="${isEn ? 'Recurring event within last 24 hours' : 'Kejadian berulang dalam 24 jam terakhir'}">${isEn ? 'relapsed ' : 'kambuh '}${p.count_24h}×</span>` : '';
 
             const rawSevBadge = 'badge badge-' + ({danger:'danger',average:'orange',warning:'warn',info:'info'}[p.severity] || 'info');
             const rawSevLabel = _esc(p.severity === 'danger' ? (isEn ? 'CRITICAL' : 'KRITIS') : (p.severity === 'average' ? (isEn ? 'HIGH' : 'GAWAT') : (p.severity === 'warning' ? (isEn ? 'WARNING' : 'PERINGATAN') : (p.severity || 'INFO').toUpperCase())));
-            const baseBadge = `<span class="${rawSevBadge}" style="font-size:8.5px;padding:1px 6.5px;letter-spacing:0.3px;font-weight:700">${rawSevLabel}</span>`;
+            const baseBadge = `<span class="${rawSevBadge}" style="font-size:7.5px;padding:0.5px 4.5px;letter-spacing:0.2px;font-weight:700">${rawSevLabel}</span>`;
 
             let sevCellHtml = '';
             if (isIgn || p.acknowledged_by) {
               let subBadges = '';
               if (isIgn) {
-                subBadges += `<span class="badge badge-muted badge-sub" style="font-size:7.5px;padding:0.5px 4.5px;font-weight:600;letter-spacing:0.2px" title="${(isEn ? 'Reason: ' : 'Alasan: ') + _esc(p.ignored_reason || '')}">${isEn ? 'IGNORED' : 'DIABAIKAN'}</span>`;
+                subBadges += `<span class="badge badge-muted badge-sub" style="font-size:7px;padding:0.5px 3.5px;font-weight:700;letter-spacing:0.2px" title="${(isEn ? 'Reason: ' : 'Alasan: ') + _esc(p.ignored_reason || '')}">${isEn ? 'IGNORED' : 'DIABAIKAN'}</span>`;
               }
               if (p.acknowledged_by) {
+                subBadges += `<span class="badge badge-up badge-sub" style="font-size:7px;padding:0.5px 3.5px;font-weight:700;letter-spacing:0.2px" title="${(isEn ? 'Handled by ' : 'Ditangani oleh ') + _esc(ackOp)}">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span>`;
+              }
+              sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:flex-start;gap:2px">${baseBadge}<div style="display:inline-flex;align-items:center;justify-content:flex-start;gap:2.5px">${subBadges}</div></div>`;
+            } else {
+              sevCellHtml = baseBadge;
+            }
                 subBadges += `<span class="badge badge-up badge-sub" style="font-size:7.5px;padding:0.5px 4.5px;font-weight:600;letter-spacing:0.2px" title="${(isEn ? 'Handled by ' : 'Ditangani oleh ') + _esc(ackOp)}">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span>`;
               }
               sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:flex-start;gap:2.5px">${baseBadge}<div style="display:inline-flex;align-items:center;justify-content:flex-start;gap:3px">${subBadges}</div></div>`;
