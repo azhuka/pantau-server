@@ -24,6 +24,11 @@ Prosedur ini merupakan keharusan baku bagi AI/developer dalam mengelola reposito
 1. Pahami esensi masalah dan kebutuhan operasional NOC tanpa menambah kerumitan yang tidak diminta.
 2. Periksa arsitektur eksisting, struktur database, dan kompatibilitas sistem.
 3. Pastikan agen klien tetap berprinsip *zero external dependency* (Python 3.10+ standard library saja) dan keamanan eksekusi perintah shell (`shell=False`, least-privilege).
+4. **Protokol UI/UX 2-Tahap (Visual Statis Dulu, Logika Belakangan):**
+   - Untuk setiap perombakan antarmuka atau komponen baru, sajikan dan validasi prototipe visual (HTML/CSS) statis terlebih dahulu.
+   - Dilarang menyentuh backend, database, atau logika AJAX/WebSocket sebelum operator menyetujui estetika, proporsi, padding, tipografi, dan ergonomi visual.
+   - Dilarang keras men-hardcode opsi layanan yang tidak ada (seluruh data UI murni bersumber dari telemetri fisik agen klien).
+   - Hindari tombol melayang (*floating elements*) yang menutupi konten teks; gunakan baris flexbox terpadu (`.noc-log-row`) untuk eliminasi nomor baris hantu.
 
 ### B. Saat Men-generate Kode (During)
 1. Terapkan perubahan secara presisi baik di backend (FastAPI/Jinja/SQLite) maupun agen klien.

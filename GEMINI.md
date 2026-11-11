@@ -46,7 +46,23 @@ Berkas ini adalah aturan baku permanen (*always-on project rules*) bagi asisten 
 
 ---
 
-## 5. Alur Kerja Wajib (Workflow)
+## 5. Protokol Baku Pengembangan UI/UX (Anti-Kebutaan Piksel & Pemisahan Visual)
+- **Larangan Keras "Asal Lulus Sintaks" (*Anti-Blind Code Generation*):**
+  - Kelulusan pengujian teknis (`py_compile`, `bash -n`, HTTP 200) **bukan bukti bahwa antarmuka selesai atau layak digunakan manusia**. Asisten dilarang menganggap tugas selesai hanya karena kode berjalan tanpa error teknis.
+- **Kemandirian Data Klien (Anti-Hardcode Opsi Fiktif):**
+  - Seluruh opsi, tombol, dan menu pada antarmuka **wajib bersumber murni dari laporan telemetri fisik agen klien** (`agent_pantau.py`).
+  - Dilarang keras men-hardcode opsi layanan yang tidak ada (misalnya menampilkan opsi log Apache pada server yang hanya memiliki Nginx).
+- **Integritas Ergonomi Visual (No Obstructive Elements & Precision Layout):**
+  - Dilarang menempatkan elemen melayang (*floating buttons/overlays*) yang menutupi baris teks, konsol, atau data tabel. Kontrol navigasi wajib diletakkan pada toolbar atas atau statusbar footer terstruktur.
+  - Setiap tampilan berbasis baris/konsol terminal wajib menggunakan arsitektur baris terpadu flexbox (`.noc-log-row`) di mana nomor baris dan teks isi berada dalam kontainer yang sama, mencegah desinkronisasi atau nomor baris hantu (*phantom line numbers*) saat teks mengalami pembungkusan (*word-wrap*).
+- **Protokol 2-Tahap: Visual Statis Dulu, Logika Belakangan:**
+  - **Tahap 1 (Prototipe Visual Statis):** Untuk setiap perombakan antarmuka atau komponen baru (modal, tab, konsol), asisten wajib menyajikan dan memvalidasi prototipe visual (HTML/CSS) statis terlebih dahulu tanpa menghubungkan logika backend/database/WebSocket yang rumit.
+  - **Tahap 2 (Persetujuan Operator):** Asisten dilarang melanjutkan ke manipulasi backend, skema database, atau endpoint telemetri sebelum operator secara eksplisit menyetujui estetika, proporsi, padding, tipografi, dan ergonomi visual pada Tahap 1.
+  - **Pengujian Kasus Ekstrem Visual:** Wajib menguji tampilan pada kondisi ekstrem (teks sangat panjang > 2000 karakter, kondisi data kosong/empty state, responsivitas layar sempit, serta keselarasan Dark Mode & Light Mode).
+
+---
+
+## 6. Alur Kerja Wajib (Workflow)
 
 ### A. Sebelum & Saat Men-generate Kode
 - Pertahankan prinsip *zero external dependency* pada agen klien.
