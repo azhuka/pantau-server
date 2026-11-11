@@ -479,7 +479,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.184"
+AGENT_VERSION = "4.8.185"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -4709,22 +4709,78 @@ def _run_shell_in_thread(cfg: dict, rid: int) -> None:
 
 
 def fetch_log_lines(unit: str, lines: int) -> str:
-    """Ambil log layanan: unit journal, atau file SYSLOG/AUTH (dengan fallback journalctl)."""
-    if unit == "SYSLOG":
-        if os.path.isfile(SYSLOG_FILE):
-            return _tail_file(SYSLOG_FILE, lines)
-        res = _run_cmd(["journalctl", "-n", str(lines), "--no-pager"], timeout=30)
-        return (res.stdout.rstrip() if res else "") or f"[file {SYSLOG_FILE} tidak ditemukan]"
-    if unit == "AUTH":
+    """Ambil log layanan: unit journal, file access/error log, syslog, auth, atau dpkg."""
+    u_upper = unit.upper()
+
+    # 1. Web Server: Nginx Access & Error Log
+    if u_upper in ("NGINX_ACCESS", "NGINX-ACCESS"):
+        for cand in ("/var/log/nginx/access.log", "/var/log/nginx/access_log"):
+            if os.path.isfile(cand):
+                return _tail_file(cand, lines)
+        return "[Berkas log /var/log/nginx/access.log tidak ditemukan di server ini]"
+
+    if u_upper in ("NGINX_ERROR", "NGINX-ERROR"):
+        for cand in ("/var/log/nginx/error.log", "/var/log/nginx/error_log"):
+            if os.path.isfile(cand):
+                return _tail_file(cand, lines)
+        return "[Berkas log /var/log/nginx/error.log tidak ditemukan di server ini]"
+
+    # 2. Web Server: Apache / HTTPD Access & Error Log
+    if u_upper in ("APACHE_ACCESS", "APACHE-ACCESS", "HTTPD_ACCESS"):
+        for cand in ("/var/log/apache2/access.log", "/var/log/httpd/access_log", "/var/log/apache2/other_vhosts_access.log"):
+            if os.path.isfile(cand):
+                return _tail_file(cand, lines)
+        return "[Berkas log access Apache/HTTPD tidak ditemukan di server ini]"
+
+    if u_upper in ("APACHE_ERROR", "APACHE-ERROR", "HTTPD_ERROR"):
+        for cand in ("/var/log/apache2/error.log", "/var/log/httpd/error_log"):
+            if os.path.isfile(cand):
+                return _tail_file(cand, lines)
+        return "[Berkas log error Apache/HTTPD tidak ditemukan di server ini]"
+
+    # 3. Database: MariaDB / MySQL Error & Slow Query Log
+    if u_upper in ("MARIADB_ERROR", "MYSQL_ERROR"):
+        for cand in ("/var/log/mysql/error.log", "/var/log/mariadb/mariadb.log", "/var/log/mysqld.log"):
+            if os.path.isfile(cand):
+                return _tail_file(cand, lines)
+        res = _run_cmd(["journalctl", "-u", "mariadb", "-u", "mysql", "-n", str(lines), "--no-pager", "-o", "short-iso"], timeout=20)
+        return (res.stdout.rstrip() if res else "") or "[Berkas log error MySQL/MariaDB tidak ditemukan di server ini]"
+
+    if u_upper in ("MARIADB_SLOW", "MYSQL_SLOW"):
+        for cand in ("/var/log/mysql/mariadb-slow.log", "/var/log/mysql/mysql-slow.log"):
+            if os.path.isfile(cand):
+                return _tail_file(cand, lines)
+        return "[Berkas slow query log tidak aktif atau tidak ditemukan (/var/log/mysql/mariadb-slow.log)]"
+
+    # 4. Keamanan & Paket: Dpkg & Auth
+    if u_upper in ("DPKG", "PKG_LOGS", "DPKG_LOG"):
+        for cand in ("/var/log/dpkg.log", "/var/log/apt/history.log", "/var/log/dnf.log", "/var/log/pacman.log"):
+            if os.path.isfile(cand):
+                return _tail_file(cand, lines)
+        return "[Berkas riwayat paket sistem tidak ditemukan di server ini]"
+
+    if u_upper == "AUTH":
         for cand in (AUTH_FILE, "/var/log/secure"):
             if os.path.isfile(cand):
                 return _tail_file(cand, lines)
         res = _run_cmd(
             ["journalctl", "-u", "ssh", "-u", "sshd", "-u", "sudo", "-u", "systemd-logind",
-             "-n", str(lines), "--no-pager"],
+             "-n", str(lines), "--no-pager", "-o", "short-iso"],
             timeout=30,
         )
         return (res.stdout.rstrip() if res else "") or "[log autentikasi tidak ditemukan]"
+
+    if u_upper == "SYSLOG":
+        if os.path.isfile(SYSLOG_FILE):
+            return _tail_file(SYSLOG_FILE, lines)
+        res = _run_cmd(["journalctl", "-n", str(lines), "--no-pager", "-o", "short-iso"], timeout=30)
+        return (res.stdout.rstrip() if res else "") or f"[file {SYSLOG_FILE} tidak ditemukan]"
+
+    if u_upper in ("SYSTEM_ERRORS", "JOURNAL_ERRORS"):
+        res = _run_cmd(["journalctl", "-p", "3", "-n", str(lines), "-r", "--no-pager", "-o", "short-iso"], timeout=20)
+        return (res.stdout.rstrip() if res else "") or "[tidak ada catatan galat kritis sistem]"
+
+    # 5. Runtime Systemd Unit (Bawaan)
     res = _run_cmd(
         ["journalctl", "-u", unit, "-n", str(lines), "--no-pager", "-o", "short-iso"],
         timeout=30,
@@ -6351,7 +6407,7 @@ def _tail_file(path: str, lines: int) -> str:
         with open(path, "rb") as f:
             f.seek(0, 2)
             size = f.tell()
-            chunk = min(size, 65536)
+            chunk = min(size, max(65536, lines * 512))
             f.seek(size - chunk)
             data = f.read().decode("utf-8", errors="replace")
         out = data.splitlines()[-lines:]
@@ -6436,7 +6492,7 @@ def poll_log_requests(cfg: dict):
         else:
             try:
                 text = fetch_log_lines(unit, lines)
-                result = {"status": "success", "result": text[:40000]}
+                result = {"status": "success", "result": text[:120000]}
             except Exception as e:
                 result = {"status": "failed", "result": f"[error internal: {e}]"}
         print(f"[LOG] Log '{unit}' ({lines} baris) -> {result['status']}")

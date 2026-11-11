@@ -354,6 +354,37 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.185
+
+- **Tipe Rilis:** Transformasi Konsol Observabilitas Tab Log Server Klien Terpadu (4 Pilar Log & NOC Terminal Viewport Engine) (*Unified Client Server Log Observability Terminal Console & 4-Pillar Multi-Source Engine*)
+- **Fokus Utama:** Merombak total arsitektur Tab Log pada rincian server klien (`/servers/{id}#tab-log`) menjadi konsol observabilitas log tingkat NOC profesional, proporsional, interaktif, dan berdensitas data tinggi:
+  1. **Taksonomi Log Terpadu 4 Pilar (Multi-Source Resolver):**
+     - Membagi sumber log server klien secara hierarkis ke dalam 4 pilar utama:
+       - *Pilar 1 (Akses & Traffic):* Resolver Nginx Access Log (`/var/log/nginx/access.log`) dan Apache Access Log (`/var/log/apache2/access.log`).
+       - *Pilar 2 (Galat & Diagnostik):* Resolver Nginx Error Log (`/var/log/nginx/error.log`), Apache Error Log (`/var/log/apache2/error.log`), MariaDB/MySQL Error Log (`/var/log/mysql/error.log`), MariaDB Slow Query Log (`/var/log/mysql/mariadb-slow.log`), dan Jurnal Galat Kritis Sistem (`journalctl -p 0..3`).
+       - *Pilar 3 (Runtime Service):* Log journalctl unit service dinamis yang terdeteksi pada server host (`nginx`, `mariadb`, `mysqld`, `sshd`, `docker`, `redis`, dll.).
+       - *Pilar 4 (Keamanan & Paket):* Autentikasi SSH & Sudo (`/var/log/auth.log` / `/var/log/secure`), Syslog sistem (`/var/log/syslog`), dan Riwayat Instalasi/Upgrade Paket Sistem (`/var/log/dpkg.log`).
+  2. **NOC Terminal Viewport Engine dengan Gutter Nomor Baris Presisi:**
+     - Menggantikan elemen `<pre>` mentah monokrom lawas dengan wadah terminal modern terstruktur (`#noc-term-card`).
+     - Menyediakan kolom nomor baris (*gutter*) vertikal non-selektabel (`user-select: none`) yang tersinkronisasi 100% secara native dengan guliran teks log.
+     - Pewarnaan semantik cerdas (*semantic color-coding*): status HTTP 2xx hijau (`#4ade80`), 3xx biru (`#38bdf8`), 4xx kuning (`#fbbf24`), 5xx merah tebal (`#f87171`), severity error/crit berlatar merah tegas, warning kuning, metode HTTP ungu, dan timestamp redup.
+  3. **Smart Live Tail Controller (Auto-Scroll & Scroll-Away Detection):**
+     - Live tail otomatis bergulir ke dasar baris terbaru saat data log baru diterima melalui polling.
+     - Deteksi scroll operator: jika operator menggulir ke atas untuk meneliti baris log lama (>45px dari dasar), live tail otomatis masuk ke mode `DIJEDA` dan memunculkan tombol melayang interaktif `[ ↓ Gulir ke Log Terbaru ]` untuk kembali ke baris mutakhir dengan sekali klik.
+  4. **Pencarian Realtime & Filter Keparahan (In-Terminal Filtering):**
+     - Filter pencarian teks/regex instan yang menyorot kata cocok menggunakan `<mark class="log-hl-match">` serta menampilkan statistik kecocokan baris (`X / Y cocok`).
+     - Filter dropdown keparahan: Semua Tingkat, Error/Kritis, Peringatan (Warn), HTTP 4xx/5xx, dan Info/Sukses.
+  5. **Integrasi Pintasan Lintas Tab & Peleburan Log Packages:**
+     - Menghubungkan aksi "Lihat Log Service" pada tabel Services dan "Lihat Log Unit" pada tabel Insiden langsung ke konsol log dengan kategori dan unit yang tepat.
+     - Meleburkan tombol "Lihat Log" pada tab Packages langsung ke Konsol Log Terpadu kategori Keamanan & Paket (`DPKG`) terfilter nama paket, mengeliminasi modal pop-up terpisah demi konsistensi antarmuka terpusat.
+  6. **Aksi Ekspor Cepat (Clipboard & File Download):**
+     - Tombol "Salin Log" yang menyalin teks mentah bersih ke clipboard sistem.
+     - Tombol "Unduh Log" yang mengekspor berkas log berformat standar sysadmin `{hostname}_{unit}_{date}.log`.
+  7. **Kemandirian Agen & Buffered Tail Seek:**
+     - Agen klien (`agent_pantau.py`) mempertahankan prinsip *zero external dependency* dengan fungsi `_tail_file()` berbasis *reverse seek buffer* dinamis `min(size, max(65536, lines * 512))` yang hemat memori (RAM < 2 MB) dan efisien I/O.
+  8. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.185` pada seluruh 7 berkas inti repositori.
+
 ## Versi 4.8.184
 
 - **Tipe Rilis:** Arsitektur Global Viewport-Fixed Smart Floating Dropdown & Eliminasi Tuntas Pemotongan Menu Kontainer Tabel (*Global Viewport-Fixed Smart Floating Dropdown Engine & Complete Table Container Overflow Clipping Elimination*)

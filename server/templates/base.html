@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token }}">
 <title>{% block title %}Pantau Server{% endblock %}</title>
-<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.184' }}">
+<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.185' }}">
 {% block extra_head %}{% endblock %}
 <script>
 (function() {
@@ -2823,7 +2823,7 @@ body.show-alert-banner .main{padding-top:72px}
   </nav>
   <div class="sidebar-footer">
     <div class="sb-footer-brand">Pantau Server</div>
-    <div class="sb-footer-ver">v{{ app_version or '4.8.184' }}</div>
+    <div class="sb-footer-ver">v{{ app_version or '4.8.185' }}</div>
     <div class="sb-footer-utc">UTC <span id="clockUtc" style="display:inline"></span></div>
   </div>
 </aside>
@@ -3752,20 +3752,45 @@ tickUtcClock();
 setInterval(tickUtcClock, 1000);
 
 // ---------- log: lompat ke kartu log + unit ----------
-function jumpToLog(unit){
-  const sel = document.getElementById('log-unit');
-  if (!sel || !unit) return;
-  const ok = Array.from(sel.options).some(o => o.value === unit);
-  if (!ok){
-    const opt = document.createElement('option');
-    opt.value = unit;
-    opt.textContent = unit;
-    sel.appendChild(opt);
+function jumpToLog(unit, filterText){
+  if (!unit) return;
+  const uUpper = String(unit).toUpperCase();
+  let targetCat = 'svc';
+  if (uUpper.includes('ACCESS')) {
+    targetCat = 'traffic';
+  } else if (uUpper.includes('ERROR') || uUpper.includes('SLOW') || uUpper === 'SYSTEM_ERRORS') {
+    targetCat = 'error';
+  } else if (uUpper === 'AUTH' || uUpper === 'SYSLOG' || uUpper === 'DPKG' || uUpper === 'PKG_LOGS') {
+    targetCat = 'sec';
   }
-  if (typeof switchLoggingView === 'function') switchLoggingView('svc');
-  if (window.showTab) showTab('log');
-  sel.value = unit;
-  if (typeof changeUnit === 'function') changeUnit();
+
+  if (typeof window.showTab === 'function') window.showTab('log');
+
+  if (typeof selectLogCategory === 'function') {
+    selectLogCategory(targetCat, unit);
+  } else {
+    const sel = document.getElementById('log-unit');
+    if (sel) {
+      const ok = Array.from(sel.options).some(o => o.value === unit);
+      if (!ok){
+        const opt = document.createElement('option');
+        opt.value = unit;
+        opt.textContent = unit;
+        sel.appendChild(opt);
+      }
+      sel.value = unit;
+      if (typeof changeUnit === 'function') changeUnit();
+    }
+  }
+
+  if (filterText && typeof applyLogFilters === 'function') {
+    const fInp = document.getElementById('log-filter');
+    if (fInp) {
+      fInp.value = filterText;
+      applyLogFilters();
+    }
+  }
+
   const card = document.getElementById('log-card');
   if (card) card.scrollIntoView({behavior:'smooth', block:'start'});
 }
