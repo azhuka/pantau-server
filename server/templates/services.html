@@ -1450,6 +1450,151 @@ div[style*="position: fixed"] .card {
 .log-method { color: #a78bfa; font-weight: 600; }
 .log-ts { color: #64748b; }
 .log-hl-match { background: #facc15; color: #000; font-weight: 700; padding: 0 2px; border-radius: 2px; }
+
+/* Modal Log Kontekstual Service (NOC Service Log Modal) */
+.noc-svc-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  background: rgba(4, 7, 14, 0.78);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  padding: 16px;
+}
+[data-theme="light"] .noc-svc-modal-backdrop {
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.noc-svc-modal-card {
+  width: min(1140px, 96vw);
+  max-height: 90vh;
+  height: auto;
+  background: #0b111e;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: var(--text);
+  animation: modalScaleIn .15s ease-out;
+}
+[data-theme="light"] .noc-svc-modal-card {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.18);
+}
+
+@keyframes modalScaleIn {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.noc-svc-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 18px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+[data-theme="light"] .noc-svc-modal-header {
+  background: #f8fafc;
+  border-bottom-color: #e2e8f0;
+}
+
+.noc-svc-modal-pills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 8px 18px;
+  background: rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+[data-theme="light"] .noc-svc-modal-pills {
+  background: #f1f5f9;
+  border-bottom-color: #e2e8f0;
+}
+
+.noc-svc-pill-btn {
+  padding: 3px 10px;
+  font-size: 11.5px;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--dim);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all .15s ease;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.noc-svc-pill-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+}
+.noc-svc-pill-btn.is-active {
+  background: var(--blue);
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.noc-svc-modal-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 18px;
+  background: rgba(255, 255, 255, 0.01);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+[data-theme="light"] .noc-svc-modal-toolbar {
+  background: #ffffff;
+  border-bottom-color: #e2e8f0;
+}
+
+.noc-svc-modal-viewport {
+  flex: 1 1 auto;
+  height: 54vh;
+  min-height: 280px;
+  max-height: 64vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: #070b13;
+  position: relative;
+  font-family: ui-monospace, 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 11.5px;
+  line-height: 1.55;
+}
+[data-theme="light"] .noc-svc-modal-viewport {
+  background: #f8fafc;
+}
+
+.noc-svc-modal-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 6px 16px;
+  font-size: 11px;
+  color: var(--dim);
+  background: rgba(0, 0, 0, 0.35);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-family: ui-monospace, 'JetBrains Mono', monospace;
+}
+[data-theme="light"] .noc-svc-modal-footer {
+  background: #f1f5f9;
+  border-top-color: #e2e8f0;
+}
 </style>
 {% endblock %}
 {% block content %}
@@ -2615,7 +2760,7 @@ div[style*="position: fixed"] .card {
       </td>
       <td class="col-act" style="white-space:nowrap;text-align:center">
         {% if user.is_viewer() or not user.has_perm('can_services') %}
-          <button type="button" class="btn btn-ghost btn-sm" onclick='jumpToLog({{ svc.service_name|tojson }})' title="Lihat log service {{ svc.service_name }}" aria-label="Log">
+          <button type="button" class="btn btn-ghost btn-sm" onclick='openServiceLogModal({{ svc.service_name|tojson }}, {{ (svc._status or "")|tojson }}, {{ (svc.port or "")|tojson }})' title="Lihat log service {{ svc.service_name }}" aria-label="Log">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
           </button>
         {% else %}
@@ -2645,7 +2790,7 @@ div[style*="position: fixed"] .card {
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect></svg>
                 <span>Hentikan Service</span>
               </button>
-              <button type="button" class="noc-act-dropdown-item" onclick='jumpToLog({{ svc.service_name|tojson }})' title="Lihat log service {{ svc.service_name }}">
+              <button type="button" class="noc-act-dropdown-item" onclick='openServiceLogModal({{ svc.service_name|tojson }}, {{ (svc._status or "")|tojson }}, {{ (svc.port or "")|tojson }})' title="Lihat log service {{ svc.service_name }}">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
                 <span>Lihat Log Service</span>
               </button>
@@ -3886,6 +4031,118 @@ div[style*="position: fixed"] .card {
 <!-- ======================================================================= -->
 <!-- MODAL-MODAL GLOBAL OPERASIONAL DETAIL SERVER                            -->
 <!-- ======================================================================= -->
+
+<!-- Modal Log Kontekstual Layanan (NOC Contextual Service Log Modal) -->
+<div id="svc-log-modal" class="modal-backdrop noc-svc-modal-backdrop" style="display:none" onclick="if(event.target===this)closeServiceLogModal()">
+  <div class="card noc-svc-modal-card">
+    <!-- 1. Header Modal: Identitas Layanan & Aksi Cepat -->
+    <div class="noc-svc-modal-header">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue)"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+        <h3 style="margin:0;font-size:15px;display:flex;align-items:center;gap:8px">
+          <span>Log Layanan:</span>
+          <span id="svc-modal-unit-name" class="mono" style="color:var(--text-bright);font-weight:700">-</span>
+        </h3>
+        <span id="svc-modal-status-badge" class="badge badge-up" style="font-size:10px;padding:2px 7px">RUNNING</span>
+        <span id="svc-modal-port-badge" class="badge badge-info" style="display:none;font-size:9.5px;padding:2px 6px">Port</span>
+      </div>
+
+      <!-- Kontrol Toolbar Kanan Header: Live Tail, Segarkan, Salin, Unduh, Tutup -->
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <!-- Live Tail Toggle -->
+        <button type="button" class="btn btn-sm btn-ghost" id="svc-modal-tail-btn" onclick="toggleSvcModalLiveTail()" title="Klik untuk mengaktifkan / menjeda Live Tail otomatis" style="display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border:1px solid var(--border)">
+          <span id="svc-modal-tail-dot" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#10b981"></span>
+          <span style="font-size:11px">Live Tail:</span>
+          <span id="svc-modal-tail-badge" class="badge badge-success" style="font-size:9.5px;padding:1px 5px">AKTIF</span>
+        </button>
+
+        <!-- Segarkan Cepat -->
+        <button type="button" class="btn btn-ghost btn-sm btn-noc-icon" onclick="refreshSvcModalLog()" title="Segarkan log sekarang" aria-label="Segarkan Log">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+        </button>
+
+        <!-- Salin Log -->
+        <button type="button" class="btn btn-ghost btn-sm btn-noc-icon" onclick="copySvcModalLog()" title="Salin seluruh isi log mentah ke clipboard" aria-label="Salin Log">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+        </button>
+
+        <!-- Unduh Log -->
+        <button type="button" class="btn btn-ghost btn-sm btn-noc-icon" onclick="downloadSvcModalLog()" title="Unduh berkas log (.log)" aria-label="Unduh Log">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        </button>
+
+        <!-- Tombol Tutup [×] -->
+        <button type="button" class="btn btn-ghost btn-sm modal-close" onclick="closeServiceLogModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer" aria-label="Tutup">&times;</button>
+      </div>
+    </div>
+
+    <!-- 2. Segmented Bar: Pilihan Berkas Khusus Layanan Ini -->
+    <div id="svc-modal-sources-bar" class="noc-svc-modal-pills"></div>
+
+    <!-- 3. Sub-Header: Bilah Filter & Pencarian Cepat -->
+    <div class="noc-svc-modal-toolbar">
+      <div style="display:flex;align-items:center;gap:10px;flex:1;max-width:550px">
+        <div style="position:relative;flex:1;display:flex;align-items:center">
+          <input type="search" id="svc-modal-filter-input" class="filter-input" placeholder="Cari kata kunci dalam log…" oninput="applySvcModalFilter()" style="width:100%;font-size:12px;padding:4px 24px 4px 8px;background:var(--input-bg);color:var(--input-text);border:1px solid var(--input-border);border-radius:5px">
+          <button type="button" onclick="clearSvcModalFilter()" id="svc-modal-clear-search-btn" style="position:absolute;right:6px;background:none;border:none;color:var(--dim);cursor:pointer;display:none;font-size:14px;line-height:1;padding:0" title="Bersihkan pencarian">&times;</button>
+        </div>
+        <span id="svc-modal-match-count" class="mono" style="font-size:10.5px;color:var(--blue);white-space:nowrap"></span>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:8px">
+        <!-- Filter Keparahan -->
+        <select id="svc-modal-level-select" onchange="applySvcModalFilter()" style="font-size:11.5px;padding:4px 8px;background:var(--input-bg);color:var(--input-text);border:1px solid var(--input-border);border-radius:5px">
+          <option value="all" selected>Semua Tingkat</option>
+          <option value="err">Error / Kritis</option>
+          <option value="warn">Peringatan (Warn)</option>
+          <option value="http_err">HTTP 4xx / 5xx</option>
+          <option value="info">Info / Sukses</option>
+        </select>
+
+        <!-- Jumlah Baris -->
+        <select id="svc-modal-lines-select" onchange="changeSvcModalLines()" style="font-size:11.5px;padding:4px 8px;background:var(--input-bg);color:var(--input-text);border:1px solid var(--input-border);border-radius:5px">
+          <option value="50">50 Baris</option>
+          <option value="100">100 Baris</option>
+          <option value="200" selected>200 Baris</option>
+          <option value="500">500 Baris</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- 4. Viewport Konsol Terminal: Row-by-Row Presisi -->
+    <div id="svc-modal-viewport" class="noc-svc-modal-viewport">
+      <div id="svc-modal-rows" class="noc-term-rows"></div>
+
+      <!-- Overlay Memuat / Kosong -->
+      <div id="svc-modal-overlay" class="noc-term-overlay" style="display:none">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin" style="animation:spin 1s linear infinite"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>
+        <span id="svc-modal-overlay-text">Memuat data log layanan…</span>
+      </div>
+    </div>
+
+    <!-- 5. Bilah Status Bawah (Statusbar Footer) -->
+    <div class="noc-svc-modal-footer">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span id="svc-modal-status-dot" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#10b981"></span>
+        <span id="svc-modal-status-text" style="font-weight:600;color:var(--text)">Siap</span>
+        <span>&middot;</span>
+        <span id="svc-modal-line-count">0 baris</span>
+        <span>&middot;</span>
+        <span>Target: <strong id="svc-modal-target-path" style="color:var(--blue)">-</strong></span>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:10px">
+        <!-- Tombol Gulir ke Terbaru di Status Bar (Tidak Mengapung!) -->
+        <button type="button" id="svc-modal-scroll-btn" class="btn btn-xs btn-ghost" onclick="resumeSvcModalTail()" style="display:none;padding:1px 8px;font-size:10.5px;color:var(--blue);border:1px solid rgba(56,189,248,0.3);border-radius:4px">
+          &darr; Ke Baris Terbaru
+        </button>
+        <span id="svc-modal-state-text" style="color:var(--dim)"></span>
+        <span style="opacity:0.3">|</span>
+        <span>Auto Tail 4s</span>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- Modal Tambah Service -->
 <div id="add-svc-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.6);align-items:center;justify-content:center;backdrop-filter:blur(3px);padding:16px" onclick="if(event.target===this)closeAddSvcModal()">
@@ -11681,44 +11938,463 @@ function filterLog(q) {
   renderLogTerminal();
 }
 
-// Pintasan Lintas Tab (Global Jump To Log)
+// Pintasan Lintas Tab (Global Jump To Log) -> Mengarahkan langsung ke Modal Kontekstual Layanan!
 window.jumpToLog = function(unit, filterText) {
   if (!unit) return;
-  if (window.showTab) showTab('log');
+  openServiceLogModal(unit, '', '', filterText);
+};
 
-  populateLogSourcesSelect(unit);
+// =======================================================================
+// KONSOL LOG KONTEKSTUAL LAYANAN (NOC SERVICE LOG MODAL CONTROLLER)
+// =======================================================================
+let _svcModalActive = false;
+let _svcModalUnit = '';
+let _svcModalTargetId = '';
+let _svcModalRawBuf = '';
+let _svcModalVersion = 0;
+let _svcModalLiveTail = true;
+let _svcModalSearchQuery = '';
+let _svcModalLevelFilter = 'all';
 
-  const sel = document.getElementById('log-unit');
-  if (sel) {
-    let found = false;
-    for (let i = 0; i < sel.options.length; i++) {
-      if (sel.options[i].value === unit) {
-        sel.selectedIndex = i;
-        found = true;
-        break;
+function openServiceLogModal(unitName, status, port, filterText) {
+  if (!unitName) return;
+  _svcModalActive = true;
+  _svcModalVersion++;
+  const curVer = _svcModalVersion;
+  _svcModalUnit = String(unitName).replace(/\.service$/, '');
+  const uLower = _svcModalUnit.toLowerCase();
+
+  const modal = document.getElementById('svc-log-modal');
+  const nameEl = document.getElementById('svc-modal-unit-name');
+  const stsBadge = document.getElementById('svc-modal-status-badge');
+  const portBadge = document.getElementById('svc-modal-port-badge');
+  const pillsBar = document.getElementById('svc-modal-sources-bar');
+
+  if (nameEl) nameEl.textContent = _svcModalUnit + '.service';
+
+  if (stsBadge) {
+    if (status) {
+      stsBadge.textContent = String(status).toUpperCase();
+      stsBadge.className = (status === 'running' || status === 'up') ? 'badge badge-up' : (status === 'failed' ? 'badge badge-danger' : 'badge badge-muted');
+      stsBadge.style.display = 'inline-block';
+    } else {
+      stsBadge.style.display = 'none';
+    }
+  }
+
+  if (portBadge) {
+    if (port) {
+      portBadge.textContent = 'Port ' + port;
+      portBadge.style.display = 'inline-block';
+    } else {
+      portBadge.style.display = 'none';
+    }
+  }
+
+  // Tentukan sumber berkas log nyata untuk layanan ini
+  const availableSources = [];
+
+  if (uLower.includes('nginx')) {
+    if (Array.isArray(SERVER_AVAILABLE_LOGS)) {
+      SERVER_AVAILABLE_LOGS.forEach(l => {
+        if (l.id === 'NGINX_ACCESS') availableSources.push({ id: 'NGINX_ACCESS', label: 'Access Log', desc: l.desc || '/var/log/nginx/access.log' });
+        if (l.id === 'NGINX_ERROR') availableSources.push({ id: 'NGINX_ERROR', label: 'Error Log', desc: l.desc || '/var/log/nginx/error.log' });
+      });
+    }
+    availableSources.push({ id: _svcModalUnit, label: 'Jurnal Systemd', desc: 'journalctl -u ' + _svcModalUnit });
+  } else if (uLower.includes('apache') || uLower.includes('httpd')) {
+    if (Array.isArray(SERVER_AVAILABLE_LOGS)) {
+      SERVER_AVAILABLE_LOGS.forEach(l => {
+        if (l.id === 'APACHE_ACCESS') availableSources.push({ id: 'APACHE_ACCESS', label: 'Access Log', desc: l.desc || '/var/log/apache2/access.log' });
+        if (l.id === 'APACHE_ERROR') availableSources.push({ id: 'APACHE_ERROR', label: 'Error Log', desc: l.desc || '/var/log/apache2/error.log' });
+      });
+    }
+    availableSources.push({ id: _svcModalUnit, label: 'Jurnal Systemd', desc: 'journalctl -u ' + _svcModalUnit });
+  } else if (uLower.includes('mariadb') || uLower.includes('mysql')) {
+    if (Array.isArray(SERVER_AVAILABLE_LOGS)) {
+      SERVER_AVAILABLE_LOGS.forEach(l => {
+        if (l.id === 'MARIADB_ERROR') availableSources.push({ id: 'MARIADB_ERROR', label: 'Error Log', desc: l.desc || '/var/log/mysql/error.log' });
+        if (l.id === 'MARIADB_SLOW') availableSources.push({ id: 'MARIADB_SLOW', label: 'Slow Query Log', desc: l.desc || '/var/log/mysql/mariadb-slow.log' });
+      });
+    }
+    availableSources.push({ id: _svcModalUnit, label: 'Jurnal Systemd', desc: 'journalctl -u ' + _svcModalUnit });
+  } else if (uLower.includes('sshd') || uLower === 'ssh') {
+    if (Array.isArray(SERVER_AVAILABLE_LOGS)) {
+      SERVER_AVAILABLE_LOGS.forEach(l => {
+        if (l.id === 'AUTH') availableSources.push({ id: 'AUTH', label: 'Log Autentikasi', desc: l.desc || '/var/log/auth.log' });
+      });
+    }
+    availableSources.push({ id: _svcModalUnit, label: 'Jurnal Systemd', desc: 'journalctl -u ' + _svcModalUnit });
+  } else {
+    availableSources.push({ id: _svcModalUnit, label: 'Jurnal Systemd (' + _svcModalUnit + '.service)', desc: 'journalctl -u ' + _svcModalUnit });
+  }
+
+  // Render pills
+  if (pillsBar) {
+    if (availableSources.length > 1) {
+      pillsBar.style.display = 'flex';
+      pillsBar.innerHTML = '';
+      availableSources.forEach((src, idx) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'noc-svc-pill-btn' + (idx === 0 ? ' is-active' : '');
+        btn.innerHTML = `<span>${escHtmlLog(src.label)}</span><span style="font-size:10px;opacity:0.65">(${escHtmlLog(src.desc)})</span>`;
+        btn.onclick = () => selectSvcModalSource(src.id, src.desc, btn);
+        pillsBar.appendChild(btn);
+      });
+    } else {
+      pillsBar.style.display = 'none';
+      pillsBar.innerHTML = '';
+    }
+  }
+
+  _svcModalTargetId = availableSources[0].id;
+  const targetLabel = document.getElementById('svc-modal-target-path');
+  if (targetLabel) targetLabel.textContent = availableSources[0].desc;
+
+  // Reset filter input
+  const fInp = document.getElementById('svc-modal-filter-input');
+  if (fInp) fInp.value = filterText || '';
+  _svcModalSearchQuery = filterText || '';
+
+  const clearBtn = document.getElementById('svc-modal-clear-search-btn');
+  if (clearBtn) clearBtn.style.display = _svcModalSearchQuery ? 'block' : 'none';
+
+  // Tampilkan modal
+  if (modal) modal.style.display = 'flex';
+
+  setupSvcModalScrollTracking();
+  updateSvcModalTailUI();
+
+  // Muat data log awal
+  _svcModalRawBuf = '';
+  renderSvcModalTerminal();
+  chainNextSvcModal(curVer);
+}
+
+function selectSvcModalSource(targetId, targetDesc, btnEl) {
+  _svcModalTargetId = targetId;
+  const targetLabel = document.getElementById('svc-modal-target-path');
+  if (targetLabel) targetLabel.textContent = targetDesc;
+
+  const pills = document.querySelectorAll('#svc-modal-sources-bar .noc-svc-pill-btn');
+  pills.forEach(p => p.classList.remove('is-active'));
+  if (btnEl) btnEl.classList.add('is-active');
+
+  _svcModalVersion++;
+  _svcModalRawBuf = '';
+  renderSvcModalTerminal();
+  chainNextSvcModal(_svcModalVersion);
+}
+
+function closeServiceLogModal() {
+  _svcModalActive = false;
+  _svcModalVersion++;
+  const modal = document.getElementById('svc-log-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+function setSvcModalState(t) {
+  const el = document.getElementById('svc-modal-state-text');
+  if (el) el.textContent = t || '';
+}
+
+async function chainNextSvcModal(version) {
+  if (!_svcModalActive || version !== _svcModalVersion) return;
+
+  const lines = parseInt(document.getElementById('svc-modal-lines-select')?.value, 10) || 200;
+  const overlay = document.getElementById('svc-modal-overlay');
+  const overlayText = document.getElementById('svc-modal-overlay-text');
+
+  if (!_svcModalRawBuf && overlay) {
+    overlay.style.display = 'flex';
+    if (overlayText) overlayText.textContent = `Memuat log ${_svcModalTargetId} dari agen…`;
+  }
+
+  setSvcModalState('memuat…');
+
+  let rid;
+  try {
+    const r = await fetch('/api/logs/request', {
+      method: 'POST', credentials: 'same-origin',
+      headers: {'Content-Type': 'application/json', 'X-CSRF-Token': getCsrf()},
+      body: JSON.stringify({server_id: SID, unit: _svcModalTargetId, lines: lines}),
+    });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.detail || ('HTTP ' + r.status));
+    rid = j.id;
+  } catch (e) {
+    setSvcModalState('gagal kirim');
+    if (overlay && overlayText) {
+      overlay.style.display = 'flex';
+      overlayText.textContent = `Gagal mengirim instruksi log: ${e.message}`;
+    }
+    scheduleNextSvcModal(version);
+    return;
+  }
+
+  setSvcModalState('memproses…');
+  const started = Date.now();
+  while (true) {
+    if (!_svcModalActive || version !== _svcModalVersion) return;
+    if (Date.now() - started > 45000) {
+      if (overlay && overlayText) {
+        overlay.style.display = 'flex';
+        overlayText.textContent = '[Agen Pantau tidak merespons dalam 45 detik]';
+      }
+      setSvcModalState('offline');
+      return;
+    }
+
+    await sleepMs(1200);
+    let j;
+    try {
+      const r = await fetch('/api/logs/request/' + rid, {credentials: 'same-origin'});
+      j = await r.json();
+    } catch (e) {
+      continue;
+    }
+
+    if (!_svcModalActive || version !== _svcModalVersion) return;
+
+    if (j.status === 'success') {
+      _svcModalRawBuf = j.result || '[log kosong]';
+      renderSvcModalTerminal();
+      setSvcModalState('');
+      scheduleNextSvcModal(version);
+      return;
+    }
+    if (j.status === 'failed') {
+      _svcModalRawBuf = j.result || '[gagal membaca log dari host]';
+      renderSvcModalTerminal();
+      setSvcModalState('gagal');
+      scheduleNextSvcModal(version);
+      return;
+    }
+    setSvcModalState(j.status === 'executing' ? 'membaca berkas…' : 'antrean…');
+  }
+}
+
+function scheduleNextSvcModal(version) {
+  setTimeout(() => {
+    if (!_svcModalActive || version !== _svcModalVersion) return;
+    if (document.hidden) return;
+    chainNextSvcModal(version);
+  }, 4000);
+}
+
+function renderSvcModalTerminal() {
+  const rowsEl = document.getElementById('svc-modal-rows');
+  const overlayEl = document.getElementById('svc-modal-overlay');
+  const matchCountEl = document.getElementById('svc-modal-match-count');
+  const lineCountEl = document.getElementById('svc-modal-line-count');
+  const wrapEl = document.getElementById('svc-modal-viewport');
+
+  if (!rowsEl) return;
+
+  if (!_svcModalRawBuf) {
+    rowsEl.innerHTML = '';
+    return;
+  }
+
+  if (overlayEl) overlayEl.style.display = 'none';
+
+  let rawLines = _svcModalRawBuf.split('\n');
+  if (rawLines.length > 1 && rawLines[rawLines.length - 1] === '') {
+    rawLines.pop();
+  }
+  const totalCount = rawLines.length;
+
+  const q = (_svcModalSearchQuery || '').toLowerCase().trim();
+  const lvl = _svcModalLevelFilter || 'all';
+
+  const rowsHtml = [];
+  let matchedCount = 0;
+
+  for (let i = 0; i < rawLines.length; i++) {
+    const line = rawLines[i];
+    const lLower = line.toLowerCase();
+
+    // Level filter
+    if (lvl === 'err') {
+      const isErr = lLower.includes('err') || lLower.includes('crit') || lLower.includes('emerg') ||
+                    lLower.includes('alert') || lLower.includes('fatal') || lLower.includes('panic') ||
+                    /\b(5\d\d)\b/.test(line);
+      if (!isErr) continue;
+    } else if (lvl === 'warn') {
+      const isWarn = lLower.includes('warn') || /\b(4\d\d)\b/.test(line);
+      if (!isWarn) continue;
+    } else if (lvl === 'http_err') {
+      const isHttpErr = /\b(4\d\d|5\d\d)\b/.test(line);
+      if (!isHttpErr) continue;
+    } else if (lvl === 'info') {
+      const isInfo = lLower.includes('info') || lLower.includes('notice') || /\b(200|201|204)\b/.test(line);
+      if (!isInfo) continue;
+    }
+
+    // Query filter
+    if (q && !lLower.includes(q)) {
+      continue;
+    }
+
+    matchedCount++;
+    const formatted = formatLogLine(line, q);
+    rowsHtml.push(`<div class="noc-log-row"><div class="noc-log-num">${i + 1}</div><div class="noc-log-line">${formatted}</div></div>`);
+  }
+
+  if (matchCountEl) {
+    if (q || lvl !== 'all') {
+      matchCountEl.textContent = `${matchedCount} / ${totalCount} cocok`;
+      matchCountEl.style.color = matchedCount ? 'var(--blue)' : 'var(--red)';
+    } else {
+      matchCountEl.textContent = '';
+    }
+  }
+
+  if (lineCountEl) {
+    lineCountEl.textContent = `${matchedCount} baris`;
+  }
+
+  if (matchedCount === 0) {
+    rowsEl.innerHTML = '<div style="padding:20px;color:var(--dim);font-style:italic;font-family:var(--font-mono);font-size:12px;text-align:center">[Tidak ada baris yang sesuai dengan kriteria filter]</div>';
+    return;
+  }
+
+  rowsEl.innerHTML = rowsHtml.join('');
+
+  if (_svcModalLiveTail && wrapEl) {
+    wrapEl.scrollTop = wrapEl.scrollHeight;
+  }
+}
+
+function setupSvcModalScrollTracking() {
+  const wrap = document.getElementById('svc-modal-viewport');
+  if (!wrap) return;
+  wrap.onscroll = () => {
+    const distFromBottom = wrap.scrollHeight - wrap.scrollTop - wrap.clientHeight;
+    if (distFromBottom > 45) {
+      if (_svcModalLiveTail) {
+        _svcModalLiveTail = false;
+        updateSvcModalTailUI();
+      }
+    } else if (distFromBottom <= 15) {
+      if (!_svcModalLiveTail) {
+        _svcModalLiveTail = true;
+        updateSvcModalTailUI();
       }
     }
-    if (!found) {
-      const opt = document.createElement('option');
-      opt.value = unit;
-      opt.textContent = unit.endsWith('.service') ? unit : unit + '.service';
-      sel.appendChild(opt);
-      sel.value = unit;
-    }
-    changeUnit();
+  };
+}
+
+function updateSvcModalTailUI() {
+  const scrollBtn = document.getElementById('svc-modal-scroll-btn');
+  const tailBadge = document.getElementById('svc-modal-tail-badge');
+  const tailDot = document.getElementById('svc-modal-tail-dot');
+
+  if (scrollBtn) {
+    scrollBtn.style.display = _svcModalLiveTail ? 'none' : 'inline-flex';
+  }
+  if (tailBadge) {
+    tailBadge.textContent = _svcModalLiveTail ? 'AKTIF' : 'DIJEDA';
+    tailBadge.className = _svcModalLiveTail ? 'badge badge-success' : 'badge badge-warn';
+  }
+  if (tailDot) {
+    tailDot.style.background = _svcModalLiveTail ? '#10b981' : '#f59e0b';
+  }
+}
+
+function toggleSvcModalLiveTail() {
+  _svcModalLiveTail = !_svcModalLiveTail;
+  if (_svcModalLiveTail) {
+    const wrap = document.getElementById('svc-modal-viewport');
+    if (wrap) wrap.scrollTop = wrap.scrollHeight;
+  }
+  updateSvcModalTailUI();
+}
+
+function resumeSvcModalTail() {
+  _svcModalLiveTail = true;
+  const wrap = document.getElementById('svc-modal-viewport');
+  if (wrap) wrap.scrollTop = wrap.scrollHeight;
+  updateSvcModalTailUI();
+}
+
+function refreshSvcModalLog() {
+  _svcModalVersion++;
+  chainNextSvcModal(_svcModalVersion);
+}
+
+function changeSvcModalLines() {
+  _svcModalVersion++;
+  _svcModalRawBuf = '';
+  renderSvcModalTerminal();
+  chainNextSvcModal(_svcModalVersion);
+}
+
+function applySvcModalFilter() {
+  const fInp = document.getElementById('svc-modal-filter-input');
+  const lSel = document.getElementById('svc-modal-level-select');
+  const clearBtn = document.getElementById('svc-modal-clear-search-btn');
+
+  _svcModalSearchQuery = fInp ? fInp.value : '';
+  _svcModalLevelFilter = lSel ? lSel.value : 'all';
+
+  if (clearBtn) {
+    clearBtn.style.display = _svcModalSearchQuery ? 'block' : 'none';
   }
 
-  if (filterText) {
-    const fInp = document.getElementById('log-filter');
-    if (fInp) {
-      fInp.value = filterText;
-      applyLogFilters();
+  renderSvcModalTerminal();
+}
+
+function clearSvcModalFilter() {
+  const fInp = document.getElementById('svc-modal-filter-input');
+  if (fInp) fInp.value = '';
+  applySvcModalFilter();
+}
+
+async function copySvcModalLog() {
+  if (!_svcModalRawBuf) {
+    showToast('Belum ada data log untuk disalin', false);
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(_svcModalRawBuf);
+    showToast('Seluruh teks log berhasil disalin ke clipboard!', true);
+  } catch (e) {
+    showToast('Gagal menyalin: ' + e.message, false);
+  }
+}
+
+function downloadSvcModalLog() {
+  if (!_svcModalRawBuf) {
+    showToast('Tidak ada data log untuk diunduh', false);
+    return;
+  }
+  const now = new Date();
+  const dateStr = now.toISOString().slice(0, 10);
+  const fname = `${SERVER_NAME}-${_svcModalUnit}-${_svcModalTargetId}-${dateStr}.log`;
+
+  const blob = new Blob([_svcModalRawBuf], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fname;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+  showToast(`Log berhasil diunduh sebagai ${fname}`, true);
+}
+
+// Tutup modal dengan tombol Escape
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    const modal = document.getElementById('svc-log-modal');
+    if (modal && modal.style.display !== 'none') {
+      closeServiceLogModal();
     }
   }
-
-  const card = document.getElementById('log-card');
-  if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
-};
+});
 
 // Inisialisasi awal listener scroll konsol log
 document.addEventListener('DOMContentLoaded', () => {
@@ -13242,9 +13918,9 @@ function renderSystemdTable() {
           <summary class="btn btn-xs btn-ghost btn-noc-act" title="${isEn ? 'Unit Actions' : 'Menu Aksi Unit'}">${isEn ? 'Actions ▾' : 'Aksi ▾'}</summary>
           <div class="noc-act-dropdown-menu">
             ${(isViewer || !canSvc) ? `
-              <button type="button" class="noc-act-dropdown-item" onclick="jumpToLog('${baseNameEsc}')">
+              <button type="button" class="noc-act-dropdown-item" onclick="openServiceLogModal('${baseNameEsc}', '${u.status || ''}', '${matchedPort || ''}')">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
-                <span>${isEn ? 'View Journalctl Logs' : 'Lihat Log Journalctl'}</span>
+                <span>${isEn ? 'View Journalctl Logs' : 'Lihat Log Service'}</span>
               </button>
             ` : `
               <button type="button" class="noc-act-dropdown-item" ${disAttr} onclick="systemdAction('restart', '${nameEsc}', this)" title="Restart unit service ${nameEsc}">
@@ -13267,9 +13943,9 @@ function renderSystemdTable() {
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
                 <span>${isEnabled ? 'Nonaktifkan Boot' : 'Aktifkan Boot'}</span>
               </button>
-              <button type="button" class="noc-act-dropdown-item" onclick="jumpToLog('${baseNameEsc}')">
+              <button type="button" class="noc-act-dropdown-item" onclick="openServiceLogModal('${baseNameEsc}', '${u.status || ''}', '${matchedPort || ''}')">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
-                <span>Lihat Log Journalctl</span>
+                <span>Lihat Log Service</span>
               </button>
             `}
           </div>

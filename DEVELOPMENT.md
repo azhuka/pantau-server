@@ -354,6 +354,28 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.187
+
+- **Tipe Rilis:** Inovasi Modal Log Kontekstual Layanan & Integrasi Langsung Tab Services (*Contextual Service Log Modal & Direct Tab Services Integration*)
+- **Fokus Utama:** Mengimplementasikan Model 3 (Log Kontekstual) di mana observabilitas log melekat langsung pada masing-masing layanan di Tab Services (`/servers/{id}?tab=layanan`) tanpa memindahkan operator ke tab terpisah:
+  1. **Modal Log Kontekstual Layanan (`#svc-log-modal`):**
+     - Membuka jendela konsol terminal langsung saat operator mengklik tombol "Lihat Log Service" pada tabel Monitored Services maupun Systemd Services.
+     - Menyajikan identitas tegas (nama service, badge status running/up/failed, port listening).
+     - Menampilkan sub-tab pil sumber log yang khusus relevan bagi layanan tersebut:
+       - *Nginx:* `Access Log` (`/var/log/nginx/access.log`), `Error Log` (`/var/log/nginx/error.log`), dan `Jurnal Systemd`.
+       - *MariaDB/MySQL:* `Error Log` (`/var/log/mysql/error.log`), `Slow Query Log` (`mariadb-slow.log`), dan `Jurnal Systemd`.
+       - *Apache:* `Access Log`, `Error Log`, dan `Jurnal Systemd`.
+       - *Layanan Sistem Lainnya:* Langsung menyajikan `Jurnal Systemd` (`journalctl -u <unit>`) tanpa tab redundan.
+  2. **Ergonomi UI/UX & Kerapian Layar:**
+     - Menghilangkan tombol melayang yang menutupi teks log; tombol `[ ↓ Ke Baris Terbaru ]` diletakkan rapi di statusbar footer.
+     - Penutupan modal cepat dan fleksibel melalui tombol `[×]`, tombol `Escape` pada keyboard, atau klik di luar modal (*backdrop*).
+     - Filter pencarian instan dengan sorotan kata (`<mark>`) dan filter tingkat keparahan (Error, Warn, HTTP 4xx/5xx, Info).
+  3. **Arsitektur Baris Presisi & Responsivitas:**
+     - Menggunakan arsitektur baris `.noc-log-row` dengan nomor baris native, mencegah nomor baris hantu saat teks panjang mengalami pembungkusan.
+     - Keselarasan penuh antara Dark Mode dan Light Mode.
+  4. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.187` pada seluruh 7 berkas inti repositori.
+
 ## Versi 4.8.186
 
 - **Tipe Rilis:** Deteksi Dinamis Berkas Log Nyata dari Agen Klien & Arsitektur Baris Terminal Log Presisi (*Dynamic Client-Agent Log Discovery Telemetry & Precision Row-by-Row NOC Log Console Architecture*)
