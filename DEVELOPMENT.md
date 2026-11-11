@@ -507,6 +507,26 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
   3. **Sinkronisasi SemVer 7 Berkas:**
      - Sinkronisasi versi SemVer `4.8.157` pada 7 berkas inti repositori.
 
+## Versi 4.8.176
+
+- **Tipe Rilis:** Standardisasi Sistem Kolom Tabel NOC Proporsional (*NOC Table Semantic Column Architecture*)
+- **Fokus Utama:** Menerapkan sistem kolom tabel baku berbasis kelas semantik CSS terpusat pada antarmuka NOC:
+  1. **Prinsip Alokasi Kolom Proporsional (`server/static/css/pantau-noc.css`):**
+     - **Kolom Ringkas (Snug/Fit):** Mengunci kolom status, badge, tag, metrik numerik tabular, waktu, dan aksi (`.col-status`, `.col-badge`, `.col-tag`, `.col-metric`, `.col-time`, `.col-act`) agar pas konten (`width: 1% !important; white-space: nowrap !important;`), mengeliminasi pemborosan ruang horizontal.
+     - **Kolom Informatif (Hero/Grow):** Kolom bermuatan teks penting (`.col-grow`, `.col-srv`, `.col-ip`, `.col-plat`, `.col-os`, `.col-cpu`, `.col-event`, `.col-guide`, `.col-target`, `.col-title-info`) menyerap seluruh sisa ruang layar secara fleksibel (`width: auto !important;`), memberikan keleluasaan optimal untuk membaca informasi detail tanpa terpotong kaku.
+     - **Pemberantasan Lebar Acak/Inline:** Menghapus seluruh deklarasi `style="min-width: ..."` acak pada elemen `<th>` dan pembatas sempit `max-width` inline pada `<td>`.
+  2. **Penerapan Sistem Baku pada Seluruh Tabel Utama:**
+     - `servers.html`: Armada server (`#servers-table`) dengan alokasi lega untuk Hostname, IP, Platform, OS, dan CPU, serta kolom metrik/status/tag/aksi yang padat dan efisien.
+     - `problems.html`: Tabel insiden terbuka dan riwayat selesai dengan kolom Kejadian & Panduan Solusi menyerap sisa ruang secara leluasa.
+     - `probing.html`: Tabel pemantauan endpoint (`#probesTable`) dengan kolom Nama & Target ekspansif.
+     - `maintenance.html`: Tabel jendela pemeliharaan (`#maintenanceTable`) dengan kolom Judul & Keterangan menyerap ruang.
+     - `audit.html`: Tabel audit aktivitas operator dengan kolom Target & Hasil Respons ekspansif.
+     - `profile.html` & `users.html`: Tabel manajemen pengguna dengan kolom Username menyerap ruang dan kolom peran/status/waktu/aksi ringkas.
+  3. **Kompatibilitas Penuh dengan PantauColManager:**
+     - Penyesuaian kolom tetap kompatibel secara mulus dengan manajer visibilitas kolom bawaan (*PantauColManager*).
+  4. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.176` pada 7 berkas inti repositori.
+
 ## Versi 4.8.175
 
 - **Tipe Rilis:** Penstabilan Tata Letak Bilah Filter pada Zoom 150% (*Filter Bar Reflow Hardening*)

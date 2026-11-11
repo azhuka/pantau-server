@@ -393,13 +393,13 @@
     <table class="table-compact noc-table-compact" id="maintenanceTable" style="width:100%;font-size:11.5px">
       <thead>
         <tr>
-          <th class="col-maint-status">STATUS</th>
-          <th class="col-maint-title">JUDUL &amp; KETERANGAN</th>
-          <th class="col-maint-scope">CAKUPAN SERVER</th>
-          <th class="col-maint-sched">POLA JADWAL</th>
-          <th class="col-maint-time">WAKTU &amp; HITUNG MUNDUR</th>
-          <th class="col-maint-author">PEMBUAT</th>
-          <th class="col-maint-act" style="text-align:right">AKSI</th>
+          <th class="col-status col-maint-status">STATUS</th>
+          <th class="col-grow col-title-info col-maint-title">JUDUL &amp; KETERANGAN</th>
+          <th class="col-badge col-maint-scope">CAKUPAN SERVER</th>
+          <th class="col-snug col-maint-sched">POLA JADWAL</th>
+          <th class="col-time col-maint-time">WAKTU &amp; HITUNG MUNDUR</th>
+          <th class="col-snug col-maint-author">PEMBUAT</th>
+          <th class="col-act col-maint-act" style="text-align:right">AKSI</th>
         </tr>
       </thead>
       <tbody id="maintenanceTbody">
@@ -905,16 +905,16 @@ function renderTable(list) {
 
     html += `
       <tr>
-        <td class="col-maint-status" style="vertical-align:middle">${statusBadge}</td>
-        <td class="col-maint-title" style="vertical-align:middle">
+        <td class="col-status col-maint-status" style="vertical-align:middle">${statusBadge}</td>
+        <td class="col-grow col-title-info col-maint-title" style="vertical-align:middle">
           <div style="font-weight:700;color:var(--text-bright);font-size:12px">${escapeHtml(w.title)}</div>
           ${w.description ? `<div style="font-size:10.5px;color:var(--dim);margin-top:2px;line-height:1.35;word-break:break-word">${escapeHtml(w.description)}</div>` : ''}
         </td>
-        <td class="col-maint-scope" style="vertical-align:middle">${scopeBadge}</td>
-        <td class="col-maint-sched" style="vertical-align:middle">${scheduleDesc}</td>
-        <td class="col-maint-time" style="vertical-align:middle">${timeCol}</td>
-        <td class="col-maint-author" style="vertical-align:middle;color:var(--dim);font-size:11px">${escapeHtml(w.created_by || 'SISTEM')}</td>
-        <td class="col-maint-act" style="vertical-align:middle;text-align:right">${actionBtns}</td>
+        <td class="col-badge col-maint-scope" style="vertical-align:middle">${scopeBadge}</td>
+        <td class="col-snug col-maint-sched" style="vertical-align:middle">${scheduleDesc}</td>
+        <td class="col-time col-maint-time" style="vertical-align:middle">${timeCol}</td>
+        <td class="col-snug col-maint-author" style="vertical-align:middle;color:var(--dim);font-size:11px">${escapeHtml(w.created_by || 'SISTEM')}</td>
+        <td class="col-act col-maint-act" style="vertical-align:middle;text-align:right">${actionBtns}</td>
       </tr>
     `;
   });

@@ -1020,35 +1020,100 @@ table.noc-table-compact tbody tr:hover {
   background: var(--card-hover, rgba(255, 255, 255, 0.035));
 }
 
-/* Token Utilitas Kolom Baku */
-.col-fixed-cell,
-th.col-fixed-cell,
-td.col-fixed-cell {
+/* Token Utilitas Kolom Baku & Proporsional NOC
+   Prinsip:
+   1. Kolom Ringkas (Snug/Fit): Mengunci badge, metrik, status, waktu, dan aksi agar pas konten
+      (width: 1%; white-space: nowrap), hemat ruang horizontal tanpa whitespace boros.
+   2. Kolom Informatif (Hero/Grow): Menyerap seluruh sisa ruang layar secara fleksibel
+      (width: auto), leluasa membaca teks penting (Hostname, IP, Platform, OS, CPU, Kejadian, Target).
+*/
+.col-snug, th.col-snug, td.col-snug,
+.col-fit,  th.col-fit,  td.col-fit,
+.col-fixed-cell, th.col-fixed-cell, td.col-fixed-cell {
   width: 1% !important;
   white-space: nowrap !important;
+  box-sizing: border-box;
 }
-.col-hero-cell,
-th.col-hero-cell,
-td.col-hero-cell {
-  width: auto !important;
-  min-width: 180px;
-  word-break: break-word;
-  line-height: 1.35;
+
+/* Kolom Ringkas Khusus Status, Badge & Tag */
+.col-status, th.col-status, td.col-status,
+.col-badge,  th.col-badge,  td.col-badge,
+.col-tag,    th.col-tag,    td.col-tag {
+  width: 1% !important;
+  white-space: nowrap !important;
+  text-align: center !important;
+  box-sizing: border-box;
 }
-.col-num-cell,
-th.col-num-cell,
-td.col-num-cell {
+
+/* Kolom Ringkas Khusus Metrik & Numerik Tabular */
+.col-num-cell, th.col-num-cell, td.col-num-cell,
+.col-metric,   th.col-metric,   td.col-metric {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   text-align: right !important;
   white-space: nowrap !important;
   font-variant-numeric: tabular-nums;
+  width: 1% !important;
+  box-sizing: border-box;
 }
+
+/* Kolom Ringkas Khusus Waktu & Durasi */
+.col-time,   th.col-time,   td.col-time,
+.col-uptime, th.col-uptime, td.col-uptime {
+  width: 1% !important;
+  white-space: nowrap !important;
+  box-sizing: border-box;
+}
+
 .col-center-cell,
 th.col-center-cell,
 td.col-center-cell {
   text-align: center !important;
   white-space: nowrap !important;
 }
+
+/* Kolom Ringkas Khusus Aksi / Tindakan */
+.col-actions, th.col-actions, td.col-actions,
+.col-act,     th.col-act,     td.col-act {
+  width: 1% !important;
+  min-width: 88px;
+  text-align: center !important;
+  white-space: nowrap !important;
+  box-sizing: border-box;
+}
+
+/* Kolom Informatif (Hero / Grow): Menyerap Seluruh Sisa Ruang Layar */
+.col-grow, th.col-grow, td.col-grow,
+.col-hero, th.col-hero, td.col-hero,
+.col-hero-cell, th.col-hero-cell, td.col-hero-cell,
+.col-info, th.col-info, td.col-info {
+  width: auto !important;
+  box-sizing: border-box;
+}
+
+/* Pembatas minimum semantik kolom informatif agar tabel tetap proporsional saat layar sempit */
+th.col-srv, td.col-srv               { min-width: 140px; }
+th.col-ip, td.col-ip                 { min-width: 110px; }
+th.col-plat, td.col-plat             { min-width: 140px; }
+th.col-os, td.col-os                 { min-width: 130px; }
+th.col-cpu, td.col-cpu               { min-width: 145px; }
+th.col-event, td.col-event           { min-width: 220px; line-height: 1.35; }
+th.col-guide, td.col-guide           { min-width: 220px; line-height: 1.35; }
+th.col-target, td.col-target         { min-width: 240px; }
+th.col-title-info, td.col-title-info { min-width: 220px; }
+
+/* Utilitas Perilaku & Kerapian Teks Sel */
+.cell-nowrap, th.cell-nowrap, td.cell-nowrap { white-space: nowrap !important; }
+.cell-wrap,   th.cell-wrap,   td.cell-wrap   { white-space: normal !important; word-break: break-word; }
+.cell-trunc,  th.cell-trunc,  td.cell-trunc  { overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important; }
+.cell-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  white-space: normal;
+  line-height: 1.35;
+}
+.noc-cell-secondary { color: var(--dim, #94a3b8); font-size: 10px; }
 
 /* Token Tombol Mikro Aksi Tabel */
 .tbl-action-btn {

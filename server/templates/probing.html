@@ -91,8 +91,8 @@
 
 /* Kolom Proporsional */
 .th-status, .td-status {
-  width: 95px !important;
-  min-width: 90px !important;
+  width: 1% !important;
+  white-space: nowrap !important;
   text-align: center !important;
   position: sticky;
   left: 0;
@@ -109,29 +109,32 @@
 }
 .th-target, .td-target {
   width: auto !important;
-  min-width: 220px !important;
+  min-width: 240px !important;
 }
 .th-server, .td-server {
-  width: 140px !important;
-  min-width: 120px !important;
+  width: 1% !important;
+  white-space: nowrap !important;
+  min-width: 130px;
 }
 .th-latency, .td-latency {
-  width: 150px !important;
-  min-width: 130px !important;
+  width: 1% !important;
+  white-space: nowrap !important;
+  text-align: right !important;
 }
 .th-uptime, .td-uptime {
-  width: 135px !important;
-  min-width: 120px !important;
+  width: 1% !important;
+  white-space: nowrap !important;
+  text-align: center !important;
 }
 .th-freq, .td-freq {
-  width: 125px !important;
-  min-width: 110px !important;
+  width: 1% !important;
+  white-space: nowrap !important;
 }
 .th-actions, .td-actions {
-  width: 160px !important;
-  min-width: 150px !important;
+  width: 1% !important;
+  min-width: 140px !important;
   white-space: nowrap !important;
-  text-align: left !important;
+  text-align: center !important;
   position: sticky;
   right: 0;
   background: var(--col-act-bg, #0b111e);
@@ -598,13 +601,13 @@
     <table class="probe-table" id="probesTable">
       <thead>
         <tr>
-          <th class="th-status">Status</th>
-          <th class="th-target">Nama &amp; Target</th>
-          <th class="th-server">Server Terkait</th>
-          <th class="th-latency">Latensi &amp; Respons</th>
-          <th class="th-uptime">Ketersediaan (24j / 30h)</th>
-          <th class="th-freq">Pemeriksaan</th>
-          <th class="th-actions">Tindakan</th>
+          <th class="col-status th-status">Status</th>
+          <th class="col-grow col-target th-target">Nama &amp; Target</th>
+          <th class="col-grow col-srv th-server">Server Terkait</th>
+          <th class="col-metric th-latency">Latensi &amp; Respons</th>
+          <th class="col-metric th-uptime">Ketersediaan (24j / 30h)</th>
+          <th class="col-time th-freq">Pemeriksaan</th>
+          <th class="col-act th-actions">Tindakan</th>
         </tr>
       </thead>
       <tbody id="probesTbody">
@@ -1079,10 +1082,10 @@ function renderTable() {
 
     html += `
       <tr id="probe-row-${p.id}">
-        <td class="td-status">
+        <td class="col-status td-status">
           <span class="status-pill ${pillClass}">${pillLabel}</span>
         </td>
-        <td class="td-target">
+        <td class="col-grow col-target td-target">
           <div style="display:flex;align-items:center;gap:6px">
             <span class="type-badge ${typeClass}">${typeLabel}</span>
             <strong style="color:var(--text-heading, #fff);font-size:12px">${escapeHtml(p.name)}</strong>
@@ -1093,24 +1096,24 @@ function renderTable() {
           </div>
           ${sslBadge}
         </td>
-        <td class="td-server">
+        <td class="col-grow col-srv td-server cell-nowrap">
           ${serverHtml}
         </td>
-        <td class="td-latency">
+        <td class="col-metric td-latency">
           ${latHtml}
         </td>
-        <td class="td-uptime">
+        <td class="col-metric td-uptime">
           <div style="font-family:ui-monospace,monospace;font-size:11.5px">
             <span style="color:${up24Color};font-weight:${up24Num < 95.0 ? '700' : 'normal'}">${up24}%</span>
             <span style="color:var(--dim);margin:0 2px">/</span>
             <span style="color:${up30Color}">${up30}%</span>
           </div>
         </td>
-        <td class="td-freq">
+        <td class="col-time td-freq">
           <div style="font-size:11px;color:var(--text)">${lastCheckStr}</div>
           <div style="font-size:10px;color:var(--dim)">tiap ${p.interval_seconds}d</div>
         </td>
-        <td class="td-actions">
+        <td class="col-act td-actions">
           <div style="display:inline-flex;gap:4px;align-items:center">
             <button type="button" class="btn btn-ghost btn-sm" onclick="testProbeNow(${p.id}, this)" title="Uji Sambungan" aria-label="Uji Sambungan">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color:var(--blue)"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>

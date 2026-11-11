@@ -38,7 +38,7 @@
 }
 #servers-table th {
   white-space: nowrap;
-  padding: 7px 12px;
+  padding: 7px 10px;
   font-size: 10px;
   font-weight: 600;
   color: var(--dim);
@@ -46,20 +46,20 @@
   letter-spacing: .5px;
 }
 #servers-table td {
-  white-space: nowrap;
-  padding: 6px 12px;
+  padding: 6px 10px;
   font-size: 11px;
   vertical-align: middle;
 }
 #servers-table th:first-child,
 #servers-table td:first-child {
-  padding-left: 16px;
+  padding-left: 14px;
 }
 #servers-table th.col-act,
 #servers-table td.col-act {
-  width: 88px;
-  min-width: 88px;
-  padding-right: 16px;
+  width: 96px;
+  min-width: 96px;
+  padding-right: 12px;
+  text-align: center;
 }
 .group-header-row td:first-child,
 .group-header-row td.col-act {
@@ -192,18 +192,18 @@
   <table id="servers-table" class="noc-table-dense" style="width:100%;margin:0">
     <thead>
       <tr>
-        <th class="sortable col-srv-name" data-sort-key="server" data-col-title="Server" style="cursor:pointer;min-width:130px;white-space:nowrap" title="Nama host server dan klasifikasi lingkungan">Server <span class="sort-arrow" style="display:inline-flex;align-items:center;margin-left:3px;vertical-align:middle;color:var(--dim);opacity:0.45"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span></th>
-        <th class="col-fixed-cell" data-col-title="IP &amp; Interface" style="min-width:105px" title="Alamat IP utama dan network interface host">IP &amp; Interface</th>
-        <th class="col-hero-cell" data-col-title="Platform" style="min-width:130px" title="Platform virtualisasi atau server fisik dan model perangkat">Platform &amp; Virtualisasi</th>
-        <th class="col-hero-cell" data-col-title="Sistem Operasi" style="min-width:120px" title="Distribusi sistem operasi, versi kernel, dan arsitektur">Sistem Operasi</th>
-        <th class="col-hero-cell" data-col-title="Prosesor" style="min-width:110px" title="Model prosesor (CPU) dan jumlah inti">Prosesor</th>
-        <th class="sortable col-fixed-cell col-num-cell" data-sort-key="mem" data-col-title="Memori" style="cursor:pointer;min-width:85px" title="Kapasitas total memori utama (RAM) dan Swap">Memori <span class="sort-arrow" style="display:inline-flex;align-items:center;margin-left:3px;vertical-align:middle;color:var(--dim);opacity:0.45"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span></th>
-        <th class="col-fixed-cell col-num-cell" data-col-title="Disk" style="min-width:95px" title="Daftar partisi dan kapasitas storage fisik (Disk)">Disk / Storage</th>
-        <th class="sortable col-fixed-cell col-center-cell" data-sort-key="uptime" data-col-title="Uptime" style="cursor:pointer;min-width:90px" title="Uptime server sejak boot terakhir">Uptime <span class="sort-arrow" style="display:inline-flex;align-items:center;margin-left:3px;vertical-align:middle;color:var(--dim);opacity:0.45"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span></th>
-        <th class="col-fixed-cell col-center-cell" data-col-title="Agen &amp; APT" style="min-width:80px;text-align:center" title="Versi agen pemantau dan ketersediaan pembaruan packages (APT)">Agen &amp; APT</th>
-        <th class="col-fixed-cell col-center-cell" data-col-title="Tag" style="min-width:60px" title="Label kategori dan pengelompokan server">Tag</th>
-        <th class="col-fixed-cell col-center-cell" data-col-title="Status &amp; Lapor" style="min-width:80px;text-align:center" title="Status konektivitas dan waktu laporan data terakhir">Status &amp; Lapor</th>
-        <th class="col-fixed-cell col-act" data-col-title="Tindakan" style="width:88px;min-width:88px;text-align:center" title="Aksi operasional: rincian, edit, atau hapus server">Tindakan</th>
+        <th class="sortable col-grow col-srv" data-sort-key="server" data-col-title="Server" style="cursor:pointer" title="Nama host server dan klasifikasi lingkungan">Server <span class="sort-arrow" style="display:inline-flex;align-items:center;margin-left:3px;vertical-align:middle;color:var(--dim);opacity:0.45"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span></th>
+        <th class="col-grow col-ip" data-col-title="IP &amp; Interface" title="Alamat IP utama dan network interface host">IP &amp; Interface</th>
+        <th class="col-grow col-plat" data-col-title="Platform" title="Platform virtualisasi atau server fisik dan model perangkat">Platform &amp; Virtualisasi</th>
+        <th class="col-grow col-os" data-col-title="Sistem Operasi" title="Distribusi sistem operasi, versi kernel, dan arsitektur">Sistem Operasi</th>
+        <th class="col-grow col-cpu" data-col-title="Prosesor" title="Model prosesor (CPU) dan jumlah inti">Prosesor</th>
+        <th class="sortable col-metric col-num-cell" data-sort-key="mem" data-col-title="Memori" style="cursor:pointer" title="Kapasitas total memori utama (RAM) dan Swap">Memori <span class="sort-arrow" style="display:inline-flex;align-items:center;margin-left:3px;vertical-align:middle;color:var(--dim);opacity:0.45"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span></th>
+        <th class="col-metric col-num-cell" data-col-title="Disk" style="text-align:left !important" title="Daftar partisi dan kapasitas storage fisik (Disk)">Disk / Storage</th>
+        <th class="sortable col-uptime col-center-cell" data-sort-key="uptime" data-col-title="Uptime" style="cursor:pointer" title="Uptime server sejak boot terakhir">Uptime <span class="sort-arrow" style="display:inline-flex;align-items:center;margin-left:3px;vertical-align:middle;color:var(--dim);opacity:0.45"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span></th>
+        <th class="col-badge col-center-cell" data-col-title="Agen &amp; APT" title="Versi agen pemantau dan ketersediaan pembaruan packages (APT)">Agen &amp; APT</th>
+        <th class="col-tag col-center-cell" data-col-title="Tag" title="Label kategori dan pengelompokan server">Tag</th>
+        <th class="col-status col-center-cell" data-col-title="Status &amp; Lapor" title="Status konektivitas dan waktu laporan data terakhir">Status &amp; Lapor</th>
+        <th class="col-act" data-col-title="Tindakan" title="Aksi operasional: rincian, edit, atau hapus server">Tindakan</th>
       </tr>
     </thead>
     <tbody>
@@ -259,8 +259,8 @@
         data-cpu-cores="{{ srv._cpu_cores or 0 }}"
         data-last-seen="{{ srv.last_seen.isoformat() if srv.last_seen else '' }}">
       
-      <!-- Col 0: Server / Hostname -->
-      <td style="white-space:nowrap">
+      <!-- Col 0: Server / Hostname (Informatif Hero) -->
+      <td class="col-grow col-srv cell-nowrap">
         <div style="display:inline-flex;align-items:center;gap:5px;white-space:nowrap">
           <span id="srv-dot-{{ srv.id }}" class="dot {{ 'warn' if srv.is_maintenance else ('up' if srv._status_cls == 'badge-up' else 'down') }}" style="flex-shrink:0" title="{{ srv._status_label }}"></span>
           <a href="/servers/{{ srv.id }}" style="color:var(--text);font-weight:700;font-size:11px;text-decoration:none" class="hover-underline" id="srv-host-{{ srv.id }}">{{ srv.hostname }}</a>
@@ -275,12 +275,12 @@
           {% endif %}
         </div>
         {% if srv.notes %}
-        <div style="font-size:8.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;margin-top:1px" title="{{ srv.notes }}">{{ srv.notes }}</div>
+        <div style="font-size:8.5px;color:var(--dim);margin-top:1px" title="{{ srv.notes }}">{{ srv.notes }}</div>
         {% endif %}
       </td>
 
-      <!-- Col 1: IP & Interface -->
-      <td>
+      <!-- Col 1: IP & Interface (Informatif) -->
+      <td class="col-grow col-ip cell-nowrap">
         <div>
           <span class="copyable-ip mono" id="srv-ip-{{ srv.id }}" style="font-size:9.5px;color:#58a6ff;font-weight:600" onclick="copyIp('{{ srv.ip_address }}', event)" title="Klik untuk salin IP">{{ srv.ip_address }}</span>
         </div>
@@ -296,8 +296,8 @@
         </div>
       </td>
 
-      <!-- Col 2: Platform & Mesin -->
-      <td>
+      <!-- Col 2: Platform & Mesin (Informatif) -->
+      <td class="col-grow col-plat cell-nowrap">
         <div style="display:inline-flex;align-items:center;gap:3px">
           {% if srv._platform %}
             <span class="badge" style="font-size:8px;background:{{ srv._platform.badge_bg }};color:{{ srv._platform.badge_color }};border:1px solid {{ srv._platform.badge_border }};padding:0.5px 4px;display:inline-flex;align-items:center;gap:2.5px;font-weight:600" title="Platform: {{ srv._platform.label }}">
@@ -320,40 +320,40 @@
             </span>
           {% endif %}
         </div>
-        <div style="font-size:8.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;margin-top:1px" id="srv-hw-{{ srv.id }}" title="{{ srv._hw_model }}">{{ srv._hw_model }}</div>
+        <div style="font-size:8.5px;color:var(--dim);margin-top:1px" id="srv-hw-{{ srv.id }}" title="{{ srv._hw_model }}">{{ srv._hw_model }}</div>
       </td>
 
-      <!-- Col 3: Sistem Operasi -->
-      <td>
+      <!-- Col 3: Sistem Operasi (Informatif) -->
+      <td class="col-grow col-os cell-nowrap">
         <div style="font-weight:600;font-size:9.5px;white-space:nowrap" id="srv-os-{{ srv.id }}">{{ srv._os_name }}</div>
         <div class="mono" style="font-size:8.5px;color:var(--dim);white-space:nowrap" id="srv-kernel-{{ srv.id }}" title="Kernel: {{ srv._kernel }} ({{ srv._arch }})">{{ srv._kernel }} <span style="opacity:0.7">({{ srv._arch }})</span></div>
       </td>
 
-      <!-- Col 4: Prosesor -->
-      <td>
-        <div style="font-weight:600;font-size:9.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:145px" id="srv-cpumodel-{{ srv.id }}" title="{{ srv._cpu_model }}">{{ srv._cpu_model }}</div>
+      <!-- Col 4: Prosesor (Informatif) -->
+      <td class="col-grow col-cpu cell-nowrap">
+        <div style="font-weight:600;font-size:9.5px" id="srv-cpumodel-{{ srv.id }}" title="{{ srv._cpu_model }}">{{ srv._cpu_model }}</div>
         <div class="mono" style="font-size:8.5px;color:var(--dim)" id="srv-cpucores-{{ srv.id }}">{{ srv._cpu_cores }} Cores</div>
       </td>
 
-      <!-- Col 5: Memori -->
-      <td>
+      <!-- Col 5: Memori (Ringkas Metrik) -->
+      <td class="col-metric col-num-cell">
         <div class="mono" style="font-weight:600;font-size:9.5px" id="srv-ramtot-{{ srv.id }}">{{ srv._ram_total_str }}</div>
         <div class="mono" style="font-size:8.5px;color:var(--dim)" id="srv-swaptot-{{ srv.id }}">Swap: {{ srv._swap_total_str }}</div>
       </td>
 
-      <!-- Col 6: Penyimpanan -->
-      <td>
-        <div class="mono" style="font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px" id="srv-disk-{{ srv.id }}" title="{{ srv._disk_str }}">{{ srv._disk_str }}</div>
+      <!-- Col 6: Penyimpanan (Ringkas Metrik) -->
+      <td class="col-metric col-num-cell" style="text-align:left !important">
+        <div class="mono" style="font-size:9px" id="srv-disk-{{ srv.id }}" title="{{ srv._disk_str }}">{{ srv._disk_str }}</div>
       </td>
 
-      <!-- Col 7: Uptime & Boot -->
-      <td>
+      <!-- Col 7: Uptime & Boot (Ringkas Waktu) -->
+      <td class="col-uptime col-center-cell">
         <div class="mono" style="font-weight:600;font-size:9.5px" id="srv-uptime-{{ srv.id }}">{{ srv._uptime_str }}</div>
         <div class="mono" style="font-size:8px;color:var(--dim);white-space:nowrap" id="srv-boot-{{ srv.id }}" title="Boot Time">{{ srv._boot_time }}</div>
       </td>
 
-      <!-- Col 8: Agen & APT -->
-      <td style="text-align:center">
+      <!-- Col 8: Agen & APT (Ringkas Badge) -->
+      <td class="col-badge col-center-cell">
         <div>
           {% if srv._agent_version %}
             {% if srv._agent_outdated %}
@@ -378,8 +378,8 @@
         </div>
       </td>
 
-      <!-- Col 9: Tag -->
-      <td>
+      <!-- Col 9: Tag (Ringkas Tag) -->
+      <td class="col-tag col-center-cell">
         {% if srv.tags %}
         <div style="display:inline-flex;align-items:center;gap:3px;flex-wrap:wrap">
           {% for tag in (srv.tags or '').split(',') %}
@@ -395,8 +395,8 @@
         {% endif %}
       </td>
 
-      <!-- Col 10: Status & Lapor -->
-      <td style="text-align:center">
+      <!-- Col 10: Status & Lapor (Ringkas Status) -->
+      <td class="col-status col-center-cell">
         <div>
           <span class="badge {{ srv._status_cls }}" id="srv-sts-{{ srv.id }}" style="font-size:8px;padding:0.5px 4.5px;font-weight:700;letter-spacing:0.25px">{{ srv._status_label }}</span>
           {% if srv.is_maintenance and srv.maintenance_reason %}
@@ -408,8 +408,8 @@
         </div>
       </td>
 
-      <!-- Col 11: Tindakan -->
-      <td class="col-act" style="text-align:center;white-space:nowrap">
+      <!-- Col 11: Tindakan (Ringkas Aksi) -->
+      <td class="col-act">
         <div style="display:inline-flex;gap:4px;align-items:center;justify-content:center">
           <a href="/servers/{{ srv.id }}" class="btn btn-ghost btn-sm" style="padding:4px 7px" title="Buka Detail Server" aria-label="Rincian">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>

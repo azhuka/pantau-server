@@ -482,16 +482,16 @@
   
   <div id="prob-table-wrapper" style="overflow-x:auto">
     {% if open_problems %}
-    <table id="probtable" class="noc-table-dense" style="width:100%;min-width:980px;border-collapse:collapse">
+    <table id="probtable" class="noc-table-dense" style="width:100%;margin:0;border-collapse:collapse">
       <thead>
         <tr style="border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015)">
-          <th class="col-time" data-col-title="Waktu Mulai" style="padding:5px 10px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="Waktu saat insiden mulai terdeteksi">WAKTU MULAI</th>
-          <th class="col-server" data-col-title="Server" style="padding:5px 10px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="Host atau server tempat anomali atau gangguan terjadi">SERVER</th>
-          <th class="col-sev" data-col-title="Keparahan" style="padding:4px 8px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="Tingkat keparahan: Kritis, Gawat, Peringatan, atau Info">KEPARAHAN</th>
-          <th class="col-event" data-col-title="Kejadian" style="padding:5px 14px;font-size:10px;color:var(--dim);text-align:left;letter-spacing:0.6px;font-weight:700" title="Deskripsi ringkas mengenai anomali yang terjadi">KEJADIAN</th>
-          <th class="col-durasi" data-col-title="Durasi" style="padding:5px 10px;font-size:10px;color:var(--dim);text-align:right;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="Lama waktu insiden berlangsung hingga sekarang">DURASI</th>
-          <th class="col-tips" data-col-title="Panduan Solusi" style="padding:5px 12px;font-size:10px;color:var(--dim);text-align:left;letter-spacing:0.6px;font-weight:700" title="Saran langkah penanganan praktis untuk menyelesaikan insiden">PANDUAN SOLUSI</th>
-          <th class="col-act" data-col-title="Aksi" style="padding:5px 6px;font-size:10px;color:var(--dim);text-align:center;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="Aksi penanganan: Rincian, Tangani Insiden, atau Abaikan Insiden">AKSI</th>
+          <th class="col-time" data-col-title="Waktu Mulai" title="Waktu saat insiden mulai terdeteksi">WAKTU MULAI</th>
+          <th class="col-grow col-srv" data-col-title="Server" title="Host atau server tempat anomali atau gangguan terjadi">SERVER</th>
+          <th class="col-status" data-col-title="Keparahan" style="text-align:left !important" title="Tingkat keparahan: Kritis, Gawat, Peringatan, atau Info">KEPARAHAN</th>
+          <th class="col-grow col-event" data-col-title="Kejadian" title="Deskripsi ringkas mengenai anomali yang terjadi">KEJADIAN</th>
+          <th class="col-metric" data-col-title="Durasi" title="Lama waktu insiden berlangsung hingga sekarang">DURASI</th>
+          <th class="col-grow col-guide" data-col-title="Panduan Solusi" title="Saran langkah penanganan praktis untuk menyelesaikan insiden">PANDUAN SOLUSI</th>
+          <th class="col-act" data-col-title="Aksi" title="Aksi penanganan: Rincian, Tangani Insiden, atau Abaikan Insiden">AKSI</th>
         </tr>
       </thead>
       <tbody>
@@ -513,23 +513,23 @@
           data-prob-host="{{ p.hostname }}"
           data-prob-sid="{{ p.server_id }}"
           data-prob-context='{{ p.context or "" }}'>
-        <td class="col-time" style="padding:5px 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+        <td class="col-time cell-nowrap">
           <span class="mono" style="font-size:11px;font-weight:600;color:var(--text);letter-spacing:0.2px" title="Waktu Mulai: {{ p.started_at.strftime('%d %b %Y %H:%M:%S') if p.started_at else '—' }}">{{ p.started_at.strftime('%d %b %H:%M:%S') if p.started_at else '—' }}</span>
         </td>
-        <td class="col-server" style="padding:5px 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+        <td class="col-grow col-srv cell-nowrap">
           <div style="display:inline-flex;align-items:center;gap:6px;max-width:100%">
             {% if p.probe_id or not p.server_id %}
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue);flex-shrink:0"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
             {% else %}
             <span class="dot {{ 'down' if p.is_offline else 'up' }}" style="flex-shrink:0"></span>
             {% endif %}
-            <span style="font-size:11.5px;font-weight:600;color:var(--text-bright);overflow:hidden;text-overflow:ellipsis">{{ p.hostname }}</span>
+            <span style="font-size:11.5px;font-weight:600;color:var(--text-bright)">{{ p.hostname }}</span>
             {% if p.group_name %}
             <span class="badge badge-muted" style="font-size:8px;padding:0.5px 4.5px;font-weight:500;flex-shrink:0">{{ p.group_name }}</span>
             {% endif %}
           </div>
         </td>
-        <td class="col-sev" style="padding:4px 8px;white-space:nowrap;text-align:left">
+        <td class="col-status" style="text-align:left !important">
           {% set op_name = 'master-admin' if p.ignored_by == 'admin' else (p.ignored_by or 'operator') %}
           {% set ack_op = 'master-admin' if p.acknowledged_by == 'admin' else (p.acknowledged_by or 'operator') %}
           {% set base_badge_cls = 'badge badge-' ~ ({'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info')) %}
@@ -551,7 +551,7 @@
             {{ base_badge | safe }}
           {% endif %}
         </td>
-        <td class="col-event" style="padding:5px 14px;line-height:1.35">
+        <td class="col-grow col-event">
           <span style="font-size:11.5px;font-weight:500;line-height:1.35;color:var(--text-bright)">{{ p.message }}</span>
           {% if p.is_ignored and p.ignored_reason and p.ignored_reason != p.message and ('DIMATIKAN OLEH OPERATOR' not in p.ignored_reason and 'DIHENTIKAN OLEH OPERATOR' not in p.ignored_reason and 'DI-REBOOT OLEH OPERATOR' not in p.ignored_reason and 'DI-RESTART OLEH OPERATOR' not in p.ignored_reason) %}
             <span class="badge badge-muted" style="margin-left:5px;font-size:8px;padding:0.5px 4.5px" title="Alasan: {{ p.ignored_reason }}">{{ p.ignored_reason }}</span>
@@ -561,17 +561,17 @@
           {% endif %}
           {% if p.count_24h and p.count_24h > 1 %}<span class="badge badge-muted" style="margin-left:5px;font-size:8px;padding:0.5px 4px;font-weight:500;color:var(--dim)" title="Kejadian berulang dalam 24 jam terakhir">kambuh {{ p.count_24h }}×</span>{% endif %}
         </td>
-        <td class="col-durasi" style="padding:5px 10px;white-space:nowrap;text-align:right" data-start="{{ p.started_at.replace(tzinfo=None).isoformat() }}Z">
+        <td class="col-metric" data-start="{{ p.started_at.replace(tzinfo=None).isoformat() }}Z">
           <span class="mono" style="font-size:10.5px;font-weight:600;color:var(--text);background:rgba(148,163,184,0.08);padding:1.5px 7px;border-radius:4px;border:1px solid rgba(148,163,184,0.18);display:inline-block">{{ p.durasi }}</span>
         </td>
-        <td class="col-tips" style="padding:5px 12px;line-height:1.35">
+        <td class="col-grow col-guide">
           {% if p.tip %}
             <div class="prob-tip-text" style="font-size:11px;color:var(--dim);line-height:1.35">{{ p.tip }}</div>
           {% else %}
             <span style="color:var(--dim);font-size:11px">—</span>
           {% endif %}
         </td>
-        <td class="prob-act-cell col-act" style="padding:5px 6px;text-align:center;white-space:nowrap">
+        <td class="prob-act-cell col-act">
           <div class="prob-act-wrap" style="display:inline-flex;align-items:center;justify-content:center;gap:4px">
             <div class="prob-act-row prob-act-tools">
               <a href="/servers/{{ p.server_id }}" class="btn btn-ghost btn-sm" style="padding:3px 6px;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px" title="Buka Detail Server" aria-label="Rincian">
@@ -739,14 +739,14 @@
     <table class="noc-table-dense" style="width:100%;margin:0;border-collapse:collapse">
       <thead>
         <tr style="border-bottom:1px solid var(--border)">
-          <th class="col-time-detailed" style="color:var(--dim);text-align:left;white-space:nowrap;padding:7px 12px" title="Waktu insiden mulai terdeteksi hingga berhasil teratasi">Waktu</th>
-          <th class="col-server" style="color:var(--dim);text-align:left;white-space:nowrap;padding:7px 12px" title="Nama host dan grup server">Server</th>
-          <th class="col-sev" style="color:var(--dim);text-align:center;white-space:nowrap;padding:7px 12px" title="Tingkat keparahan insiden saat terjadi">Keparahan</th>
-          <th class="col-component" style="color:var(--dim);text-align:left;white-space:nowrap;padding:7px 12px" title="Komponen yang terdampak (services, host/agen, CPU, dll.)">Komponen</th>
-          <th class="col-desc" style="color:var(--dim);text-align:left;padding:7px 12px" title="Deskripsi anomali yang telah selesai">Deskripsi Insiden</th>
-          <th class="col-durasi" style="color:var(--dim);text-align:left;white-space:nowrap;padding:7px 12px" title="Total durasi downtime hingga sistem pulih kembali">Durasi</th>
-          <th class="col-res" style="color:var(--dim);text-align:left;white-space:nowrap;padding:7px 12px" title="Catatan status penanganan atau pemulihan">Resolusi</th>
-          <th class="col-act" style="color:var(--dim);text-align:center;white-space:nowrap;padding:7px 12px" title="Aksi &amp; Detail Server">Aksi</th>
+          <th class="col-time" style="color:var(--dim)" title="Waktu insiden mulai terdeteksi hingga berhasil teratasi">Waktu</th>
+          <th class="col-grow col-srv" style="color:var(--dim)" title="Nama host dan grup server">Server</th>
+          <th class="col-status" style="color:var(--dim)" title="Tingkat keparahan insiden saat terjadi">Keparahan</th>
+          <th class="col-badge" style="color:var(--dim)" title="Komponen yang terdampak (services, host/agen, CPU, dll.)">Komponen</th>
+          <th class="col-grow col-event" style="color:var(--dim)" title="Deskripsi anomali yang telah selesai">Deskripsi Insiden</th>
+          <th class="col-metric" style="color:var(--dim)" title="Total durasi downtime hingga sistem pulih kembali">Durasi</th>
+          <th class="col-status" style="color:var(--dim)" title="Catatan status penanganan atau pemulihan">Resolusi</th>
+          <th class="col-act" style="color:var(--dim)" title="Aksi &amp; Detail Server">Aksi</th>
         </tr>
       </thead>
       <tbody id="prob-resolved-tbody">
@@ -767,13 +767,13 @@
           data-prob-host="{{ p.hostname }}"
           data-prob-sid="{{ p.server_id }}">
         <!-- 1. Waktu Selesai -->
-        <td style="padding:4px 6px;white-space:nowrap" class="col-time-detailed">
+        <td class="col-time cell-nowrap">
           <span class="mono" style="font-size:11px;color:var(--text-bright);font-weight:600" title="Mulai: {{ p.started_at.strftime('%d %b %Y %H:%M:%S') if p.started_at else '—' }} | Selesai: {{ p.resolved_at.strftime('%d %b %Y %H:%M:%S') if p.resolved_at else '—' }}">
             {{ p.resolved_at.strftime('%d %b %H:%M:%S') if p.resolved_at else (p.started_at.strftime('%d %b %H:%M:%S') if p.started_at else '—') }}
           </span>
         </td>
         <!-- 2. Server & Grup -->
-        <td style="padding:4px 6px;white-space:nowrap" class="col-server">
+        <td class="col-grow col-srv cell-nowrap">
           <div style="font-size:11.5px;font-weight:600;color:var(--text-bright)">{{ p.hostname }}</div>
           {% if p.group_name %}
           <div style="margin-top:2px">
@@ -782,30 +782,34 @@
           {% endif %}
         </td>
         <!-- 3. Tingkat / Keparahan -->
-        <td style="padding:4px 6px;white-space:nowrap;text-align:center" class="col-sev">
+        <td class="col-status">
           <span class="badge badge-{{ {'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info') }}" style="font-size:8px;padding:1px 4.5px;border-radius:3px">
             {{ 'KRITIS' if p.severity == 'danger' else ('GAWAT' if p.severity == 'average' else ('PERINGATAN' if p.severity == 'warning' else p.severity | upper)) }}
           </span>
         </td>
         <!-- 4. Komponen -->
-        <td style="padding:4px 6px;white-space:nowrap" class="col-component">
+        <td class="col-badge">
           <span style="font-size:11px;color:var(--text);font-weight:500">
             {{ p.component or 'Sistem' }}
           </span>
         </td>
         <!-- 5. Deskripsi Insiden -->
-        <td style="padding:4px 6px;font-size:11px;line-height:1.35;color:var(--text)" class="col-desc">
+        <td class="col-grow col-event">
           <span style="color:var(--dim)">{{ p.message }}</span>
         </td>
         <!-- 6. Durasi Gangguan (Downtime) -->
-        <td style="padding:4px 6px;white-space:nowrap" class="mono col-durasi">
+        <td class="col-metric">
           <span style="font-size:11px;color:var(--dim);letter-spacing:-0.02em" title="Total waktu insiden berlangsung hingga teratasi">{{ p.durasi or '—' }}</span>
         </td>
         <!-- 7. Resolusi -->
-        <td style="padding:4px 6px;white-space:nowrap" class="col-res">
+        <td class="col-status">
           <span class="badge {{ p.res_badge_cls or 'badge-up' }}" style="font-size:10px;padding:1px 5px" title="{{ p.res_tip }}">{{ p.res_label }}</span>
         </td>
-        <td style="padding:4px 6px;white-space:nowrap;text-align:center;width:55px" class="col-act">
+        <td class="col-act">
+          <a href="/servers/{{ p.server_id }}" class="btn btn-ghost btn-sm" title="Buka Detail Server" aria-label="Rincian">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          </a>
+        </td>
           <a href="/servers/{{ p.server_id }}" class="btn btn-ghost btn-sm" title="Buka Detail Server" aria-label="Rincian">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
           </a>
@@ -1524,16 +1528,16 @@ window.poll = async function(opts = {}) {
       } else {
         let table = document.getElementById('probtable');
         if (!table) {
-          wrapper.innerHTML = `<table id="probtable" class="noc-table-dense" style="width:100%;min-width:980px;border-collapse:collapse">
+          wrapper.innerHTML = `<table id="probtable" class="noc-table-dense" style="width:100%;margin:0;border-collapse:collapse">
             <thead>
               <tr style="border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015)">
-                <th class="col-time" data-col-title="Waktu Mulai" style="padding:5px 10px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="${isEn ? 'Time when incident was first detected' : 'Waktu saat insiden mulai terdeteksi'}">${isEn ? 'START TIME' : 'WAKTU MULAI'}</th>
-                <th class="col-server" data-col-title="Server" style="padding:5px 10px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="${isEn ? 'Server machine where anomaly occurred' : 'Host server tempat anomali atau gangguan terjadi'}">SERVER</th>
-                <th class="col-sev" data-col-title="Keparahan" style="padding:4px 8px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="${isEn ? 'Urgency level: Critical, High, Warning, or Info' : 'Tingkat keparahan: Kritis, Gawat, Peringatan, atau Info'}">${isEn ? 'SEVERITY' : 'KEPARAHAN'}</th>
-                <th class="col-event" data-col-title="Kejadian" style="padding:5px 14px;font-size:10px;color:var(--dim);text-align:left;letter-spacing:0.6px;font-weight:700" title="${isEn ? 'Brief description of the anomaly' : 'Deskripsi ringkas mengenai anomali yang terjadi'}">${isEn ? 'EVENT' : 'KEJADIAN'}</th>
-                <th class="col-durasi" data-col-title="Durasi" style="padding:5px 10px;font-size:10px;color:var(--dim);text-align:right;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="${isEn ? 'Duration of incident up to now' : 'Lama waktu insiden berlangsung hingga sekarang'}">${isEn ? 'DURATION' : 'DURASI'}</th>
-                <th class="col-tips" data-col-title="Panduan Solusi" style="padding:5px 12px;font-size:10px;color:var(--dim);text-align:left;letter-spacing:0.6px;font-weight:700" title="${isEn ? 'Practical solution guidance' : 'Saran langkah penanganan praktis untuk menyelesaikan insiden'}">${isEn ? 'SOLUTION GUIDE' : 'PANDUAN SOLUSI'}</th>
-                <th class="col-act" data-col-title="Tindakan" style="padding:5px 6px;font-size:10px;color:var(--dim);text-align:center;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="${isEn ? 'Action: Details, Mark Acknowledged, or Ignore' : 'Tindakan penanganan: Rincian, Tandai Ditangani, atau Abaikan Insiden'}">${isEn ? 'ACTIONS' : 'TINDAKAN'}</th>
+                <th class="col-time" data-col-title="Waktu Mulai" title="${isEn ? 'Time when incident was first detected' : 'Waktu saat insiden mulai terdeteksi'}">${isEn ? 'START TIME' : 'WAKTU MULAI'}</th>
+                <th class="col-grow col-srv" data-col-title="Server" title="${isEn ? 'Server machine where anomaly occurred' : 'Host server tempat anomali atau gangguan terjadi'}">SERVER</th>
+                <th class="col-status" data-col-title="Keparahan" style="text-align:left !important" title="${isEn ? 'Urgency level: Critical, High, Warning, or Info' : 'Tingkat keparahan: Kritis, Gawat, Peringatan, atau Info'}">${isEn ? 'SEVERITY' : 'KEPARAHAN'}</th>
+                <th class="col-grow col-event" data-col-title="Kejadian" title="${isEn ? 'Brief description of the anomaly' : 'Deskripsi ringkas mengenai anomali yang terjadi'}">${isEn ? 'EVENT' : 'KEJADIAN'}</th>
+                <th class="col-metric" data-col-title="Durasi" title="${isEn ? 'Duration of incident up to now' : 'Lama waktu insiden berlangsung hingga sekarang'}">${isEn ? 'DURATION' : 'DURASI'}</th>
+                <th class="col-grow col-guide" data-col-title="Panduan Solusi" title="${isEn ? 'Practical solution guidance' : 'Saran langkah penanganan praktis untuk menyelesaikan insiden'}">${isEn ? 'SOLUTION GUIDE' : 'PANDUAN SOLUSI'}</th>
+                <th class="col-act" data-col-title="Tindakan" title="${isEn ? 'Action: Details, Mark Acknowledged, or Ignore' : 'Tindakan penanganan: Rincian, Tandai Ditangani, atau Abaikan Insiden'}">${isEn ? 'ACTIONS' : 'TINDAKAN'}</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -1623,30 +1627,30 @@ window.poll = async function(opts = {}) {
               data-prob-host="${_esc(p.hostname)}"
               data-prob-sid="${p.server_id}"
               data-prob-context="${ctxStr}">
-              <td class="col-time" style="padding:5px 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+              <td class="col-time cell-nowrap">
                 <span class="mono" style="font-size:11px;font-weight:600;color:var(--text);letter-spacing:0.2px" title="${(isEn ? 'Started: ' : 'Mulai: ') + _esc(p.started_at_str || '')}">${_esc((p.started_at_str || '').replace(/\s*\d{4}\s*/, ' '))}</span>
               </td>
-              <td class="col-server" style="padding:5px 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+              <td class="col-grow col-srv cell-nowrap">
                 <div style="display:inline-flex;align-items:center;gap:6px;max-width:100%">
                   ${srvDot}
-                  <span style="font-size:11.5px;font-weight:600;color:var(--text-bright);overflow:hidden;text-overflow:ellipsis">${_esc(p.hostname)}</span>
+                  <span style="font-size:11.5px;font-weight:600;color:var(--text-bright)">${_esc(p.hostname)}</span>
                   ${grpBadge}
                 </div>
               </td>
-              <td class="col-sev" style="padding:4px 8px;white-space:nowrap;text-align:left">${sevCellHtml}</td>
-              <td class="col-event" style="padding:5px 14px;line-height:1.35">
+              <td class="col-status" style="text-align:left !important">${sevCellHtml}</td>
+              <td class="col-grow col-event">
                 <span style="font-size:11.5px;font-weight:500;line-height:1.35;color:var(--text-bright)">${_esc(pMsg)}</span>
                 ${ignReasonBadge}
                 ${ignUntilBadge}
                 ${count24}
               </td>
-              <td class="col-durasi" style="padding:5px 10px;white-space:nowrap;text-align:right" data-start="${_esc(p.started_at_iso || '')}">
+              <td class="col-metric" data-start="${_esc(p.started_at_iso || '')}">
                 <span class="mono" style="font-size:10.5px;font-weight:600;color:var(--text);background:rgba(148,163,184,0.08);padding:1.5px 7px;border-radius:4px;border:1px solid rgba(148,163,184,0.18);display:inline-block">${_esc(p.durasi || '')}</span>
               </td>
-              <td class="col-tips" style="padding:5px 12px;line-height:1.35">
+              <td class="col-grow col-guide">
                 ${pTip && pTip !== '—' ? `<div class="prob-tip-text" style="font-size:11px;color:var(--dim);line-height:1.35">${_esc(pTip)}</div>` : '<span style="color:var(--dim);font-size:11px">—</span>'}
               </td>
-              <td class="prob-act-cell col-act" style="padding:5px 6px;text-align:center;white-space:nowrap">
+              <td class="prob-act-cell col-act">
                 <div class="prob-act-wrap" style="display:inline-flex;align-items:center;justify-content:center;gap:4px">
                   <div class="prob-act-row prob-act-tools">
                     <a href="/servers/${p.server_id}" class="btn btn-ghost btn-sm" style="padding:3px 6px;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px" title="${isEn ? 'Details' : 'Rincian'}" aria-label="Rincian">${svgLink}</a>
