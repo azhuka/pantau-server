@@ -1546,7 +1546,8 @@ window.poll = async function(opts = {}) {
           _lastOpenFingerprint = null;
         }
         const tbody = table.querySelector('tbody');
-        if (tbody && (_lastOpenFingerprint !== openFp || tbody.children.length === 0)) {
+        const hasOpenDd = table.querySelector('.noc-act-dropdown[open]');
+        if (tbody && !hasOpenDd && (_lastOpenFingerprint !== openFp || tbody.children.length === 0)) {
           _lastOpenFingerprint = openFp;
           tbody.innerHTML = openList.map(p => {
             const isIgn = !!p.is_ignored;
@@ -1671,7 +1672,8 @@ window.poll = async function(opts = {}) {
     const resTbody = document.getElementById('prob-resolved-tbody');
     const resList = data.recent_resolved || [];
     const resFp = computeResFingerprint(resList, isEn);
-    if (resTbody && (_lastResFingerprint !== resFp || resTbody.children.length === 0)) {
+    const hasResOpenDd = resTbody && resTbody.querySelector('.noc-act-dropdown[open]');
+    if (resTbody && !hasResOpenDd && (_lastResFingerprint !== resFp || resTbody.children.length === 0)) {
       _lastResFingerprint = resFp;
       if (resList.length === 0) {
         resTbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:20px 12px;color:var(--dim);font-size:12px">${isEn ? 'No resolved incidents recorded' : 'Tidak ada riwayat insiden teratasi'}</td></tr>`;

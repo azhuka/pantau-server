@@ -354,6 +354,32 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.183
+
+- **Tipe Rilis:** Stabilisasi Dropdown Aksi Solid, Proteksi DOM Anti-Polling Realtime, dan Eliminasi Penutupan Prematur (*Solid Action Dropdowns Stabilization, Realtime Polling DOM Guard, and Premature Closure Elimination*)
+- **Fokus Utama:** Menyelesaikan permasalahan menu dropdown tindakan NOC yang tidak solid, sering bergoyang, dan mudah hilang seketika saat diakses oleh operator:
+  1. **Proteksi Elemen Dropdown Terbuka dari Penimpaan Polling Realtime (*Realtime Polling DOM Guard*):**
+     - Mencegah siklus interval polling realtime latar belakang (setiap 2-3 detik) menimpa atau melenyapkan pohon DOM elemen `<details class="noc-act-dropdown">` yang sedang aktif dibuka oleh operator.
+     - Menerapkan guard protektif `if (!target.querySelector('.noc-act-dropdown[open]'))` pada seluruh titik render berkala:
+       - Tab Monitored Services (`services.html`): fungsi `patch()` tidak lagi menimpa sel aksi `act.innerHTML` saat menu sedang dibuka.
+       - Tab Insiden Ringkas (`services.html`): fungsi `patch()` menunda pembaruan tabel insiden saat menu tindakan insiden aktif.
+       - Halaman Insiden (`problems.html`): fungsi `updateProblemsLive()` memproteksi `tbody.innerHTML` tabel insiden terbuka (`#probtable`) dan tabel riwayat insiden (`#prob-resolved-tbody`).
+       - Halaman Server Fleet (`servers.html`): fungsi `srvPoll()` tidak lagi menghapus atau memodifikasi baris server saat menu tindakan server sedang diakses.
+       - Halaman Jadwal Pemeliharaan (`maintenance.html`): fungsi `renderTable()` menunda render ulang DOM ketika menu aksi jadwal sedang dibuka.
+  2. **Eliminasi Penutupan Menu Akibat Micro-Scroll Gesture (*Window Scroll Capture Killer Elimination*):**
+     - Menghapus event listener agresif `window.addEventListener('scroll', ..., { capture: true })` di `base.html` yang sebelumnya menutup seluruh menu secara instan saat terjadi pergeseran piksel mikroskopis pada trackpad laptop atau sentuhan roda mouse.
+     - Mempertahankan penutupan otomatis yang aman hanya saat pengguna mengklik area luar menu (*click outside*) atau setelah pengguna memilih salah satu aksi pada menu dengan penundaan transisi 80ms agar fungsi tindakan selesai dieksekusi dengan mulus.
+  3. **Soliditas Posisi Menu Dropdown & Eliminasi Jitter (*Solid Anchoring & Zero-Jitter CSS Positioning*):**
+     - Mengeliminasi pergantian posisi dinamis JavaScript (`position: fixed`) yang sebelumnya memicu lompatan visual (*1-frame jump/jitter*) dan distorsi koordinat scrollbar.
+     - Mengimplementasikan penjangkaran native CSS solid `position: absolute; right: 0; top: calc(100% + 4px);` yang menempel kokoh pada tombol summary pemicu dan secara otomatis mengikuti pergerakan scroll tabel tanpa terlepas.
+     - Menambahkan dukungan otomatis mode *dropup* (`bottom: calc(100% + 4px) !important; top: auto !important;`) saat tombol pemicu berada dekat dasar layar (*bottom viewport*).
+     - Menetapkan warna latar belakang 100% solid kedap pandang (`opacity: 1 !important`) dan elevasi `z-index: 100002 !important` pada `.noc-act-dropdown-menu` di seluruh tema (Dark: `#0b111e`, Light: `#ffffff`, Obsidian: `#141419`, Navy: `#162035`).
+     - Memberikan tinggi minimum kontainer pembungkus tabel (`min-height: 140px`) agar menu dropdown tidak terpotong oleh batas dasar kontainer tabel ringkas.
+  4. **Pembersihan Listener Duplikat & Optimasi Card Server:**
+     - Menghapus listener klik duplikat pada `servers.html` dan mengubah aturan pembungkus kartu menjadi `overflow: visible` untuk menghindari pemotongan menu.
+  5. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.183` pada seluruh 7 berkas konfigurasi, pustaka agen, template, instalasi, dan dokumentasi proyek.
+
 ## Versi 4.8.182
 
 - **Tipe Rilis:** Perbaikan Komprehensif Dropdown Aksi, Eliminasi Overflow Zoom 150%, dan Optimasi Proporsi Tabel NOC (*Comprehensive Action Dropdown Stacking Fix, 150% Zoom Horizontal Overflow Elimination, and NOC Table Density Optimization*)

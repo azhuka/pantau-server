@@ -834,6 +834,9 @@ function filterWindows() {
 
 function renderTable(list) {
   const tb = document.getElementById('maintenanceTbody');
+  if (tb && tb.querySelector('.noc-act-dropdown[open]')) {
+    return; // Tunda pembaruan DOM saat dropdown aksi sedang dibuka operator
+  }
   if (!list.length) {
     tb.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--dim)">Tidak ada jadwal pemeliharaan yang cocok dengan filter.</td></tr>`;
     if (window._maintPagination) window._maintPagination.update();

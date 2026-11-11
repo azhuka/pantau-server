@@ -186,7 +186,7 @@
   </div>
 </div>
 
-<div class="card" style="padding:0;overflow:hidden">
+<div class="card" style="padding:0;overflow:visible">
   {% if servers %}
   <div style="overflow-x:auto">
   <table id="servers-table" class="noc-table-dense" style="width:100%;margin:0">
@@ -763,12 +763,15 @@ async function srvPoll() {
     let fleetChanged = false;
 
     if (tbody) {
-      tbody.querySelectorAll('tr[data-srv-id]').forEach(tr => {
-        if (!incomingIds.has(String(tr.dataset.srvId))) {
-          tr.remove();
-          fleetChanged = true;
-        }
-      });
+      const hasOpenDd = tbody.querySelector('.noc-act-dropdown[open]');
+      if (!hasOpenDd) {
+        tbody.querySelectorAll('tr[data-srv-id]').forEach(tr => {
+          if (!incomingIds.has(String(tr.dataset.srvId))) {
+            tr.remove();
+            fleetChanged = true;
+          }
+        });
+      }
     }
 
     list.forEach(srv => {
@@ -981,13 +984,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
   serversFilter();
-
-  // Auto-close dropdown aksi saat klik di luar
-  document.addEventListener('click', (e) => {
-    if (!e.target.closest('.noc-act-dropdown')) {
-      document.querySelectorAll('.noc-act-dropdown[open]').forEach(d => d.removeAttribute('open'));
-    }
-  });
 });
 </script>
 {% endblock %}

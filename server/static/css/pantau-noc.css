@@ -1279,42 +1279,58 @@ tr.is-disabled > td:not(.col-act) {
 .noc-act-dropdown-menu {
   position: absolute;
   right: 0;
-  top: calc(100% + 3px);
-  min-width: 140px;
+  top: calc(100% + 4px);
+  min-width: 145px;
   width: max-content;
   max-width: 260px;
   white-space: nowrap;
   background: #0b111e !important;
   color: #f8fafc !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
   border-radius: var(--radius-sm, 4px) !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85), 0 2px 8px rgba(0, 0, 0, 0.5) !important;
-  padding: 3px !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9), 0 2px 8px rgba(0, 0, 0, 0.5) !important;
+  padding: 4px !important;
   z-index: 100002 !important;
   opacity: 1 !important;
   display: flex;
   flex-direction: column;
-  gap: 1.5px;
+  gap: 2px;
   box-sizing: border-box;
 }
 [data-theme="light"] .noc-act-dropdown-menu {
   background: #ffffff !important;
   color: #0f172a !important;
-  border-color: #cbd5e1 !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(0, 0, 0, 0.08) !important;
   opacity: 1 !important;
 }
 [data-theme="obsidian"] .noc-act-dropdown-menu {
   background: #141419 !important;
   border-color: #272732 !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.95) !important;
   opacity: 1 !important;
 }
 [data-theme="navy"] .noc-act-dropdown-menu {
   background: #162035 !important;
   border-color: #263554 !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9) !important;
   opacity: 1 !important;
+}
+
+/* Dukungan Dropup: Buka ke atas bila baris berada di dasar layar */
+.noc-act-dropdown.dropup .noc-act-dropdown-menu {
+  top: auto !important;
+  bottom: calc(100% + 4px) !important;
+}
+
+/* Ruang vertikal aman pada kontainer scroll agar menu dropdown tidak terpotong */
+#prob-table-wrapper,
+#ssl-wrap,
+.table-responsive,
+div:has(> table.noc-table),
+div:has(> table.noc-table-dense),
+div:has(> table.noc-table-compact) {
+  min-height: 140px;
 }
 .noc-act-dropdown-item {
   display: inline-flex;

@@ -9358,7 +9358,10 @@ function patch(data) {
   }
   // Masalah terbuka & riwayat masalah: perbarui live tanpa reload
   if (data.open_problems !== undefined) {
-    renderProblemsTab(data.problem_level, data.open_problems, data.problem_history);
+    const probTable = document.getElementById('probtable');
+    if (!probTable || !probTable.querySelector('.noc-act-dropdown[open]')) {
+      renderProblemsTab(data.problem_level, data.open_problems, data.problem_history);
+    }
   }
   // Terminal Bawaan: kalau shell masih hidup di server ini, sambungkan ke
   // sesi yang sama (bukan membuka shell baru).
@@ -9671,13 +9674,15 @@ function patch(data) {
     }
     const act = document.getElementById('act-' + s.id);
     if (act && CAN_SERVICES) {
-      let prob = null;
-      if (s.problem_id) {
-        prob = { id: s.problem_id, is_ignored: s.ignored, message: s.problem_msg };
+      if (!act.querySelector('.noc-act-dropdown[open]')) {
+        let prob = null;
+        if (s.problem_id) {
+          prob = { id: s.problem_id, is_ignored: s.ignored, message: s.problem_msg };
+        }
+        act.innerHTML = renderServiceActions(
+          act.dataset.sid, act.dataset.svc, act.dataset.name, s.status, s.pending, prob, s.ignored, s.pending_action
+        );
       }
-      act.innerHTML = renderServiceActions(
-        act.dataset.sid, act.dataset.svc, act.dataset.name, s.status, s.pending, prob, s.ignored, s.pending_action
-      );
     }
 
   }
