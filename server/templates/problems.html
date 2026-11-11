@@ -491,7 +491,7 @@
           <th class="col-grow col-event" data-col-title="Kejadian" title="Deskripsi ringkas mengenai anomali yang terjadi">KEJADIAN</th>
           <th class="col-metric" data-col-title="Durasi" title="Lama waktu insiden berlangsung hingga sekarang">DURASI</th>
           <th class="col-grow col-guide" data-col-title="Panduan Solusi" title="Saran langkah penanganan praktis untuk menyelesaikan insiden">SOLUSI</th>
-          <th class="col-act" data-col-title="Aksi" title="Aksi penanganan: Rincian, Tangani Insiden, atau Abaikan Insiden">AKSI</th>
+          <th class="col-act" data-col-title="Tindakan" title="Tindakan penanganan: Rincian, Tangani Insiden, atau Abaikan Insiden">TINDAKAN</th>
         </tr>
       </thead>
       <tbody>
@@ -571,42 +571,50 @@
             <span style="color:var(--dim);font-size:11px">—</span>
           {% endif %}
         </td>
-        <td class="prob-act-cell col-act">
-          <div class="prob-act-wrap" style="display:inline-flex;align-items:center;justify-content:center;gap:4px">
-            <div class="prob-act-row prob-act-tools">
-              <a href="/servers/{{ p.server_id }}" class="btn btn-ghost btn-sm" style="padding:3px 6px;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px" title="Buka Detail Server" aria-label="Rincian">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-              </a>
-            </div>
-            {% if p.is_open or p.acknowledged_by %}
-              <div class="prob-act-row prob-act-ops" style="display:inline-flex;align-items:center;gap:4px">
-                {% if not user.is_viewer() and p.is_open %}
+        <td class="prob-act-cell col-act" style="text-align:center">
+          {% if user.is_viewer() %}
+            <a href="/servers/{{ p.server_id }}" class="btn btn-ghost btn-sm" style="padding:3px 6px;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px" title="Buka Detail Server" aria-label="Rincian">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            </a>
+          {% else %}
+            <!-- Tombol Aksi > 2: Gunakan Dropdown Cerdas NOC 'Tindakan ▾' -->
+            <details class="noc-act-dropdown">
+              <summary title="Menu Tindakan Insiden">
+                <span>Tindakan</span>
+                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </summary>
+              <div class="noc-act-dropdown-menu">
+                <a href="/servers/{{ p.server_id }}" class="noc-act-dropdown-item" title="Buka Detail Server">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                  <span>Detail Server</span>
+                </a>
+                {% if p.is_open %}
                   {% if p.acknowledged_by or p.is_ignored %}
-                    <span class="btn btn-ghost btn-sm prob-status-ack" style="padding:3px 6px;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px" title="Insiden Ditangani (oleh {{ p.acknowledged_by or op_name }})" aria-label="Insiden Ditangani">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--green)"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    <span class="noc-act-dropdown-item" style="color:var(--green);cursor:default" title="Insiden Ditangani (oleh {{ p.acknowledged_by or op_name }})">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                      <span>Ditangani</span>
                     </span>
                   {% else %}
-                    <button type="button" class="btn btn-ghost btn-sm prob-status-unack" style="padding:3px 6px;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px" onclick="ackProblem({{ p.id }}, this, '{{ p.severity }}')" title="Tangani Insiden" aria-label="Tangani Insiden">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--red)"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    <button type="button" class="noc-act-dropdown-item" onclick="ackProblem({{ p.id }}, this, '{{ p.severity }}')" title="Tangani Insiden">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--green)"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                      <span>Tangani Insiden</span>
                     </button>
                   {% endif %}
                   {% if p.is_ignored %}
-                    <button type="button" class="btn btn-ghost btn-sm" style="padding:3px 6px;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px" data-id="{{ p.id }}" onclick="unignoreProblem(this)" title="Pantau Kembali" aria-label="Pantau Kembali">
+                    <button type="button" class="noc-act-dropdown-item" data-id="{{ p.id }}" onclick="unignoreProblem(this)" title="Pantau Kembali">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                      <span>Pantau Kembali</span>
                     </button>
                   {% else %}
-                    <button type="button" class="btn btn-ghost btn-sm" style="padding:3px 6px;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px" data-id="{{ p.id }}" data-msg="{{ p.message }}" onclick="openIgnoreModal(this)" title="Abaikan Insiden" aria-label="Abaikan Insiden">
+                    <button type="button" class="noc-act-dropdown-item danger" data-id="{{ p.id }}" data-msg="{{ p.message }}" onclick="openIgnoreModal(this)" title="Abaikan Insiden">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"></path><path d="M18.63 13A17.89 17.89 0 0 1 18 8"></path><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"></path><path d="M18 8a6 6 0 0 0-9.33-5"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+                      <span>Abaikan Insiden</span>
                     </button>
                   {% endif %}
-                {% elif p.acknowledged_by %}
-                  <span class="btn btn-ghost btn-sm prob-status-ack" style="padding:3px 6px;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px" title="Insiden Ditangani{% if p.acknowledged_by %} (oleh {{ p.acknowledged_by }}){% endif %}" aria-label="Insiden Ditangani">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--green)"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                  </span>
                 {% endif %}
               </div>
-            {% endif %}
-          </div>
+            </details>
+          {% endif %}
         </td>
       </tr>
       {% endfor %}
@@ -736,7 +744,7 @@
 
   {% if recent_resolved %}
   <div style="overflow-x:auto" id="prob-resolved-table-wrap">
-    <table class="noc-table-dense" style="width:100%;margin:0;border-collapse:collapse">
+    <table id="prob-resolved-table" class="noc-table-dense" style="width:100%;margin:0;border-collapse:collapse">
       <thead>
         <tr style="border-bottom:1px solid var(--border)">
           <th class="col-time" style="color:var(--dim)" title="Waktu insiden mulai terdeteksi hingga berhasil teratasi">Waktu</th>
@@ -746,7 +754,7 @@
           <th class="col-grow col-event" style="color:var(--dim)" title="Deskripsi anomali yang telah selesai">Insiden</th>
           <th class="col-metric" style="color:var(--dim)" title="Total durasi downtime hingga sistem pulih kembali">Durasi</th>
           <th class="col-status" style="color:var(--dim)" title="Catatan status penanganan atau pemulihan">Resolusi</th>
-          <th class="col-act" style="color:var(--dim)" title="Aksi &amp; Detail Server">Aksi</th>
+          <th class="col-act" style="color:var(--dim)" title="Tindakan &amp; Detail Server">Tindakan</th>
         </tr>
       </thead>
       <tbody id="prob-resolved-tbody">
@@ -1069,12 +1077,13 @@ function initProbPagination() {
       pageSizeOptions: [10, 25, 50, 100, 'all']
     });
   }
-  const resTable = document.querySelector('#prob-resolved-card table');
+  const resTable = document.getElementById('prob-resolved-table') || document.querySelector('#prob-resolved-card table');
   if (resTable && !probResolvedPagination) {
     probResolvedPagination = attachTablePagination(resTable, {
       unitLabel: 'insiden',
       defaultLimit: 10,
-      pageSizeOptions: [10, 25, 50, 100, 'all']
+      pageSizeOptions: [10, 25, 50, 100, 'all'],
+      alwaysShow: true
     });
   }
 }
@@ -1533,7 +1542,7 @@ window.poll = async function(opts = {}) {
                 <th class="col-grow col-event" data-col-title="Kejadian" title="${isEn ? 'Brief description of the anomaly' : 'Deskripsi ringkas mengenai anomali yang terjadi'}">${isEn ? 'EVENT' : 'KEJADIAN'}</th>
                 <th class="col-metric" data-col-title="Durasi" title="${isEn ? 'Duration of incident up to now' : 'Lama waktu insiden berlangsung hingga sekarang'}">${isEn ? 'DURATION' : 'DURASI'}</th>
                 <th class="col-grow col-guide" data-col-title="Panduan Solusi" title="${isEn ? 'Practical solution guidance' : 'Saran langkah penanganan praktis untuk menyelesaikan insiden'}">${isEn ? 'SOLUTION' : 'SOLUSI'}</th>
-                <th class="col-act" data-col-title="Tindakan" title="${isEn ? 'Action: Details, Mark Acknowledged, or Ignore' : 'Tindakan penanganan: Rincian, Tandai Ditangani, atau Abaikan Insiden'}">${isEn ? 'ACTIONS' : 'AKSI'}</th>
+                <th class="col-act" data-col-title="Tindakan" title="${isEn ? 'Action: Details, Mark Acknowledged, or Ignore' : 'Tindakan penanganan: Rincian, Tandai Ditangani, atau Abaikan Insiden'}">${isEn ? 'ACTIONS' : 'TINDAKAN'}</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -1612,6 +1621,31 @@ window.poll = async function(opts = {}) {
                 ? `<button type="button" class="btn btn-ghost btn-sm" style="padding:3px 6px;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px" data-id="${p.id}" onclick="unignoreProblem(this)" title="${isEn ? 'Cancel Ignore' : 'Pantau Kembali'}" aria-label="Pantau Kembali">${svgBell}</button>`
                 : `<button type="button" class="btn btn-ghost btn-sm" style="padding:3px 6px;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px" data-id="${p.id}" data-msg="${_esc(p.message)}" onclick="openIgnoreModal(this)" title="${isEn ? 'Ignore Incident' : 'Abaikan Insiden'}" aria-label="Abaikan Insiden">${svgBellOff}</button>`);
 
+            let actCellHtml = '';
+            if (IS_VIEWER || (!ackBtn && !ignBtn)) {
+              actCellHtml = `<a href="/servers/${p.server_id}" class="btn btn-ghost btn-sm" style="padding:3px 6px;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px" title="${isEn ? 'Details' : 'Rincian'}" aria-label="Rincian">${svgLink}</a>`;
+            } else {
+              let dropdownItems = `<a href="/servers/${p.server_id}" class="noc-act-dropdown-item" title="${isEn ? 'Server Details' : 'Buka Detail Server'}">${svgLink}<span>${isEn ? 'Server Details' : 'Detail Server'}</span></a>`;
+              if (p.acknowledged_by || isIgn) {
+                const ackDisp = p.acknowledged_by || 'operator';
+                dropdownItems += `<span class="noc-act-dropdown-item" style="color:var(--green);cursor:default">${svgCheckBadge}<span>${isEn ? 'Handled' : 'Ditangani'} (${_esc(ackDisp)})</span></span>`;
+              } else if (p.is_open) {
+                dropdownItems += `<button type="button" class="noc-act-dropdown-item" onclick="ackProblem(${p.id}, this, '${p.severity}')">${svgCheck}<span>${isEn ? 'Handle Incident' : 'Tangani Insiden'}</span></button>`;
+              }
+              if (isIgn) {
+                dropdownItems += `<button type="button" class="noc-act-dropdown-item" data-id="${p.id}" onclick="unignoreProblem(this)">${svgBell}<span>${isEn ? 'Monitor Again' : 'Pantau Kembali'}</span></button>`;
+              } else {
+                dropdownItems += `<button type="button" class="noc-act-dropdown-item danger" data-id="${p.id}" data-msg="${_esc(p.message)}" onclick="openIgnoreModal(this)">${svgBellOff}<span>${isEn ? 'Ignore Incident' : 'Abaikan Insiden'}</span></button>`;
+              }
+              actCellHtml = `<details class="noc-act-dropdown">
+                <summary title="${isEn ? 'Incident Actions' : 'Menu Tindakan Insiden'}">
+                  <span>${isEn ? 'Actions' : 'Tindakan'}</span>
+                  <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </summary>
+                <div class="noc-act-dropdown-menu">${dropdownItems}</div>
+              </details>`;
+            }
+
             return `<tr${rowStyle}
               data-sev="${_esc(p.severity)}"
               data-ignored="${isIgn ? '1' : '0'}"
@@ -1652,12 +1686,9 @@ window.poll = async function(opts = {}) {
               <td class="col-grow col-guide">
                 ${pTip && pTip !== '—' ? `<div class="prob-tip-text cell-clamp-2" style="font-size:11px;color:var(--dim);line-height:1.35" title="${_esc(pTip)}">${_esc(pTip)}</div>` : '<span style="color:var(--dim);font-size:11px">—</span>'}
               </td>
-              <td class="prob-act-cell col-act">
-                <div class="prob-act-wrap" style="display:inline-flex;align-items:center;justify-content:center;gap:4px">
-                  <div class="prob-act-row prob-act-tools">
-                    <a href="/servers/${p.server_id}" class="btn btn-ghost btn-sm" style="padding:3px 6px;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px" title="${isEn ? 'Details' : 'Rincian'}" aria-label="Rincian">${svgLink}</a>
-                  </div>
-                  ${(ignBtn || ackBtn) ? `<div class="prob-act-row prob-act-ops" style="display:inline-flex;align-items:center;gap:4px">${ackBtn}${ignBtn}</div>` : ''}
+              <td class="prob-act-cell col-act" style="text-align:center">
+                <div style="display:inline-flex;align-items:center;justify-content:center">
+                  ${actCellHtml}
                 </div>
               </td>
             </tr>`;

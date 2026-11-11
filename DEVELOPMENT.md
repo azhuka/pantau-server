@@ -354,6 +354,26 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.180
+
+- **Tipe Rilis:** Standardisasi Dropdown Tindakan, Paginasi Riwayat Insiden, Pengendalian Stacking Context NOC & Optimasi Kerapian Kolom (*Action Dropdown Standardization, Incident History Pagination, NOC Stacking Context Resolution & Column Density Optimization*)
+- **Fokus Utama:** Penyempurnaan menyeluruh terhadap konsistensi antarmuka NOC Pantau Server berdasarkan standar kepadatan data tinggi (*high density*) dan kepatuhan aturan aksi baris:
+  1. **Standardisasi Kolom Tindakan & Rule Tombol Aksi (>2 Dropdown):**
+     - Seluruh header kolom tombol kontrol diseragamkan secara ketat menggunakan label baku `TINDAKAN` / `Tindakan` (mengeliminasi label `AKSI` / `Aksi`).
+     - Mengimplementasikan aturan cerdas tindakan: jika tombol aksi berjumlah 1 atau 2, tombol tetap tampil sebagai ikon langsung secara inline; apabila tombol aksi berjumlah lebih dari 2, seluruh tombol dirangkum ke dalam dropdown menu `Tindakan ▾` (`.noc-act-dropdown`).
+     - Penerapan menyeluruh mencakup seluruh antarmuka: `servers.html`, `problems.html`, `profile.html`, `users.html`, `probing.html`, `maintenance.html`, serta seluruh tab di `services.html` (tab masalah Jinja & JS re-render, monitored services, systemd services, packages, cron jobs, dan accounts).
+  2. **Resolusi Stacking Context & Dropdown Terpotong:**
+     - Mengatasi kendala visual di mana menu dropdown pada baris atas terpotong (*clipped*) oleh sel sticky baris di bawahnya akibat pemisahan *stacking context*.
+     - Menambahkan aturan CSS `.col-act:has(.noc-act-dropdown[open])` dengan elevasi `z-index: 9999 !important` serta listener global JavaScript pada `base.html` sebagai fallback kompatibilitas penuh.
+  3. **Paginasi Riwayat Insiden (`problems.html`):**
+     - Menghubungkan tabel Riwayat Insiden (`#prob-resolved-table`) dengan sistem paginasi klien Pantau (`attachTablePagination`) dengan opsi `alwaysShow: true` yang menyediakan limit selector (10, 25, 50, all), indikator halaman, dan tombol prev/next.
+  4. **Optimasi Kepadatan Data & Kolom Multi-Line:**
+     - Audit Log (`audit.html`): Format waktu disederhanakan menjadi `%d %b %H:%M` (detail detik dipertahankan pada tooltip), label akun `system (auto-update)` dipecah menjadi dua baris vertikal, serta penyesuaian lebar kolom respons.
+     - SSL/TLS (`services.html`): Format masa berlaku dipecah terstruktur menjadi tanggal dan jam UTC, kolom Sisa Hari diproteksi dari pemotongan baris patah (`white-space: nowrap`), ekstraksi otomatis Common Name penerbit CA, dan perapian path file sertifikat.
+     - Users & Services (`services.html`): Header kolom panjang disusun dua baris untuk mencegah pelebaran kolom horizontal.
+  5. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.180` pada seluruh 7 berkas inti repositori.
+
 ## Versi 4.8.166
 
 - **Tipe Rilis:** Perbaikan Kritis Sintaksis JavaScript services.html & Pemulihan Render Metrik Real-Time (*Critical services.html JavaScript Syntax Fix & Real-Time Metrics Rendering Restoration*)

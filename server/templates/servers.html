@@ -203,7 +203,7 @@
         <th class="col-badge col-center-cell" data-col-title="Agen &amp; APT" title="Versi agen pemantau dan ketersediaan pembaruan packages (APT)">Agen / APT</th>
         <th class="col-tag col-center-cell" data-col-title="Tag" title="Label kategori dan pengelompokan server">Tag</th>
         <th class="col-status col-center-cell" data-col-title="Status &amp; Lapor" title="Status konektivitas dan waktu laporan data terakhir">Status / Lapor</th>
-        <th class="col-act" data-col-title="Tindakan" title="Aksi operasional: rincian, edit, atau hapus server">Aksi</th>
+        <th class="col-act" data-col-title="Tindakan" title="Aksi operasional: rincian, edit, atau hapus server">Tindakan</th>
       </tr>
     </thead>
     <tbody>
@@ -412,10 +412,10 @@
       <td class="col-act">
         <div style="display:inline-flex;align-items:center;justify-content:center">
           {% if user.is_master_admin() or user.has_perm('can_manage_servers') %}
-          <!-- Tombol Aksi > 2: Gunakan Dropdown Cerdas NOC Berlabel 'Aksi ▾' -->
+          <!-- Tombol Aksi > 2: Gunakan Dropdown Cerdas NOC Berlabel 'Tindakan ▾' -->
           <details class="noc-act-dropdown">
             <summary title="Menu Tindakan Server">
-              <span>Aksi</span>
+              <span>Tindakan</span>
               <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </summary>
             <div class="noc-act-dropdown-menu">
@@ -712,30 +712,45 @@ function createAndAppendServersRow(srv, tbody) {
       </div>
     </td>
     <td class="col-act" style="text-align:center;white-space:nowrap">
-      <div style="display:inline-flex;gap:4px;align-items:center;justify-content:center">
+      <div style="display:inline-flex;align-items:center;justify-content:center">
+        ${CAN_MANAGE_SERVERS ? `
+        <details class="noc-act-dropdown">
+          <summary title="${isEn ? 'Server Actions' : 'Menu Tindakan Server'}">
+            <span>${isEn ? 'Actions' : 'Tindakan'}</span>
+            <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </summary>
+          <div class="noc-act-dropdown-menu">
+            <a href="/servers/${srv.id}" class="noc-act-dropdown-item" title="${isEn ? 'Server Details' : 'Buka Detail Server'}">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              <span>${isEn ? 'Server Details' : 'Detail Server'}</span>
+            </a>
+            <a href="/servers/${srv.id}/edit" class="noc-act-dropdown-item" title="${isEn ? 'Edit Configuration' : 'Edit Konfigurasi Server'}">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+              <span>${isEn ? 'Edit Configuration' : 'Edit Konfigurasi'}</span>
+            </a>
+            <form method="POST" action="/servers/${srv.id}/delete" style="margin:0;width:100%"
+                  data-guardrail
+                  data-guardrail-password="1"
+                  data-guardrail-require-name="${_srvEsc(srv.hostname || '')}"
+                  data-guardrail-title="Hapus Server dari Pantau"
+                  data-guardrail-target="${_srvEsc(srv.hostname || '')} (${_srvEsc(srv.ip_address || '')})"
+                  data-guardrail-badge="Hapus Permanen"
+                  data-guardrail-msg="Hapus permanen server dan seluruh riwayat metrik dari database."
+                  data-guardrail-btn="Hapus Server"
+                  data-guardrail-color="danger">
+              <input type="hidden" name="csrf_token" value="${_srvEsc(CSRF_TOKEN)}">
+              <button class="noc-act-dropdown-item danger" type="submit" title="${isEn ? 'Delete Server' : 'Hapus Server'}">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                <span>${isEn ? 'Delete Server' : 'Hapus Server'}</span>
+              </button>
+            </form>
+          </div>
+        </details>
+        ` : `
         <a href="/servers/${srv.id}" class="btn btn-ghost btn-sm" style="padding:4px 7px" title="${isEn ? 'Server Details' : 'Buka Rincian Server'}" aria-label="Rincian">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
         </a>
-        ${CAN_MANAGE_SERVERS ? `
-        <a href="/servers/${srv.id}/edit" class="btn btn-ghost btn-sm" style="padding:4px 7px" title="${isEn ? 'Edit Configuration' : 'Edit Konfigurasi Server'}" aria-label="Edit">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
-        </a>
-        <form method="POST" action="/servers/${srv.id}/delete" style="display:inline;margin:0"
-              data-guardrail
-              data-guardrail-password="1"
-              data-guardrail-require-name="${_srvEsc(srv.hostname || '')}"
-              data-guardrail-title="Hapus Server dari Pantau"
-              data-guardrail-target="${_srvEsc(srv.hostname || '')} (${_srvEsc(srv.ip_address || '')})"
-              data-guardrail-badge="Hapus Permanen"
-              data-guardrail-msg="Hapus permanen server dan seluruh riwayat metrik dari database."
-              data-guardrail-btn="Hapus Server"
-              data-guardrail-color="danger">
-          <input type="hidden" name="csrf_token" value="${_srvEsc(CSRF_TOKEN)}">
-          <button class="btn btn-danger btn-sm" style="padding:4px 7px" type="submit" title="${isEn ? 'Delete Server' : 'Hapus Server'}" aria-label="Hapus">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-          </button>
-        </form>
-        ` : ''}
+        `}
       </div>
     </td>
   `;

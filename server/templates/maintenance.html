@@ -399,7 +399,7 @@
           <th class="col-snug col-maint-sched">POLA</th>
           <th class="col-time col-maint-time">WAKTU &amp;<br>HITUNG MUNDUR</th>
           <th class="col-snug col-maint-author">PEMBUAT</th>
-          <th class="col-act col-maint-act" style="text-align:right">AKSI</th>
+          <th class="col-act col-maint-act" style="text-align:right">TINDAKAN</th>
         </tr>
       </thead>
       <tbody id="maintenanceTbody">
@@ -892,16 +892,39 @@ function renderTable(list) {
       timeCol = `<div class="mono" style="font-size:10.5px">Setiap ${escapeHtml(w.repeat_days || 'hari')} jam ${escapeHtml(w.repeat_time_start || '')} s/d ${escapeHtml(w.repeat_time_end || '')} UTC</div>`;
     }
 
-    // Tombol Aksi
-    let actionBtns = '<div style="display:inline-flex;gap:4px;align-items:center;justify-content:flex-end;width:100%">';
+    // Tombol Aksi: jika > 2 tombol gunakan dropdown Tindakan ▾
+    let actionBtns = '';
     if (w.status === 'active') {
-      actionBtns += `<button type="button" class="btn btn-sm btn-ghost" style="width:24px;height:24px;padding:0;display:inline-flex;align-items:center;justify-content:center;color:var(--green)" onclick="completeWindow(${w.id})" title="Selesaikan masa pemeliharaan sekarang" aria-label="Selesaikan"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></button>`;
+      actionBtns = `
+        <details class="noc-act-dropdown">
+          <summary title="Menu Tindakan Pemeliharaan">
+            <span>Tindakan</span>
+            <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </summary>
+          <div class="noc-act-dropdown-menu">
+            <button type="button" class="noc-act-dropdown-item" onclick="completeWindow(${w.id})" title="Selesaikan masa pemeliharaan">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--green)"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span>Selesaikan Jadwal</span>
+            </button>
+            <button type="button" class="noc-act-dropdown-item" onclick="cancelWindow(${w.id})" title="Batalkan jadwal pemeliharaan">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--yellow)"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
+              <span>Batalkan Jadwal</span>
+            </button>
+            <button type="button" class="noc-act-dropdown-item danger" onclick="deleteWindow(${w.id})" title="Hapus catatan jadwal">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              <span>Hapus Catatan</span>
+            </button>
+          </div>
+        </details>
+      `;
+    } else {
+      actionBtns = '<div style="display:inline-flex;gap:4px;align-items:center;justify-content:flex-end;width:100%">';
+      if (w.status === 'scheduled') {
+        actionBtns += `<button type="button" class="btn btn-sm btn-ghost" style="width:24px;height:24px;padding:0;display:inline-flex;align-items:center;justify-content:center;color:var(--yellow)" onclick="cancelWindow(${w.id})" title="Batalkan jadwal pemeliharaan" aria-label="Batalkan"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg></button>`;
+      }
+      actionBtns += `<button type="button" class="btn btn-sm btn-ghost" style="width:24px;height:24px;padding:0;display:inline-flex;align-items:center;justify-content:center;color:var(--red)" onclick="deleteWindow(${w.id})" title="Hapus catatan jadwal" aria-label="Hapus"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>`;
+      actionBtns += '</div>';
     }
-    if (w.status === 'active' || w.status === 'scheduled') {
-      actionBtns += `<button type="button" class="btn btn-sm btn-ghost" style="width:24px;height:24px;padding:0;display:inline-flex;align-items:center;justify-content:center;color:var(--yellow)" onclick="cancelWindow(${w.id})" title="Batalkan jadwal pemeliharaan" aria-label="Batalkan"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg></button>`;
-    }
-    actionBtns += `<button type="button" class="btn btn-sm btn-ghost" style="width:24px;height:24px;padding:0;display:inline-flex;align-items:center;justify-content:center;color:var(--red)" onclick="deleteWindow(${w.id})" title="Hapus catatan jadwal" aria-label="Hapus"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>`;
-    actionBtns += '</div>';
 
     html += `
       <tr>

@@ -378,146 +378,118 @@
               </td>
               <td class="col-time mono cell-nowrap" style="padding:6px 12px;font-size:11px;letter-spacing:-0.025em;color:var(--dim)">
                 {% if u.last_login_at %}
-                <span title="{{ u.last_login_at.strftime('%d %b %Y %H:%M:%S UTC') }}">{{ u.last_login_at.strftime('%d %b %Y %H:%M') }}</span>
+                <span title="{{ u.last_login_at.strftime('%d %b %Y %H:%M:%S UTC') }}">{{ u.last_login_at.strftime('%d %b %H:%M') }}</span>
                 {% else %}
                 <span style="color:var(--dim);opacity:0.6">-</span>
                 {% endif %}
               </td>
-              <td class="col-act" style="padding:6px 12px;text-align:left;white-space:nowrap">
-                <div style="display:inline-flex;gap:3px;align-items:center;justify-content:flex-start;flex-wrap:nowrap">
-                  <!-- Tombol 1: LIHAT Seluruh Informasi Akun -->
-                  {% set u_created_at = _fmt_dt(u.created_at, with_sec=False) if u.created_at else '-' %}
-                  {% set u_created_by = u.created_by or ('Sistem (Setup Awal)' if u.id == 1 else 'master-admin') %}
-                  {% set u_pwd_changed = _fmt_dt(u.password_changed_at, with_sec=False) if u.password_changed_at else 'Belum pernah diubah' %}
-                  {% set u_last_login = _fmt_dt(u.last_login_at, with_sec=False) if u.last_login_at else 'Belum pernah login' %}
-                  {% set u_last_ip = u.last_login_ip or '-' %}
-                  {% set u_sessions = getattr(u, '_active_sessions', 0) %}
-                  {% set u_rec_codes = getattr(u, '_recovery_codes_count', 0) %}
-                  {% set u_payload = {
-                    'id': u.id,
-                    'username': u.username,
-                    'role': u.role,
-                    'role_display': u.role_display(),
-                    'is_active': true if u.is_active else false,
-                    'totp_enabled': true if u.totp_enabled else false,
-                    'recovery_codes_count': u_rec_codes,
-                    'created_at': u_created_at,
-                    'created_by': u_created_by,
-                    'last_login_at': u_last_login,
-                    'last_login_ip': u_last_ip,
-                    'password_changed_at': u_pwd_changed,
-                    'active_sessions': u_sessions,
-                    'permissions': uperms
-                  } %}
-                  <button type="button" class="btn btn-ghost btn-sm user-act-btn" onclick='openViewUserModal({{ u_payload|tojson }})' title="Lihat seluruh informasi akun {{ u.username }}" aria-label="Lihat">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                      <circle cx="12" cy="12" r="3"></circle>
-                    </svg>
-                  </button>
+              <td class="col-act" style="padding:6px 12px;text-align:center;white-space:nowrap">
+                {% set u_created_at = _fmt_dt(u.created_at, with_sec=False) if u.created_at else '-' %}
+                {% set u_created_by = u.created_by or ('Sistem (Setup Awal)' if u.id == 1 else 'master-admin') %}
+                {% set u_pwd_changed = _fmt_dt(u.password_changed_at, with_sec=False) if u.password_changed_at else 'Belum pernah diubah' %}
+                {% set u_last_login = _fmt_dt(u.last_login_at, with_sec=False) if u.last_login_at else 'Belum pernah login' %}
+                {% set u_last_ip = u.last_login_ip or '-' %}
+                {% set u_sessions = getattr(u, '_active_sessions', 0) %}
+                {% set u_rec_codes = getattr(u, '_recovery_codes_count', 0) %}
+                {% set u_payload = {
+                  'id': u.id,
+                  'username': u.username,
+                  'role': u.role,
+                  'role_display': u.role_display(),
+                  'is_active': true if u.is_active else false,
+                  'totp_enabled': true if u.totp_enabled else false,
+                  'recovery_codes_count': u_rec_codes,
+                  'created_at': u_created_at,
+                  'created_by': u_created_by,
+                  'last_login_at': u_last_login,
+                  'last_login_ip': u_last_ip,
+                  'password_changed_at': u_pwd_changed,
+                  'active_sessions': u_sessions,
+                  'permissions': uperms
+                } %}
+                <details class="noc-act-dropdown">
+                  <summary title="Menu Tindakan Pengguna">
+                    <span>Tindakan</span>
+                    <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                  </summary>
+                  <div class="noc-act-dropdown-menu">
+                    <!-- 1. Detail Pengguna -->
+                    <button type="button" class="noc-act-dropdown-item" onclick='openViewUserModal({{ u_payload|tojson }})' title="Lihat informasi akun">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                      <span>Detail Pengguna</span>
+                    </button>
 
-                  <!-- Tombol 2FA (Khusus Master Admin & Pengelola Akun) -->
-                  {% if (can_manage_users or (can_manage_viewers and u.role == 'viewer')) and (not u.is_master_admin() or user.is_master_admin()) %}
-                    {% if not u.totp_enabled %}
-                    <button type="button" class="btn btn-ghost btn-sm user-act-btn" onclick='openAdmin2faModal({{ u.id }}, {{ u.username|tojson }}, {{ u.role_display()|tojson }})' style="color:#fbbf24;border-color:rgba(251,191,36,0.35)" title="Setup &amp; Aktifkan 2FA untuk {{ u.username }}" aria-label="Setup 2FA">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                      </svg>
+                    <!-- 2. Audit Log -->
+                    {% if user.is_master_admin() or user.has_perm('can_audit') %}
+                    <a href="/audit?user={{ u.username }}" class="noc-act-dropdown-item" title="Lihat riwayat audit">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                      <span>Riwayat Audit</span>
+                    </a>
+                    {% endif %}
+
+                    <!-- 3. Kelola 2FA -->
+                    {% if (can_manage_users or (can_manage_viewers and u.role == 'viewer')) and (not u.is_master_admin() or user.is_master_admin()) %}
+                      <button type="button" class="noc-act-dropdown-item" onclick='openAdmin2faModal({{ u.id }}, {{ u.username|tojson }}, {{ u.role_display()|tojson }})' title="Kelola autentikasi 2FA">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                        <span>{{ 'Reset 2FA' if u.totp_enabled else 'Aktifkan 2FA' }}</span>
+                      </button>
+                    {% endif %}
+
+                    <!-- 4. Edit Pengguna -->
+                    {% if u.id == user.id %}
+                    <button type="button" class="noc-act-dropdown-item" onclick="openEditMyAccountModal()" title="Edit kredensial akun Anda">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                      <span>Edit Akun Anda</span>
                     </button>
-                    {% else %}
-                    <button type="button" class="btn btn-ghost btn-sm user-act-btn" onclick='openAdmin2faModal({{ u.id }}, {{ u.username|tojson }}, {{ u.role_display()|tojson }})' style="color:#38bdf8;border-color:rgba(56,189,248,0.35)" title="Reset konfigurasi 2FA {{ u.username }}" aria-label="Reset 2FA">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
-                      </svg>
-                    </button>
-                    <button type="button" class="btn btn-ghost btn-sm user-act-icon-btn" onclick='disableAdmin2fa({{ u.id }}, {{ u.username|tojson }})' style="color:#f87171" title="Matikan 2FA {{ u.username }}" aria-label="Matikan 2FA">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
-                      </svg>
+                    {% elif can_manage_users and (not u.is_master_admin() or user.is_master_admin()) %}
+                    <button type="button" class="noc-act-dropdown-item" onclick='openEditUserModal({{ u.id }}, {{ u.username|tojson }}, {{ u.role|tojson }}, {{ u.is_active }}, {{ uperms|tojson }}, {{ u.is_master_admin()|tojson }})' title="Edit wewenang &amp; password">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                      <span>Edit Pengguna</span>
                     </button>
                     {% endif %}
-                  {% endif %}
 
-                  <!-- Tombol Audit Jejak Aktivitas Pengguna -->
-                  {% if user.is_master_admin() or user.has_perm('can_audit') %}
-                  <a href="/audit?user={{ u.username }}" class="btn btn-ghost btn-sm user-act-btn" style="color:#38bdf8;text-decoration:none" title="Audit log aktivitas user {{ u.username }}" aria-label="Audit">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                      <polyline points="14 2 14 8 20 8"></polyline>
-                      <line x1="16" y1="13" x2="8" y2="13"></line>
-                      <line x1="16" y1="17" x2="8" y2="17"></line>
-                      <polyline points="10 9 9 9 8 9"></polyline>
-                    </svg>
-                  </a>
-                  {% endif %}
+                    <!-- 5. Kunci / Buka Kunci -->
+                    {% if can_manage_users and u.id != user.id and not u.is_master_admin() %}
+                    {% if u.is_active %}
+                    <form method="POST" action="/users/{{ u.id }}/toggle-active" data-confirm data-title="Kunci Akun Staf" data-target="{{ u.username }}" data-msg="Pengguna tidak dapat login ke sistem hingga akun dibuka kembali." data-btn-text="Kunci Akun" data-btn-class="btn-danger" data-icon="danger" data-badge="AKUN" style="margin:0;width:100%">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                      <button type="submit" class="noc-act-dropdown-item" style="color:#f87171" title="Kunci akun">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                        <span>Kunci Akun</span>
+                      </button>
+                    </form>
+                    {% else %}
+                    <form method="POST" action="/users/{{ u.id }}/toggle-active" data-confirm data-title="Buka Kunci Akun Staf" data-target="{{ u.username }}" data-msg="Izinkan kembali pengguna login ke sistem." data-btn-text="Buka Kunci" data-btn-class="btn-primary" data-icon="primary" data-badge="AKUN" style="margin:0;width:100%">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                      <button type="submit" class="noc-act-dropdown-item" style="color:#4ade80" title="Buka kunci akun">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>
+                        <span>Buka Kunci Akun</span>
+                      </button>
+                    </form>
+                    {% endif %}
+                    {% endif %}
 
-                  <!-- Tombol 2: EDIT Akun Pengguna -->
-                  {% if u.id == user.id %}
-                  <!-- Edit Akun Sendiri: Membuka Modal Edit Akun (Username & Password) -->
-                  <button type="button" class="btn btn-ghost btn-sm user-act-btn" onclick="openEditMyAccountModal()" title="Edit kredensial akun Anda (username &amp; password)" aria-label="Edit">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                    </svg>
-                  </button>
-                  {% elif can_manage_users and (not u.is_master_admin() or user.is_master_admin()) %}
-                  <!-- Edit Akun Orang Lain: Membuka Modal Edit Hak Akses & Reset Password -->
-                  <button type="button" class="btn btn-ghost btn-sm user-act-btn" onclick='openEditUserModal({{ u.id }}, {{ u.username|tojson }}, {{ u.role|tojson }}, {{ u.is_active }}, {{ uperms|tojson }}, {{ u.is_master_admin()|tojson }})' title="Edit akun &amp; wewenang {{ u.username }}" aria-label="Edit">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                    </svg>
-                  </button>
-                  {% endif %}
-
-                  <!-- Tombol 3: KUNCI / BUKA -->
-                  {% if can_manage_users and u.id != user.id and not u.is_master_admin() %}
-                  {% if u.is_active %}
-                  <form method="POST" action="/users/{{ u.id }}/toggle-active" data-confirm data-title="Kunci Akun Staf" data-target="{{ u.username }}" data-msg="Pengguna tidak dapat login ke sistem hingga akun dibuka kembali." data-btn-text="Kunci Akun" data-btn-class="btn-danger" data-icon="danger" data-badge="AKUN" style="display:inline">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                    <button type="submit" class="btn btn-ghost btn-sm user-act-icon-btn" style="color:#f87171" title="Kunci akun {{ u.username }} agar tidak bisa login" aria-label="Kunci">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                      </svg>
-                    </button>
-                  </form>
-                  {% else %}
-                  <form method="POST" action="/users/{{ u.id }}/toggle-active" data-confirm data-title="Buka Kunci Akun Staf" data-target="{{ u.username }}" data-msg="Izinkan kembali pengguna login ke sistem." data-btn-text="Buka Kunci" data-btn-class="btn-primary" data-icon="primary" data-badge="AKUN" style="display:inline">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                    <button type="submit" class="btn btn-ghost btn-sm user-act-icon-btn" style="color:#4ade80" title="Buka kunci akun {{ u.username }}" aria-label="Buka Kunci">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                        <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
-                      </svg>
-                    </button>
-                  </form>
-                  {% endif %}
-                  {% endif %}
-
-                  <!-- Tombol 4: HAPUS -->
-                  {% if u.id != user.id and not u.is_master_admin() %}
-                  <form method="POST" action="/users/{{ u.id }}/delete" style="display:inline"
-                        data-guardrail
-                        data-guardrail-password="1"
-                        data-guardrail-title="Hapus Akun Staf"
-                        data-guardrail-target="{{ u.username }}"
-                        data-guardrail-badge="Akun Operator"
-                        data-guardrail-msg="Hapus permanen akun staf ini dari sistem. Seluruh sesi aktif akan dicabut."
-                        data-guardrail-btn="Hapus Akun Staf"
-                        data-guardrail-color="danger"
-                        onsubmit="handleDeleteUserForm(event, '{{ u.username }}')">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                    <button type="submit" class="btn btn-danger btn-sm user-act-icon-btn" title="Hapus akun {{ u.username }} secara permanen" aria-label="Hapus">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="3 6 5 6 21 6"></polyline>
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                      </svg>
-                    </button>
-                  </form>
-                  {% endif %}
-                </div>
+                    <!-- 6. Hapus Akun -->
+                    {% if u.id != user.id and not u.is_master_admin() %}
+                    <form method="POST" action="/users/{{ u.id }}/delete" style="margin:0;width:100%"
+                          data-guardrail
+                          data-guardrail-password="1"
+                          data-guardrail-title="Hapus Akun Staf"
+                          data-guardrail-target="{{ u.username }}"
+                          data-guardrail-badge="Akun Operator"
+                          data-guardrail-msg="Hapus permanen akun staf ini dari sistem. Seluruh sesi aktif akan dicabut."
+                          data-guardrail-btn="Hapus Akun Staf"
+                          data-guardrail-color="danger"
+                          onsubmit="handleDeleteUserForm(event, '{{ u.username }}')">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                      <button type="submit" class="noc-act-dropdown-item danger" title="Hapus akun secara permanen">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                        <span>Hapus Pengguna</span>
+                      </button>
+                    </form>
+                    {% endif %}
+                  </div>
+                </details>
               </td>
             </tr>
             {% endfor %}

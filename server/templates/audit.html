@@ -151,9 +151,16 @@
     <tbody id="audit-tbody">
       {% for r in rows %}
       <tr>
-        <td class="col-time mono cell-nowrap" style="letter-spacing:-0.025em" title="Waktu Eksekusi: {{ r.t.strftime('%d %b %Y %H:%M:%S') }}">{{ r.t.strftime('%d %b %H:%M:%S') }}</td>
-        <td class="col-snug cell-nowrap"><span class="mono" style="color:var(--text-bright);font-weight:600;font-size:11.5px">{{ r.user }}</span></td>
-        <td class="col-grow col-srv cell-nowrap" style="font-size:11.5px;font-weight:600"><span class="audit-srv-cell">{{ r.server or '-' }}</span></td>
+        <td class="col-time mono cell-nowrap" style="letter-spacing:-0.025em;white-space:nowrap" title="Waktu Eksekusi: {{ r.t.strftime('%d %b %Y %H:%M:%S') }}">{{ r.t.strftime('%d %b %H:%M') }}</td>
+        <td class="col-snug">
+          {% if ' ' in r.user %}
+            <div class="mono" style="color:var(--text-bright);font-weight:600;font-size:11.5px;line-height:1.2">{{ r.user.split(' ')[0] }}</div>
+            <div class="cell-sub" style="font-size:8.5px;color:var(--dim);line-height:1.2">{{ r.user.split(' ', 1)[1] }}</div>
+          {% else %}
+            <div class="mono" style="color:var(--text-bright);font-weight:600;font-size:11.5px">{{ r.user }}</div>
+          {% endif %}
+        </td>
+        <td class="col-srv cell-nowrap" style="font-size:11.5px;font-weight:600"><span class="audit-srv-cell">{{ r.server or '-' }}</span></td>
         <td class="col-badge cell-nowrap">
           {% if r.kind == 'cmd' %}
             <span class="badge badge-muted audit-act-cell" style="font-size:7.5px;padding:0.5px 4px;font-weight:600" data-label="{{ r.label }}">{{ r.label }}</span>
@@ -161,13 +168,13 @@
             <span class="audit-act-cell" style="font-size:10.5px;font-weight:500" data-label="{{ r.label }}">{{ r.label }}</span>
           {% endif %}
         </td>
-        <td class="col-grow col-target audit-tgt-cell cell-trunc-md" style="font-size:11.5px" data-raw="{{ r.target }}" title="Target: {{ r.target }}">{{ r.target }}</td>
+        <td class="col-target audit-tgt-cell cell-trunc-md" style="font-size:11px" data-raw="{{ r.target }}" title="Target: {{ r.target }}">{{ r.target }}</td>
         <td class="col-status">
           {% if r.status %}
             <span class="badge badge-{{ st_cls.get(r.status, 'inactive') }} audit-st-cell" style="font-size:7.5px;padding:1px 4.5px;font-weight:700" data-st="{{ r.status }}">{{ st_label.get(r.status, r.status) }}</span>
           {% else %}<span style="color:var(--dim);font-size:11px">—</span>{% endif %}
         </td>
-        <td class="col-grow col-guide audit-res-cell cell-trunc-lg" style="font-size:11px;color:var(--dim);line-height:1.4" data-raw="{{ r.result }}" title="Hasil / Respons: {{ r.result }}">{{ r.result }}</td>
+        <td class="col-grow col-guide audit-res-cell" style="font-size:11px;color:var(--dim);line-height:1.35;word-break:break-word" data-raw="{{ r.result }}" title="Hasil / Respons: {{ r.result }}">{{ r.result }}</td>
       </tr>
       {% else %}
       <tr><td colspan="7" class="empty-msg" data-i18n="audit_empty">Belum ada riwayat tindakan user / operator.</td></tr>

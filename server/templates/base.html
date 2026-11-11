@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token }}">
 <title>{% block title %}Pantau Server{% endblock %}</title>
-<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.179' }}">
+<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.180' }}">
 {% block extra_head %}{% endblock %}
 <script>
 (function() {
@@ -2806,7 +2806,7 @@ body.show-alert-banner .main{padding-top:72px}
   </nav>
   <div class="sidebar-footer">
     <div class="sb-footer-brand">Pantau Server</div>
-    <div class="sb-footer-ver">v{{ app_version or '4.8.179' }}</div>
+    <div class="sb-footer-ver">v{{ app_version or '4.8.180' }}</div>
     <div class="sb-footer-utc">UTC <span id="clockUtc" style="display:inline"></span></div>
   </div>
 </aside>
@@ -5466,7 +5466,7 @@ function attachTablePagination(target, options = {}) {
     }
 
     const minPageLimit = (Array.isArray(pageSizeOptions) && pageSizeOptions.length) ? (parseInt(pageSizeOptions[0], 10) || 10) : 10;
-    if (total <= minPageLimit) {
+    if (total <= minPageLimit && !options.alwaysShow) {
       bar.style.setProperty('display', 'none', 'important');
     } else {
       bar.style.setProperty('display', 'flex', 'important');
@@ -6197,14 +6197,32 @@ if (document.readyState === 'loading') {
   makeTablesResponsive();
 }
 
-// Global auto-close untuk dropdown tindakan cerdas NOC (.noc-act-dropdown)
+// Global auto-close & z-index elevation untuk dropdown tindakan cerdas NOC (.noc-act-dropdown)
 document.addEventListener('click', function(e) {
   if (!e.target.closest('.noc-act-dropdown')) {
     document.querySelectorAll('.noc-act-dropdown[open]').forEach(function(d) {
       d.removeAttribute('open');
+      const td = d.closest('td');
+      const tr = d.closest('tr');
+      if (td) { td.style.zIndex = ''; td.classList.remove('has-dropdown-open'); }
+      if (tr) { tr.style.zIndex = ''; tr.classList.remove('has-dropdown-open'); }
     });
   }
 });
+
+document.addEventListener('toggle', function(e) {
+  if (e.target && e.target.classList && e.target.classList.contains('noc-act-dropdown')) {
+    const td = e.target.closest('td');
+    const tr = e.target.closest('tr');
+    if (e.target.open) {
+      if (td) { td.style.zIndex = '9999'; td.classList.add('has-dropdown-open'); }
+      if (tr) { tr.style.zIndex = '9999'; tr.classList.add('has-dropdown-open'); }
+    } else {
+      if (td) { td.style.zIndex = ''; td.classList.remove('has-dropdown-open'); }
+      if (tr) { tr.style.zIndex = ''; tr.classList.remove('has-dropdown-open'); }
+    }
+  }
+}, true);
 
 // -----------------------------------------------------------------------------
 // Pantau Table Column Visibility Manager (PantauColManager)

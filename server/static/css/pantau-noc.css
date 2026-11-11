@@ -1189,6 +1189,14 @@ table.noc-table-compact th {
 /* =============================================================================
    KOMPONEN DROPDOWN TINDAKAN CERDAS NOC (AKTIF JIKA TOMBOL AKSI > 2)
    ============================================================================= */
+tr:has(.noc-act-dropdown[open]),
+tr.has-dropdown-open,
+td.col-act:has(.noc-act-dropdown[open]),
+td.col-act.has-dropdown-open,
+.noc-act-dropdown[open] {
+  z-index: 9999 !important;
+}
+
 .noc-act-dropdown {
   position: relative;
   display: inline-block;
@@ -1228,17 +1236,25 @@ table.noc-table-compact th {
   position: absolute;
   right: 0;
   top: calc(100% + 3px);
-  min-width: 135px;
+  min-width: 140px;
+  width: max-content;
+  max-width: 250px;
+  white-space: nowrap;
   background: var(--col-act-bg, #0b111e);
   border: 1px solid var(--border, rgba(255, 255, 255, 0.15));
   border-radius: var(--radius-sm, 4px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.65);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.75);
   padding: 3px;
-  z-index: 1000;
+  z-index: 10000;
   display: flex;
   flex-direction: column;
   gap: 1.5px;
   box-sizing: border-box;
+}
+[data-theme="light"] .noc-act-dropdown-menu {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
 }
 .noc-act-dropdown-item {
   display: inline-flex;
@@ -1257,15 +1273,33 @@ table.noc-table-compact th {
   cursor: pointer;
   text-align: left;
   line-height: 1.25;
+  white-space: nowrap;
   transition: background 0.1s ease, color 0.1s ease;
+}
+[data-theme="light"] .noc-act-dropdown-item {
+  color: #334155;
 }
 .noc-act-dropdown-item:hover {
   background: rgba(255, 255, 255, 0.08);
   color: var(--text-bright, #ffffff);
 }
+[data-theme="light"] .noc-act-dropdown-item:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
 .noc-act-dropdown-item.danger:hover {
   background: rgba(239, 68, 68, 0.18);
   color: #f87171;
+}
+
+/* Utilitas tabel SSL / Sertifikat & Audit NOC */
+.col-ssl-expiry {
+  white-space: nowrap !important;
+  min-width: 95px !important;
+}
+.col-ssl-days {
+  white-space: nowrap !important;
+  min-width: 85px !important;
 }
   cursor: pointer;
 }
