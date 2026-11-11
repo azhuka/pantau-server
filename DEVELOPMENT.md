@@ -507,6 +507,16 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
   3. **Sinkronisasi SemVer 7 Berkas:**
      - Sinkronisasi versi SemVer `4.8.157` pada 7 berkas inti repositori.
 
+## Versi 4.8.173
+
+- **Tipe Rilis:** Peringkasan Label Tombol Aksi Tambah & Tooltip Kontekstual (*Add-Action Label Compaction & Contextual Tooltip*)
+- **Fokus Utama:** Menyeragamkan label tombol aksi tambah pada bilah filter agar ringkas dan konsisten, tanpa kehilangan kejelasan konteks:
+  1. **`server/templates/probing.html`:** Label tombol "Tambah Endpoint" diringkas menjadi **"+ Tambah"** dengan tooltip singkat "Tambah endpoint baru" (`title` + `aria-label`). Ikon globe di dalam tombol dihapus karena tanda "+" sudah menjadi penanda aksi tambah.
+  2. **`server/templates/maintenance.html`:** Label tombol "Tambah Jadwal Pemeliharaan" diringkas menjadi **"+ Tambah"** dengan tooltip singkat "Tambah jadwal pemeliharaan baru" (`title` + `aria-label`). Ikon plus di dalam tombol dihapus untuk menghindari pengulangan tanda "+".
+  3. **Tooltip Baku:** Memanfaatkan *Pantau Selectable Tooltip Engine* yang sudah ada di `base.html`, yang secara otomatis mengubah atribut `title` menjadi tooltip kustom yang konsisten dengan design system (posisi adaptif, tidak terpotong viewport).
+  4. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.173` pada 7 berkas inti repositori.
+
 ## Versi 4.8.172
 
 - **Tipe Rilis:** Relokasi Tombol Aksi Tambah ke Bilah Filter & Standardisasi Toolbar Aksi Halaman (*Add-Action Relocation into Filter Toolbar & Action Toolbar Standardization*)
