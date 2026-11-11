@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token }}">
 <title>{% block title %}Pantau Server{% endblock %}</title>
-<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.181' }}">
+<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.182' }}">
 {% block extra_head %}{% endblock %}
 <script>
 (function() {
@@ -1087,6 +1087,23 @@ tbody tr:hover td.fm-actions-cell {
 .group-header-row td.col-act {
   background: transparent !important;
   box-shadow: none !important;
+}
+
+/* Elevasi mutlak saat dropdown tindakan terbuka agar tidak tertutup sticky header/sibling cell */
+tr:has(.noc-act-dropdown[open]),
+tr.has-dropdown-open {
+  position: relative !important;
+  z-index: 100000 !important;
+}
+
+th.col-act:has(.noc-act-dropdown[open]),
+th.col-act.has-dropdown-open,
+td.col-act:has(.noc-act-dropdown[open]),
+td.col-act.has-dropdown-open,
+td:has(.noc-act-dropdown[open]),
+td.has-dropdown-open {
+  position: sticky !important;
+  z-index: 100001 !important;
 }
 
 /* Stabilisasi Lebar Kolom Tabel & Eliminasi Pergeseran Tata Letak (Enterprise Best Practice) */
@@ -2806,7 +2823,7 @@ body.show-alert-banner .main{padding-top:72px}
   </nav>
   <div class="sidebar-footer">
     <div class="sb-footer-brand">Pantau Server</div>
-    <div class="sb-footer-ver">v{{ app_version or '4.8.181' }}</div>
+    <div class="sb-footer-ver">v{{ app_version or '4.8.182' }}</div>
     <div class="sb-footer-utc">UTC <span id="clockUtc" style="display:inline"></span></div>
   </div>
 </aside>
@@ -6204,8 +6221,8 @@ document.addEventListener('click', function(e) {
       d.removeAttribute('open');
       const td = d.closest('td');
       const tr = d.closest('tr');
-      if (td) { td.style.zIndex = ''; td.classList.remove('has-dropdown-open'); }
-      if (tr) { tr.style.zIndex = ''; tr.classList.remove('has-dropdown-open'); }
+      if (td) { td.style.removeProperty('z-index'); td.classList.remove('has-dropdown-open'); }
+      if (tr) { tr.style.removeProperty('z-index'); tr.style.removeProperty('position'); tr.classList.remove('has-dropdown-open'); }
       const menu = d.querySelector('.noc-act-dropdown-menu');
       if (menu) { menu.style.position = ''; menu.style.top = ''; menu.style.bottom = ''; menu.style.left = ''; menu.style.right = ''; }
     });
@@ -6227,24 +6244,32 @@ document.addEventListener('toggle', function(e) {
           other.removeAttribute('open');
           const otd = other.closest('td');
           const otr = other.closest('tr');
-          if (otd) { otd.style.zIndex = ''; otd.classList.remove('has-dropdown-open'); }
-          if (otr) { otr.style.zIndex = ''; otr.classList.remove('has-dropdown-open'); }
+          if (otd) { otd.style.removeProperty('z-index'); otd.classList.remove('has-dropdown-open'); }
+          if (otr) { otr.style.removeProperty('z-index'); otr.style.removeProperty('position'); otr.classList.remove('has-dropdown-open'); }
           const om = other.querySelector('.noc-act-dropdown-menu');
           if (om) { om.style.position = ''; om.style.top = ''; om.style.bottom = ''; om.style.left = ''; om.style.right = ''; }
         }
       });
 
-      if (td) { td.style.zIndex = '9999'; td.classList.add('has-dropdown-open'); }
-      if (tr) { tr.style.zIndex = '9999'; tr.classList.add('has-dropdown-open'); }
+      if (td) {
+        td.style.setProperty('z-index', '100001', 'important');
+        td.classList.add('has-dropdown-open');
+      }
+      if (tr) {
+        tr.style.setProperty('z-index', '100000', 'important');
+        tr.style.setProperty('position', 'relative', 'important');
+        tr.classList.add('has-dropdown-open');
+      }
 
       if (menu && summary) {
         // Gunakan koordinat fixed agar menu TIDAK PERNAH terpotong oleh overflow-x / overflow:hidden tabel/card
         const rect = summary.getBoundingClientRect();
         menu.style.position = 'fixed';
-        menu.style.zIndex = '99999';
+        menu.style.setProperty('z-index', '100002', 'important');
+        menu.style.opacity = '1';
 
         const menuHeight = menu.offsetHeight || 160;
-        const menuWidth = menu.offsetWidth || 150;
+        const menuWidth = menu.offsetWidth || 160;
 
         // Vertikal: jika mentok bawah layar, buka ke atas
         if (rect.bottom + menuHeight > window.innerHeight - 10 && rect.top > menuHeight + 10) {
@@ -6255,7 +6280,7 @@ document.addEventListener('toggle', function(e) {
           menu.style.bottom = 'auto';
         }
 
-        // Horizontal: sejajarkan sisi kanan dengan summary, cegah overflow kiri/kanan layar
+        // Horizontal: sejajarkan sisi kanan dengan summary, pastikan pas di dalam layar
         const rightEdge = window.innerWidth - rect.right;
         if (rect.right - menuWidth < 10) {
           menu.style.left = '10px';
@@ -6269,8 +6294,15 @@ document.addEventListener('toggle', function(e) {
         }
       }
     } else {
-      if (td) { td.style.zIndex = ''; td.classList.remove('has-dropdown-open'); }
-      if (tr) { tr.style.zIndex = ''; tr.classList.remove('has-dropdown-open'); }
+      if (td) {
+        td.style.removeProperty('z-index');
+        td.classList.remove('has-dropdown-open');
+      }
+      if (tr) {
+        tr.style.removeProperty('z-index');
+        tr.style.removeProperty('position');
+        tr.classList.remove('has-dropdown-open');
+      }
       if (menu) {
         menu.style.position = '';
         menu.style.top = '';
@@ -6288,8 +6320,8 @@ window.addEventListener('scroll', function() {
     d.removeAttribute('open');
     const td = d.closest('td');
     const tr = d.closest('tr');
-    if (td) { td.style.zIndex = ''; td.classList.remove('has-dropdown-open'); }
-    if (tr) { tr.style.zIndex = ''; tr.classList.remove('has-dropdown-open'); }
+    if (td) { td.style.removeProperty('z-index'); td.classList.remove('has-dropdown-open'); }
+    if (tr) { tr.style.removeProperty('z-index'); tr.style.removeProperty('position'); tr.classList.remove('has-dropdown-open'); }
     const menu = d.querySelector('.noc-act-dropdown-menu');
     if (menu) { menu.style.position = ''; menu.style.top = ''; menu.style.bottom = ''; menu.style.left = ''; menu.style.right = ''; }
   });

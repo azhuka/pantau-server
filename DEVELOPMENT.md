@@ -354,6 +354,32 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.182
+
+- **Tipe Rilis:** Perbaikan Komprehensif Dropdown Aksi, Eliminasi Overflow Zoom 150%, dan Optimasi Proporsi Tabel NOC (*Comprehensive Action Dropdown Stacking Fix, 150% Zoom Horizontal Overflow Elimination, and NOC Table Density Optimization*)
+- **Fokus Utama:** Audit menyeluruh dan resolusi tuntas atas 5 anomali antarmuka dan tabel NOC yang dilaporkan dalam 7 tangkapan layar pengguna:
+  1. **Resolusi Tuntas Terpotongnya Sisi Kanan Dropdown & Efek Tembus Pandang (*Dropdown Slicing & Transparency Resolution*):**
+     - Mengeliminasi deklarasi `opacity: 0.65` dan `opacity: 0.8` dari tag baris tabel (`<tr>`) di seluruh template Jinja (`problems.html`, `services.html`) dan renderer JavaScript sisi klien, menggantikannya dengan selektor kelas CSS `.is-ignored` dan `.is-resolved` yang hanya menargetkan sel konten (`tr.is-resolved > td:not(.col-act), tr.is-ignored > td:not(.col-act)`).
+     - Menetapkan elevasi mutlak `z-index: 100001 !important` pada sel perekat `td.col-act.has-dropdown-open` dan `z-index: 100000 !important; position: relative !important;` pada baris yang sedang membuka menu, sehingga sel perekat pada baris berikutnya di bawahnya tidak dapat menimpa (*paint on top*) menu aksi yang terbuka.
+     - Mengunci latar belakang menu dropdown `.noc-act-dropdown-menu` agar 100% solid dan kedap pandang (`opacity: 1 !important; background: #0b111e !important` pada tema gelap dan `#ffffff !important` pada tema terang), melenyapkan efek teks baris bawah yang tembus pandang.
+     - Memperbaiki event handler JavaScript di `base.html` dengan penggunaan `setProperty('z-index', ..., 'important')` dan koordinat fixed absolut tanpa distorsi tepi kanan.
+  2. **Optimasi Zoom 150% & Eliminasi Ledakan Tinggi Baris pada Insiden Terbuka (`problems.html`):**
+     - Mengubah tata letak badge kolom `Tingkat` dari susunan vertikal bertumpuk (`flex-direction: column`) menjadi sejajar horizontal dalam satu baris (`display: inline-flex; align-items: center; gap: 3px; flex-wrap: nowrap`), mencegah pembengkakan tinggi baris menjadi 2 kali lipat saat status insiden diabaikan atau ditangani.
+     - Menata ulang proporsi lebar minimum kolom (`Mulai`, `Server`, `Kejadian`, `Durasi`, `Solusi`, `Tindakan`) dengan total lebar ~825px (<910px), mengeliminasi *horizontal scrollbar* secara total pada pembesaran layar (*zoom*) 150%.
+     - Menerapkan pemotongan rapi teks panjang pada kolom `Kejadian` dan `Solusi` dengan tooltip lengkap (`title="..."`).
+  3. **Optimasi Proporsi Kolom & Eliminasi Scroll Horizontal pada Log Audit (`audit.html`):**
+     - Menyeimbangkan proporsi kolom (`Waktu`, `User`, `Server`, `Tindakan`, `Target`, `Status`, `Hasil / Respons`) dengan total lebar ~840px, melenyapkan scroll horizontal pada zoom 150%.
+     - Menerapkan pemotongan elipsis rapi pada kolom `Target` dan `Hasil / Respons` dengan pesan tooltip lengkap tanpa merusak lebar kolom.
+  4. **Pencegahan Pemecahan Tiga Baris pada Kolom Uptime 24j (`services.html`):**
+     - Mengunci sel `Uptime 24j` dengan aturan `white-space: nowrap !important; text-align: center`.
+     - Menyederhanakan representasi downtime menjadi format ringkas satu baris, misalnya `0.5% (23.9j)` dengan detail detik downtime tersimpan rapi pada atribut tooltip hover (`title="Downtime: ... detik"`), menjaga tinggi baris tetap seragam (~32px).
+  5. **Penataan Proporsi Kolom & Eliminasi Ruang Kosong pada Tab SSL (`services.html`):**
+     - Menghilangkan `col-hero-cell` dari kolom `Domain / Subjek` dan menetapkan lebar terukur (`min-width: 140px; max-width: 200px; word-break: break-all`).
+     - Mentransfer ruang ekspansi fleksibel `col-grow` ke kolom `Lokasi Berkas` (`min-width: 200px; word-break: break-all`), melenyapkan ruang kosong raksasa antara domain dan penerbit CA serta menampilkan path berkas sertifikat secara leluasa tanpa terpotong prematur.
+     - Menyelaraskan render awal Jinja SSR dan render polling JavaScript `renderSsl` secara identik.
+  6. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.182` pada seluruh 7 berkas inti repositori.
+
 ## Versi 4.8.181
 
 - **Tipe Rilis:** Standardisasi Global Header Tabel (Title Case), Keseragaman Tingkat Tabel Dropdown Aksi, Sinkronisasi Penuh Render Klien/Server, & Eliminasi Konflik CSS Dimensi Dropdown (*Global Table Header Title Case Standardization, Table-Level Action Dropdown Uniformity, Full Dual-Render SSR/CSR Synchronization, & Dropdown Dimension CSS Conflict Elimination*)

@@ -485,18 +485,18 @@
     <table id="probtable" class="noc-table-dense" style="width:100%;margin:0;border-collapse:collapse">
       <thead>
         <tr style="border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015)">
-          <th class="col-time" data-col-title="Waktu Mulai" title="Waktu saat insiden mulai terdeteksi">Mulai</th>
-          <th class="col-grow col-srv" data-col-title="Server" title="Host atau server tempat anomali atau gangguan terjadi">Server</th>
-          <th class="col-status" data-col-title="Keparahan" style="text-align:left !important" title="Tingkat keparahan: Kritis, Gawat, Peringatan, atau Info">Tingkat</th>
-          <th class="col-grow col-event" data-col-title="Kejadian" title="Deskripsi ringkas mengenai anomali yang terjadi">Kejadian</th>
-          <th class="col-metric" data-col-title="Durasi" title="Lama waktu insiden berlangsung hingga sekarang">Durasi</th>
-          <th class="col-grow col-guide" data-col-title="Panduan Solusi" title="Saran langkah penanganan praktis untuk menyelesaikan insiden">Solusi</th>
-          <th class="col-act" data-col-title="Tindakan" title="Tindakan penanganan: Rincian, Tangani Insiden, atau Abaikan Insiden">Tindakan</th>
+          <th class="col-time" data-col-title="Waktu Mulai" style="width:82px;min-width:80px;white-space:nowrap" title="Waktu saat insiden mulai terdeteksi">Mulai</th>
+          <th class="col-srv" data-col-title="Server" style="max-width:130px;white-space:nowrap" title="Host atau server tempat anomali atau gangguan terjadi">Server</th>
+          <th class="col-status" data-col-title="Keparahan" style="text-align:left !important;white-space:nowrap" title="Tingkat keparahan: Kritis, Gawat, Peringatan, atau Info">Tingkat</th>
+          <th class="col-event" data-col-title="Kejadian" style="max-width:210px" title="Deskripsi ringkas mengenai anomali yang terjadi">Kejadian</th>
+          <th class="col-metric" data-col-title="Durasi" style="width:75px;min-width:70px;text-align:center;white-space:nowrap" title="Lama waktu insiden berlangsung hingga sekarang">Durasi</th>
+          <th class="col-guide" data-col-title="Panduan Solusi" style="max-width:190px" title="Saran langkah penanganan praktis untuk menyelesaikan insiden">Solusi</th>
+          <th class="col-act" data-col-title="Tindakan" style="width:65px;text-align:center" title="Tindakan penanganan: Rincian, Tangani Insiden, atau Abaikan Insiden">Tindakan</th>
         </tr>
       </thead>
       <tbody>
       {% for p in open_problems %}
-      <tr{% if p.is_ignored %} style="opacity:.8;background:rgba(255,255,255,0.02)"{% endif %}
+      <tr{% if p.is_ignored %} class="is-ignored"{% endif %}
           data-sev="{{ p.severity }}"
           data-ignored="{{ '1' if p.is_ignored else '0' }}"
           data-group="{{ p.group_name or '' }}"
@@ -513,10 +513,10 @@
           data-prob-host="{{ p.hostname }}"
           data-prob-sid="{{ p.server_id }}"
           data-prob-context='{{ p.context or "" }}'>
-        <td class="col-time cell-nowrap">
+        <td class="col-time cell-nowrap" style="width:82px;min-width:80px;white-space:nowrap">
           <span class="mono" style="font-size:11px;font-weight:600;color:var(--text-bright);letter-spacing:0.2px" title="Waktu Mulai: {{ p.started_at.strftime('%d %b %Y %H:%M:%S') if p.started_at else '—' }}">{{ p.started_at.strftime('%d %b %H:%M') if p.started_at else '—' }}</span>
         </td>
-        <td class="col-grow col-srv cell-nowrap">
+        <td class="col-srv cell-nowrap" style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
           <div style="display:inline-flex;align-items:center;gap:6px;max-width:100%">
             {% if p.probe_id or not p.server_id %}
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue);flex-shrink:0"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
@@ -529,29 +529,27 @@
             {% endif %}
           </div>
         </td>
-        <td class="col-status" style="text-align:left !important">
+        <td class="col-status" style="text-align:left !important;white-space:nowrap">
           {% set op_name = 'master-admin' if p.ignored_by == 'admin' else (p.ignored_by or 'operator') %}
           {% set ack_op = 'master-admin' if p.acknowledged_by == 'admin' else (p.acknowledged_by or 'operator') %}
           {% set base_badge_cls = 'badge badge-' ~ ({'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info')) %}
           {% set base_badge_text = 'KRITIS' if p.severity == 'danger' else ('GAWAT' if p.severity == 'average' else ('PERINGATAN' if p.severity == 'warning' else p.severity | upper)) %}
           {% set base_badge = '<span class="' ~ base_badge_cls ~ '" style="font-size:7.5px;padding:0.5px 4.5px;letter-spacing:0.2px;font-weight:700">' ~ base_badge_text ~ '</span>' %}
           {% if p.is_ignored or p.acknowledged_by %}
-            <div style="display:inline-flex;flex-direction:column;align-items:flex-start;gap:2px">
+            <div style="display:inline-flex;align-items:center;gap:3px;flex-wrap:nowrap;white-space:nowrap">
               {{ base_badge | safe }}
-              <div style="display:inline-flex;align-items:center;justify-content:flex-start;gap:2.5px">
-                {% if p.is_ignored %}
-                  <span class="badge badge-muted badge-sub" style="font-size:7px;padding:0.5px 3.5px;font-weight:700;letter-spacing:0.2px" title="{{ 'Alasan: ' ~ p.ignored_reason if p.ignored_reason else ('Diabaikan oleh ' ~ op_name) }}">DIABAIKAN</span>
-                {% endif %}
-                {% if p.acknowledged_by or p.is_ignored %}
-                  <span class="badge badge-up badge-sub" style="font-size:7px;padding:0.5px 3.5px;font-weight:700;letter-spacing:0.2px" title="Ditangani oleh {{ ack_op if p.acknowledged_by else op_name }}">✓ DITANGANI</span>
-                {% endif %}
-              </div>
+              {% if p.is_ignored %}
+                <span class="badge badge-muted badge-sub" style="font-size:7px;padding:0.5px 3.5px;font-weight:700;letter-spacing:0.2px" title="{{ 'Alasan: ' ~ p.ignored_reason if p.ignored_reason else ('Diabaikan oleh ' ~ op_name) }}">DIABAIKAN</span>
+              {% endif %}
+              {% if p.acknowledged_by or p.is_ignored %}
+                <span class="badge badge-up badge-sub" style="font-size:7px;padding:0.5px 3.5px;font-weight:700;letter-spacing:0.2px" title="Ditangani oleh {{ ack_op if p.acknowledged_by else op_name }}">✓ DITANGANI</span>
+              {% endif %}
             </div>
           {% else %}
             {{ base_badge | safe }}
           {% endif %}
         </td>
-        <td class="col-grow col-event">
+        <td class="col-event" style="max-width:210px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Kejadian: {{ p.message }}">
           <span style="font-size:11.5px;font-weight:500;line-height:1.35;color:var(--text-bright)">{{ p.message }}</span>
           {% if p.is_ignored and p.ignored_reason and p.ignored_reason != p.message and ('DIMATIKAN OLEH OPERATOR' not in p.ignored_reason and 'DIHENTIKAN OLEH OPERATOR' not in p.ignored_reason and 'DI-REBOOT OLEH OPERATOR' not in p.ignored_reason and 'DI-RESTART OLEH OPERATOR' not in p.ignored_reason) %}
             <span class="badge badge-muted" style="margin-left:4px;font-size:7.5px;padding:0.5px 3.5px" title="Alasan: {{ p.ignored_reason }}">{{ p.ignored_reason }}</span>
@@ -561,17 +559,17 @@
           {% endif %}
           {% if p.count_24h and p.count_24h > 1 %}<span class="badge badge-muted" style="margin-left:4px;font-size:7.5px;padding:0.5px 3px;font-weight:500;color:var(--dim)" title="Kejadian berulang dalam 24 jam terakhir">kambuh {{ p.count_24h }}×</span>{% endif %}
         </td>
-        <td class="col-metric" data-start="{{ p.started_at.replace(tzinfo=None).isoformat() }}Z">
+        <td class="col-metric" data-start="{{ p.started_at.replace(tzinfo=None).isoformat() }}Z" style="width:75px;min-width:70px;text-align:center;white-space:nowrap">
           <span class="mono" style="font-size:10.5px;font-weight:600;color:var(--text);background:rgba(148,163,184,0.08);padding:1.5px 7px;border-radius:4px;border:1px solid rgba(148,163,184,0.18);display:inline-block">{{ p.durasi }}</span>
         </td>
-        <td class="col-grow col-guide">
+        <td class="col-guide" style="max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Panduan Solusi: {{ p.tip or '—' }}">
           {% if p.tip %}
-            <div class="prob-tip-text cell-clamp-2" style="font-size:11px;color:var(--dim);line-height:1.35" title="Panduan Solusi: {{ p.tip }}">{{ p.tip }}</div>
+            <span class="prob-tip-text" style="font-size:11px;color:var(--dim)">{{ p.tip }}</span>
           {% else %}
             <span style="color:var(--dim);font-size:11px">—</span>
           {% endif %}
         </td>
-        <td class="prob-act-cell col-act" style="text-align:center">
+        <td class="prob-act-cell col-act" style="width:65px;text-align:center">
           {% if user.is_viewer() %}
             <a href="/servers/{{ p.server_id }}" class="btn btn-ghost btn-sm" style="padding:3px 6px;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px" title="Buka Detail Server" aria-label="Rincian">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
@@ -755,7 +753,7 @@
       </thead>
       <tbody id="prob-resolved-tbody">
       {% for p in (recent_resolved if recent_resolved else []) %}
-      <tr style="opacity:.8;border-bottom:1px solid rgba(255,255,255,0.03);transition:background .12s ease"
+      <tr class="is-resolved" style="border-bottom:1px solid rgba(255,255,255,0.03);transition:background .12s ease"
           data-group="{{ p.group_name or '' }}"
           data-prob-id="{{ p.id }}"
           data-prob-key="{{ p.key }}"
@@ -1552,7 +1550,7 @@ window.poll = async function(opts = {}) {
           _lastOpenFingerprint = openFp;
           tbody.innerHTML = openList.map(p => {
             const isIgn = !!p.is_ignored;
-            const rowStyle = isIgn ? ' style="opacity:.8;background:rgba(255,255,255,0.02)"' : '';
+            const rowStyle = isIgn ? ' class="is-ignored"' : '';
             let pMsg = p.message || '';
             let pTip = p.tip || '—';
             const grp = p.group_name || '';
@@ -1580,7 +1578,7 @@ window.poll = async function(opts = {}) {
               if (p.acknowledged_by) {
                 subBadges += `<span class="badge badge-up badge-sub" style="font-size:7px;padding:0.5px 3.5px;font-weight:700;letter-spacing:0.2px" title="${(isEn ? 'Handled by ' : 'Ditangani oleh ') + _esc(ackOp)}">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span>`;
               }
-              sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:flex-start;gap:2px">${baseBadge}<div style="display:inline-flex;align-items:center;justify-content:flex-start;gap:2.5px">${subBadges}</div></div>`;
+              sevCellHtml = `<div style="display:inline-flex;align-items:center;gap:3px;flex-wrap:nowrap;white-space:nowrap">${baseBadge}${subBadges}</div>`;
             } else {
               sevCellHtml = baseBadge;
             }
@@ -1634,30 +1632,30 @@ window.poll = async function(opts = {}) {
               data-prob-host="${_esc(p.hostname)}"
               data-prob-sid="${p.server_id}"
               data-prob-context="${ctxStr}">
-              <td class="col-time cell-nowrap">
+              <td class="col-time cell-nowrap" style="width:82px;min-width:80px;white-space:nowrap">
                 <span class="mono" style="font-size:11px;font-weight:600;color:var(--text);letter-spacing:0.2px" title="${(isEn ? 'Started: ' : 'Mulai: ') + _esc(p.started_at_str || '')}">${_esc((p.started_at_str || '').replace(/\s*\d{4}\s*/, ' '))}</span>
               </td>
-              <td class="col-grow col-srv cell-nowrap">
+              <td class="col-srv cell-nowrap" style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
                 <div style="display:inline-flex;align-items:center;gap:6px;max-width:100%">
                   ${srvDot}
                   <span style="font-size:11.5px;font-weight:600;color:var(--text-bright)">${_esc(p.hostname)}</span>
                   ${grpBadge}
                 </div>
               </td>
-              <td class="col-status" style="text-align:left !important">${sevCellHtml}</td>
-              <td class="col-grow col-event">
+              <td class="col-status" style="text-align:left !important;white-space:nowrap">${sevCellHtml}</td>
+              <td class="col-event" style="max-width:210px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${_esc(pMsg)}">
                 <span style="font-size:11.5px;font-weight:500;line-height:1.35;color:var(--text-bright)">${_esc(pMsg)}</span>
                 ${ignReasonBadge}
                 ${ignUntilBadge}
                 ${count24}
               </td>
-              <td class="col-metric" data-start="${_esc(p.started_at_iso || '')}">
+              <td class="col-metric" data-start="${_esc(p.started_at_iso || '')}" style="width:75px;min-width:70px;text-align:center;white-space:nowrap">
                 <span class="mono" style="font-size:10.5px;font-weight:600;color:var(--text);background:rgba(148,163,184,0.08);padding:1.5px 7px;border-radius:4px;border:1px solid rgba(148,163,184,0.18);display:inline-block">${_esc(p.durasi || '')}</span>
               </td>
-              <td class="col-grow col-guide">
-                ${pTip && pTip !== '—' ? `<div class="prob-tip-text cell-clamp-2" style="font-size:11px;color:var(--dim);line-height:1.35" title="${_esc(pTip)}">${_esc(pTip)}</div>` : '<span style="color:var(--dim);font-size:11px">—</span>'}
+              <td class="col-guide" style="max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${_esc(pTip)}">
+                ${pTip && pTip !== '—' ? `<span class="prob-tip-text" style="font-size:11px;color:var(--dim)">${_esc(pTip)}</span>` : '<span style="color:var(--dim);font-size:11px">—</span>'}
               </td>
-              <td class="prob-act-cell col-act" style="text-align:center">
+              <td class="prob-act-cell col-act" style="width:65px;text-align:center">
                 <div style="display:inline-flex;align-items:center;justify-content:center">
                   ${actCellHtml}
                 </div>
@@ -1711,7 +1709,7 @@ window.poll = async function(opts = {}) {
           const resDate = p.resolved_at_date || (p.resolved_at ? p.resolved_at.slice(0, 10) : '');
           const textSearch = `${p.hostname || ''} ${p.message || ''} ${p.component || ''} ${resLabel || ''} ${grp}`.toLowerCase();
 
-          return `<tr style="opacity:.8;border-bottom:1px solid rgba(255,255,255,0.03);transition:background .12s ease"
+          return `<tr class="is-resolved" style="border-bottom:1px solid rgba(255,255,255,0.03);transition:background .12s ease"
               data-group="${_esc(grp)}"
               data-prob-id="${p.id}"
               data-prob-key="${_esc(p.key)}"

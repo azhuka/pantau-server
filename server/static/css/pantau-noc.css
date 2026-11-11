@@ -1102,15 +1102,15 @@ td.col-center-cell {
 }
 
 /* Pembatas minimum semantik kolom informatif agar tabel tetap proporsional saat layar sempit */
-th.col-srv, td.col-srv               { min-width: 140px; }
-th.col-ip, td.col-ip                 { min-width: 110px; }
-th.col-plat, td.col-plat             { min-width: 140px; }
-th.col-os, td.col-os                 { min-width: 130px; }
-th.col-cpu, td.col-cpu               { min-width: 145px; }
-th.col-event, td.col-event           { min-width: 220px; line-height: 1.35; }
-th.col-guide, td.col-guide           { min-width: 220px; line-height: 1.35; }
-th.col-target, td.col-target         { min-width: 240px; }
-th.col-title-info, td.col-title-info { min-width: 220px; }
+th.col-srv, td.col-srv               { min-width: 120px; }
+th.col-ip, td.col-ip                 { min-width: 100px; }
+th.col-plat, td.col-plat             { min-width: 130px; }
+th.col-os, td.col-os                 { min-width: 120px; }
+th.col-cpu, td.col-cpu               { min-width: 130px; }
+th.col-event, td.col-event           { min-width: 170px; line-height: 1.35; }
+th.col-guide, td.col-guide           { min-width: 160px; line-height: 1.35; }
+th.col-target, td.col-target         { min-width: 140px; }
+th.col-title-info, td.col-title-info { min-width: 180px; }
 
 /* Utilitas Perilaku & Kerapian Teks Sel */
 .cell-nowrap, th.cell-nowrap, td.cell-nowrap { white-space: nowrap !important; }
@@ -1201,11 +1201,30 @@ table.noc-table-compact th {
    KOMPONEN DROPDOWN TINDAKAN CERDAS NOC (AKTIF JIKA TOMBOL AKSI > 2)
    ============================================================================= */
 tr:has(.noc-act-dropdown[open]),
-tr.has-dropdown-open,
+tr.has-dropdown-open {
+  position: relative !important;
+  z-index: 100000 !important;
+}
+
+th.col-act:has(.noc-act-dropdown[open]),
+th.col-act.has-dropdown-open,
 td.col-act:has(.noc-act-dropdown[open]),
 td.col-act.has-dropdown-open,
+td:has(.noc-act-dropdown[open]),
+td.has-dropdown-open,
 .noc-act-dropdown[open] {
-  z-index: 9999 !important;
+  position: sticky !important;
+  z-index: 100001 !important;
+}
+
+/* Aturan Keredupan Baris (Non-Aktif / Diabaikan / Ditangani) Tanpa Merusak Stacking Context Dropdown */
+tr.is-resolved > td:not(.col-act),
+tr.is-ignored > td:not(.col-act),
+tr[data-ignored="1"] > td:not(.col-act) {
+  opacity: 0.75;
+}
+tr.is-disabled > td:not(.col-act) {
+  opacity: 0.55;
 }
 
 .noc-act-dropdown {
@@ -1263,23 +1282,39 @@ td.col-act.has-dropdown-open,
   top: calc(100% + 3px);
   min-width: 140px;
   width: max-content;
-  max-width: 250px;
+  max-width: 260px;
   white-space: nowrap;
-  background: var(--col-act-bg, #0b111e);
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.15));
-  border-radius: var(--radius-sm, 4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.75);
-  padding: 3px;
-  z-index: 10000;
+  background: #0b111e !important;
+  color: #f8fafc !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: var(--radius-sm, 4px) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85), 0 2px 8px rgba(0, 0, 0, 0.5) !important;
+  padding: 3px !important;
+  z-index: 100002 !important;
+  opacity: 1 !important;
   display: flex;
   flex-direction: column;
   gap: 1.5px;
   box-sizing: border-box;
 }
 [data-theme="light"] .noc-act-dropdown-menu {
-  background: #ffffff;
-  border-color: #cbd5e1;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+  opacity: 1 !important;
+}
+[data-theme="obsidian"] .noc-act-dropdown-menu {
+  background: #141419 !important;
+  border-color: #272732 !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9) !important;
+  opacity: 1 !important;
+}
+[data-theme="navy"] .noc-act-dropdown-menu {
+  background: #162035 !important;
+  border-color: #263554 !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85) !important;
+  opacity: 1 !important;
 }
 .noc-act-dropdown-item {
   display: inline-flex;

@@ -2154,7 +2154,7 @@ div[style*="position: fixed"] .card {
     </tr></thead>
     <tbody>
     {% for p in rows %}
-    <tr{% if not p.is_open %} style="opacity:.65"{% elif p.is_ignored %} style="opacity:.75;background:rgba(255,255,255,0.02)"{% endif %}
+    <tr{% if not p.is_open %} class="is-resolved"{% elif p.is_ignored %} class="is-ignored"{% endif %}
         data-sev="{{ p.severity }}"
         data-ignored="{{ '1' if p.is_ignored else '0' }}"
         data-text="{{ (p.message ~ ' ' ~ p.key) | lower }}"
@@ -2468,14 +2468,14 @@ div[style*="position: fixed"] .card {
       <td id="conns-{{ svc.id }}">{{ svc._conns }}</td>
       <td id="resp-{{ svc.id }}" class="mono">{{ svc._response_time if svc._response_time is not none else '-' }}</td>
       <td id="health-{{ svc.id }}" style="font-size:12px;color:var(--dim)">{{ svc._health_msg or 'no data' }}</td>
-      <td>
+      <td style="white-space:nowrap !important;text-align:center" class="mono" title="{{ 'Downtime: ' ~ svc._uptime.downtime_seconds ~ ' detik' if svc._uptime.downtime_seconds > 0 else 'Uptime penuh 100%' }}">
         {% if svc._uptime.uptime_pct is not none %}
-          {{ svc._uptime.uptime_pct }}%
+          <span style="font-weight:600;color:{{ 'var(--green)' if svc._uptime.uptime_pct >= 99 else ('var(--yellow)' if svc._uptime.uptime_pct >= 95 else 'var(--red)') }}">{{ svc._uptime.uptime_pct }}%</span>
           {% if svc._uptime.downtime_seconds > 0 %}
-            <span style="font-size:11px;color:var(--red)">(down {{ svc._uptime.downtime_seconds }}s)</span>
+            <span style="font-size:9.5px;color:var(--red);margin-left:2px">({{ (svc._uptime.downtime_seconds / 3600) | round(1) }}j)</span>
           {% endif %}
         {% else %}
-          <span style="color:var(--dim)">-</span>
+          <span style="color:var(--dim)">—</span>
         {% endif %}
       </td>
       <td class="col-act" style="white-space:nowrap;text-align:center">
@@ -2854,7 +2854,7 @@ div[style*="position: fixed"] .card {
         </thead>
         <tbody>
           {% for c in ((cron_jobs.jobs if cron_jobs and cron_jobs.jobs else [])) %}
-          <tr style="{{ 'opacity:0.5' if not c.get('is_enabled', True) else '' }}">
+          <tr class="{{ 'is-disabled' if not c.get('is_enabled', True) else '' }}">
             <td>
               {% if c.get('is_enabled', True) %}
                 <span class="badge badge-up" title="Aktif">●</span>
@@ -3527,23 +3527,23 @@ div[style*="position: fixed"] .card {
       <table id="ssl-table" class="noc-table-compact" style="width:100%">
         <thead>
           <tr>
-            <th class="col-hero-cell" title="Domain atau Subdomain yang dilindungi oleh sertifikat">Domain / Subjek</th>
-            <th class="col-fixed-cell" style="min-width:130px;max-width:180px" title="Otoritas penerbit sertifikat (Certificate Authority)">Penerbit (CA)</th>
+            <th class="col-fixed-cell" style="min-width:140px;max-width:200px" title="Domain atau Subdomain yang dilindungi oleh sertifikat">Domain / Subjek</th>
+            <th class="col-fixed-cell" style="min-width:120px;max-width:170px" title="Otoritas penerbit sertifikat (Certificate Authority)">Penerbit (CA)</th>
             <th class="col-fixed-cell col-ssl-expiry" title="Batas waktu akhir masa berlaku sertifikat">Kedaluwarsa</th>
             <th class="col-fixed-cell col-num-cell col-ssl-days" title="Sisa hari sebelum sertifikat habis masa berlakunya">Sisa Hari</th>
-            <th class="col-fixed-cell col-center-cell" style="width:115px;min-width:110px" title="Status masa berlaku sertifikat SSL/TLS">Status</th>
-            <th class="col-fixed-cell" style="max-width:180px" title="Lokasi file sertifikat di filesystem server">Lokasi Berkas</th>
+            <th class="col-fixed-cell col-center-cell" style="width:105px;min-width:100px" title="Status masa berlaku sertifikat SSL/TLS">Status</th>
+            <th class="col-hero-cell col-grow" style="min-width:200px" title="Lokasi file sertifikat di filesystem server">Lokasi Berkas</th>
             <th class="col-fixed-cell col-act" style="text-align:center">Tindakan</th>
           </tr>
         </thead>
         <tbody>
           {% for c in (ssl_certs if ssl_certs else []) %}
           <tr>
-            <td>
+            <td style="min-width:140px;max-width:200px;word-break:break-all">
               <strong>{{ c.domains | join(', ') if c.domains else c.subject }}</strong>
               {% if c.is_custom %}<span class="badge badge-muted" title="Ditambahkan secara manual via Pantau" style="font-size:10px;margin-left:4px">Kustom</span>{% endif %}
             </td>
-            <td style="font-size:11px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px" title="{{ c.issuer }}">
+            <td style="font-size:11px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:120px;max-width:170px" title="{{ c.issuer }}">
               {% set ca_name = c.issuer %}
               {% if 'commonName=' in c.issuer %}
                 {% set ca_name = c.issuer.split('commonName=')[-1].split('/')[0].split(',')[0].strip() %}
@@ -3577,7 +3577,7 @@ div[style*="position: fixed"] .card {
                 {{ c.days_left }} hari lagi
               {% endif %}
             </td>
-            <td>
+            <td class="col-center-cell" style="width:105px;min-width:100px">
               {% if c.is_expired %}
                 <span class="badge badge-danger">Expired</span>
               {% elif c.is_critical %}
@@ -3588,7 +3588,7 @@ div[style*="position: fixed"] .card {
                 <span class="badge badge-up">Valid / Active</span>
               {% endif %}
             </td>
-            <td class="mono" style="font-size:11px;color:var(--dim);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ c.path }}">{{ c.path }}</td>
+            <td class="mono col-grow" style="font-size:10.5px;color:var(--dim);word-break:break-all;min-width:200px" title="{{ c.path }}">{{ c.path }}</td>
             <td class="col-act" style="text-align:center;white-space:nowrap">
               {% if user.has_perm('can_ssl') and c.is_custom %}
               <button type="button" class="btn btn-sm btn-danger" title="Hapus dari pengawasan SSL kustom" aria-label="Hapus" onclick="submitSslRemovePath('{{ c.path | replace('\\', '\\\\') | replace('\'', '\\\'') }}', this)">
@@ -8750,7 +8750,7 @@ function renderProblemsTab(level, openList, histList) {
     const pMsg = isEn ? getServicesI18nText(p.message || '', true) : (p.message || '');
     const pTip = isEn ? getServicesI18nText(p.tip || '—', true) : (p.tip || '—');
     const searchTxt = ((pMsg || '') + ' ' + (p.key || '')).toLowerCase();
-    const rowStyle = !isOpen ? ' style="opacity:.65"' : (isIgnored ? ' style="opacity:.75;background:rgba(255,255,255,0.02)"' : '');
+    const rowCls = !isOpen ? ' class="is-resolved"' : (isIgnored ? ' class="is-ignored"' : '');
     const startTip = p.started_at ? fmtProbDate(p.started_at) : '—';
     const resTip = p.resolved_at ? fmtProbDate(p.resolved_at) : '';
     const fullTimeTip = (isEn ? 'Start: ' : 'Mulai: ') + startTip + (resTip ? (isEn ? ' | Resolved: ' : ' | Selesai: ') + resTip : '');
@@ -8888,7 +8888,7 @@ function renderProblemsTab(level, openList, histList) {
 
     const ctxAttr = typeof p.context === 'object' && p.context !== null ? JSON.stringify(p.context) : (p.context || '');
 
-    html += `<tr${rowStyle} data-sev="${escapeHtml(sev)}" data-ignored="${isIgnored ? '1' : '0'}" data-text="${escapeHtml(searchTxt)}"
+    html += `<tr${rowCls} data-sev="${escapeHtml(sev)}" data-ignored="${isIgnored ? '1' : '0'}" data-text="${escapeHtml(searchTxt)}"
       data-prob-id="${p.id || ''}"
       data-prob-key="${escapeHtml(p.key || '')}"
       data-prob-sev="${escapeHtml(sev)}"
@@ -9981,7 +9981,7 @@ function renderCron(cron_jobs) {
             actHtml = `<span style="font-size:11px;color:var(--dim)">${isEn ? 'System' : 'Sistem'}</span>`;
           }
 
-          return `<tr style="${!isEnabled ? 'opacity:0.5' : ''}">
+          return `<tr class="${!isEnabled ? 'is-disabled' : ''}">
             <td><span class="badge ${isEnabled ? 'badge-up' : 'badge-muted'}" title="${isEnabled ? (isEn ? 'Active' : 'Aktif') : (isEn ? 'Disabled' : 'Dinonaktifkan')}">${isEnabled ? '●' : '○'}</span></td>
             <td class="mono" style="font-weight:700;color:${isEnabled ? 'var(--blue)' : 'var(--dim)'};white-space:nowrap">${escHtml(c.schedule || '')}</td>
             <td><span class="mono">${userClean}</span></td>
@@ -10084,12 +10084,12 @@ function renderSsl(sslList) {
     }
 
     return `<tr>
-      <td><strong>${domStr}</strong>${customBadge}</td>
-      <td style="font-size:11px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px" title="${escHtml(c.issuer || '')}"><span style="font-weight:600;color:var(--text)">${escHtml(ca_name)}</span></td>
+      <td style="min-width:140px;max-width:200px;word-break:break-all"><strong>${domStr}</strong>${customBadge}</td>
+      <td style="font-size:11px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:120px;max-width:170px" title="${escHtml(c.issuer || '')}"><span style="font-weight:600;color:var(--text)">${escHtml(ca_name)}</span></td>
       <td class="mono col-ssl-expiry" style="white-space:nowrap">${notAfterHtml}</td>
       <td class="mono col-ssl-days" style="white-space:nowrap !important;min-width:85px;font-weight:700;color:${daysColor}">${daysStr}</td>
-      <td>${statusBadge}</td>
-      <td class="mono" style="font-size:10px;color:var(--dim);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${pathClean}">${pathClean}</td>
+      <td class="col-center-cell" style="width:105px;min-width:100px">${statusBadge}</td>
+      <td class="mono col-grow" style="font-size:10.5px;color:var(--dim);word-break:break-all;min-width:200px" title="${pathClean}">${pathClean}</td>
       <td class="col-act" style="white-space:nowrap;text-align:center">${actHtml}</td>
     </tr>`;
   }).join('');
