@@ -354,6 +354,22 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.195
+
+- **Tipe Rilis:** Penyempurnaan Tata Letak Proporsional Kolom Checksum SHA-256, Standardisasi Menu Aksi Dropdown, dan Purifikasi Terminologi FIM (*FIM Table Proportion Optimization, Action Dropdown Standardization & Terminology Purification*)
+- **Fokus Utama:** Menyempurnakan antarmuka tab Integritas File (FIM) sesuai evaluasi visual dan ergonomi operator NOC:
+  1. **Optimalisasi Proporsi Lebar Kolom & Checksum Penuh:**
+     - Mengeliminasi whitespace kosong yang tidak terpakai dengan menerapkan token utilitas kolom baku NOC (`.col-fixed-cell`) pada kolom Kategori, Status, Ukuran, Pemeriksaan, dan Tindakan (`width: 1% !important; white-space: nowrap !important;`).
+     - Memaksimalkan kolom `Checksum SHA-256` (`.col-hero-cell`) untuk menyerap sisa ruang horizontal layar, memungkinkan tampilan hash kriptografis SHA-256 lengkap 64 karakter secara monospaced tanpa terpotong (*no ellipsis truncating*), serta mendukung penyalinan instan sekali klik.
+  2. **Standardisasi Kolom Tindakan (Menu Dropdown "Aksi ▾"):**
+     - Menggantikan tombol tidak baku "Validkan" dan tombol silang terpisah dengan komponen dropdown terpadu baku `<details class="noc-act-dropdown">` berlabel "Aksi ▾" secara seragam pada seluruh baris tabel.
+     - Menyediakan item tindakan fungsional: Pindai Sekarang (*Scan*), Salin Checksum, Perbarui Acuan (*Baseline Update*), serta Hapus Jalur (khusus jalur kustom).
+  3. **Purifikasi Bahasa & Terminologi Industri:**
+     - Membersihkan istilah kaku "berkas" dan menggantinya dengan istilah baku industri komputasi: "File" dan "Direktori / Folder".
+     - Menyederhanakan teks deskripsi pada kartu dan modal menjadi lugas, profesional, dan to the point tanpa mendikte operator ("Tentukan file atau direktori yang akan dipantau integritasnya").
+  4. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.195` pada seluruh 7 berkas repositori.
+
 ## Versi 4.8.194
 
 - **Tipe Rilis:** Implementasi Prototipe Visual Antarmuka Pengawasan Integritas Berkas & Filesystem (FIM Tab & Custom Path Modal) (*File Integrity Monitoring Visual Architecture & Custom Path Management*)

@@ -2627,20 +2627,20 @@ div[style*="position: fixed"] .card {
 </div>
 </div>
 
-<!-- Tab: Integritas Berkas & Filesystem (FIM) -->
+<!-- Tab: Integritas File & Filesystem (FIM) -->
 <div class="tab-body" id="tab-integritas" hidden>
   <!-- Kartu 1: Jalur Pantau & Status Baseline -->
   <div class="card">
     <div class="card-header" style="align-items:center;justify-content:space-between">
       <div>
-        <h3 style="margin:0">Integritas Berkas &amp; Filesystem (FIM)</h3>
-        <span style="font-size:12px;color:var(--dim)">Pengawasan real-time perubahan konten, hak akses, dan checksum berkas kritis sistem</span>
+        <h3 style="margin:0">Integritas File (FIM)</h3>
+        <span style="font-size:12px;color:var(--dim)">Pemantauan perubahan konten, hak akses, dan checksum file sistem</span>
       </div>
       <div style="display:flex;gap:8px;align-items:center">
-        <span class="noc-head-badge noc-head-badge-info" id="fim-count-badge">8 jalur diawasi</span>
-        <span class="noc-head-badge noc-head-badge-success" id="fim-status-badge">Semua valid</span>
+        <span class="noc-head-badge noc-head-badge-info" id="fim-count-badge">8 jalur dipantau</span>
+        <span class="noc-head-badge noc-head-badge-success" id="fim-status-badge">Semua normal</span>
         {% if user.is_master_admin() or user.is_operator() %}
-        <button class="btn btn-primary btn-sm" id="btn-add-fim-path-modal" onclick="openAddFimPathModal()" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Tambah jalur berkas atau direktori kustom untuk diawasi" aria-label="Tambah Jalur Pantau"{% endif %}>
+        <button class="btn btn-primary btn-sm" id="btn-add-fim-path-modal" onclick="openAddFimPathModal()" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Tambah file atau direktori kustom untuk dipantau" aria-label="Tambah Jalur"{% endif %}>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
           <span>Tambah Jalur</span>
         </button>
@@ -2651,105 +2651,226 @@ div[style*="position: fixed"] .card {
       <table id="tbl-fim-paths" class="noc-table-compact" style="width:100%">
         <thead>
           <tr>
-            <th title="Lokasi berkas atau direktori di filesystem server">Jalur</th>
-            <th style="width:140px" title="Klasifikasi jalur: bawaan sistem operasi atau kustom operator">Kategori</th>
-            <th class="col-center-cell" style="width:105px" title="Kesesuaian berkas saat ini dengan baseline tersimpan">Status</th>
-            <th style="width:85px" title="Ukuran berkas fisik">Ukuran</th>
-            <th style="min-width:140px" title="Ringkasan Checksum kriptografis SHA-256">Checksum SHA-256</th>
-            <th style="width:115px" title="Waktu terakhir agen memverifikasi berkas">Pemeriksaan</th>
-            <th class="col-fixed-cell col-act" style="text-align:center;width:130px">Tindakan</th>
+            <th class="col-fixed-cell" style="min-width:200px" title="Lokasi file atau direktori di filesystem server">Jalur</th>
+            <th class="col-fixed-cell" title="Klasifikasi: bawaan sistem atau kustom operator">Kategori</th>
+            <th class="col-fixed-cell col-center-cell" title="Kesesuaian file saat ini dengan acuan baseline">Status</th>
+            <th class="col-fixed-cell col-num-cell" title="Ukuran file fisik">Ukuran</th>
+            <th class="col-hero-cell" title="Checksum SHA-256 kriptografis lengkap (klik untuk menyalin)">Checksum SHA-256</th>
+            <th class="col-fixed-cell" title="Waktu terakhir pemeriksaan">Pemeriksaan</th>
+            <th class="col-fixed-cell col-act" style="text-align:center">Tindakan</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td><code class="mono" style="font-size:11.5px;color:var(--text-bright);font-weight:600">/etc/sudoers</code></td>
-            <td><span class="badge badge-muted" style="font-size:9.5px;padding:1px 6px">Sistem (Bawaan)</span></td>
-            <td class="col-center-cell"><span class="badge badge-up" style="font-size:9.5px;padding:1px 6px">VALID</span></td>
-            <td class="mono" style="font-size:11px">1.8 KB</td>
-            <td><span class="mono" style="font-size:10.5px;color:var(--dim)" title="SHA-256: 7a8f9c1b2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a">7a8f9c1b…</span></td>
-            <td class="mono" style="font-size:10.5px;color:var(--dim)">Baru saja</td>
-            <td class="col-act" style="text-align:center">
-              <button type="button" class="btn btn-ghost btn-xs" onclick="showToast('Integritas /etc/sudoers valid sesuai baseline.', true)" title="Validkan baseline berkas ini" style="font-size:10.5px;padding:2px 8px">Validkan</button>
+            <td class="col-fixed-cell"><code class="mono" style="font-size:11.5px;color:var(--text-bright);font-weight:600">/etc/sudoers</code></td>
+            <td class="col-fixed-cell"><span class="badge badge-muted" style="font-size:9.5px;padding:1px 6px">Sistem</span></td>
+            <td class="col-fixed-cell col-center-cell"><span class="badge badge-up" style="font-size:9.5px;padding:1px 6px">VALID</span></td>
+            <td class="col-fixed-cell col-num-cell mono" style="font-size:11px">1.8 KB</td>
+            <td class="col-hero-cell"><span class="mono" style="font-size:11px;color:var(--text-bright);cursor:pointer;white-space:nowrap" title="Klik untuk menyalin Checksum SHA-256 lengkap" onclick="navigator.clipboard.writeText('7a8f9c1b2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a'); showToast('Checksum /etc/sudoers disalin.', true)">7a8f9c1b2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a</span></td>
+            <td class="col-fixed-cell mono" style="font-size:10.5px;color:var(--dim)">Baru saja</td>
+            <td class="col-fixed-cell col-act" style="text-align:center">
+              <details class="noc-act-dropdown">
+                <summary class="btn btn-xs btn-ghost btn-noc-act">Aksi ▾</summary>
+                <div class="noc-act-dropdown-menu">
+                  <button type="button" class="noc-act-dropdown-item text-primary" onclick="showToast('Pemeriksaan /etc/sudoers selesai. Status valid.', true)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                    <span>Pindai Sekarang</span>
+                  </button>
+                  <button type="button" class="noc-act-dropdown-item" onclick="navigator.clipboard.writeText('7a8f9c1b2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a'); showToast('Checksum /etc/sudoers disalin.', true)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    <span>Salin Checksum</span>
+                  </button>
+                  <button type="button" class="noc-act-dropdown-item" onclick="showToast('Acuan baseline /etc/sudoers diperbarui.', true)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                    <span>Perbarui Acuan</span>
+                  </button>
+                </div>
+              </details>
             </td>
           </tr>
           <tr>
-            <td><code class="mono" style="font-size:11.5px;color:var(--text-bright);font-weight:600">/etc/passwd</code></td>
-            <td><span class="badge badge-muted" style="font-size:9.5px;padding:1px 6px">Sistem (Bawaan)</span></td>
-            <td class="col-center-cell"><span class="badge badge-up" style="font-size:9.5px;padding:1px 6px">VALID</span></td>
-            <td class="mono" style="font-size:11px">2.4 KB</td>
-            <td><span class="mono" style="font-size:10.5px;color:var(--dim)" title="SHA-256: c3e419aa5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e">c3e419aa…</span></td>
-            <td class="mono" style="font-size:10.5px;color:var(--dim)">Baru saja</td>
-            <td class="col-act" style="text-align:center">
-              <button type="button" class="btn btn-ghost btn-xs" onclick="showToast('Integritas /etc/passwd valid sesuai baseline.', true)" title="Validkan baseline berkas ini" style="font-size:10.5px;padding:2px 8px">Validkan</button>
+            <td class="col-fixed-cell"><code class="mono" style="font-size:11.5px;color:var(--text-bright);font-weight:600">/etc/passwd</code></td>
+            <td class="col-fixed-cell"><span class="badge badge-muted" style="font-size:9.5px;padding:1px 6px">Sistem</span></td>
+            <td class="col-fixed-cell col-center-cell"><span class="badge badge-up" style="font-size:9.5px;padding:1px 6px">VALID</span></td>
+            <td class="col-fixed-cell col-num-cell mono" style="font-size:11px">2.4 KB</td>
+            <td class="col-hero-cell"><span class="mono" style="font-size:11px;color:var(--text-bright);cursor:pointer;white-space:nowrap" title="Klik untuk menyalin Checksum SHA-256 lengkap" onclick="navigator.clipboard.writeText('c3e419aa5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e'); showToast('Checksum /etc/passwd disalin.', true)">c3e419aa5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e</span></td>
+            <td class="col-fixed-cell mono" style="font-size:10.5px;color:var(--dim)">Baru saja</td>
+            <td class="col-fixed-cell col-act" style="text-align:center">
+              <details class="noc-act-dropdown">
+                <summary class="btn btn-xs btn-ghost btn-noc-act">Aksi ▾</summary>
+                <div class="noc-act-dropdown-menu">
+                  <button type="button" class="noc-act-dropdown-item text-primary" onclick="showToast('Pemeriksaan /etc/passwd selesai. Status valid.', true)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                    <span>Pindai Sekarang</span>
+                  </button>
+                  <button type="button" class="noc-act-dropdown-item" onclick="navigator.clipboard.writeText('c3e419aa5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e'); showToast('Checksum /etc/passwd disalin.', true)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    <span>Salin Checksum</span>
+                  </button>
+                  <button type="button" class="noc-act-dropdown-item" onclick="showToast('Acuan baseline /etc/passwd diperbarui.', true)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                    <span>Perbarui Acuan</span>
+                  </button>
+                </div>
+              </details>
             </td>
           </tr>
           <tr>
-            <td><code class="mono" style="font-size:11.5px;color:var(--text-bright);font-weight:600">/etc/shadow</code></td>
-            <td><span class="badge badge-muted" style="font-size:9.5px;padding:1px 6px">Sistem (Bawaan)</span></td>
-            <td class="col-center-cell"><span class="badge badge-up" style="font-size:9.5px;padding:1px 6px">VALID</span></td>
-            <td class="mono" style="font-size:11px">1.2 KB</td>
-            <td><span class="mono" style="font-size:10.5px;color:var(--dim)" title="SHA-256: 87b5d1e23f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c">87b5d1e2…</span></td>
-            <td class="mono" style="font-size:10.5px;color:var(--dim)">Baru saja</td>
-            <td class="col-act" style="text-align:center">
-              <button type="button" class="btn btn-ghost btn-xs" onclick="showToast('Integritas /etc/shadow valid sesuai baseline.', true)" title="Validkan baseline berkas ini" style="font-size:10.5px;padding:2px 8px">Validkan</button>
+            <td class="col-fixed-cell"><code class="mono" style="font-size:11.5px;color:var(--text-bright);font-weight:600">/etc/shadow</code></td>
+            <td class="col-fixed-cell"><span class="badge badge-muted" style="font-size:9.5px;padding:1px 6px">Sistem</span></td>
+            <td class="col-fixed-cell col-center-cell"><span class="badge badge-up" style="font-size:9.5px;padding:1px 6px">VALID</span></td>
+            <td class="col-fixed-cell col-num-cell mono" style="font-size:11px">1.2 KB</td>
+            <td class="col-hero-cell"><span class="mono" style="font-size:11px;color:var(--text-bright);cursor:pointer;white-space:nowrap" title="Klik untuk menyalin Checksum SHA-256 lengkap" onclick="navigator.clipboard.writeText('87b5d1e23f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c'); showToast('Checksum /etc/shadow disalin.', true)">87b5d1e23f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c</span></td>
+            <td class="col-fixed-cell mono" style="font-size:10.5px;color:var(--dim)">Baru saja</td>
+            <td class="col-fixed-cell col-act" style="text-align:center">
+              <details class="noc-act-dropdown">
+                <summary class="btn btn-xs btn-ghost btn-noc-act">Aksi ▾</summary>
+                <div class="noc-act-dropdown-menu">
+                  <button type="button" class="noc-act-dropdown-item text-primary" onclick="showToast('Pemeriksaan /etc/shadow selesai. Status valid.', true)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                    <span>Pindai Sekarang</span>
+                  </button>
+                  <button type="button" class="noc-act-dropdown-item" onclick="navigator.clipboard.writeText('87b5d1e23f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c'); showToast('Checksum /etc/shadow disalin.', true)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    <span>Salin Checksum</span>
+                  </button>
+                  <button type="button" class="noc-act-dropdown-item" onclick="showToast('Acuan baseline /etc/shadow diperbarui.', true)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                    <span>Perbarui Acuan</span>
+                  </button>
+                </div>
+              </details>
             </td>
           </tr>
           <tr>
-            <td><code class="mono" style="font-size:11.5px;color:var(--text-bright);font-weight:600">/etc/ssh/sshd_config</code></td>
-            <td><span class="badge badge-muted" style="font-size:9.5px;padding:1px 6px">Sistem (Bawaan)</span></td>
-            <td class="col-center-cell"><span class="badge badge-up" style="font-size:9.5px;padding:1px 6px">VALID</span></td>
-            <td class="mono" style="font-size:11px">3.6 KB</td>
-            <td><span class="mono" style="font-size:10.5px;color:var(--dim)" title="SHA-256: 41fa90de12bc34de56fa78bc90de12bc34de56fa78bc90de12bc34de56fa78bc">41fa90de…</span></td>
-            <td class="mono" style="font-size:10.5px;color:var(--dim)">Baru saja</td>
-            <td class="col-act" style="text-align:center">
-              <button type="button" class="btn btn-ghost btn-xs" onclick="showToast('Integritas /etc/ssh/sshd_config valid sesuai baseline.', true)" title="Validkan baseline berkas ini" style="font-size:10.5px;padding:2px 8px">Validkan</button>
+            <td class="col-fixed-cell"><code class="mono" style="font-size:11.5px;color:var(--text-bright);font-weight:600">/etc/ssh/sshd_config</code></td>
+            <td class="col-fixed-cell"><span class="badge badge-muted" style="font-size:9.5px;padding:1px 6px">Sistem</span></td>
+            <td class="col-fixed-cell col-center-cell"><span class="badge badge-up" style="font-size:9.5px;padding:1px 6px">VALID</span></td>
+            <td class="col-fixed-cell col-num-cell mono" style="font-size:11px">3.6 KB</td>
+            <td class="col-hero-cell"><span class="mono" style="font-size:11px;color:var(--text-bright);cursor:pointer;white-space:nowrap" title="Klik untuk menyalin Checksum SHA-256 lengkap" onclick="navigator.clipboard.writeText('41fa90de12bc34de56fa78bc90de12bc34de56fa78bc90de12bc34de56fa78bc'); showToast('Checksum sshd_config disalin.', true)">41fa90de12bc34de56fa78bc90de12bc34de56fa78bc90de12bc34de56fa78bc</span></td>
+            <td class="col-fixed-cell mono" style="font-size:10.5px;color:var(--dim)">Baru saja</td>
+            <td class="col-fixed-cell col-act" style="text-align:center">
+              <details class="noc-act-dropdown">
+                <summary class="btn btn-xs btn-ghost btn-noc-act">Aksi ▾</summary>
+                <div class="noc-act-dropdown-menu">
+                  <button type="button" class="noc-act-dropdown-item text-primary" onclick="showToast('Pemeriksaan sshd_config selesai. Status valid.', true)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                    <span>Pindai Sekarang</span>
+                  </button>
+                  <button type="button" class="noc-act-dropdown-item" onclick="navigator.clipboard.writeText('41fa90de12bc34de56fa78bc90de12bc34de56fa78bc90de12bc34de56fa78bc'); showToast('Checksum sshd_config disalin.', true)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    <span>Salin Checksum</span>
+                  </button>
+                  <button type="button" class="noc-act-dropdown-item" onclick="showToast('Acuan baseline sshd_config diperbarui.', true)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                    <span>Perbarui Acuan</span>
+                  </button>
+                </div>
+              </details>
             </td>
           </tr>
           <tr>
-            <td><code class="mono" style="font-size:11.5px;color:var(--text-bright);font-weight:600">/root/.ssh/authorized_keys</code></td>
-            <td><span class="badge badge-muted" style="font-size:9.5px;padding:1px 6px">Sistem (Bawaan)</span></td>
-            <td class="col-center-cell"><span class="badge badge-up" style="font-size:9.5px;padding:1px 6px">VALID</span></td>
-            <td class="mono" style="font-size:11px">580 B</td>
-            <td><span class="mono" style="font-size:10.5px;color:var(--dim)" title="SHA-256: 9b32e18c01ab23cd45ef67ab89cd01ef23ab45cd67ef89ab01cd23ef45ab67cd">9b32e18c…</span></td>
-            <td class="mono" style="font-size:10.5px;color:var(--dim)">Baru saja</td>
-            <td class="col-act" style="text-align:center">
-              <button type="button" class="btn btn-ghost btn-xs" onclick="showToast('Integritas SSH keys valid sesuai baseline.', true)" title="Validkan baseline berkas ini" style="font-size:10.5px;padding:2px 8px">Validkan</button>
+            <td class="col-fixed-cell"><code class="mono" style="font-size:11.5px;color:var(--text-bright);font-weight:600">/root/.ssh/authorized_keys</code></td>
+            <td class="col-fixed-cell"><span class="badge badge-muted" style="font-size:9.5px;padding:1px 6px">Sistem</span></td>
+            <td class="col-fixed-cell col-center-cell"><span class="badge badge-up" style="font-size:9.5px;padding:1px 6px">VALID</span></td>
+            <td class="col-fixed-cell col-num-cell mono" style="font-size:11px">580 B</td>
+            <td class="col-hero-cell"><span class="mono" style="font-size:11px;color:var(--text-bright);cursor:pointer;white-space:nowrap" title="Klik untuk menyalin Checksum SHA-256 lengkap" onclick="navigator.clipboard.writeText('9b32e18c01ab23cd45ef67ab89cd01ef23ab45cd67ef89ab01cd23ef45ab67cd'); showToast('Checksum authorized_keys disalin.', true)">9b32e18c01ab23cd45ef67ab89cd01ef23ab45cd67ef89ab01cd23ef45ab67cd</span></td>
+            <td class="col-fixed-cell mono" style="font-size:10.5px;color:var(--dim)">Baru saja</td>
+            <td class="col-fixed-cell col-act" style="text-align:center">
+              <details class="noc-act-dropdown">
+                <summary class="btn btn-xs btn-ghost btn-noc-act">Aksi ▾</summary>
+                <div class="noc-act-dropdown-menu">
+                  <button type="button" class="noc-act-dropdown-item text-primary" onclick="showToast('Pemeriksaan SSH keys selesai. Status valid.', true)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                    <span>Pindai Sekarang</span>
+                  </button>
+                  <button type="button" class="noc-act-dropdown-item" onclick="navigator.clipboard.writeText('9b32e18c01ab23cd45ef67ab89cd01ef23ab45cd67ef89ab01cd23ef45ab67cd'); showToast('Checksum authorized_keys disalin.', true)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    <span>Salin Checksum</span>
+                  </button>
+                  <button type="button" class="noc-act-dropdown-item" onclick="showToast('Acuan baseline authorized_keys diperbarui.', true)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                    <span>Perbarui Acuan</span>
+                  </button>
+                </div>
+              </details>
             </td>
           </tr>
           <tr>
-            <td><code class="mono" style="font-size:11.5px;color:var(--text-bright);font-weight:600">/etc/systemd/system/</code></td>
-            <td><span class="badge badge-muted" style="font-size:9.5px;padding:1px 6px">Sistem (Bawaan)</span></td>
-            <td class="col-center-cell"><span class="badge badge-up" style="font-size:9.5px;padding:1px 6px">VALID</span></td>
-            <td class="mono" style="font-size:11px">Direktori</td>
-            <td><span class="mono" style="font-size:10.5px;color:var(--dim)">18 unit terverifikasi</span></td>
-            <td class="mono" style="font-size:10.5px;color:var(--dim)">Baru saja</td>
-            <td class="col-act" style="text-align:center">
-              <button type="button" class="btn btn-ghost btn-xs" onclick="showToast('Integritas unit systemd valid sesuai baseline.', true)" title="Validkan baseline berkas ini" style="font-size:10.5px;padding:2px 8px">Validkan</button>
+            <td class="col-fixed-cell"><code class="mono" style="font-size:11.5px;color:var(--text-bright);font-weight:600">/etc/systemd/system/</code></td>
+            <td class="col-fixed-cell"><span class="badge badge-muted" style="font-size:9.5px;padding:1px 6px">Sistem</span></td>
+            <td class="col-fixed-cell col-center-cell"><span class="badge badge-up" style="font-size:9.5px;padding:1px 6px">VALID</span></td>
+            <td class="col-fixed-cell col-num-cell mono" style="font-size:11px">Direktori</td>
+            <td class="col-hero-cell"><span class="mono" style="font-size:11px;color:var(--dim)">18 file terverifikasi (rekursif)</span></td>
+            <td class="col-fixed-cell mono" style="font-size:10.5px;color:var(--dim)">Baru saja</td>
+            <td class="col-fixed-cell col-act" style="text-align:center">
+              <details class="noc-act-dropdown">
+                <summary class="btn btn-xs btn-ghost btn-noc-act">Aksi ▾</summary>
+                <div class="noc-act-dropdown-menu">
+                  <button type="button" class="noc-act-dropdown-item text-primary" onclick="showToast('Pemeriksaan unit systemd selesai. Status valid.', true)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                    <span>Pindai Sekarang</span>
+                  </button>
+                  <button type="button" class="noc-act-dropdown-item" onclick="showToast('Acuan baseline direktori systemd diperbarui.', true)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                    <span>Perbarui Acuan</span>
+                  </button>
+                </div>
+              </details>
             </td>
           </tr>
           <tr>
-            <td><code class="mono" style="font-size:11.5px;color:var(--text-bright);font-weight:600">/etc/crontab</code></td>
-            <td><span class="badge badge-muted" style="font-size:9.5px;padding:1px 6px">Sistem (Bawaan)</span></td>
-            <td class="col-center-cell"><span class="badge badge-up" style="font-size:9.5px;padding:1px 6px">VALID</span></td>
-            <td class="mono" style="font-size:11px">1.1 KB</td>
-            <td><span class="mono" style="font-size:10.5px;color:var(--dim)" title="SHA-256: 5c7018fa92be34cd56ea78bc90de12bc34de56fa78bc90de12bc34de56fa78bc">5c7018fa…</span></td>
-            <td class="mono" style="font-size:10.5px;color:var(--dim)">Baru saja</td>
-            <td class="col-act" style="text-align:center">
-              <button type="button" class="btn btn-ghost btn-xs" onclick="showToast('Integritas /etc/crontab valid sesuai baseline.', true)" title="Validkan baseline berkas ini" style="font-size:10.5px;padding:2px 8px">Validkan</button>
+            <td class="col-fixed-cell"><code class="mono" style="font-size:11.5px;color:var(--text-bright);font-weight:600">/etc/crontab</code></td>
+            <td class="col-fixed-cell"><span class="badge badge-muted" style="font-size:9.5px;padding:1px 6px">Sistem</span></td>
+            <td class="col-fixed-cell col-center-cell"><span class="badge badge-up" style="font-size:9.5px;padding:1px 6px">VALID</span></td>
+            <td class="col-fixed-cell col-num-cell mono" style="font-size:11px">1.1 KB</td>
+            <td class="col-hero-cell"><span class="mono" style="font-size:11px;color:var(--text-bright);cursor:pointer;white-space:nowrap" title="Klik untuk menyalin Checksum SHA-256 lengkap" onclick="navigator.clipboard.writeText('5c7018fa92be34cd56ea78bc90de12bc34de56fa78bc90de12bc34de56fa78bc'); showToast('Checksum /etc/crontab disalin.', true)">5c7018fa92be34cd56ea78bc90de12bc34de56fa78bc90de12bc34de56fa78bc</span></td>
+            <td class="col-fixed-cell mono" style="font-size:10.5px;color:var(--dim)">Baru saja</td>
+            <td class="col-fixed-cell col-act" style="text-align:center">
+              <details class="noc-act-dropdown">
+                <summary class="btn btn-xs btn-ghost btn-noc-act">Aksi ▾</summary>
+                <div class="noc-act-dropdown-menu">
+                  <button type="button" class="noc-act-dropdown-item text-primary" onclick="showToast('Pemeriksaan /etc/crontab selesai. Status valid.', true)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                    <span>Pindai Sekarang</span>
+                  </button>
+                  <button type="button" class="noc-act-dropdown-item" onclick="navigator.clipboard.writeText('5c7018fa92be34cd56ea78bc90de12bc34de56fa78bc90de12bc34de56fa78bc'); showToast('Checksum /etc/crontab disalin.', true)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    <span>Salin Checksum</span>
+                  </button>
+                  <button type="button" class="noc-act-dropdown-item" onclick="showToast('Acuan baseline /etc/crontab diperbarui.', true)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                    <span>Perbarui Acuan</span>
+                  </button>
+                </div>
+              </details>
             </td>
           </tr>
           <tr>
-            <td><code class="mono" style="font-size:11.5px;color:var(--blue);font-weight:600">/var/www/html/</code></td>
-            <td><span class="badge badge-info" style="font-size:9.5px;padding:1px 6px">Kustom Operator</span></td>
-            <td class="col-center-cell"><span class="badge badge-up" style="font-size:9.5px;padding:1px 6px">VALID</span></td>
-            <td class="mono" style="font-size:11px">Folder (L1)</td>
-            <td><span class="mono" style="font-size:10.5px;color:var(--dim)">4 berkas terverifikasi</span></td>
-            <td class="mono" style="font-size:10.5px;color:var(--dim)">Baru saja</td>
-            <td class="col-act" style="text-align:center">
-              <div style="display:inline-flex;gap:4px">
-                <button type="button" class="btn btn-ghost btn-xs" onclick="showToast('Integritas /var/www/html valid sesuai baseline.', true)" title="Validkan baseline berkas ini" style="font-size:10.5px;padding:2px 8px">Validkan</button>
-                <button type="button" class="btn btn-ghost btn-xs" onclick="showToast('Jalur kustom dihapus dari pengawasan.', true)" title="Hapus jalur ini dari pengawasan" style="font-size:10.5px;padding:2px 6px;color:var(--red)">&times;</button>
-              </div>
+            <td class="col-fixed-cell"><code class="mono" style="font-size:11.5px;color:var(--blue);font-weight:600">/var/www/html/</code></td>
+            <td class="col-fixed-cell"><span class="badge badge-info" style="font-size:9.5px;padding:1px 6px">Kustom</span></td>
+            <td class="col-fixed-cell col-center-cell"><span class="badge badge-up" style="font-size:9.5px;padding:1px 6px">VALID</span></td>
+            <td class="col-fixed-cell col-num-cell mono" style="font-size:11px">Folder (L1)</td>
+            <td class="col-hero-cell"><span class="mono" style="font-size:11px;color:var(--dim)">4 file terverifikasi</span></td>
+            <td class="col-fixed-cell mono" style="font-size:10.5px;color:var(--dim)">Baru saja</td>
+            <td class="col-fixed-cell col-act" style="text-align:center">
+              <details class="noc-act-dropdown">
+                <summary class="btn btn-xs btn-ghost btn-noc-act">Aksi ▾</summary>
+                <div class="noc-act-dropdown-menu">
+                  <button type="button" class="noc-act-dropdown-item text-primary" onclick="showToast('Pemeriksaan /var/www/html/ selesai. Status valid.', true)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                    <span>Pindai Sekarang</span>
+                  </button>
+                  <button type="button" class="noc-act-dropdown-item" onclick="showToast('Acuan baseline /var/www/html/ diperbarui.', true)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                    <span>Perbarui Acuan</span>
+                  </button>
+                  <button type="button" class="noc-act-dropdown-item danger" onclick="showToast('Jalur kustom dihapus dari pemantauan.', true)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    <span>Hapus Jalur</span>
+                  </button>
+                </div>
+              </details>
             </td>
           </tr>
         </tbody>
@@ -2757,12 +2878,12 @@ div[style*="position: fixed"] .card {
     </div>
   </div>
 
-  <!-- Kartu 2: Riwayat Kejadian Perubahan (FIM Events) -->
+  <!-- Kartu 2: Riwayat Perubahan Integritas (FIM Events) -->
   <div class="card" style="margin-top:14px">
     <div class="card-header" style="align-items:center;justify-content:space-between">
       <div>
-        <h3 style="margin:0">Riwayat Kejadian Perubahan (FIM Events)</h3>
-        <span style="font-size:12px;color:var(--dim)">Log kronologis deteksi modifikasi berkas, perubahan hak akses, atau berkas baru</span>
+        <h3 style="margin:0">Riwayat Perubahan Integritas (FIM)</h3>
+        <span style="font-size:12px;color:var(--dim)">Log kronologis deteksi modifikasi file, hak akses, dan integritas</span>
       </div>
       <div>
         <span class="noc-head-badge noc-head-badge-muted" id="fim-events-badge">Audit log aktif</span>
@@ -2772,18 +2893,18 @@ div[style*="position: fixed"] .card {
       <table id="tbl-fim-events" class="noc-table-compact" style="width:100%">
         <thead>
           <tr>
-            <th style="width:120px" title="Waktu kejadian terdeteksi oleh agen">Waktu</th>
-            <th title="Jalur berkas yang terdampak perubahan">Jalur</th>
-            <th style="width:170px" title="Jenis kejadian integritas">Kejadian</th>
-            <th class="col-center-cell" style="width:100px" title="Tingkat keparahan dampak kejadian">Tingkat</th>
-            <th title="Rincian perubahan ukuran, permission, atau hash">Rincian</th>
-            <th class="col-fixed-cell col-act" style="text-align:center;width:110px">Tindakan</th>
+            <th class="col-fixed-cell" style="width:130px" title="Waktu kejadian terdeteksi">Waktu</th>
+            <th class="col-fixed-cell" style="min-width:180px" title="Jalur file yang terdampak">Jalur</th>
+            <th class="col-fixed-cell" style="width:150px" title="Jenis perubahan integritas">Kejadian</th>
+            <th class="col-fixed-cell col-center-cell" style="width:90px" title="Tingkat keparahan dampak kejadian">Tingkat</th>
+            <th class="col-hero-cell" title="Rincian perubahan ukuran, hak akses, atau hash">Rincian</th>
+            <th class="col-fixed-cell col-act" style="text-align:center">Tindakan</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td colspan="6" class="empty-msg" style="text-align:center;padding:18px 12px;color:var(--dim)">
-              Belum ada modifikasi berkas yang terdeteksi. Seluruh integritas berkas sistem dan kustom cocok dengan baseline.
+            <td colspan="6" class="empty-msg" style="text-align:center;padding:20px 12px;color:var(--dim)">
+              Belum ada perubahan file yang terdeteksi. Seluruh file sistem dan jalur kustom cocok dengan acuan baseline.
             </td>
           </tr>
         </tbody>
@@ -4595,38 +4716,38 @@ div[style*="position: fixed"] .card {
   </div>
 </div>
 
-<!-- Modal: Tambah Jalur Pantau Integritas (FIM) -->
+<!-- Modal: Tambah Jalur Pemantauan Integritas (FIM) -->
 <div id="add-fim-path-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:100005;align-items:center;justify-content:center;backdrop-filter:blur(3px);padding:16px" onclick="if(event.target===this)closeAddFimPathModal()">
   <div class="card" style="width:100%;max-width:480px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:22px;box-shadow:0 20px 48px rgba(0,0,0,0.8);color:var(--text)">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
       <h3 style="margin:0;font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        <span>Tambah Jalur Pantau Integritas</span>
+        <span>Tambah Jalur Pemantauan Integritas</span>
       </h3>
       <button type="button" class="btn btn-ghost btn-sm modal-close" onclick="closeAddFimPathModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer" aria-label="Tutup">&times;</button>
     </div>
 
     <p style="font-size:12.5px;color:var(--dim);margin:0 0 16px 0;line-height:1.5">
-      Tentukan berkas konfigurasi kritis atau direktori aplikasi yang ingin diawasi integritasnya secara berkala oleh agen klien.
+      Tentukan file atau direktori yang akan dipantau integritasnya.
     </p>
 
-    <form id="add-fim-path-form" data-no-loading onsubmit="event.preventDefault(); showToast('Jalur pantau baru berhasil ditambahkan ke daftar pengawasan.', true); closeAddFimPathModal();">
+    <form id="add-fim-path-form" data-no-loading onsubmit="event.preventDefault(); showToast('Jalur baru berhasil ditambahkan ke daftar pemantauan.', true); closeAddFimPathModal();">
       <div style="margin-bottom:14px">
-        <label for="fim-path-input" style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text)">Jalur Berkas / Direktori (Path Absolut Linux): <span style="color:#ef4444">*</span></label>
+        <label for="fim-path-input" style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text)">Path File / Direktori: <span style="color:#ef4444">*</span></label>
         <input type="text" id="fim-path-input" required placeholder="Contoh: /var/www/html/ atau /etc/nginx/nginx.conf" style="width:100%;padding:8px 12px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:monospace;box-sizing:border-box">
       </div>
 
       <div style="margin-bottom:14px">
         <label for="fim-scope-select" style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text)">Lingkup Pemantauan:</label>
         <select id="fim-scope-select" style="width:100%;padding:8px 12px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;box-sizing:border-box">
-          <option value="single_file">Berkas Tunggal (Pemeriksaan Hash SHA-256 &amp; Permissions)</option>
-          <option value="dir_shallow">Direktori — Non-Rekursif (Hanya berkas langsung dalam folder)</option>
-          <option value="dir_deep">Direktori — Rekursif Terbatas (Maksimal kedalaman 2 level)</option>
+          <option value="single_file">File Tunggal (Pemeriksaan Checksum SHA-256 &amp; Hak Akses)</option>
+          <option value="dir_shallow">Direktori — Non-Rekursif (Hanya file langsung dalam folder)</option>
+          <option value="dir_deep">Direktori — Rekursif (Maksimal kedalaman 2 level)</option>
         </select>
       </div>
 
       <div style="margin-bottom:18px">
-        <label style="display:block;font-size:12px;font-weight:600;margin-bottom:8px;color:var(--text)">Parameter Pengawasan Agen:</label>
+        <label style="display:block;font-size:12px;font-weight:600;margin-bottom:8px;color:var(--text)">Parameter Pemantauan:</label>
         <div style="display:flex;flex-direction:column;gap:8px;font-size:12px;color:var(--text)">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
             <input type="checkbox" checked disabled>
@@ -4638,7 +4759,7 @@ div[style*="position: fixed"] .card {
           </label>
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
             <input type="checkbox" checked>
-            <span>Deteksi Pembuatan &amp; Penghapusan Berkas Baru</span>
+            <span>Deteksi Penambahan &amp; Penghapusan File</span>
           </label>
         </div>
       </div>
