@@ -2662,52 +2662,54 @@ div[style*="position: fixed"] .card {
       </div>
     </div>
     <div class="table-responsive" style="overflow-x:auto">
-      <table id="tbl-fim-paths" class="noc-table-compact" style="width:100%">
+      <table id="tbl-fim-paths" class="noc-table-compact" style="width:100%;table-layout:fixed">
         <thead>
           <tr>
-            <th class="col-fixed-cell" style="min-width:200px" title="Lokasi file atau direktori di filesystem server">Jalur</th>
-            <th class="col-fixed-cell" title="Klasifikasi: bawaan sistem atau kustom operator">Kategori</th>
-            <th class="col-fixed-cell col-center-cell" title="Kesesuaian file saat ini dengan acuan baseline">Status</th>
-            <th class="col-fixed-cell col-num-cell" title="Ukuran file fisik">Ukuran</th>
-            <th class="col-hero-cell" title="Checksum SHA-256 kriptografis lengkap (klik untuk menyalin)">Checksum SHA-256</th>
-            <th class="col-fixed-cell" style="width:115px;min-width:115px;text-align:right" title="Waktu terakhir pemeriksaan">Pemeriksaan</th>
-            <th class="col-fixed-cell col-act" style="width:90px;min-width:90px;text-align:center">Tindakan</th>
+            <th class="col-fim-path" title="Lokasi file atau direktori di filesystem server">Jalur</th>
+            <th class="col-fim-cat" title="Klasifikasi: bawaan sistem atau kustom operator">Kategori</th>
+            <th class="col-fim-status" title="Kesesuaian file saat ini dengan acuan baseline">Status</th>
+            <th class="col-fim-size" title="Ukuran file fisik">Ukuran</th>
+            <th class="col-fim-hash" title="Checksum SHA-256 kriptografis lengkap (klik untuk menyalin)">Checksum SHA-256</th>
+            <th class="col-fim-check" title="Waktu terakhir pemeriksaan">Pemeriksaan</th>
+            <th class="col-fim-act" style="text-align:center">Tindakan</th>
           </tr>
         </thead>
         <tbody>
           {% for fp in (fim_paths if fim_paths else []) %}
           <tr>
-            <td class="col-fixed-cell"><code class="mono" style="font-size:11.5px;color:{% if fp.category == 'custom' %}var(--blue){% else %}var(--text-bright){% endif %};font-weight:600">{{ fp.path }}</code></td>
-            <td class="col-fixed-cell">
+            <td class="col-fim-path"><code class="mono" style="font-size:11.5px;color:{% if fp.category == 'custom' %}var(--blue){% else %}var(--text-bright){% endif %};font-weight:600" title="{{ fp.path }}">{{ fp.path }}</code></td>
+            <td class="col-fim-cat">
               {% if fp.category == 'custom' %}
                 <span class="badge badge-info" style="font-size:9.5px;padding:1px 6px">Kustom</span>
               {% else %}
                 <span class="badge badge-muted" style="font-size:9.5px;padding:1px 6px">Sistem</span>
               {% endif %}
             </td>
-            <td class="col-fixed-cell col-center-cell">
+            <td class="col-fim-status">
               {% if fp.status == 'VALID' %}
                 <span class="badge badge-up" style="font-size:9.5px;padding:1px 6px">VALID</span>
               {% elif fp.status == 'CHANGED' %}
                 <span class="badge badge-danger" style="font-size:9.5px;padding:1px 6px">DIUBAH</span>
               {% elif fp.status == 'MISSING' %}
                 <span class="badge badge-warn" style="font-size:9.5px;padding:1px 6px">HILANG</span>
+              {% elif fp.status == 'NOT_CONFIGURED' %}
+                <span class="badge badge-muted" style="font-size:9.5px;padding:1px 6px" title="Berkas opsional belum dibuat di sistem">BELUM ADA</span>
               {% else %}
                 <span class="badge badge-muted" style="font-size:9.5px;padding:1px 6px">{{ fp.status }}</span>
               {% endif %}
             </td>
-            <td class="col-fixed-cell col-num-cell mono" style="font-size:11px">{{ fp.size_human or '—' }}</td>
-            <td class="col-hero-cell">
+            <td class="col-fim-size mono" style="font-size:11px">{{ fp.size_human or '—' }}</td>
+            <td class="col-fim-hash">
               {% if fp.sha256_hash and fp.sha256_hash != '-' and fp.sha256_hash|length == 64 %}
-                <span class="mono" style="font-size:11px;color:var(--text-bright);cursor:pointer;white-space:nowrap" title="Klik untuk menyalin Checksum SHA-256 lengkap" onclick="copyFimChecksum('{{ fp.sha256_hash }}', '{{ fp.path }}')">{{ fp.sha256_hash }}</span>
+                <span class="mono fim-hash-text" title="Klik untuk menyalin Checksum SHA-256 lengkap: {{ fp.sha256_hash }}" onclick="copyFimChecksum('{{ fp.sha256_hash }}', '{{ fp.path }}')">{{ fp.sha256_hash }}</span>
               {% else %}
-                <span class="mono" style="font-size:11px;color:var(--dim)">{{ fp.sha256_hash or '—' }}</span>
+                <span class="mono fim-hash-text fim-hash-dim" title="{{ fp.sha256_hash or '—' }}">{{ fp.sha256_hash or '—' }}</span>
               {% endif %}
             </td>
-            <td class="col-fixed-cell mono" style="width:115px;min-width:115px;text-align:right;font-size:10.5px;color:var(--dim)">
+            <td class="col-fim-check mono" style="font-size:10.5px;color:var(--dim)">
               {{ fp.last_checked_at.strftime('%H:%M:%S') if fp.last_checked_at else 'Belum dipindai' }}
             </td>
-            <td class="col-fixed-cell col-act" style="width:90px;min-width:90px;text-align:center">
+            <td class="col-fim-act" style="text-align:center">
               <details class="noc-act-dropdown">
                 <summary class="btn btn-xs btn-ghost btn-noc-act">Aksi ▾</summary>
                 <div class="noc-act-dropdown-menu">
@@ -11019,7 +11021,7 @@ function renderFim(paths, events) {
     countBadge.textContent = pathList.length + (isEn ? ' paths monitored' : ' jalur dipantau');
   }
 
-  const anomalies = pathList.filter(p => p.status && p.status !== 'VALID').length;
+  const anomalies = pathList.filter(p => ['CHANGED', 'MISSING', 'ERROR'].includes(p.status)).length;
   const statusBadge = document.getElementById('fim-status-badge');
   if (statusBadge) {
     if (anomalies > 0) {
@@ -11082,12 +11084,14 @@ function renderFim(paths, events) {
             statusBadgeHtml = `<span class="badge badge-danger" style="font-size:9.5px;padding:1px 6px">${isEn ? 'MODIFIED' : 'DIUBAH'}</span>`;
           } else if (p.status === 'MISSING') {
             statusBadgeHtml = `<span class="badge badge-warn" style="font-size:9.5px;padding:1px 6px">${isEn ? 'MISSING' : 'HILANG'}</span>`;
+          } else if (p.status === 'NOT_CONFIGURED') {
+            statusBadgeHtml = `<span class="badge badge-muted" style="font-size:9.5px;padding:1px 6px" title="${isEn ? 'Optional file not yet configured' : 'Berkas opsional belum dibuat di sistem'}">${isEn ? 'NOT CONFIGURED' : 'BELUM ADA'}</span>`;
           }
 
           const hasValidHash = p.sha256_hash && p.sha256_hash !== '-' && p.sha256_hash.length === 64;
           const hashHtml = hasValidHash
-            ? `<span class="mono" style="font-size:11px;color:var(--text-bright);cursor:pointer;white-space:nowrap" title="${isEn ? 'Click to copy SHA-256 Checksum' : 'Klik untuk menyalin Checksum SHA-256 lengkap'}" onclick="copyFimChecksum('${escHtml(p.sha256_hash)}', '${escHtml(p.path)}')">${escHtml(p.sha256_hash)}</span>`
-            : `<span class="mono" style="font-size:11px;color:var(--dim)">${escHtml(p.sha256_hash || '—')}</span>`;
+            ? `<span class="mono fim-hash-text" title="${isEn ? 'Click to copy SHA-256 Checksum: ' : 'Klik untuk menyalin Checksum SHA-256 lengkap: '}${escHtml(p.sha256_hash)}" onclick="copyFimChecksum('${escHtml(p.sha256_hash)}', '${escHtml(p.path)}')">${escHtml(p.sha256_hash)}</span>`
+            : `<span class="mono fim-hash-text fim-hash-dim" title="${escHtml(p.sha256_hash || '—')}">${escHtml(p.sha256_hash || '—')}</span>`;
 
           let checkTime = isEn ? 'Not yet scanned' : 'Belum dipindai';
           if (p.last_checked_at) {
@@ -11116,13 +11120,13 @@ function renderFim(paths, events) {
           }
 
           return `<tr>
-            <td class="col-fixed-cell"><code class="mono" style="font-size:11.5px;color:${pathColor};font-weight:600">${escHtml(p.path)}</code></td>
-            <td class="col-fixed-cell">${catBadge}</td>
-            <td class="col-fixed-cell col-center-cell">${statusBadgeHtml}</td>
-            <td class="col-fixed-cell col-num-cell mono" style="font-size:11px">${escHtml(p.size_human || '—')}</td>
-            <td class="col-hero-cell">${hashHtml}</td>
-            <td class="col-fixed-cell mono" style="width:115px;min-width:115px;text-align:right;font-size:10.5px;color:var(--dim)">${escHtml(checkTime)}</td>
-            <td class="col-fixed-cell col-act" style="width:90px;min-width:90px;text-align:center">
+            <td class="col-fim-path"><code class="mono" style="font-size:11.5px;color:${pathColor};font-weight:600" title="${escHtml(p.path)}">${escHtml(p.path)}</code></td>
+            <td class="col-fim-cat">${catBadge}</td>
+            <td class="col-fim-status">${statusBadgeHtml}</td>
+            <td class="col-fim-size mono" style="font-size:11px">${escHtml(p.size_human || '—')}</td>
+            <td class="col-fim-hash">${hashHtml}</td>
+            <td class="col-fim-check mono" style="font-size:10.5px;color:var(--dim)">${escHtml(checkTime)}</td>
+            <td class="col-fim-act" style="text-align:center">
               <details class="noc-act-dropdown">
                 <summary class="btn btn-xs btn-ghost btn-noc-act">${isEn ? 'Action ▾' : 'Aksi ▾'}</summary>
                 <div class="noc-act-dropdown-menu">

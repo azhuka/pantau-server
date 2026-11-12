@@ -1780,6 +1780,9 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
                 .all()
             )
             for ap in anom_paths:
+                # Abaikan berkas MISSING jika belum pernah memiliki acuan baseline hash (berkas opsional yang belum pernah dibuat di sistem)
+                if ap.status == "MISSING" and not ap.sha256_hash:
+                    continue
                 st_label = "Modifikasi Terdeteksi" if ap.status == "CHANGED" else ("File Hilang" if ap.status == "MISSING" else "Galat Integritas")
                 ap_sev = "danger" if (ap.category == "system" or is_prod) else "warning"
                 inst.append({

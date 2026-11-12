@@ -516,16 +516,20 @@
         <td class="col-time cell-nowrap" style="width:82px;min-width:80px;white-space:nowrap">
           <span class="mono" style="font-size:11px;font-weight:600;color:var(--text-bright);letter-spacing:0.2px" title="Waktu Mulai: {{ p.started_at.strftime('%d %b %Y %H:%M:%S') if p.started_at else '—' }}">{{ p.started_at.strftime('%d %b %H:%M') if p.started_at else '—' }}</span>
         </td>
-        <td class="col-srv cell-nowrap" style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-          <div style="display:inline-flex;align-items:center;gap:6px;max-width:100%">
-            {% if p.probe_id or not p.server_id %}
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue);flex-shrink:0"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-            {% else %}
-            <span class="dot {{ 'down' if p.is_offline else 'up' }}" style="flex-shrink:0"></span>
-            {% endif %}
-            <span style="font-size:11.5px;font-weight:600;color:var(--text-bright)">{{ p.hostname }}</span>
+        <td class="col-srv" style="min-width:115px;max-width:150px;overflow:hidden;white-space:nowrap;padding:4px 8px">
+          <div style="display:flex;flex-direction:column;gap:2px;max-width:100%">
+            <div style="display:inline-flex;align-items:center;gap:5px;max-width:100%;overflow:hidden">
+              {% if p.probe_id or not p.server_id %}
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue);flex-shrink:0"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+              {% else %}
+              <span class="dot {{ 'down' if p.is_offline else 'up' }}" style="flex-shrink:0"></span>
+              {% endif %}
+              <span style="font-size:11.5px;font-weight:600;color:var(--text-bright);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ p.hostname }}">{{ p.hostname }}</span>
+            </div>
             {% if p.group_name %}
-            <span class="badge badge-muted" style="font-size:8.5px;padding:1px 5px;font-weight:500;flex-shrink:0" title="Grup Server: {{ p.group_name }}">{{ p.group_name }}</span>
+            <div style="display:inline-flex;margin-left:13px">
+              <span class="badge badge-muted" style="font-size:7.5px;padding:0.5px 4px;font-weight:500;letter-spacing:0.2px" title="Grup Server: {{ p.group_name }}">{{ p.group_name }}</span>
+            </div>
             {% endif %}
           </div>
         </td>
@@ -1636,11 +1640,13 @@ window.poll = async function(opts = {}) {
               <td class="col-time cell-nowrap" style="width:82px;min-width:80px;white-space:nowrap">
                 <span class="mono" style="font-size:11px;font-weight:600;color:var(--text);letter-spacing:0.2px" title="${(isEn ? 'Started: ' : 'Mulai: ') + _esc(p.started_at_str || '')}">${_esc((p.started_at_str || '').replace(/\s*\d{4}\s*/, ' '))}</span>
               </td>
-              <td class="col-srv cell-nowrap" style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-                <div style="display:inline-flex;align-items:center;gap:6px;max-width:100%">
-                  ${srvDot}
-                  <span style="font-size:11.5px;font-weight:600;color:var(--text-bright)">${_esc(p.hostname)}</span>
-                  ${grpBadge}
+              <td class="col-srv" style="min-width:115px;max-width:150px;overflow:hidden;white-space:nowrap;padding:4px 8px">
+                <div style="display:flex;flex-direction:column;gap:2px;max-width:100%">
+                  <div style="display:inline-flex;align-items:center;gap:5px;max-width:100%;overflow:hidden">
+                    ${srvDot}
+                    <span style="font-size:11.5px;font-weight:600;color:var(--text-bright);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${_esc(p.hostname)}">${_esc(p.hostname)}</span>
+                  </div>
+                  ${grp ? `<div style="display:inline-flex;margin-left:13px"><span class="badge badge-muted" style="font-size:7.5px;padding:0.5px 4px;font-weight:500;letter-spacing:0.2px" title="${isEn ? 'Server Group: ' : 'Grup Server: '}${_esc(grp)}">${_esc(grp)}</span></div>` : ''}
                 </div>
               </td>
               <td class="col-status" style="text-align:left !important;white-space:nowrap">${sevCellHtml}</td>

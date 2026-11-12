@@ -997,6 +997,10 @@ def agent_report(
             r_perm = _clean_str(rp.get("permissions"), "", 30)
             r_og = _clean_str(rp.get("owner_group"), "", 60)
 
+            # Guardrail: Jika berkas berstatus MISSING tetapi tidak pernah memiliki acuan hash baseline (misal /root/.ssh/authorized_keys), tandai NOT_CONFIGURED agar tidak memicu alarm palsu
+            if r_status == "MISSING" and not r_sha and (r_path not in existing_fim_paths or not existing_fim_paths[r_path].sha256_hash):
+                r_status = "NOT_CONFIGURED"
+
             if r_path in existing_fim_paths:
                 fp = existing_fim_paths[r_path]
                 fp.category = r_cat

@@ -1315,6 +1315,80 @@ tr.is-disabled > td:not(.col-act) {
   opacity: 1 !important;
 }
 
+/* =============================================================================
+   STANDARDISASI TABEL INTEGRITAS BERKAS (FIM) ANTI-OVERFLOW & PROPORSIONAL
+   ============================================================================= */
+#tbl-fim-paths {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+}
+#tbl-fim-paths th.col-fim-path,
+#tbl-fim-paths td.col-fim-path {
+  width: 26% !important;
+  min-width: 140px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+#tbl-fim-paths th.col-fim-cat,
+#tbl-fim-paths td.col-fim-cat {
+  width: 75px !important;
+  min-width: 75px !important;
+  white-space: nowrap !important;
+}
+#tbl-fim-paths th.col-fim-status,
+#tbl-fim-paths td.col-fim-status {
+  width: 80px !important;
+  min-width: 80px !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+}
+#tbl-fim-paths th.col-fim-size,
+#tbl-fim-paths td.col-fim-size {
+  width: 110px !important;
+  min-width: 100px !important;
+  white-space: nowrap !important;
+}
+#tbl-fim-paths th.col-fim-hash,
+#tbl-fim-paths td.col-fim-hash {
+  width: auto !important;
+  min-width: 130px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+}
+#tbl-fim-paths th.col-fim-check,
+#tbl-fim-paths td.col-fim-check {
+  width: 110px !important;
+  min-width: 110px !important;
+  max-width: 115px !important;
+  text-align: right !important;
+  white-space: nowrap !important;
+  font-size: 10.5px !important;
+}
+#tbl-fim-paths th.col-fim-act,
+#tbl-fim-paths td.col-fim-act {
+  width: 85px !important;
+  min-width: 85px !important;
+  max-width: 90px !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+}
+.fim-hash-text {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--text-bright);
+  cursor: pointer;
+}
+.fim-hash-dim {
+  color: var(--dim) !important;
+  cursor: default !important;
+}
+
 /* Kotak Ringkasan Peran Pengguna (User Detail Modal) Multi-Tema */
 .role-summary-box {
   border-radius: 8px;

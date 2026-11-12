@@ -480,7 +480,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.197"
+AGENT_VERSION = "4.8.198"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -6256,9 +6256,10 @@ def collect_fim(force: bool = False) -> dict:
 
         base_info = baseline.get(p)
         if not exists:
-            status = "MISSING"
-            base_hash = base_info.get("sha256", "") if base_info else ""
-            if base_info:
+            if base_info and base_info.get("sha256"):
+                # Berkas sebelumnya tercatat di baseline, lalu sekarang lenyap -> Pelanggaran integritas nyata!
+                status = "MISSING"
+                base_hash = base_info.get("sha256", "")
                 events_result.append({
                     "path": p,
                     "event_type": "DELETED",
@@ -6266,6 +6267,10 @@ def collect_fim(force: bool = False) -> dict:
                     "details": f"File atau direktori telah dihapus dari sistem ({cur_og or 'root'})",
                     "detected_at": now_iso,
                 })
+            else:
+                # Berkas opsional memang belum pernah dikonfigurasi di sistem (misal /root/.ssh/authorized_keys)
+                status = "NOT_CONFIGURED"
+                base_hash = ""
         else:
             if base_info is None:
                 baseline[p] = {

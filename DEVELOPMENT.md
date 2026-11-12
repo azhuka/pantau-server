@@ -354,6 +354,28 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.198
+
+- **Tipe Rilis:** Eliminasi Alarm Palsu Berkas Opsional FIM, Pemotongan Ellipsis Checksum SHA-256 Anti-Overflow, Standardisasi Kolom Pemeriksaan & Tindakan, dan Tata Letak 2-Baris Kolom Server Insiden (*FIM Optional File False-Positive Alarm Elimination, SHA-256 Checksum Ellipsis Truncation, Inspection & Action Column Standardization, and 2-Row Server Column Layout*)
+- **Fokus Utama:** Menyelesaikan anomali pemicuan alarm massal berkas opsional `/root/.ssh/authorized_keys`, menghilangkan horizontal scrollbar dengan pemotongan teks checksum panjang secara rapi, memastikan kolom Pemeriksaan dan Tindakan tidak terhimpit atau bertabrakan, serta merapikan badge grup server pada baris kedua:
+  1. **Eliminasi Alarm Palsu Berkas Opsional FIM:**
+     - Memperbaiki logika deteksi agen klien (`collect_fim()`): berkas opsional yang tidak ada di filesystem dan belum pernah memiliki acuan baseline (`base_info is None`) diklasifikasikan sebagai `NOT_CONFIGURED` (Belum Dikonfigurasi), bukan `MISSING` (Hilang).
+     - Status `MISSING` dan rekaman kejadian `DELETED` secara ketat hanya dipicu jika berkas tersebut sebelumnya **pernah tercatat pada acuan baseline**, lalu kemudian dihapus.
+     - Menambahkan guardrail ingestion server pada `api_agent.py` dan mesin insiden `problem_service.py` untuk mengabaikan berkas `MISSING` yang tidak memiliki hash baseline, secara otomatis menyelesaikan (*auto-resolve*) 10 insiden alarm palsu massal.
+  2. **Pemotongan Ellipsis Checksum SHA-256 Anti-Overflow:**
+     - Mengubah render kolom Checksum SHA-256 pada Jinja dan JavaScript `renderFim()` menggunakan kelas `.fim-hash-text` dengan batas lebar `max-width: 170px`, `white-space: nowrap`, `overflow: hidden`, dan `text-overflow: ellipsis`.
+     - String hash 64-karakter kriptografis utuh tetap dapat dibaca melalui tooltip (`title="..."`) dan tetap disalin utuh ke clipboard saat diklik (`copyFimChecksum`).
+     - Berhasil menghilangkan horizontal scrollbar yang sebelumnya melebar keluar batas kontainer tabel.
+  3. **Standardisasi Proporsi Kolom FIM Anti-Tabrakan:**
+     - Menerapkan `table-layout: fixed !important` pada `#tbl-fim-paths` dengan kelas semantik independen (`col-fim-path`, `col-fim-cat`, `col-fim-status`, `col-fim-size`, `col-fim-hash`, `col-fim-check`, `col-fim-act`).
+     - Mengunci kolom `Pemeriksaan` pada `width: 110px !important` rata kanan rapi, mencegah header terpotong menjadi "P" dan mencegah teks jam meluber.
+     - Mengunci kolom `Tindakan` pada `width: 85px !important` rata tengah rapi, menjamin tombol menu `Aksi ▾` berdiri stabil tanpa tumpang tindih.
+  4. **Tata Letak 2-Baris Kolom Server pada Tabel Insiden (`problems.html`):**
+     - Memindahkan badge grup/lingkungan server (`CLONE`, `PRODUKSI`, dll.) ke baris kedua tepat di bawah nama host server dengan margin terstruktur (`margin-left: 13px`), baik pada render awal Jinja maupun pembaruan real-time JavaScript.
+     - Mencegah pemanjangan horizontal kolom Server dan menciptakan keterbacaan berdensitas tinggi (*high density*) yang bersih dan elegan.
+  5. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.198` pada seluruh 7 berkas repositori.
+
 ## Versi 4.8.197
 
 - **Tipe Rilis:** Perbaikan Inspeksi Hak Akses FIM Agen Klien, Stabilitas Menu Dropdown Aksi, Tata Letak Kolom NOC, dan Integrasi Siklus Hidup Insiden Aktif (*Agent FIM Native Stat Inspection Fix, Action Dropdown Stability, NOC Table Column Layout, & Active Incident Lifecycle Integration*)
