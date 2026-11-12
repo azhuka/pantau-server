@@ -354,6 +354,30 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.197
+
+- **Tipe Rilis:** Perbaikan Inspeksi Hak Akses FIM Agen Klien, Stabilitas Menu Dropdown Aksi, Tata Letak Kolom NOC, dan Integrasi Siklus Hidup Insiden Aktif (*Agent FIM Native Stat Inspection Fix, Action Dropdown Stability, NOC Table Column Layout, & Active Incident Lifecycle Integration*)
+- **Fokus Utama:** Menyelesaikan anomali pelaporan status integritas berkas pada remote server, memulihkan stabilitas menu dropdown aksi dari interupsi polling DOM, menata ulang proporsi kolom pemeriksaan FIM, dan mengintegrasikan anomali FIM secara langsung ke manajemen insiden aktif:
+  1. **Perbaikan Inspeksi Metadata Fisik Agen Klien (`agent_pantau.py`):**
+     - Memperbaiki `NameError` akibat hilangnya `import stat` pada pustaka standar agen klien.
+     - Menyusun ulang logika `_inspect_fim_target()`: status keberadaan berkas (`exists`) dan metadata sistem (`st_size`, `st_mtime`, `permissions`, `owner_group`) selalu dibaca langsung terlebih dahulu via native `os.stat()`.
+     - Berkas terbaca publik (*world-readable*) seperti `/etc/passwd`, `/etc/group`, `/etc/hosts`, `/etc/resolv.conf`, `/etc/ssh/sshd_config`, dan `/etc/crontab` dihitung SHA-256 hash-nya secara mandiri via Python `hashlib` tanpa overhead sudo.
+     - Penanganan berkas terproteksi (`/etc/shadow`) secara tangguh beralih ke pembungkus aman `pantau-file hash`, dengan fallback tanda tangan metadata stat yang menjamin berkas ada tidak pernah lagi salah dilaporkan sebagai `HILANG (0 B)` pada node dengan pembungkus versi lama.
+  2. **Stabilitas Menu Dropdown Tindakan Aksi NOC (`.noc-act-dropdown`):**
+     - Memperbaiki interupsi polling DOM pada JavaScript `renderFim()` dengan menambahkan penjaga `.noc-act-dropdown[open]` agar menu dropdown yang sedang dibuka operator tidak tertutup atau menghilang mendadak setiap siklus 5 detik.
+     - Menerapkan *signature caching* (`_lastFimSig`) untuk mencegah manipulasi dan render ulang DOM yang tidak perlu saat tidak ada perubahan data telemetri.
+  3. **Standardisasi Proporsi Kolom NOC & Penyelarasan Judul Header:**
+     - Mengatasi pemotongan header "Pemeriksaan" (menjadi "Pemer") dan tumpang tindih teks waktu ke tombol aksi dengan memberikan ketegasan lebar kolom `width: 115px; min-width: 115px; text-align: right;` pada kolom `Pemeriksaan` serta `width: 90px; min-width: 90px; text-align: center;` pada kolom `Tindakan`.
+     - Memastikan kolom `Checksum SHA-256` (`col-hero-cell`) memaksimalkan sisa ruang horizontal layar untuk keterbacaan hash kriptografis penuh.
+  4. **Integrasi Siklus Hidup Insiden Aktif (`problem_service.py`):**
+     - Menambahkan deteksi anomali FIM (`fim_anomaly:<path>`) pada fungsi `_problem_instances()` dengan klasifikasi keparahan `danger` untuk berkas sistem kritis / server produksi dan `warning` untuk berkas kustom.
+     - Menghubungkan tindakan `fim_view` pada kartu status insiden dan tabel insiden aktif yang langsung mengarahkan operator ke tab Integritas ("Tinjau Integritas File").
+     - Menambahkan badge peringatan dinamis `#tab-integritas-badge` pada tombol tab Integritas yang tersinkronisasi penuh antara Jinja awal dan JavaScript telemetri real-time.
+     - Mekanisme penyelesaian otomatis (*auto-resolve*): saat operator memperbarui acuan (*rebaseline*), status kembali `VALID` dan insiden aktif otomatis terselesaikan.
+  5. **Pengujian Nyata End-to-End:**
+     - Berhasil memvalidasi siklus penuh mutasi file fisik: pembuatan file -> validasi baseline -> mutasi konten tidak sah -> pemicuan insiden aktif `danger` -> rebaseline operator -> penyelesaian insiden otomatis.
+     - Sinkronisasi versi SemVer `4.8.197` pada seluruh 7 berkas repositori.
+
 ## Versi 4.8.196
 
 - **Tipe Rilis:** Implementasi Penuh Mesin Telemetri Integritas File FIM, Eksekusi Agen, Model Database, dan Audit Log Insiden (*Full Implementation of File Integrity Monitoring Telemetry Engine, Agent Execution, DB Models & Incident Action History Integration*)

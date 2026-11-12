@@ -43,6 +43,7 @@ import re
 import select
 import shutil
 import signal
+import stat
 import socket
 import ssl
 import struct
@@ -479,7 +480,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.196"
+AGENT_VERSION = "4.8.197"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -6079,66 +6080,10 @@ def _save_fim_baseline(baseline: dict) -> bool:
 
 
 def _inspect_fim_target(path: str) -> dict:
-    """Inspeksi status, ukuran, hak akses, dan SHA-256 hash dari target path."""
-    if os.path.exists(path) and (os.path.isdir(path) or os.access(path, os.R_OK)):
-        try:
-            st = os.stat(path)
-            is_dir = stat.S_ISDIR(st.st_mode)
-            oct_mode = oct(st.st_mode & 0o777)[2:].zfill(4)
-            try:
-                owner = pwd.getpwuid(st.st_uid).pw_name
-            except Exception:
-                owner = str(st.st_uid)
-            try:
-                group = grp.getgrgid(st.st_gid).gr_name
-            except Exception:
-                group = str(st.st_gid)
-            if is_dir:
-                try:
-                    entries = [e for e in os.listdir(path) if not e.startswith(".")]
-                    cnt = len(entries)
-                except Exception:
-                    cnt = 0
-                return {
-                    "exists": True,
-                    "is_dir": True,
-                    "size": st.st_size,
-                    "count": cnt,
-                    "mtime": int(st.st_mtime),
-                    "permissions": oct_mode,
-                    "owner_group": f"{owner}:{group}",
-                    "sha256": "",
-                }
-            else:
-                h = hashlib.sha256()
-                with open(path, "rb") as f:
-                    while chunk := f.read(65536):
-                        h.update(chunk)
-                return {
-                    "exists": True,
-                    "is_dir": False,
-                    "size": st.st_size,
-                    "mtime": int(st.st_mtime),
-                    "permissions": oct_mode,
-                    "owner_group": f"{owner}:{group}",
-                    "sha256": h.hexdigest(),
-                }
-        except Exception:
-            pass
-
-    res = run_file_op("hash", {"path": path})
-    if res.get("ok"):
-        return {
-            "exists": res.get("exists", True),
-            "is_dir": res.get("is_dir", False),
-            "size": res.get("size", 0),
-            "count": res.get("count", 0),
-            "mtime": res.get("mtime", 0),
-            "permissions": res.get("octal_mode", ""),
-            "owner_group": f"{res.get('owner', '')}:{res.get('group', '')}",
-            "sha256": res.get("sha256", ""),
-        }
-    return {
+    """Inspeksi status, ukuran, hak akses, dan SHA-256 hash dari target path.
+    Mempertahankan prinsip zero-external dependency dan toleransi terhadap boundary hak akses.
+    """
+    empty_result = {
         "exists": False,
         "is_dir": False,
         "size": 0,
@@ -6148,6 +6093,91 @@ def _inspect_fim_target(path: str) -> dict:
         "owner_group": "",
         "sha256": "",
     }
+    if not path:
+        return empty_result
+
+    # 1. Evaluasi keberadaan dan metadata fisik sistem via stat native (berlaku untuk semua file di path terakses)
+    try:
+        if not os.path.exists(path):
+            return empty_result
+
+        st = os.stat(path)
+        is_dir = stat.S_ISDIR(st.st_mode)
+        oct_mode = oct(st.st_mode & 0o777)[2:].zfill(4)
+        try:
+            owner = pwd.getpwuid(st.st_uid).pw_name
+        except Exception:
+            owner = str(st.st_uid)
+        try:
+            group = grp.getgrgid(st.st_gid).gr_name
+        except Exception:
+            group = str(st.st_gid)
+
+        if is_dir:
+            try:
+                entries = [e for e in os.listdir(path) if not e.startswith(".")]
+                cnt = len(entries)
+            except Exception:
+                cnt = 0
+            return {
+                "exists": True,
+                "is_dir": True,
+                "size": st.st_size,
+                "count": cnt,
+                "mtime": int(st.st_mtime),
+                "permissions": oct_mode,
+                "owner_group": f"{owner}:{group}",
+                "sha256": "",
+            }
+
+        # Target adalah file reguler: hitung hash SHA-256
+        cur_hash = ""
+        try:
+            h = hashlib.sha256()
+            with open(path, "rb") as f:
+                while chunk := f.read(65536):
+                    h.update(chunk)
+            cur_hash = h.hexdigest()
+        except (PermissionError, IOError):
+            # Target terproteksi (misal /etc/shadow) dan user tidak memiliki izin baca langsung
+            res = run_file_op("hash", {"path": path})
+            if res.get("ok") and res.get("sha256"):
+                cur_hash = res.get("sha256", "")
+            else:
+                # Fallback bila wrapper pantau-file lama belum memiliki sub-aksi 'hash'
+                cur_hash = f"meta:{oct_mode}:{st.st_size}:{int(st.st_mtime)}"
+
+        return {
+            "exists": True,
+            "is_dir": False,
+            "size": st.st_size,
+            "count": 0,
+            "mtime": int(st.st_mtime),
+            "permissions": oct_mode,
+            "owner_group": f"{owner}:{group}",
+            "sha256": cur_hash,
+        }
+    except Exception:
+        pass
+
+    # 2. Upaya alternatif fallback via wrapper pantau-file jika os.stat native terhalang izin direktori
+    try:
+        res = run_file_op("hash", {"path": path})
+        if res.get("ok"):
+            return {
+                "exists": res.get("exists", True),
+                "is_dir": res.get("is_dir", False),
+                "size": res.get("size", 0),
+                "count": res.get("count", 0),
+                "mtime": res.get("mtime", 0),
+                "permissions": res.get("octal_mode", ""),
+                "owner_group": f"{res.get('owner', '')}:{res.get('group', '')}",
+                "sha256": res.get("sha256", ""),
+            }
+    except Exception:
+        pass
+
+    return empty_result
 
 
 def _format_size_human(size_bytes: int, is_dir: bool, count: int) -> str:

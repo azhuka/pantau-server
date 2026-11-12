@@ -1918,7 +1918,8 @@ div[style*="position: fixed"] .card {
   {% set active_open = open_problems | rejectattr('is_ignored') | list %}
   {% set ignored_open = open_problems | selectattr('is_ignored') | list %}
   <button class="tab" data-tab="masalah" role="tab" id="tab-masalah-btn" data-i18n="tab_masalah"><span class="tab-text">Insiden</span> <span class="badge badge-{{ pmeta[problem_level][1] if (active_open and problem_level in pmeta) else 'muted' }}" id="tab-masalah-badge" style="display:{{ 'inline-block' if open_problems else 'none' }};margin-left:4px;font-size:10px;padding:1px 5px">{% if active_open %}{{ active_open|length }}{% elif ignored_open %}{{ ignored_open|length }}{% else %}0{% endif %}</span></button>
-  <button class="tab" data-tab="integritas" role="tab" id="tab-integritas-btn"><span class="tab-text">Integritas</span></button>
+  {% set fim_anom_cnt = (fim_paths | selectattr('status', 'in', ['CHANGED', 'MISSING', 'ERROR']) | list | length) if fim_paths else 0 %}
+  <button class="tab" data-tab="integritas" role="tab" id="tab-integritas-btn"><span class="tab-text">Integritas</span> <span class="badge badge-danger" id="tab-integritas-badge" style="display:{{ 'inline-block' if fim_anom_cnt > 0 else 'none' }};margin-left:4px;font-size:10px;padding:1px 5px">{{ fim_anom_cnt if fim_anom_cnt > 0 else '' }}</span></button>
   <button class="tab" data-tab="layanan" role="tab" id="tab-layanan-btn" data-i18n="tab_layanan"><span class="tab-text">Services</span></button>
   <button class="tab" data-tab="packages" role="tab" id="tab-packages-btn"><span class="tab-text">Packages</span>{% if apt_upgradable and apt_upgradable > 0 %} <span class="badge badge-warn" id="tab-packages-badge" style="margin-left:4px;font-size:10px;padding:1px 5px">{{ apt_upgradable }}</span>{% endif %}</button>
   <button class="tab" data-tab="proses" role="tab" id="tab-proses-btn" data-i18n="tab_proses"><span class="tab-text">Tasks</span></button>
@@ -2513,6 +2514,11 @@ div[style*="position: fixed"] .card {
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                 <span>Putus Sesi {{ p.tty }}</span>
               </button>
+              {% elif p.action == 'fim_view' %}
+              <button type="button" class="noc-act-dropdown-item" onclick="switchTab('integritas')" title="Tinjau Integritas File">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="M9 12l2 2 4-4"></path></svg>
+                <span>Tinjau Integritas File</span>
+              </button>
               {% endif %}
 
               <!-- 4. Penanganan Insiden (Ack / Ignore) -->
@@ -2664,8 +2670,8 @@ div[style*="position: fixed"] .card {
             <th class="col-fixed-cell col-center-cell" title="Kesesuaian file saat ini dengan acuan baseline">Status</th>
             <th class="col-fixed-cell col-num-cell" title="Ukuran file fisik">Ukuran</th>
             <th class="col-hero-cell" title="Checksum SHA-256 kriptografis lengkap (klik untuk menyalin)">Checksum SHA-256</th>
-            <th class="col-fixed-cell" title="Waktu terakhir pemeriksaan">Pemeriksaan</th>
-            <th class="col-fixed-cell col-act" style="text-align:center">Tindakan</th>
+            <th class="col-fixed-cell" style="width:115px;min-width:115px;text-align:right" title="Waktu terakhir pemeriksaan">Pemeriksaan</th>
+            <th class="col-fixed-cell col-act" style="width:90px;min-width:90px;text-align:center">Tindakan</th>
           </tr>
         </thead>
         <tbody>
@@ -2698,10 +2704,10 @@ div[style*="position: fixed"] .card {
                 <span class="mono" style="font-size:11px;color:var(--dim)">{{ fp.sha256_hash or '—' }}</span>
               {% endif %}
             </td>
-            <td class="col-fixed-cell mono" style="font-size:10.5px;color:var(--dim)">
+            <td class="col-fixed-cell mono" style="width:115px;min-width:115px;text-align:right;font-size:10.5px;color:var(--dim)">
               {{ fp.last_checked_at.strftime('%H:%M:%S') if fp.last_checked_at else 'Belum dipindai' }}
             </td>
-            <td class="col-fixed-cell col-act" style="text-align:center">
+            <td class="col-fixed-cell col-act" style="width:90px;min-width:90px;text-align:center">
               <details class="noc-act-dropdown">
                 <summary class="btn btn-xs btn-ghost btn-noc-act">Aksi ▾</summary>
                 <div class="noc-act-dropdown-menu">
@@ -9705,6 +9711,10 @@ function renderProblemsTab(level, openList, histList) {
         menuItems += `<button type="button" class="noc-act-dropdown-item text-danger" onclick="terminateSession(${SID}, '${escapeHtml(p.tty)}', '${escapeHtml(p.session_user || '')}', this)">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg> <span>${isEn ? 'Terminate Session' : 'Putus Sesi'}</span>
         </button>`;
+      } else if (p.action === 'fim_view') {
+        menuItems += `<button type="button" class="noc-act-dropdown-item text-primary" onclick="switchTab('integritas')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="M9 12l2 2 4-4"></path></svg> <span>${isEn ? 'Review File Integrity' : 'Tinjau Integritas File'}</span>
+        </button>`;
       }
 
       if (p.acknowledged_by || isIgnored) {
@@ -11009,9 +11019,9 @@ function renderFim(paths, events) {
     countBadge.textContent = pathList.length + (isEn ? ' paths monitored' : ' jalur dipantau');
   }
 
+  const anomalies = pathList.filter(p => p.status && p.status !== 'VALID').length;
   const statusBadge = document.getElementById('fim-status-badge');
   if (statusBadge) {
-    const anomalies = pathList.filter(p => p.status && p.status !== 'VALID').length;
     if (anomalies > 0) {
       statusBadge.className = 'noc-head-badge noc-head-badge-danger';
       statusBadge.textContent = anomalies + (isEn ? ' anomalies detected' : ' anomali terdeteksi');
@@ -11021,13 +11031,37 @@ function renderFim(paths, events) {
     }
   }
 
+  // Update dynamic warning badge on tab button
+  const tabBadge = document.getElementById('tab-integritas-badge');
+  if (tabBadge) {
+    if (anomalies > 0) {
+      tabBadge.textContent = anomalies;
+      tabBadge.style.display = 'inline-block';
+    } else {
+      tabBadge.style.display = 'none';
+    }
+  }
+
   const eventsBadge = document.getElementById('fim-events-badge');
   if (eventsBadge) {
     eventsBadge.textContent = eventList.length + (isEn ? ' event logs' : ' log kejadian');
   }
 
-  // Render Table 1: Paths
+  // Lindungi interaksi pengguna: cegah DOM re-render jika menu aksi dropdown sedang dibuka operator
   const tblPaths = document.getElementById('tbl-fim-paths');
+  if (tblPaths && tblPaths.querySelector('.noc-act-dropdown[open]')) {
+    return;
+  }
+
+  // Signature check: cegah re-render DOM jika data telemetri tidak berubah
+  const curLang = (typeof currentLang !== 'undefined') ? currentLang : 'id';
+  const fimSig = JSON.stringify({ paths: pathList, events: eventList, lang: curLang });
+  if (window._lastFimSig === fimSig) {
+    return;
+  }
+  window._lastFimSig = fimSig;
+
+  // Render Table 1: Paths
   if (tblPaths) {
     const tbody = tblPaths.querySelector('tbody');
     if (tbody) {
@@ -11087,8 +11121,8 @@ function renderFim(paths, events) {
             <td class="col-fixed-cell col-center-cell">${statusBadgeHtml}</td>
             <td class="col-fixed-cell col-num-cell mono" style="font-size:11px">${escHtml(p.size_human || '—')}</td>
             <td class="col-hero-cell">${hashHtml}</td>
-            <td class="col-fixed-cell mono" style="font-size:10.5px;color:var(--dim)">${escHtml(checkTime)}</td>
-            <td class="col-fixed-cell col-act" style="text-align:center">
+            <td class="col-fixed-cell mono" style="width:115px;min-width:115px;text-align:right;font-size:10.5px;color:var(--dim)">${escHtml(checkTime)}</td>
+            <td class="col-fixed-cell col-act" style="width:90px;min-width:90px;text-align:center">
               <details class="noc-act-dropdown">
                 <summary class="btn btn-xs btn-ghost btn-noc-act">${isEn ? 'Action ▾' : 'Aksi ▾'}</summary>
                 <div class="noc-act-dropdown-menu">

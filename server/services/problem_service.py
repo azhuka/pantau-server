@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 try:
     from config import settings
     from models import (
-        AuditLog, Command, LogRequest, LoginAttempt, MaintenanceWindow,
+        AuditLog, Command, FIMPath, LogRequest, LoginAttempt, MaintenanceWindow,
         Metric, ProbeLog, ProbeTarget, Server, ServerExtras, ServerProblem,
         Service, SysSnapshotHour, SystemSetting, SystemSnapshot, User,
     )
@@ -24,7 +24,7 @@ try:
 except ImportError:
     from server.config import settings
     from server.models import (
-        AuditLog, Command, LogRequest, LoginAttempt, MaintenanceWindow,
+        AuditLog, Command, FIMPath, LogRequest, LoginAttempt, MaintenanceWindow,
         Metric, ProbeLog, ProbeTarget, Server, ServerExtras, ServerProblem,
         Service, SysSnapshotHour, SystemSetting, SystemSnapshot, User,
     )
@@ -1767,6 +1767,31 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
                          "message": f"Service {name} belum ada data",
                          "tip": SVC_NODATA_TIP,
                          "context": _build_problem_context(f"svc_no_data:{name}", srv, service_name=name, port=d.get("port"))})
+
+    # Deteksi Anomali Integritas File (FIM Anomaly)
+    if db is not None:
+        try:
+            anom_paths = (
+                db.query(FIMPath)
+                .filter(
+                    FIMPath.server_id == srv.id,
+                    FIMPath.status.in_(["CHANGED", "MISSING", "ERROR"]),
+                )
+                .all()
+            )
+            for ap in anom_paths:
+                st_label = "Modifikasi Terdeteksi" if ap.status == "CHANGED" else ("File Hilang" if ap.status == "MISSING" else "Galat Integritas")
+                ap_sev = "danger" if (ap.category == "system" or is_prod) else "warning"
+                inst.append({
+                    "key": f"fim_anomaly:{ap.path}",
+                    "severity": ap_sev,
+                    "message": f"Integritas File Terlanggar: {ap.path} ({st_label})",
+                    "tip": f"File atau direktori {ap.path} mengalami anomali integritas ({st_label}). Buka tab Integritas untuk meninjau riwayat kejadian (FIM) atau perbarui acuan bila perubahan ini sah.",
+                    "context": _build_problem_context("fim_anomaly", srv, path=ap.path, fim_status=ap.status, category=ap.category, last_sha=ap.last_sha256_hash),
+                })
+        except Exception as e:
+            logger.debug("Gagal evaluasi fim_paths untuk server %s: %s", srv.id, e)
+
     return inst
 
 
@@ -1816,6 +1841,9 @@ def _problem_component(key: str) -> str:
     if key.startswith("segfault:"):
         proc = key.split(":", 1)[1] if ":" in key else ""
         return f"Aplikasi Crash ({proc})" if proc else "Aplikasi (Segfault)"
+    if key.startswith("fim_anomaly:"):
+        path_name = key.split(":", 1)[1] if ":" in key else ""
+        return f"Integritas ({path_name})" if path_name else "Integritas File"
     if key == "agent_stale":
         return "Agen / Host"
     if key in ("cpu_usage", "cpu_high", "cpu_saturated", "cpu_load"):
@@ -2027,6 +2055,9 @@ def _enrich_problems_for_ui(open_problems, services, extra, user_or_role="viewer
         elif r["key"].startswith("disk_io_error:"):
             r["action"] = "log"
             r["log_unit"] = "SYSTEM"
+        elif r["key"].startswith("fim_anomaly:"):
+            r["action"] = "fim_view"
+            r["log_unit"] = "AUTH"
         elif r["key"].startswith("segfault:"):
             r["action"] = "log"
             proc = r["key"].split(":", 1)[1] if ":" in r["key"] else ""
