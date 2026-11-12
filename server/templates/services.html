@@ -165,11 +165,16 @@
   margin: 0 !important;
   border-radius: 0 !important;
   border: none !important;
-  z-index: 999999 !important;
+  z-index: 9900 !important;
   display: flex !important;
   flex-direction: column !important;
   box-shadow: none !important;
   background: #0d1117 !important;
+}
+#term-close-confirm-modal,
+#term-lock-confirm-modal,
+#term-unlock-modal {
+  z-index: 100005 !important;
 }
 .terminal-window.is-fullscreen .terminal-titlebar {
   flex: 0 0 44px !important;
@@ -1893,7 +1898,7 @@ div[style*="position: fixed"] .card {
         <button type="button" class="terminal-btn-icon" id="term-fullscreen-btn" onclick="getTerm().toggleFullscreen()" title="Layar Penuh (Full Screen)" aria-label="Layar Penuh">
           <svg id="term-fullscreen-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg><span id="term-fullscreen-text" style="display:none"></span>
         </button>
-        <button type="button" class="terminal-btn-icon" onclick="openTerminalCloseConfirmModal()" title="Tutup Jendela Terminal" aria-label="Tutup Terminal">
+        <button type="button" class="terminal-btn-icon" id="term-close-btn" onclick="openTerminalCloseConfirmModal()" title="Tutup Jendela Terminal" aria-label="Tutup Terminal">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
       </div>
@@ -4474,7 +4479,7 @@ div[style*="position: fixed"] .card {
 </div>
 
 <!-- Modal Verifikasi Akses Web Terminal Root (Step-Up Auth) -->
-<div id="term-unlock-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(3px);padding:16px" onclick="if(event.target===this)closeTerminalUnlockModal()">
+<div id="term-unlock-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:100005;align-items:center;justify-content:center;backdrop-filter:blur(3px);padding:16px" onclick="if(event.target===this)closeTerminalUnlockModal()">
   <div class="card" style="width:100%;max-width:440px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:22px;box-shadow:0 20px 48px rgba(0,0,0,0.8);color:var(--text)">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
       <h3 style="margin:0;font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px">
@@ -4580,7 +4585,7 @@ div[style*="position: fixed"] .card {
 </div>
 
 <!-- Modal Konfirmasi Penutupan Terminal -->
-<div id="term-close-confirm-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(3px);padding:16px" onclick="if(event.target===this)closeTerminalCloseConfirmModal()">
+<div id="term-close-confirm-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:100005;align-items:center;justify-content:center;backdrop-filter:blur(3px);padding:16px" onclick="if(event.target===this)closeTerminalCloseConfirmModal()">
   <div class="card" style="width:100%;max-width:440px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:22px;box-shadow:0 20px 48px rgba(0,0,0,0.8);color:var(--text)">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
       <h3 style="margin:0;font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px">
@@ -4607,7 +4612,7 @@ div[style*="position: fixed"] .card {
 </div>
 
 <!-- Modal Konfirmasi Kunci Terminal & Putus Sesi -->
-<div id="term-lock-confirm-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(3px);padding:16px" onclick="if(event.target===this)closeTerminalLockConfirmModal()">
+<div id="term-lock-confirm-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:100005;align-items:center;justify-content:center;backdrop-filter:blur(3px);padding:16px" onclick="if(event.target===this)closeTerminalLockConfirmModal()">
   <div class="card" style="width:100%;max-width:440px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:22px;box-shadow:0 20px 48px rgba(0,0,0,0.8);color:var(--text)">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
       <h3 style="margin:0;font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px;color:#f87171">

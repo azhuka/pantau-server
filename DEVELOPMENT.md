@@ -354,6 +354,19 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.193
+
+- **Tipe Rilis:** Perbaikan Elevasi Stacking Context Modal Konfirmasi Penutupan Terminal dalam Mode Full Window (*Terminal Fullscreen Modal Elevation & Stacking Context Hotfix*)
+- **Fokus Utama:** Mengatasi kendala di mana tombol Tutup / Keluar Terminal (`#term-close-btn`) tampak tidak merespons saat jendela terminal berada dalam mode layar penuh (*full window / fullscreen*):
+  1. **Koreksi Elevasi Z-Index Stacking Context:**
+     - Menurunkan nilai elevasi `.terminal-window.is-fullscreen` dari `z-index: 999999` yang berlebihan menjadi `z-index: 9900 !important;`. Nilai ini tetap menempatkan jendela terminal layar penuh di atas seluruh elemen halaman dasar (sidebar, topbar, tabbar, dan alert banner), namun tetap berada di bawah lapisan modal dialog.
+     - Menaikkan elevasi modal konfirmasi terkait terminal (`#term-close-confirm-modal`, `#term-lock-confirm-modal`, dan `#term-unlock-modal`) secara tegas menjadi `z-index: 100005 !important;`.
+     - Mengatasi masalah di mana modal konfirmasi penutupan terminal terbuka tetapi tersembunyi di balik latar terminal layar penuh (*hidden behind fullscreen terminal*).
+  2. **Standardisasi Identitas Tombol Tutup Terminal:**
+     - Menambahkan atribut baku `id="term-close-btn"` pada tombol tutup jendela terminal di baris aksi `.terminal-actions`, melengkapi tombol fungsional lainnya (`#term-lock-btn`, `#term-clear-btn`, `#term-fullscreen-btn`).
+  3. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.193` pada seluruh 7 berkas inti repositori.
+
 ## Versi 4.8.192
 
 - **Tipe Rilis:** Eliminasi Kontrol Dekorasi Jendela Terminal (Ikon Merah, Kuning, Hijau) & Standardisasi Konsol Linux NOC Baku (*Elimination of Decorative Terminal Window Dots & NOC Terminal Standardization*)
