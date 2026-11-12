@@ -927,7 +927,8 @@ function updateNavProbeBadge(downCount) {
   if (badge) {
     if (downCount > 0) {
       badge.style.display = 'inline-flex';
-      badge.textContent = downCount + ' DOWN';
+      badge.textContent = downCount;
+      badge.title = `${downCount} endpoint down`;
     } else {
       badge.style.display = 'none';
     }

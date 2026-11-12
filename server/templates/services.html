@@ -2829,13 +2829,13 @@ div[style*="position: fixed"] .card {
 <div class="card" id="card-systemd-units" style="margin-top:16px">
   <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
     <div>
-      <h3 style="margin:0;display:flex;align-items:center;gap:8px">
-        <span>Systemd Services (OS Daemons)</span>
-        <span class="badge badge-info" id="sysd-total-badge" style="font-size:11px;cursor:pointer" onclick="setSysdStatusFilter('all')" title="Tampilkan semua unit">0 unit</span>
-        <span class="badge badge-up" id="sysd-running-badge" style="display:none;font-size:11px;cursor:pointer" onclick="setSysdStatusFilter('running')" title="Filter status running (klik ulang untuk reset)">0 running</span>
-        <span class="badge badge-danger" id="sysd-failed-badge" style="display:none;font-size:11px;cursor:pointer" onclick="setSysdStatusFilter('failed')" title="Filter status failed (klik ulang untuk reset)">0 failed</span>
-      </h3>
-      <span style="font-size:12px;color:var(--dim)">Daftar seluruh service sistem operasi dan daemon yang dikelola oleh systemd</span>
+      <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+        <h3 style="margin:0;font-size:13px;font-weight:700">Systemd Services (OS Daemons)</h3>
+        <span class="noc-head-badge noc-head-badge-info" id="sysd-total-badge" onclick="setSysdStatusFilter('all')" title="Tampilkan semua unit">0 unit</span>
+        <span class="noc-head-badge noc-head-badge-success" id="sysd-running-badge" style="display:none" onclick="setSysdStatusFilter('running')" title="Filter status running (klik ulang untuk reset)">0 aktif</span>
+        <span class="noc-head-badge noc-head-badge-danger" id="sysd-failed-badge" style="display:none" onclick="setSysdStatusFilter('failed')" title="Filter status failed (klik ulang untuk reset)">0 gagal</span>
+      </div>
+      <div style="font-size:11.5px;color:var(--dim);margin-top:2px">Daftar seluruh service sistem operasi dan daemon yang dikelola oleh systemd</div>
     </div>
 
     <!-- Toolbar: Search + Filter + Refresh -->
@@ -2925,13 +2925,15 @@ div[style*="position: fixed"] .card {
   <div class="card">
     <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
       <div>
-        <h3 style="margin:0;display:flex;align-items:center;gap:8px">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue)"><path d="M16.5 9.4 7.55 4.24"></path><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.29 7 12 12 20.71 7"></polyline><line x1="12" y1="22" x2="12" y2="12"></line></svg>
-          <span>Packages</span>
-          <span class="badge badge-info" id="pkg-total-badge" style="font-size:11px;cursor:pointer" onclick="setPkgStatusFilter('all')" title="Tampilkan semua packages">0 packages</span>
-          <span class="badge badge-warn" id="pkg-upg-badge" style="display:none;font-size:11px;cursor:pointer" onclick="setPkgStatusFilter('upgradable')" title="Filter pembaruan tersedia (klik ulang untuk reset)">0 pembaruan</span>
-        </h3>
-        <span style="font-size:12px;color:var(--dim)">Inventaris packages APT/dpkg dan library sistem terpasang</span>
+        <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+          <h3 style="margin:0;font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue)"><path d="M16.5 9.4 7.55 4.24"></path><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.29 7 12 12 20.71 7"></polyline><line x1="12" y1="22" x2="12" y2="12"></line></svg>
+            <span>Packages</span>
+          </h3>
+          <span class="noc-head-badge noc-head-badge-info" id="pkg-total-badge" onclick="setPkgStatusFilter('all')" title="Tampilkan semua packages">0 terpasang</span>
+          <span class="noc-head-badge noc-head-badge-warn" id="pkg-upg-badge" style="display:none" onclick="setPkgStatusFilter('upgradable')" title="Filter pembaruan tersedia (klik ulang untuk reset)">0 pembaruan</span>
+        </div>
+        <div style="font-size:11.5px;color:var(--dim);margin-top:2px">Inventaris packages APT/dpkg dan library sistem terpasang</div>
       </div>
       
       <!-- Toolbar Tombol Kontrol: Hanya Ikon + Tooltip -->
@@ -3043,11 +3045,11 @@ div[style*="position: fixed"] .card {
 <div class="card">
   <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
     <div>
-      <h3 style="margin:0;display:flex;align-items:center;gap:8px">
-        <span>Task Manager (Processes)</span>
-        <span class="badge badge-info" id="proc-total-badge" style="font-size:11px">10 proses</span>
-      </h3>
-      <span style="font-size:12px;color:var(--dim)">Pantau dan kelola proses server</span>
+      <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+        <h3 style="margin:0;font-size:13px;font-weight:700">Task Manager (Processes)</h3>
+        <span class="noc-head-badge noc-head-badge-info" id="proc-total-badge">10 proses</span>
+      </div>
+      <div style="font-size:11.5px;color:var(--dim);margin-top:2px">Pantau dan kelola proses server</div>
     </div>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
       <span id="top-procs-time" style="font-size:12px;color:var(--dim)">Diperbarui tiap siklus agen</span>
@@ -3113,7 +3115,7 @@ div[style*="position: fixed"] .card {
         <span style="font-size:12px;color:var(--dim)">Daftar jadwal eksekusi cron sistem (/etc/crontab &amp; /etc/cron.d/*)</span>
       </div>
       <div style="display:flex;gap:8px;align-items:center">
-        <span class="badge badge-info" id="cron-jobs-count">{{ (cron_jobs.jobs|length) if cron_jobs and cron_jobs.jobs else 0 }} cron jobs aktif</span>
+        <span class="noc-head-badge noc-head-badge-info" id="cron-jobs-count">{{ (cron_jobs.jobs|length) if cron_jobs and cron_jobs.jobs else 0 }} cron jobs aktif</span>
         {% if user.has_perm('can_cron') %}
         <button class="btn btn-primary btn-sm" id="btn-add-cron-modal" onclick="openAddCronModal()" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Tambah cron job baru" aria-label="Tambah Cron Job"{% endif %}>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
@@ -3209,7 +3211,7 @@ div[style*="position: fixed"] .card {
         <h3 style="margin:0">Systemd Timers</h3>
         <span style="font-size:12px;color:var(--dim)">Pengatur waktu modern berbasis unit systemd</span>
       </div>
-      <span class="badge badge-muted" id="timers-count-badge">{{ (cron_jobs.timers|length) if cron_jobs and cron_jobs.timers else 0 }} timer aktif</span>
+      <span class="noc-head-badge noc-head-badge-info" id="timers-count-badge">{{ (cron_jobs.timers|length) if cron_jobs and cron_jobs.timers else 0 }} timer aktif</span>
     </div>
     <div id="timers-table-wrap" style="overflow-x:auto;display:{{ 'block' if (cron_jobs and cron_jobs.timers) else 'none' }}">
       <table id="systemd-timers-table" class="noc-table-compact" style="width:100%">
@@ -3386,41 +3388,45 @@ div[style*="position: fixed"] .card {
 <!-- Tab: Akun Pengguna & Grup Sistem (Users & Groups) -->
 
 <div class="tab-body" id="tab-akun" hidden>
-  <!-- Sub-Navigasi Terpadu: Pengguna (Users) vs Grup Sistem (Groups) -->
-  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px">
-    <div class="user-subnav-bar">
-      <button type="button" class="user-subnav-btn is-active btn-primary" id="btn-subnav-users" onclick="switchUserSubnav('users')">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-        <span>Users</span>
-        <span class="user-subnav-count" id="badge-users-count">{{ accounts|length if accounts else 0 }}</span>
-      </button>
-      <button type="button" class="user-subnav-btn btn-ghost" id="btn-subnav-groups" onclick="switchUserSubnav('groups')">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-        <span>Groups</span>
-        <span class="user-subnav-count" id="badge-groups-count">{{ system_groups|length if system_groups else 0 }}</span>
-      </button>
-    </div>
-
-    <div style="display:flex;align-items:center;gap:8px">
-      {% if user.has_perm('can_users_sys') %}
-      <button class="btn btn-primary btn-sm" id="btn-create-user-modal" onclick="openCreateUserModal()" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:4px 10px;{% if not is_online %}opacity:0.35;cursor:not-allowed{% endif %}" {% if not is_online %}disabled title="Server offline — aksi dinonaktifkan"{% else %}title="Tambah user baru" aria-label="Tambah User"{% endif %}>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
-        <span>Tambah User</span>
-      </button>
-      {% endif %}
-    </div>
-  </div>
-
-  <!-- Subview 1: Kartu Pengguna (Users) -->
-  <div class="card" id="subview-users">
-    <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px">
+  <!-- Kartu Terpadu Pengguna & Grup Sistem -->
+  <div class="card" id="card-users-groups">
+    <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:10px 14px">
       <div>
-        <h3 style="margin:0;font-size:14px;font-weight:600">Daftar Users (/etc/passwd)</h3>
-        <span style="font-size:12px;color:var(--dim)">Akun users dan services sistem (/etc/passwd)</span>
+        <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+          <h3 style="margin:0;font-size:13.5px;font-weight:700" id="akun-card-title">Daftar Users (/etc/passwd)</h3>
+          <span class="noc-head-badge noc-head-badge-info" id="acc-count-badge">{{ accounts|length if accounts else 0 }} users</span>
+          <span class="noc-head-badge noc-head-badge-info" id="groups-count-badge" style="display:none">{{ system_groups|length if system_groups else 0 }} groups</span>
+        </div>
+        <div style="font-size:11.5px;color:var(--dim);margin-top:2px" id="akun-card-subtitle">Akun users dan services sistem (/etc/passwd)</div>
       </div>
-      <span class="badge badge-info" id="acc-count-badge">{{ accounts|length if accounts else 0 }} Users</span>
+
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <!-- Sub-Navigasi Terpadu: Pengguna (Users) vs Grup Sistem (Groups) -->
+        <div class="user-subnav-bar">
+          <button type="button" class="user-subnav-btn is-active btn-primary" id="btn-subnav-users" onclick="switchUserSubnav('users')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            <span>Users</span>
+            <span class="user-subnav-count" id="badge-users-count">{{ accounts|length if accounts else 0 }}</span>
+          </button>
+          <button type="button" class="user-subnav-btn btn-ghost" id="btn-subnav-groups" onclick="switchUserSubnav('groups')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            <span>Groups</span>
+            <span class="user-subnav-count" id="badge-groups-count">{{ system_groups|length if system_groups else 0 }}</span>
+          </button>
+        </div>
+
+        {% if user.has_perm('can_users_sys') %}
+        <button class="btn btn-primary btn-sm" id="btn-create-user-modal" onclick="openCreateUserModal()" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:4px 10px;{% if not is_online %}opacity:0.35;cursor:not-allowed{% endif %}" {% if not is_online %}disabled title="Server offline — aksi dinonaktifkan"{% else %}title="Tambah user baru" aria-label="Tambah User"{% endif %}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+          <span>Tambah User</span>
+        </button>
+        {% endif %}
+      </div>
     </div>
-    <div class="table-toolbar" style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:var(--bg-subtle, rgba(255,255,255,0.02));border-bottom:1px solid var(--border);gap:12px">
+
+    <!-- Subview 1: Konten Pengguna (Users) -->
+    <div id="subview-users">
+      <div class="table-toolbar" style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:var(--bg-subtle, rgba(255,255,255,0.02));border-bottom:1px solid var(--border);gap:12px">
       <div class="btn-group" style="display:inline-flex;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:2px;gap:2px">
         <button type="button" class="btn btn-xs btn-primary user-filter-btn" data-filter="all" onclick="filterUserCategory('all')" style="font-size:11px;padding:3px 10px">Semua</button>
         <button type="button" class="btn btn-xs btn-ghost user-filter-btn" data-filter="regular" onclick="filterUserCategory('regular')" style="font-size:11px;padding:3px 10px">Reguler</button>
@@ -3537,15 +3543,8 @@ div[style*="position: fixed"] .card {
     </div>
   </div>
 
-  <!-- Subview 2: Kartu Grup Sistem (Groups) -->
-  <div class="card" id="subview-groups" style="display:none">
-    <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px">
-      <div>
-        <h3 style="margin:0;font-size:14px;font-weight:600">Daftar Groups (/etc/group)</h3>
-        <span style="font-size:12px;color:var(--dim)">Daftar grup sistem operasi dan anggota (/etc/group)</span>
-      </div>
-      <span class="badge badge-info" id="groups-count-badge">{{ system_groups|length if system_groups else 0 }} Groups</span>
-    </div>
+  <!-- Subview 2: Konten Grup Sistem (Groups) -->
+  <div id="subview-groups" style="display:none">
     <div class="table-toolbar" style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:var(--bg-subtle, rgba(255,255,255,0.02));border-bottom:1px solid var(--border);gap:12px">
       <div class="btn-group" style="display:inline-flex;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:2px;gap:2px">
         <button type="button" class="btn btn-xs btn-primary group-filter-btn" data-filter="all" onclick="filterGroupCategory('all')" style="font-size:11px;padding:3px 10px">Semua</button>
@@ -3612,6 +3611,7 @@ div[style*="position: fixed"] .card {
       </table>
     </div>
   </div>
+  </div> <!-- end #card-users-groups -->
 
   <!-- Card Riwayat Tindakan Akun Users -->
   <div class="card" id="card-acc-action-history">
@@ -3818,7 +3818,7 @@ div[style*="position: fixed"] .card {
         <span style="font-size:12px;color:var(--dim)">Pengawasan masa berlaku sertifikat HTTPS (Let's Encrypt / Kustom)</span>
       </div>
       <div style="display:flex;gap:8px;align-items:center">
-        <span class="badge badge-info" id="ssl-count-badge">{{ (ssl_certs|length) if ssl_certs else 0 }} sertifikat terdeteksi</span>
+        <span class="noc-head-badge noc-head-badge-info" id="ssl-count-badge">{{ (ssl_certs|length) if ssl_certs else 0 }} sertifikat terdeteksi</span>
         {% if user.has_perm('can_ssl') %}
         <button class="btn btn-primary btn-sm" id="btn-add-ssl-path-modal" onclick="openAddSslPathModal()" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Tentukan folder sertifikat" aria-label="Tentukan folder sertifikat"{% endif %}>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path><line x1="12" y1="11" x2="12" y2="17"></line><line x1="9" y1="14" x2="15" y2="14"></line></svg>
@@ -6223,6 +6223,11 @@ function switchUserSubnav(subnav) {
   const btnG = document.getElementById('btn-subnav-groups');
   const viewU = document.getElementById('subview-users');
   const viewG = document.getElementById('subview-groups');
+  const titleEl = document.getElementById('akun-card-title');
+  const subEl = document.getElementById('akun-card-subtitle');
+  const badgeAcc = document.getElementById('acc-count-badge');
+  const badgeGrp = document.getElementById('groups-count-badge');
+  const addBtn = document.getElementById('btn-create-user-modal');
 
   if (btnU) {
     btnU.classList.toggle('btn-primary', isUsers);
@@ -6236,6 +6241,12 @@ function switchUserSubnav(subnav) {
   }
   if (viewU) viewU.style.display = isUsers ? 'block' : 'none';
   if (viewG) viewG.style.display = !isUsers ? 'block' : 'none';
+
+  if (titleEl) titleEl.textContent = isUsers ? 'Daftar Users (/etc/passwd)' : 'Daftar Groups (/etc/group)';
+  if (subEl) subEl.textContent = isUsers ? 'Akun users dan services sistem (/etc/passwd)' : 'Daftar grup sistem operasi dan anggota (/etc/group)';
+  if (badgeAcc) badgeAcc.style.display = isUsers ? 'inline-flex' : 'none';
+  if (badgeGrp) badgeGrp.style.display = !isUsers ? 'inline-flex' : 'none';
+  if (addBtn) addBtn.style.display = isUsers ? 'inline-flex' : 'none';
 
   if (typeof initServicesTabPagination === 'function') {
     initServicesTabPagination();
@@ -13369,11 +13380,12 @@ function renderPackagesTable() {
   const tableWrap = document.getElementById('pkg-table-wrap');
   const tbody = document.getElementById('pkg-tbody');
 
-  if (totalBadge) totalBadge.textContent = `${_packagesList.length} packages`;
+  const isEn = isEnPage();
+  if (totalBadge) totalBadge.textContent = `${_packagesList.length} ${isEn ? 'installed' : 'terpasang'}`;
   if (upgBadge) {
     if (_upgMap.size > 0) {
       upgBadge.textContent = `${_upgMap.size} pembaruan`;
-      upgBadge.style.display = 'inline-block';
+      upgBadge.style.display = 'inline-flex';
     } else {
       upgBadge.style.display = 'none';
     }
@@ -13902,12 +13914,12 @@ function renderSystemdTable() {
 
   if (totalBadge) totalBadge.textContent = `${totalCount} unit`;
   if (runningBadge) {
-    runningBadge.textContent = `${runningCount} running`;
-    runningBadge.style.display = runningCount > 0 ? 'inline-block' : 'none';
+    runningBadge.textContent = isEn ? `${runningCount} running` : `${runningCount} aktif`;
+    runningBadge.style.display = runningCount > 0 ? 'inline-flex' : 'none';
   }
   if (failedBadge) {
-    failedBadge.textContent = `${failedCount} failed`;
-    failedBadge.style.display = failedCount > 0 ? 'inline-block' : 'none';
+    failedBadge.textContent = isEn ? `${failedCount} failed` : `${failedCount} gagal`;
+    failedBadge.style.display = failedCount > 0 ? 'inline-flex' : 'none';
   }
 
   if (!_systemdList || _systemdList.length === 0) {

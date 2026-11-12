@@ -2110,3 +2110,92 @@ body.show-alert-banner .noc-global-topbar {
   background: #d97706 !important;
   color: #ffffff !important;
 }
+
+/* ==========================================================================
+   Lencana Header Ringkas & Proporsional Multi-Tema (NOC Head Badges)
+   ========================================================================== */
+.nav-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.noc-head-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3.5px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 5px;
+  line-height: 1.35;
+  letter-spacing: 0.2px;
+  text-transform: none;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  transition: all 0.15s ease;
+  user-select: none;
+  box-sizing: border-box;
+}
+.noc-head-badge[onclick] {
+  cursor: pointer;
+}
+.noc-head-badge[onclick]:hover {
+  filter: brightness(1.18);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+.noc-head-badge-info {
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  color: #38bdf8;
+}
+.noc-head-badge-success {
+  background: rgba(34, 197, 94, 0.08);
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  color: #4ade80;
+}
+.noc-head-badge-warn {
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  color: #fbbf24;
+}
+.noc-head-badge-danger {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #f87171;
+}
+
+[data-theme="light"] .noc-head-badge-info {
+  background: #f0f9ff !important;
+  border-color: #bae6fd !important;
+  color: #0369a1 !important;
+}
+[data-theme="light"] .noc-head-badge-success {
+  background: #f0fdf4 !important;
+  border-color: #bbf7d0 !important;
+  color: #15803d !important;
+}
+[data-theme="light"] .noc-head-badge-warn {
+  background: #fffbeb !important;
+  border-color: #fde68a !important;
+  color: #b45309 !important;
+}
+[data-theme="light"] .noc-head-badge-danger {
+  background: #fef2f2 !important;
+  border-color: #fecaca !important;
+  color: #b91c1c !important;
+}
+
+/* Tooltip Grafik Metrik pada Tema Terang */
+[data-theme="light"] .noc-chart-tooltip {
+  background: rgba(255, 255, 255, 0.98) !important;
+  color: #0f172a !important;
+  border: 1px solid rgba(203, 213, 225, 0.9) !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 0 1px 1px rgba(0, 0, 0, 0.05) !important;
+}
+[data-theme="light"] .noc-chart-tooltip [style*="color:var(--text)"] {
+  color: #0f172a !important;
+}
+[data-theme="light"] .noc-chart-tooltip [style*="color:var(--dim)"] {
+  color: #475569 !important;
+}

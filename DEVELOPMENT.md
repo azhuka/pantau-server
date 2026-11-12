@@ -354,6 +354,26 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.191
+
+- **Tipe Rilis:** Harmonisasi Desain Antarmuka NOC, Integrasi Header Kartu Terpadu Pengguna & Grup, Dukungan Tema Terang Tooltip Grafik, dan Standardisasi Lencana Header Proporsional (*NOC UI Harmonization, Integrated User/Group Card Architecture, Light Theme Chart Tooltips & Sleek Header Badges*)
+- **Fokus Utama:** Menyelesaikan 4 temuan tata letak, integrasi komponen, kontras tema terang, dan proporsi visual:
+  1. **Standardisasi Menu Navigasi Endpoint & Eliminasi Pemenggalan Baris:**
+     - Menyeragamkan label menu sidebar menjadi `Endpoint` (sebelumnya `Pantau Endpoint`), konsisten dengan menu lainnya (`Dashboard`, `Insiden`, `Log`).
+     - Menerapkan `.nav-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }` dan menyederhanakan indikator `#nav-probe-badge` menjadi angka ringkas, mencegah teks terlipat menjadi 2 baris canggung pada sidebar.
+  2. **Dukungan Penuh Tema Terang pada Tooltip Grafik Metrik (`.noc-chart-tooltip`):**
+     - Menyediakan styling khusus Mode Terang (`[data-theme="light"] .noc-chart-tooltip`) dengan latar putih frosted glass (`rgba(255, 255, 255, 0.98)`), teks hitam gelap tajam (`#0f172a`), dan kontras WCAG tinggi pada seluruh grafik metrik sistem (CPU, RAM, Disk, Load Average, Network, dan Layanan).
+     - Menghilangkan anomali teks gelap di atas latar hitam yang sebelumnya tidak terbaca pada tema terang.
+  3. **Arsitektur Kartu Terpadu Pengguna & Grup Sistem (`#card-users-groups`):**
+     - Mengintegrasikan navigasi pemilih sub-tab (`[ Users ]` vs `[ Groups ]`) serta tombol tindakan `Tambah User` langsung ke dalam `card-header` terpadu.
+     - Menghilangkan bilah mengambang terpisah di atas kartu yang tampak canggung dan terputus dari bingkai tabel.
+     - Tombol "Tambah User" secara cerdas hanya tampil saat sub-tab Pengguna aktif dan tersembunyi secara rapi saat melihat Grup Sistem.
+  4. **Standardisasi Lencana Header Kartu yang Seimbang & Proporsional (`.noc-head-badge`):**
+     - Menggantikan lencana kapsul all-caps berukuran besar dengan komponen `.noc-head-badge` yang ramping (`font-size: 10px`, `padding: 1px 7px`, `border-radius: 5px`, `text-transform: none`) pada Systemd Services (`180 unit`, `21 aktif`), Packages (`982 terpasang`, `3 pembaruan`), Task Manager (`proses`), Cron Jobs, dan Sertifikat SSL.
+     - Menghilangkan redundansi kata pada lencana dan menyajikan hierarki tipografi yang simetris dan profesional.
+  5. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.191` pada seluruh 7 berkas inti repositori.
+
 ## Versi 4.8.190
 
 - **Tipe Rilis:** Perbaikan Komprehensif Antarmuka Pengguna (UI/UX), Restrukturisasi Tabel Masalah, Kontras Multi-Tema, Presisi Tabbar Sticky, dan Modernisasi Grafik Interaktif Layanan (*Comprehensive UI/UX Enhancements, Problem Table Restructuring, Multi-Theme Contrast, Precision Sticky Tabbar & Interactive Service Telemetry Charts*)

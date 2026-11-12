@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token }}">
 <title>{% block title %}Pantau Server{% endblock %}</title>
-<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.190' }}">
+<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.191' }}">
 <style id="noc-act-dropdown-anti-cache">
   /* Override Mutlak Anti-Cache untuk Tombol Dropdown Tindakan yang Non-Aktif (Disabled) */
   .noc-act-dropdown-item:disabled,
@@ -843,6 +843,7 @@ body{
 .sidebar-nav{flex:1;padding:8px 6px;overflow-y:auto}
 .nav-section{padding:8px 10px 3px;font-size:9.5px;font-weight:700;color:var(--dim-subtle);text-transform:uppercase;letter-spacing:0.8px}
 .nav-link{display:flex;align-items:center;gap:8px;padding:6px 10px;color:var(--dim);text-decoration:none;font-size:11.5px;font-weight:500;border-radius:6px;transition:all .15s ease;margin-bottom:2px}
+.nav-label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
 .nav-link:hover{background:var(--sidebar-hover);color:var(--text)}
 .nav-link.active{color:var(--text-heading, #fff);background:var(--blue-bg);border:1px solid var(--blue);font-weight:600;box-shadow:0 0 10px var(--blue-bg)}
 .nav-icon{width:15px;height:15px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -2586,6 +2587,18 @@ body.show-alert-banner .main{padding-top:72px}
   border-bottom-color: transparent;
   border-left-color: transparent;
 }
+[data-theme="light"] .noc-chart-tooltip {
+  background: rgba(255, 255, 255, 0.98) !important;
+  color: #0f172a !important;
+  border: 1px solid rgba(203, 213, 225, 0.9) !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 0 1px 1px rgba(0, 0, 0, 0.05) !important;
+}
+[data-theme="light"] .noc-chart-tooltip [style*="color:var(--text)"] {
+  color: #0f172a !important;
+}
+[data-theme="light"] .noc-chart-tooltip [style*="color:var(--dim)"] {
+  color: #475569 !important;
+}
 .noc-chart-legend {
   display: flex;
   align-items: center;
@@ -2827,8 +2840,8 @@ body.show-alert-banner .main{padding-top:72px}
       <span id="nav-incident-badge" class="badge" style="display:none;margin-left:auto;font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:10px"></span>
     </a>
     <a href="/probing" class="nav-link {% if '/probing' in request.url.path %}active{% endif %}" onclick="closeMobDrawer()" title="Pemantauan Endpoint &amp; Jaringan">
-      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"></circle><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"></path></svg></span> <span class="nav-label" data-i18n="menu_probing">Pantau Endpoint</span>
-      <span id="nav-probe-badge" class="badge badge-down" style="display:none;margin-left:auto;font-size:10px;font-weight:700;padding:1px 5px;border-radius:8px"></span>
+      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"></circle><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"></path></svg></span> <span class="nav-label" data-i18n="menu_probing">Endpoint</span>
+      <span id="nav-probe-badge" class="badge badge-down" style="display:none;margin-left:auto;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;white-space:nowrap;line-height:14px"></span>
     </a>
     <a href="/logs" class="nav-link {% if '/logs' in request.url.path %}active{% endif %}" onclick="closeMobDrawer()" title="Log Sistem">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg></span> <span class="nav-label" data-i18n="menu_logs">Log</span>
@@ -2864,7 +2877,7 @@ body.show-alert-banner .main{padding-top:72px}
   </nav>
   <div class="sidebar-footer">
     <div class="sb-footer-brand">Pantau Server</div>
-    <div class="sb-footer-ver">v{{ app_version or '4.8.190' }}</div>
+    <div class="sb-footer-ver">v{{ app_version or '4.8.191' }}</div>
     <div class="sb-footer-utc">UTC <span id="clockUtc" style="display:inline"></span></div>
   </div>
 </aside>
