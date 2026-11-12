@@ -23,23 +23,6 @@
   background: #161b22;
   border-bottom: 1px solid #30363d;
 }
-.terminal-dots {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-.t-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  cursor: pointer;
-  opacity: 0.85;
-  transition: opacity .15s, transform .1s;
-}
-.t-dot:hover { opacity: 1; transform: scale(1.15); }
-.t-dot-red { background: #ff5f56; }
-.t-dot-yellow { background: #ffbd2e; }
-.t-dot-green { background: #27c93f; }
 .terminal-title {
   font-size: 12px;
   font-family: monospace;
@@ -1888,11 +1871,6 @@ div[style*="position: fixed"] .card {
   <!-- Jendela Terminal Bawaan Linux (Terintegrasi, Bukan Jendela Baru) -->
   <div class="terminal-window" id="apt-live" style="display:none;margin-top:14px">
     <div class="terminal-titlebar">
-      <div class="terminal-dots">
-        <span class="t-dot t-dot-red" title="Tutup Terminal" onclick="openTerminalCloseConfirmModal()"></span>
-        <span class="t-dot t-dot-yellow" id="term-dot-clear" title="Bersihkan Layar (Clear)" onclick="getTerm().clearScreen()"></span>
-        <span class="t-dot t-dot-green" title="Layar Penuh (Full Screen)" onclick="getTerm().toggleFullscreen()"></span>
-      </div>
       <div class="terminal-title">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
         <span id="term-title">Terminal Bawaan &middot; shell root</span>
@@ -7713,7 +7691,6 @@ class WebTerminal {
 
     const lockBtn = document.getElementById('term-lock-btn');
     const clearBtn = document.getElementById('term-clear-btn');
-    const dotClear = document.getElementById('term-dot-clear');
     const isEn = (typeof isEnPage === 'function') ? isEnPage() : false;
 
     if (isRunning) {
@@ -7733,14 +7710,6 @@ class WebTerminal {
           ? 'Cannot clear screen while a process is running in console'
           : 'Tidak dapat membersihkan layar saat proses sedang berjalan di konsol';
       }
-      if (dotClear) {
-        dotClear.style.pointerEvents = 'none';
-        dotClear.style.opacity = '0.35';
-        dotClear.style.cursor = 'not-allowed';
-        dotClear.title = isEn
-          ? 'Cannot clear screen while a process is running in console'
-          : 'Tidak dapat membersihkan layar saat proses sedang berjalan di konsol';
-      }
     } else {
       if (lockBtn) {
         lockBtn.disabled = false;
@@ -7757,14 +7726,6 @@ class WebTerminal {
         clearBtn.title = isEn
           ? 'Clear Console Screen'
           : 'Bersihkan Layar Konsol';
-      }
-      if (dotClear) {
-        dotClear.style.pointerEvents = '';
-        dotClear.style.opacity = '1';
-        dotClear.style.cursor = 'pointer';
-        dotClear.title = isEn
-          ? 'Clear Screen'
-          : 'Bersihkan Layar (Clear)';
       }
     }
   }

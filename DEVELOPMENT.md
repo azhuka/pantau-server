@@ -354,6 +354,20 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.192
+
+- **Tipe Rilis:** Eliminasi Kontrol Dekorasi Jendela Terminal (Ikon Merah, Kuning, Hijau) & Standardisasi Konsol Linux NOC Baku (*Elimination of Decorative Terminal Window Dots & NOC Terminal Standardization*)
+- **Fokus Utama:** Menyelesaikan temuan visual pada jendela Web Terminal dan sinkronisasi antarmuka:
+  1. **Penghapusan Ikon Dekorasi Merah, Kuning, Hijau pada Titlebar Terminal:**
+     - Menghapus komponen `.terminal-dots` yang memuat tiga tombol titik berwarna merah (`#ff5f56`), kuning (`#ffbd2e`), dan hijau (`#27c93f`) pada bilah judul terminal (`.terminal-titlebar`) di `services.html`.
+     - Mengeliminasi dekorasi jendela tiruan gaya macOS yang membingungkan dan tidak relevan dengan filosofi antarmuka server Linux/NOC profesional.
+     - Mempertahankan kontrol terminal fungsional yang baku dan eksplisit pada sisi kanan (`.terminal-actions`) meliputi tombol Kunci Sesi (`#term-lock-btn`), Bersihkan Layar (`#term-clear-btn`), Layar Penuh (`#term-fullscreen-btn`), dan Tutup Terminal.
+  2. **Pembersihan CSS & Logika Kontrol Terminal:**
+     - Membersihkan deklarasi CSS usang `.terminal-dots`, `.t-dot`, `.t-dot-red`, `.t-dot-yellow`, dan `.t-dot-green` pada `services.html` dan `base.html`.
+     - Membersihkan referensi objek `#term-dot-clear` dari fungsi manajemen proses terminal `setProcessRunning()` agar bebas dari ketergantungan elemen yang telah dihapus.
+  3. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.192` pada seluruh 7 berkas inti repositori.
+
 ## Versi 4.8.191
 
 - **Tipe Rilis:** Harmonisasi Desain Antarmuka NOC, Integrasi Header Kartu Terpadu Pengguna & Grup, Dukungan Tema Terang Tooltip Grafik, dan Standardisasi Lencana Header Proporsional (*NOC UI Harmonization, Integrated User/Group Card Architecture, Light Theme Chart Tooltips & Sleek Header Badges*)
