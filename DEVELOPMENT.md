@@ -354,6 +354,22 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.194
+
+- **Tipe Rilis:** Implementasi Prototipe Visual Antarmuka Pengawasan Integritas Berkas & Filesystem (FIM Tab & Custom Path Modal) (*File Integrity Monitoring Visual Architecture & Custom Path Management*)
+- **Fokus Utama:** Menghadirkan antarmuka FIM (*File Integrity Monitoring*) pada detail server sesuai instruksi penempatan tepat setelah tab Insiden:
+  1. **Integrasi Tabbar Integritas Pasca-Insiden:**
+     - Menambahkan tombol tab `#tab-integritas-btn` pada bilah navigasi utama tepat setelah tab `Insiden` dan sebelum tab `Services` di `services.html`.
+  2. **Kartu 1: Status Baseline & Pengawasan Jalur Kritis:**
+     - Menampilkan tabel berdensitas data tinggi (*high density* NOC) yang mencakup berkas konfigurasi sistem vital (`/etc/sudoers`, `/etc/passwd`, `/etc/shadow`, `/etc/ssh/sshd_config`, `/root/.ssh/authorized_keys`, `/etc/systemd/system/`, `/etc/crontab`) serta jalur kustom operator.
+     - Menyajikan indikator lencana status (`VALID`), ukuran fisik, ringkasan Checksum kriptografis SHA-256 dengan *tooltip* hash 64-karakter penuh, waktu verifikasi terakhir, serta kolom `Tindakan` dengan tombol `Validkan` dan hapus jalur kustom.
+  3. **Kartu 2: Riwayat Kejadian Perubahan (FIM Events Audit Log):**
+     - Menampilkan tabel audit log kejadian deteksi modifikasi konten berkas, pergantian hak akses (*chmod/chown*), penambahan berkas baru, dan penghapusan berkas.
+  4. **Modal Dialog Tambah Jalur Kustom (`#add-fim-path-modal`):**
+     - Menghadirkan dialog modal berlatar *backdrop* terisolasi (`z-index: 100005`) dengan form input path absolut Linux, opsi lingkup pemantauan (Berkas Tunggal vs Direktori Non-Rekursif vs Direktori Rekursif Dangkal), serta pilihan parameter pengawasan agen.
+  5. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.194` pada seluruh 7 berkas inti repositori.
+
 ## Versi 4.8.193
 
 - **Tipe Rilis:** Perbaikan Elevasi Stacking Context Modal Konfirmasi Penutupan Terminal dalam Mode Full Window (*Terminal Fullscreen Modal Elevation & Stacking Context Hotfix*)

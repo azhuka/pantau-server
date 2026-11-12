@@ -1918,6 +1918,7 @@ div[style*="position: fixed"] .card {
   {% set active_open = open_problems | rejectattr('is_ignored') | list %}
   {% set ignored_open = open_problems | selectattr('is_ignored') | list %}
   <button class="tab" data-tab="masalah" role="tab" id="tab-masalah-btn" data-i18n="tab_masalah"><span class="tab-text">Insiden</span> <span class="badge badge-{{ pmeta[problem_level][1] if (active_open and problem_level in pmeta) else 'muted' }}" id="tab-masalah-badge" style="display:{{ 'inline-block' if open_problems else 'none' }};margin-left:4px;font-size:10px;padding:1px 5px">{% if active_open %}{{ active_open|length }}{% elif ignored_open %}{{ ignored_open|length }}{% else %}0{% endif %}</span></button>
+  <button class="tab" data-tab="integritas" role="tab" id="tab-integritas-btn"><span class="tab-text">Integritas</span></button>
   <button class="tab" data-tab="layanan" role="tab" id="tab-layanan-btn" data-i18n="tab_layanan"><span class="tab-text">Services</span></button>
   <button class="tab" data-tab="packages" role="tab" id="tab-packages-btn"><span class="tab-text">Packages</span>{% if apt_upgradable and apt_upgradable > 0 %} <span class="badge badge-warn" id="tab-packages-badge" style="margin-left:4px;font-size:10px;padding:1px 5px">{{ apt_upgradable }}</span>{% endif %}</button>
   <button class="tab" data-tab="proses" role="tab" id="tab-proses-btn" data-i18n="tab_proses"><span class="tab-text">Tasks</span></button>
@@ -2624,6 +2625,171 @@ div[style*="position: fixed"] .card {
     </table>
   </div>
 </div>
+</div>
+
+<!-- Tab: Integritas Berkas & Filesystem (FIM) -->
+<div class="tab-body" id="tab-integritas" hidden>
+  <!-- Kartu 1: Jalur Pantau & Status Baseline -->
+  <div class="card">
+    <div class="card-header" style="align-items:center;justify-content:space-between">
+      <div>
+        <h3 style="margin:0">Integritas Berkas &amp; Filesystem (FIM)</h3>
+        <span style="font-size:12px;color:var(--dim)">Pengawasan real-time perubahan konten, hak akses, dan checksum berkas kritis sistem</span>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="noc-head-badge noc-head-badge-info" id="fim-count-badge">8 jalur diawasi</span>
+        <span class="noc-head-badge noc-head-badge-success" id="fim-status-badge">Semua valid</span>
+        {% if user.is_master_admin() or user.is_operator() %}
+        <button class="btn btn-primary btn-sm" id="btn-add-fim-path-modal" onclick="openAddFimPathModal()" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Tambah jalur berkas atau direktori kustom untuk diawasi" aria-label="Tambah Jalur Pantau"{% endif %}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+          <span>Tambah Jalur</span>
+        </button>
+        {% endif %}
+      </div>
+    </div>
+    <div class="table-responsive" style="overflow-x:auto">
+      <table id="tbl-fim-paths" class="noc-table-compact" style="width:100%">
+        <thead>
+          <tr>
+            <th title="Lokasi berkas atau direktori di filesystem server">Jalur</th>
+            <th style="width:140px" title="Klasifikasi jalur: bawaan sistem operasi atau kustom operator">Kategori</th>
+            <th class="col-center-cell" style="width:105px" title="Kesesuaian berkas saat ini dengan baseline tersimpan">Status</th>
+            <th style="width:85px" title="Ukuran berkas fisik">Ukuran</th>
+            <th style="min-width:140px" title="Ringkasan Checksum kriptografis SHA-256">Checksum SHA-256</th>
+            <th style="width:115px" title="Waktu terakhir agen memverifikasi berkas">Pemeriksaan</th>
+            <th class="col-fixed-cell col-act" style="text-align:center;width:130px">Tindakan</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code class="mono" style="font-size:11.5px;color:var(--text-bright);font-weight:600">/etc/sudoers</code></td>
+            <td><span class="badge badge-muted" style="font-size:9.5px;padding:1px 6px">Sistem (Bawaan)</span></td>
+            <td class="col-center-cell"><span class="badge badge-up" style="font-size:9.5px;padding:1px 6px">VALID</span></td>
+            <td class="mono" style="font-size:11px">1.8 KB</td>
+            <td><span class="mono" style="font-size:10.5px;color:var(--dim)" title="SHA-256: 7a8f9c1b2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a">7a8f9c1b…</span></td>
+            <td class="mono" style="font-size:10.5px;color:var(--dim)">Baru saja</td>
+            <td class="col-act" style="text-align:center">
+              <button type="button" class="btn btn-ghost btn-xs" onclick="showToast('Integritas /etc/sudoers valid sesuai baseline.', true)" title="Validkan baseline berkas ini" style="font-size:10.5px;padding:2px 8px">Validkan</button>
+            </td>
+          </tr>
+          <tr>
+            <td><code class="mono" style="font-size:11.5px;color:var(--text-bright);font-weight:600">/etc/passwd</code></td>
+            <td><span class="badge badge-muted" style="font-size:9.5px;padding:1px 6px">Sistem (Bawaan)</span></td>
+            <td class="col-center-cell"><span class="badge badge-up" style="font-size:9.5px;padding:1px 6px">VALID</span></td>
+            <td class="mono" style="font-size:11px">2.4 KB</td>
+            <td><span class="mono" style="font-size:10.5px;color:var(--dim)" title="SHA-256: c3e419aa5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e">c3e419aa…</span></td>
+            <td class="mono" style="font-size:10.5px;color:var(--dim)">Baru saja</td>
+            <td class="col-act" style="text-align:center">
+              <button type="button" class="btn btn-ghost btn-xs" onclick="showToast('Integritas /etc/passwd valid sesuai baseline.', true)" title="Validkan baseline berkas ini" style="font-size:10.5px;padding:2px 8px">Validkan</button>
+            </td>
+          </tr>
+          <tr>
+            <td><code class="mono" style="font-size:11.5px;color:var(--text-bright);font-weight:600">/etc/shadow</code></td>
+            <td><span class="badge badge-muted" style="font-size:9.5px;padding:1px 6px">Sistem (Bawaan)</span></td>
+            <td class="col-center-cell"><span class="badge badge-up" style="font-size:9.5px;padding:1px 6px">VALID</span></td>
+            <td class="mono" style="font-size:11px">1.2 KB</td>
+            <td><span class="mono" style="font-size:10.5px;color:var(--dim)" title="SHA-256: 87b5d1e23f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c">87b5d1e2…</span></td>
+            <td class="mono" style="font-size:10.5px;color:var(--dim)">Baru saja</td>
+            <td class="col-act" style="text-align:center">
+              <button type="button" class="btn btn-ghost btn-xs" onclick="showToast('Integritas /etc/shadow valid sesuai baseline.', true)" title="Validkan baseline berkas ini" style="font-size:10.5px;padding:2px 8px">Validkan</button>
+            </td>
+          </tr>
+          <tr>
+            <td><code class="mono" style="font-size:11.5px;color:var(--text-bright);font-weight:600">/etc/ssh/sshd_config</code></td>
+            <td><span class="badge badge-muted" style="font-size:9.5px;padding:1px 6px">Sistem (Bawaan)</span></td>
+            <td class="col-center-cell"><span class="badge badge-up" style="font-size:9.5px;padding:1px 6px">VALID</span></td>
+            <td class="mono" style="font-size:11px">3.6 KB</td>
+            <td><span class="mono" style="font-size:10.5px;color:var(--dim)" title="SHA-256: 41fa90de12bc34de56fa78bc90de12bc34de56fa78bc90de12bc34de56fa78bc">41fa90de…</span></td>
+            <td class="mono" style="font-size:10.5px;color:var(--dim)">Baru saja</td>
+            <td class="col-act" style="text-align:center">
+              <button type="button" class="btn btn-ghost btn-xs" onclick="showToast('Integritas /etc/ssh/sshd_config valid sesuai baseline.', true)" title="Validkan baseline berkas ini" style="font-size:10.5px;padding:2px 8px">Validkan</button>
+            </td>
+          </tr>
+          <tr>
+            <td><code class="mono" style="font-size:11.5px;color:var(--text-bright);font-weight:600">/root/.ssh/authorized_keys</code></td>
+            <td><span class="badge badge-muted" style="font-size:9.5px;padding:1px 6px">Sistem (Bawaan)</span></td>
+            <td class="col-center-cell"><span class="badge badge-up" style="font-size:9.5px;padding:1px 6px">VALID</span></td>
+            <td class="mono" style="font-size:11px">580 B</td>
+            <td><span class="mono" style="font-size:10.5px;color:var(--dim)" title="SHA-256: 9b32e18c01ab23cd45ef67ab89cd01ef23ab45cd67ef89ab01cd23ef45ab67cd">9b32e18c…</span></td>
+            <td class="mono" style="font-size:10.5px;color:var(--dim)">Baru saja</td>
+            <td class="col-act" style="text-align:center">
+              <button type="button" class="btn btn-ghost btn-xs" onclick="showToast('Integritas SSH keys valid sesuai baseline.', true)" title="Validkan baseline berkas ini" style="font-size:10.5px;padding:2px 8px">Validkan</button>
+            </td>
+          </tr>
+          <tr>
+            <td><code class="mono" style="font-size:11.5px;color:var(--text-bright);font-weight:600">/etc/systemd/system/</code></td>
+            <td><span class="badge badge-muted" style="font-size:9.5px;padding:1px 6px">Sistem (Bawaan)</span></td>
+            <td class="col-center-cell"><span class="badge badge-up" style="font-size:9.5px;padding:1px 6px">VALID</span></td>
+            <td class="mono" style="font-size:11px">Direktori</td>
+            <td><span class="mono" style="font-size:10.5px;color:var(--dim)">18 unit terverifikasi</span></td>
+            <td class="mono" style="font-size:10.5px;color:var(--dim)">Baru saja</td>
+            <td class="col-act" style="text-align:center">
+              <button type="button" class="btn btn-ghost btn-xs" onclick="showToast('Integritas unit systemd valid sesuai baseline.', true)" title="Validkan baseline berkas ini" style="font-size:10.5px;padding:2px 8px">Validkan</button>
+            </td>
+          </tr>
+          <tr>
+            <td><code class="mono" style="font-size:11.5px;color:var(--text-bright);font-weight:600">/etc/crontab</code></td>
+            <td><span class="badge badge-muted" style="font-size:9.5px;padding:1px 6px">Sistem (Bawaan)</span></td>
+            <td class="col-center-cell"><span class="badge badge-up" style="font-size:9.5px;padding:1px 6px">VALID</span></td>
+            <td class="mono" style="font-size:11px">1.1 KB</td>
+            <td><span class="mono" style="font-size:10.5px;color:var(--dim)" title="SHA-256: 5c7018fa92be34cd56ea78bc90de12bc34de56fa78bc90de12bc34de56fa78bc">5c7018fa…</span></td>
+            <td class="mono" style="font-size:10.5px;color:var(--dim)">Baru saja</td>
+            <td class="col-act" style="text-align:center">
+              <button type="button" class="btn btn-ghost btn-xs" onclick="showToast('Integritas /etc/crontab valid sesuai baseline.', true)" title="Validkan baseline berkas ini" style="font-size:10.5px;padding:2px 8px">Validkan</button>
+            </td>
+          </tr>
+          <tr>
+            <td><code class="mono" style="font-size:11.5px;color:var(--blue);font-weight:600">/var/www/html/</code></td>
+            <td><span class="badge badge-info" style="font-size:9.5px;padding:1px 6px">Kustom Operator</span></td>
+            <td class="col-center-cell"><span class="badge badge-up" style="font-size:9.5px;padding:1px 6px">VALID</span></td>
+            <td class="mono" style="font-size:11px">Folder (L1)</td>
+            <td><span class="mono" style="font-size:10.5px;color:var(--dim)">4 berkas terverifikasi</span></td>
+            <td class="mono" style="font-size:10.5px;color:var(--dim)">Baru saja</td>
+            <td class="col-act" style="text-align:center">
+              <div style="display:inline-flex;gap:4px">
+                <button type="button" class="btn btn-ghost btn-xs" onclick="showToast('Integritas /var/www/html valid sesuai baseline.', true)" title="Validkan baseline berkas ini" style="font-size:10.5px;padding:2px 8px">Validkan</button>
+                <button type="button" class="btn btn-ghost btn-xs" onclick="showToast('Jalur kustom dihapus dari pengawasan.', true)" title="Hapus jalur ini dari pengawasan" style="font-size:10.5px;padding:2px 6px;color:var(--red)">&times;</button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Kartu 2: Riwayat Kejadian Perubahan (FIM Events) -->
+  <div class="card" style="margin-top:14px">
+    <div class="card-header" style="align-items:center;justify-content:space-between">
+      <div>
+        <h3 style="margin:0">Riwayat Kejadian Perubahan (FIM Events)</h3>
+        <span style="font-size:12px;color:var(--dim)">Log kronologis deteksi modifikasi berkas, perubahan hak akses, atau berkas baru</span>
+      </div>
+      <div>
+        <span class="noc-head-badge noc-head-badge-muted" id="fim-events-badge">Audit log aktif</span>
+      </div>
+    </div>
+    <div class="table-responsive" style="overflow-x:auto">
+      <table id="tbl-fim-events" class="noc-table-compact" style="width:100%">
+        <thead>
+          <tr>
+            <th style="width:120px" title="Waktu kejadian terdeteksi oleh agen">Waktu</th>
+            <th title="Jalur berkas yang terdampak perubahan">Jalur</th>
+            <th style="width:170px" title="Jenis kejadian integritas">Kejadian</th>
+            <th class="col-center-cell" style="width:100px" title="Tingkat keparahan dampak kejadian">Tingkat</th>
+            <th title="Rincian perubahan ukuran, permission, atau hash">Rincian</th>
+            <th class="col-fixed-cell col-act" style="text-align:center;width:110px">Tindakan</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td colspan="6" class="empty-msg" style="text-align:center;padding:18px 12px;color:var(--dim)">
+              Belum ada modifikasi berkas yang terdeteksi. Seluruh integritas berkas sistem dan kustom cocok dengan baseline.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 </div>
 
 <div class="tab-body" id="tab-layanan" hidden>
@@ -4429,6 +4595,65 @@ div[style*="position: fixed"] .card {
   </div>
 </div>
 
+<!-- Modal: Tambah Jalur Pantau Integritas (FIM) -->
+<div id="add-fim-path-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:100005;align-items:center;justify-content:center;backdrop-filter:blur(3px);padding:16px" onclick="if(event.target===this)closeAddFimPathModal()">
+  <div class="card" style="width:100%;max-width:480px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:22px;box-shadow:0 20px 48px rgba(0,0,0,0.8);color:var(--text)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <h3 style="margin:0;font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span>Tambah Jalur Pantau Integritas</span>
+      </h3>
+      <button type="button" class="btn btn-ghost btn-sm modal-close" onclick="closeAddFimPathModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer" aria-label="Tutup">&times;</button>
+    </div>
+
+    <p style="font-size:12.5px;color:var(--dim);margin:0 0 16px 0;line-height:1.5">
+      Tentukan berkas konfigurasi kritis atau direktori aplikasi yang ingin diawasi integritasnya secara berkala oleh agen klien.
+    </p>
+
+    <form id="add-fim-path-form" data-no-loading onsubmit="event.preventDefault(); showToast('Jalur pantau baru berhasil ditambahkan ke daftar pengawasan.', true); closeAddFimPathModal();">
+      <div style="margin-bottom:14px">
+        <label for="fim-path-input" style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text)">Jalur Berkas / Direktori (Path Absolut Linux): <span style="color:#ef4444">*</span></label>
+        <input type="text" id="fim-path-input" required placeholder="Contoh: /var/www/html/ atau /etc/nginx/nginx.conf" style="width:100%;padding:8px 12px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:monospace;box-sizing:border-box">
+      </div>
+
+      <div style="margin-bottom:14px">
+        <label for="fim-scope-select" style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text)">Lingkup Pemantauan:</label>
+        <select id="fim-scope-select" style="width:100%;padding:8px 12px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;box-sizing:border-box">
+          <option value="single_file">Berkas Tunggal (Pemeriksaan Hash SHA-256 &amp; Permissions)</option>
+          <option value="dir_shallow">Direktori — Non-Rekursif (Hanya berkas langsung dalam folder)</option>
+          <option value="dir_deep">Direktori — Rekursif Terbatas (Maksimal kedalaman 2 level)</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom:18px">
+        <label style="display:block;font-size:12px;font-weight:600;margin-bottom:8px;color:var(--text)">Parameter Pengawasan Agen:</label>
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:12px;color:var(--text)">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+            <input type="checkbox" checked disabled>
+            <span>Verifikasi Checksum SHA-256 (Deteksi Modifikasi Konten)</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+            <input type="checkbox" checked>
+            <span>Pengawasan Hak Akses &amp; Kepemilikan (chmod &amp; chown)</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+            <input type="checkbox" checked>
+            <span>Deteksi Pembuatan &amp; Penghapusan Berkas Baru</span>
+          </label>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;gap:10px;align-items:center">
+        <button type="button" class="btn btn-ghost btn-sm" onclick="closeAddFimPathModal()">Batal</button>
+        <button type="submit" class="btn btn-primary btn-sm" id="fim-submit-btn" style="display:inline-flex;align-items:center;gap:6px">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+          <span>Simpan Jalur</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- Modal Mode Pemeliharaan -->
 <div id="maint-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(2px);padding:16px" onclick="if(event.target===this)closeMaintenanceModal()">
   <div class="card" style="width:100%;max-width:480px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:22px;box-shadow:0 16px 40px rgba(0,0,0,0.7);color:var(--text)">
@@ -5884,6 +6109,8 @@ document.addEventListener('click', e => {
   if (m5 && e.target === m5) m5.style.display = 'none';
   const m6 = document.getElementById('add-ssl-path-modal');
   if (m6 && e.target === m6) m6.style.display = 'none';
+  const mFim = document.getElementById('add-fim-path-modal');
+  if (mFim && e.target === mFim) mFim.style.display = 'none';
   const m7 = document.getElementById('term-close-confirm-modal');
   if (m7 && e.target === m7) m7.style.display = 'none';
   const m8 = document.getElementById('term-lock-confirm-modal');
@@ -6429,6 +6656,21 @@ function openAddSslPathModal() {
 }
 function closeAddSslPathModal() {
   const m = document.getElementById('add-ssl-path-modal');
+  if (m) m.style.display = 'none';
+}
+
+// === Modal: Tambah Jalur Integritas (FIM) ===
+function openAddFimPathModal() {
+  if (typeof IS_ONLINE !== 'undefined' && !IS_ONLINE) {
+    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+    showToast(isEn ? 'Server is offline. Actions disabled.' : 'Server sedang offline. Aksi dinonaktifkan.', false);
+    return;
+  }
+  const m = document.getElementById('add-fim-path-modal');
+  if (m) m.style.display = 'flex';
+}
+function closeAddFimPathModal() {
+  const m = document.getElementById('add-fim-path-modal');
   if (m) m.style.display = 'none';
 }
 
@@ -8705,6 +8947,7 @@ document.addEventListener('keydown', (e) => {
     closeTerminalCloseConfirmModal();
     closeTerminalLockConfirmModal();
     closeAptTaskModal();
+    closeAddFimPathModal();
     const term = getTerm();
     if (term && term.windowEl && term.windowEl.classList.contains('is-fullscreen')) {
       term.toggleFullscreen();
@@ -9702,6 +9945,13 @@ function updateAllOfflineGuards(online) {
     btnAddSsl.style.opacity = !online ? '0.35' : '';
     btnAddSsl.style.cursor = !online ? 'not-allowed' : '';
     if (!online) btnAddSsl.title = offTitle;
+  }
+  const btnAddFim = document.getElementById('btn-add-fim-path-modal');
+  if (btnAddFim) {
+    btnAddFim.disabled = !online;
+    btnAddFim.style.opacity = !online ? '0.35' : '';
+    btnAddFim.style.cursor = !online ? 'not-allowed' : '';
+    if (!online) btnAddFim.title = offTitle;
   }
   document.querySelectorAll('#ssl-paths-table button, #ssl-paths-table input[type="submit"]').forEach(btn => {
     btn.disabled = !online;
