@@ -354,6 +354,31 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.196
+
+- **Tipe Rilis:** Implementasi Penuh Mesin Telemetri Integritas File FIM, Eksekusi Agen, Model Database, dan Audit Log Insiden (*Full Implementation of File Integrity Monitoring Telemetry Engine, Agent Execution, DB Models & Incident Action History Integration*)
+- **Fokus Utama:** Menyelesaikan Tahap 2 integrasi FIM dari lapisan database, pembungkus aman (*wrapper*), agen klien (*client agent*), ingestion server, rendering ganda (*dual-render synchronization*), hingga perekaman audit pada kartu Riwayat Tindakan di tab Insiden:
+  1. **Skema Database & Model ORM (FIMPath & FIMEvent):**
+     - Menambahkan model `FIMPath` untuk menyimpan konfigurasi jalur pemantauan, acuan baseline SHA-256, ukuran, hak akses, kepemilikan, dan status integritas.
+     - Menambahkan model `FIMEvent` untuk mencatat riwayat kronologis anomali (MODIFIED, DELETED, CREATED) lengkap dengan timestamp dan tingkat keparahan (*severity*).
+     - Menambahkan fungsi migrasi otomatis `migrate_fim_system()` yang menginisialisasi 7 jalur sistem bawaan secara otomatis.
+  2. **Pembungkus Aman (*Security Wrapper*) `pantau-file`:**
+     - Menambahkan aksi `hash` pada `/usr/local/sbin/pantau-file` untuk membaca file sistem berprivilese tinggi (`/etc/shadow`, `/etc/sudoers`) menggunakan *least-privilege sudo NOPASSWD* secara aman tanpa mengekspos shell.
+  3. **Mesin Telemetri Agen Klien (`agent_pantau.py`):**
+     - Menambahkan fungsi `collect_fim()` dengan *caching* 60 detik dan opsi `force=True`.
+     - Menambahkan inspeksi file dan direktori (`_inspect_fim_target`), manajemen file acuan lokal (`/opt/pantau/agent/fim_baseline.json`), serta penanganan file kustom (`fim_custom_paths.json`).
+     - Menambahkan penangan aksi perintah mitigasi OTA: `fim_path_add`, `fim_path_remove`, `fim_scan`, dan `fim_rebaseline`.
+     - Mempertahankan prinsip mutlak *zero external dependency* (hanya pustaka standar Python: `hashlib`, `os`, `stat`, `time`, `json`, `subprocess`).
+  4. **API Endpoints & Auditing Riwayat Tindakan:**
+     - Menyediakan endpoint operasional: `POST /servers/{sid}/fim/scan`, `rebaseline`, `add-path`, dan `remove-path`.
+     - Setiap tindakan operator dienqueue ke antrean perintah agen (`_enqueue_mitigation`) dan dicatat ke `audit_logs`, serta terintegrasi langsung ke pemetaan label `server_service.py` sehingga otomatis tampil pada kartu Riwayat Tindakan di tab Insiden.
+  5. **Sinkronisasi Render Ganda (*Dual-Render Synchronization*):**
+     - Mengintegrasikan loop Jinja untuk render awal sisi server pada tabel `#tbl-fim-paths` dan `#tbl-fim-events`.
+     - Menyediakan fungsi JavaScript `renderFim(paths, events)` yang terintegrasi pada interval `pollSystem()` (5 detik) untuk pembaruan live tanpa reload.
+     - Menyediakan fungsi kontrol: `scanFimPath`, `rebaselineFimPath`, `removeFimPath`, `copyFimChecksum`, dan modal tambah jalur interaktif.
+  6. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.196` pada seluruh 7 berkas repositori.
+
 ## Versi 4.8.195
 
 - **Tipe Rilis:** Penyempurnaan Tata Letak Proporsional Kolom Checksum SHA-256, Standardisasi Menu Aksi Dropdown, dan Purifikasi Terminologi FIM (*FIM Table Proportion Optimization, Action Dropdown Standardization & Terminology Purification*)

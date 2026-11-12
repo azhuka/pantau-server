@@ -2637,8 +2637,16 @@ div[style*="position: fixed"] .card {
         <span style="font-size:12px;color:var(--dim)">Pemantauan perubahan konten, hak akses, dan checksum file sistem</span>
       </div>
       <div style="display:flex;gap:8px;align-items:center">
-        <span class="noc-head-badge noc-head-badge-info" id="fim-count-badge">8 jalur dipantau</span>
-        <span class="noc-head-badge noc-head-badge-success" id="fim-status-badge">Semua normal</span>
+        {% set fim_total = fim_paths|length if fim_paths else 0 %}
+        {% set fim_changed = (fim_paths | selectattr('status', 'equalto', 'CHANGED') | list | length) if fim_paths else 0 %}
+        {% set fim_missing = (fim_paths | selectattr('status', 'equalto', 'MISSING') | list | length) if fim_paths else 0 %}
+        {% set fim_err = (fim_paths | selectattr('status', 'equalto', 'ERROR') | list | length) if fim_paths else 0 %}
+        <span class="noc-head-badge noc-head-badge-info" id="fim-count-badge">{{ fim_total }} jalur dipantau</span>
+        {% if fim_changed > 0 or fim_missing > 0 or fim_err > 0 %}
+          <span class="noc-head-badge noc-head-badge-danger" id="fim-status-badge">{{ fim_changed + fim_missing + fim_err }} anomali terdeteksi</span>
+        {% else %}
+          <span class="noc-head-badge noc-head-badge-success" id="fim-status-badge">Semua normal</span>
+        {% endif %}
         {% if user.is_master_admin() or user.is_operator() %}
         <button class="btn btn-primary btn-sm" id="btn-add-fim-path-modal" onclick="openAddFimPathModal()" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Tambah file atau direktori kustom untuk dipantau" aria-label="Tambah Jalur"{% endif %}>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
@@ -2661,218 +2669,73 @@ div[style*="position: fixed"] .card {
           </tr>
         </thead>
         <tbody>
+          {% for fp in (fim_paths if fim_paths else []) %}
           <tr>
-            <td class="col-fixed-cell"><code class="mono" style="font-size:11.5px;color:var(--text-bright);font-weight:600">/etc/sudoers</code></td>
-            <td class="col-fixed-cell"><span class="badge badge-muted" style="font-size:9.5px;padding:1px 6px">Sistem</span></td>
-            <td class="col-fixed-cell col-center-cell"><span class="badge badge-up" style="font-size:9.5px;padding:1px 6px">VALID</span></td>
-            <td class="col-fixed-cell col-num-cell mono" style="font-size:11px">1.8 KB</td>
-            <td class="col-hero-cell"><span class="mono" style="font-size:11px;color:var(--text-bright);cursor:pointer;white-space:nowrap" title="Klik untuk menyalin Checksum SHA-256 lengkap" onclick="navigator.clipboard.writeText('7a8f9c1b2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a'); showToast('Checksum /etc/sudoers disalin.', true)">7a8f9c1b2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a</span></td>
-            <td class="col-fixed-cell mono" style="font-size:10.5px;color:var(--dim)">Baru saja</td>
+            <td class="col-fixed-cell"><code class="mono" style="font-size:11.5px;color:{% if fp.category == 'custom' %}var(--blue){% else %}var(--text-bright){% endif %};font-weight:600">{{ fp.path }}</code></td>
+            <td class="col-fixed-cell">
+              {% if fp.category == 'custom' %}
+                <span class="badge badge-info" style="font-size:9.5px;padding:1px 6px">Kustom</span>
+              {% else %}
+                <span class="badge badge-muted" style="font-size:9.5px;padding:1px 6px">Sistem</span>
+              {% endif %}
+            </td>
+            <td class="col-fixed-cell col-center-cell">
+              {% if fp.status == 'VALID' %}
+                <span class="badge badge-up" style="font-size:9.5px;padding:1px 6px">VALID</span>
+              {% elif fp.status == 'CHANGED' %}
+                <span class="badge badge-danger" style="font-size:9.5px;padding:1px 6px">DIUBAH</span>
+              {% elif fp.status == 'MISSING' %}
+                <span class="badge badge-warn" style="font-size:9.5px;padding:1px 6px">HILANG</span>
+              {% else %}
+                <span class="badge badge-muted" style="font-size:9.5px;padding:1px 6px">{{ fp.status }}</span>
+              {% endif %}
+            </td>
+            <td class="col-fixed-cell col-num-cell mono" style="font-size:11px">{{ fp.size_human or '—' }}</td>
+            <td class="col-hero-cell">
+              {% if fp.sha256_hash and fp.sha256_hash != '-' and fp.sha256_hash|length == 64 %}
+                <span class="mono" style="font-size:11px;color:var(--text-bright);cursor:pointer;white-space:nowrap" title="Klik untuk menyalin Checksum SHA-256 lengkap" onclick="copyFimChecksum('{{ fp.sha256_hash }}', '{{ fp.path }}')">{{ fp.sha256_hash }}</span>
+              {% else %}
+                <span class="mono" style="font-size:11px;color:var(--dim)">{{ fp.sha256_hash or '—' }}</span>
+              {% endif %}
+            </td>
+            <td class="col-fixed-cell mono" style="font-size:10.5px;color:var(--dim)">
+              {{ fp.last_checked_at.strftime('%H:%M:%S') if fp.last_checked_at else 'Belum dipindai' }}
+            </td>
             <td class="col-fixed-cell col-act" style="text-align:center">
               <details class="noc-act-dropdown">
                 <summary class="btn btn-xs btn-ghost btn-noc-act">Aksi ▾</summary>
                 <div class="noc-act-dropdown-menu">
-                  <button type="button" class="noc-act-dropdown-item text-primary" onclick="showToast('Pemeriksaan /etc/sudoers selesai. Status valid.', true)">
+                  <button type="button" class="noc-act-dropdown-item text-primary" onclick="scanFimPath('{{ fp.path }}', this)">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
                     <span>Pindai Sekarang</span>
                   </button>
-                  <button type="button" class="noc-act-dropdown-item" onclick="navigator.clipboard.writeText('7a8f9c1b2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a'); showToast('Checksum /etc/sudoers disalin.', true)">
+                  {% if fp.sha256_hash and fp.sha256_hash != '-' and fp.sha256_hash|length == 64 %}
+                  <button type="button" class="noc-act-dropdown-item" onclick="copyFimChecksum('{{ fp.sha256_hash }}', '{{ fp.path }}')">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                     <span>Salin Checksum</span>
                   </button>
-                  <button type="button" class="noc-act-dropdown-item" onclick="showToast('Acuan baseline /etc/sudoers diperbarui.', true)">
+                  {% endif %}
+                  <button type="button" class="noc-act-dropdown-item" onclick="rebaselineFimPath('{{ fp.path }}', this)">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
                     <span>Perbarui Acuan</span>
                   </button>
-                </div>
-              </details>
-            </td>
-          </tr>
-          <tr>
-            <td class="col-fixed-cell"><code class="mono" style="font-size:11.5px;color:var(--text-bright);font-weight:600">/etc/passwd</code></td>
-            <td class="col-fixed-cell"><span class="badge badge-muted" style="font-size:9.5px;padding:1px 6px">Sistem</span></td>
-            <td class="col-fixed-cell col-center-cell"><span class="badge badge-up" style="font-size:9.5px;padding:1px 6px">VALID</span></td>
-            <td class="col-fixed-cell col-num-cell mono" style="font-size:11px">2.4 KB</td>
-            <td class="col-hero-cell"><span class="mono" style="font-size:11px;color:var(--text-bright);cursor:pointer;white-space:nowrap" title="Klik untuk menyalin Checksum SHA-256 lengkap" onclick="navigator.clipboard.writeText('c3e419aa5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e'); showToast('Checksum /etc/passwd disalin.', true)">c3e419aa5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e</span></td>
-            <td class="col-fixed-cell mono" style="font-size:10.5px;color:var(--dim)">Baru saja</td>
-            <td class="col-fixed-cell col-act" style="text-align:center">
-              <details class="noc-act-dropdown">
-                <summary class="btn btn-xs btn-ghost btn-noc-act">Aksi ▾</summary>
-                <div class="noc-act-dropdown-menu">
-                  <button type="button" class="noc-act-dropdown-item text-primary" onclick="showToast('Pemeriksaan /etc/passwd selesai. Status valid.', true)">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
-                    <span>Pindai Sekarang</span>
-                  </button>
-                  <button type="button" class="noc-act-dropdown-item" onclick="navigator.clipboard.writeText('c3e419aa5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e'); showToast('Checksum /etc/passwd disalin.', true)">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                    <span>Salin Checksum</span>
-                  </button>
-                  <button type="button" class="noc-act-dropdown-item" onclick="showToast('Acuan baseline /etc/passwd diperbarui.', true)">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-                    <span>Perbarui Acuan</span>
-                  </button>
-                </div>
-              </details>
-            </td>
-          </tr>
-          <tr>
-            <td class="col-fixed-cell"><code class="mono" style="font-size:11.5px;color:var(--text-bright);font-weight:600">/etc/shadow</code></td>
-            <td class="col-fixed-cell"><span class="badge badge-muted" style="font-size:9.5px;padding:1px 6px">Sistem</span></td>
-            <td class="col-fixed-cell col-center-cell"><span class="badge badge-up" style="font-size:9.5px;padding:1px 6px">VALID</span></td>
-            <td class="col-fixed-cell col-num-cell mono" style="font-size:11px">1.2 KB</td>
-            <td class="col-hero-cell"><span class="mono" style="font-size:11px;color:var(--text-bright);cursor:pointer;white-space:nowrap" title="Klik untuk menyalin Checksum SHA-256 lengkap" onclick="navigator.clipboard.writeText('87b5d1e23f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c'); showToast('Checksum /etc/shadow disalin.', true)">87b5d1e23f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c</span></td>
-            <td class="col-fixed-cell mono" style="font-size:10.5px;color:var(--dim)">Baru saja</td>
-            <td class="col-fixed-cell col-act" style="text-align:center">
-              <details class="noc-act-dropdown">
-                <summary class="btn btn-xs btn-ghost btn-noc-act">Aksi ▾</summary>
-                <div class="noc-act-dropdown-menu">
-                  <button type="button" class="noc-act-dropdown-item text-primary" onclick="showToast('Pemeriksaan /etc/shadow selesai. Status valid.', true)">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
-                    <span>Pindai Sekarang</span>
-                  </button>
-                  <button type="button" class="noc-act-dropdown-item" onclick="navigator.clipboard.writeText('87b5d1e23f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c'); showToast('Checksum /etc/shadow disalin.', true)">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                    <span>Salin Checksum</span>
-                  </button>
-                  <button type="button" class="noc-act-dropdown-item" onclick="showToast('Acuan baseline /etc/shadow diperbarui.', true)">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-                    <span>Perbarui Acuan</span>
-                  </button>
-                </div>
-              </details>
-            </td>
-          </tr>
-          <tr>
-            <td class="col-fixed-cell"><code class="mono" style="font-size:11.5px;color:var(--text-bright);font-weight:600">/etc/ssh/sshd_config</code></td>
-            <td class="col-fixed-cell"><span class="badge badge-muted" style="font-size:9.5px;padding:1px 6px">Sistem</span></td>
-            <td class="col-fixed-cell col-center-cell"><span class="badge badge-up" style="font-size:9.5px;padding:1px 6px">VALID</span></td>
-            <td class="col-fixed-cell col-num-cell mono" style="font-size:11px">3.6 KB</td>
-            <td class="col-hero-cell"><span class="mono" style="font-size:11px;color:var(--text-bright);cursor:pointer;white-space:nowrap" title="Klik untuk menyalin Checksum SHA-256 lengkap" onclick="navigator.clipboard.writeText('41fa90de12bc34de56fa78bc90de12bc34de56fa78bc90de12bc34de56fa78bc'); showToast('Checksum sshd_config disalin.', true)">41fa90de12bc34de56fa78bc90de12bc34de56fa78bc90de12bc34de56fa78bc</span></td>
-            <td class="col-fixed-cell mono" style="font-size:10.5px;color:var(--dim)">Baru saja</td>
-            <td class="col-fixed-cell col-act" style="text-align:center">
-              <details class="noc-act-dropdown">
-                <summary class="btn btn-xs btn-ghost btn-noc-act">Aksi ▾</summary>
-                <div class="noc-act-dropdown-menu">
-                  <button type="button" class="noc-act-dropdown-item text-primary" onclick="showToast('Pemeriksaan sshd_config selesai. Status valid.', true)">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
-                    <span>Pindai Sekarang</span>
-                  </button>
-                  <button type="button" class="noc-act-dropdown-item" onclick="navigator.clipboard.writeText('41fa90de12bc34de56fa78bc90de12bc34de56fa78bc90de12bc34de56fa78bc'); showToast('Checksum sshd_config disalin.', true)">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                    <span>Salin Checksum</span>
-                  </button>
-                  <button type="button" class="noc-act-dropdown-item" onclick="showToast('Acuan baseline sshd_config diperbarui.', true)">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-                    <span>Perbarui Acuan</span>
-                  </button>
-                </div>
-              </details>
-            </td>
-          </tr>
-          <tr>
-            <td class="col-fixed-cell"><code class="mono" style="font-size:11.5px;color:var(--text-bright);font-weight:600">/root/.ssh/authorized_keys</code></td>
-            <td class="col-fixed-cell"><span class="badge badge-muted" style="font-size:9.5px;padding:1px 6px">Sistem</span></td>
-            <td class="col-fixed-cell col-center-cell"><span class="badge badge-up" style="font-size:9.5px;padding:1px 6px">VALID</span></td>
-            <td class="col-fixed-cell col-num-cell mono" style="font-size:11px">580 B</td>
-            <td class="col-hero-cell"><span class="mono" style="font-size:11px;color:var(--text-bright);cursor:pointer;white-space:nowrap" title="Klik untuk menyalin Checksum SHA-256 lengkap" onclick="navigator.clipboard.writeText('9b32e18c01ab23cd45ef67ab89cd01ef23ab45cd67ef89ab01cd23ef45ab67cd'); showToast('Checksum authorized_keys disalin.', true)">9b32e18c01ab23cd45ef67ab89cd01ef23ab45cd67ef89ab01cd23ef45ab67cd</span></td>
-            <td class="col-fixed-cell mono" style="font-size:10.5px;color:var(--dim)">Baru saja</td>
-            <td class="col-fixed-cell col-act" style="text-align:center">
-              <details class="noc-act-dropdown">
-                <summary class="btn btn-xs btn-ghost btn-noc-act">Aksi ▾</summary>
-                <div class="noc-act-dropdown-menu">
-                  <button type="button" class="noc-act-dropdown-item text-primary" onclick="showToast('Pemeriksaan SSH keys selesai. Status valid.', true)">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
-                    <span>Pindai Sekarang</span>
-                  </button>
-                  <button type="button" class="noc-act-dropdown-item" onclick="navigator.clipboard.writeText('9b32e18c01ab23cd45ef67ab89cd01ef23ab45cd67ef89ab01cd23ef45ab67cd'); showToast('Checksum authorized_keys disalin.', true)">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                    <span>Salin Checksum</span>
-                  </button>
-                  <button type="button" class="noc-act-dropdown-item" onclick="showToast('Acuan baseline authorized_keys diperbarui.', true)">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-                    <span>Perbarui Acuan</span>
-                  </button>
-                </div>
-              </details>
-            </td>
-          </tr>
-          <tr>
-            <td class="col-fixed-cell"><code class="mono" style="font-size:11.5px;color:var(--text-bright);font-weight:600">/etc/systemd/system/</code></td>
-            <td class="col-fixed-cell"><span class="badge badge-muted" style="font-size:9.5px;padding:1px 6px">Sistem</span></td>
-            <td class="col-fixed-cell col-center-cell"><span class="badge badge-up" style="font-size:9.5px;padding:1px 6px">VALID</span></td>
-            <td class="col-fixed-cell col-num-cell mono" style="font-size:11px">Direktori</td>
-            <td class="col-hero-cell"><span class="mono" style="font-size:11px;color:var(--dim)">18 file terverifikasi (rekursif)</span></td>
-            <td class="col-fixed-cell mono" style="font-size:10.5px;color:var(--dim)">Baru saja</td>
-            <td class="col-fixed-cell col-act" style="text-align:center">
-              <details class="noc-act-dropdown">
-                <summary class="btn btn-xs btn-ghost btn-noc-act">Aksi ▾</summary>
-                <div class="noc-act-dropdown-menu">
-                  <button type="button" class="noc-act-dropdown-item text-primary" onclick="showToast('Pemeriksaan unit systemd selesai. Status valid.', true)">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
-                    <span>Pindai Sekarang</span>
-                  </button>
-                  <button type="button" class="noc-act-dropdown-item" onclick="showToast('Acuan baseline direktori systemd diperbarui.', true)">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-                    <span>Perbarui Acuan</span>
-                  </button>
-                </div>
-              </details>
-            </td>
-          </tr>
-          <tr>
-            <td class="col-fixed-cell"><code class="mono" style="font-size:11.5px;color:var(--text-bright);font-weight:600">/etc/crontab</code></td>
-            <td class="col-fixed-cell"><span class="badge badge-muted" style="font-size:9.5px;padding:1px 6px">Sistem</span></td>
-            <td class="col-fixed-cell col-center-cell"><span class="badge badge-up" style="font-size:9.5px;padding:1px 6px">VALID</span></td>
-            <td class="col-fixed-cell col-num-cell mono" style="font-size:11px">1.1 KB</td>
-            <td class="col-hero-cell"><span class="mono" style="font-size:11px;color:var(--text-bright);cursor:pointer;white-space:nowrap" title="Klik untuk menyalin Checksum SHA-256 lengkap" onclick="navigator.clipboard.writeText('5c7018fa92be34cd56ea78bc90de12bc34de56fa78bc90de12bc34de56fa78bc'); showToast('Checksum /etc/crontab disalin.', true)">5c7018fa92be34cd56ea78bc90de12bc34de56fa78bc90de12bc34de56fa78bc</span></td>
-            <td class="col-fixed-cell mono" style="font-size:10.5px;color:var(--dim)">Baru saja</td>
-            <td class="col-fixed-cell col-act" style="text-align:center">
-              <details class="noc-act-dropdown">
-                <summary class="btn btn-xs btn-ghost btn-noc-act">Aksi ▾</summary>
-                <div class="noc-act-dropdown-menu">
-                  <button type="button" class="noc-act-dropdown-item text-primary" onclick="showToast('Pemeriksaan /etc/crontab selesai. Status valid.', true)">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
-                    <span>Pindai Sekarang</span>
-                  </button>
-                  <button type="button" class="noc-act-dropdown-item" onclick="navigator.clipboard.writeText('5c7018fa92be34cd56ea78bc90de12bc34de56fa78bc90de12bc34de56fa78bc'); showToast('Checksum /etc/crontab disalin.', true)">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                    <span>Salin Checksum</span>
-                  </button>
-                  <button type="button" class="noc-act-dropdown-item" onclick="showToast('Acuan baseline /etc/crontab diperbarui.', true)">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-                    <span>Perbarui Acuan</span>
-                  </button>
-                </div>
-              </details>
-            </td>
-          </tr>
-          <tr>
-            <td class="col-fixed-cell"><code class="mono" style="font-size:11.5px;color:var(--blue);font-weight:600">/var/www/html/</code></td>
-            <td class="col-fixed-cell"><span class="badge badge-info" style="font-size:9.5px;padding:1px 6px">Kustom</span></td>
-            <td class="col-fixed-cell col-center-cell"><span class="badge badge-up" style="font-size:9.5px;padding:1px 6px">VALID</span></td>
-            <td class="col-fixed-cell col-num-cell mono" style="font-size:11px">Folder (L1)</td>
-            <td class="col-hero-cell"><span class="mono" style="font-size:11px;color:var(--dim)">4 file terverifikasi</span></td>
-            <td class="col-fixed-cell mono" style="font-size:10.5px;color:var(--dim)">Baru saja</td>
-            <td class="col-fixed-cell col-act" style="text-align:center">
-              <details class="noc-act-dropdown">
-                <summary class="btn btn-xs btn-ghost btn-noc-act">Aksi ▾</summary>
-                <div class="noc-act-dropdown-menu">
-                  <button type="button" class="noc-act-dropdown-item text-primary" onclick="showToast('Pemeriksaan /var/www/html/ selesai. Status valid.', true)">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
-                    <span>Pindai Sekarang</span>
-                  </button>
-                  <button type="button" class="noc-act-dropdown-item" onclick="showToast('Acuan baseline /var/www/html/ diperbarui.', true)">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-                    <span>Perbarui Acuan</span>
-                  </button>
-                  <button type="button" class="noc-act-dropdown-item danger" onclick="showToast('Jalur kustom dihapus dari pemantauan.', true)">
+                  {% if fp.category == 'custom' %}
+                  <button type="button" class="noc-act-dropdown-item danger" onclick="removeFimPath('{{ fp.path }}', this)">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                     <span>Hapus Jalur</span>
                   </button>
+                  {% endif %}
                 </div>
               </details>
             </td>
           </tr>
+          {% else %}
+          <tr>
+            <td colspan="7" class="empty-msg" style="text-align:center;padding:20px 12px;color:var(--dim)">
+              Belum ada jalur pemantauan integritas.
+            </td>
+          </tr>
+          {% endfor %}
         </tbody>
       </table>
     </div>
@@ -2886,7 +2749,7 @@ div[style*="position: fixed"] .card {
         <span style="font-size:12px;color:var(--dim)">Log kronologis deteksi modifikasi file, hak akses, dan integritas</span>
       </div>
       <div>
-        <span class="noc-head-badge noc-head-badge-muted" id="fim-events-badge">Audit log aktif</span>
+        <span class="noc-head-badge noc-head-badge-muted" id="fim-events-badge">{{ (fim_events|length) if fim_events else 0 }} log kejadian</span>
       </div>
     </div>
     <div class="table-responsive" style="overflow-x:auto">
@@ -2902,11 +2765,41 @@ div[style*="position: fixed"] .card {
           </tr>
         </thead>
         <tbody>
+          {% for fe in (fim_events if fim_events else []) %}
+          <tr>
+            <td class="col-fixed-cell mono" style="font-size:11px;color:var(--dim);white-space:nowrap">
+              {{ fe.detected_at.strftime('%Y-%m-%d %H:%M:%S') if fe.detected_at else '—' }}
+            </td>
+            <td class="col-fixed-cell"><code class="mono" style="font-size:11px;color:var(--text-bright);font-weight:600">{{ fe.path }}</code></td>
+            <td class="col-fixed-cell">
+              <span class="badge {% if fe.event_type == 'MODIFIED' %}badge-danger{% elif fe.event_type == 'DELETED' %}badge-warn{% elif fe.event_type == 'CREATED' %}badge-info{% else %}badge-muted{% endif %}" style="font-size:9.5px;padding:1px 6px">
+                {{ fe.event_type }}
+              </span>
+            </td>
+            <td class="col-fixed-cell col-center-cell">
+              {% if fe.severity == 'danger' %}
+                <span class="badge badge-danger" style="font-size:9.5px;padding:1px 6px">BAHAYA</span>
+              {% elif fe.severity == 'warning' %}
+                <span class="badge badge-warn" style="font-size:9.5px;padding:1px 6px">PERINGATAN</span>
+              {% else %}
+                <span class="badge badge-info" style="font-size:9.5px;padding:1px 6px">INFO</span>
+              {% endif %}
+            </td>
+            <td class="col-hero-cell mono" style="font-size:11px;color:var(--text)">{{ fe.details or '—' }}</td>
+            <td class="col-fixed-cell col-act" style="text-align:center">
+              <button type="button" class="btn btn-xs btn-ghost" title="Perbarui acuan baseline ke kondisi ini" onclick="rebaselineFimPath('{{ fe.path }}', this)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                <span>Perbarui</span>
+              </button>
+            </td>
+          </tr>
+          {% else %}
           <tr>
             <td colspan="6" class="empty-msg" style="text-align:center;padding:20px 12px;color:var(--dim)">
               Belum ada perubahan file yang terdeteksi. Seluruh file sistem dan jalur kustom cocok dengan acuan baseline.
             </td>
           </tr>
+          {% endfor %}
         </tbody>
       </table>
     </div>
@@ -4731,15 +4624,15 @@ div[style*="position: fixed"] .card {
       Tentukan file atau direktori yang akan dipantau integritasnya.
     </p>
 
-    <form id="add-fim-path-form" data-no-loading onsubmit="event.preventDefault(); showToast('Jalur baru berhasil ditambahkan ke daftar pemantauan.', true); closeAddFimPathModal();">
+    <form id="add-fim-path-form" data-no-loading onsubmit="submitAddFimPath(event)">
       <div style="margin-bottom:14px">
         <label for="fim-path-input" style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text)">Path File / Direktori: <span style="color:#ef4444">*</span></label>
-        <input type="text" id="fim-path-input" required placeholder="Contoh: /var/www/html/ atau /etc/nginx/nginx.conf" style="width:100%;padding:8px 12px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:monospace;box-sizing:border-box">
+        <input type="text" id="fim-path-input" name="path" required placeholder="Contoh: /var/www/html/ atau /etc/nginx/nginx.conf" style="width:100%;padding:8px 12px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:monospace;box-sizing:border-box">
       </div>
 
       <div style="margin-bottom:14px">
         <label for="fim-scope-select" style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text)">Lingkup Pemantauan:</label>
-        <select id="fim-scope-select" style="width:100%;padding:8px 12px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;box-sizing:border-box">
+        <select id="fim-scope-select" name="scope" style="width:100%;padding:8px 12px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;box-sizing:border-box">
           <option value="single_file">File Tunggal (Pemeriksaan Checksum SHA-256 &amp; Hak Akses)</option>
           <option value="dir_shallow">Direktori — Non-Rekursif (Hanya file langsung dalam folder)</option>
           <option value="dir_deep">Direktori — Rekursif (Maksimal kedalaman 2 level)</option>
@@ -5135,7 +5028,7 @@ function showTab(name) {
     if (typeof probFilter === 'function') probFilter();
     if (typeof filterServerActionHistory === 'function') filterServerActionHistory();
   }
-  if (['akun', 'ports', 'firewall', 'ssl', 'cron', 'perf'].includes(name)) {
+  if (['akun', 'ports', 'firewall', 'ssl', 'cron', 'perf', 'integritas'].includes(name)) {
     if (typeof pollSystem === 'function') pollSystem();
   }
   if (name === 'proses') {
@@ -6793,6 +6686,208 @@ function openAddFimPathModal() {
 function closeAddFimPathModal() {
   const m = document.getElementById('add-fim-path-modal');
   if (m) m.style.display = 'none';
+}
+
+function copyFimChecksum(hash, path) {
+  if (!hash || hash === '-') return;
+  navigator.clipboard.writeText(hash).then(() => {
+    showToast((path ? path + ': ' : '') + 'Checksum SHA-256 disalin ke papan klip.', true);
+  }).catch(() => {
+    showToast('Gagal menyalin checksum.', false);
+  });
+}
+
+async function scanFimPath(path, btn) {
+  if (typeof IS_ONLINE !== 'undefined' && !IS_ONLINE) {
+    showToast('Server sedang offline. Aksi dinonaktifkan.', false);
+    return;
+  }
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
+  const orig = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+  try {
+    const fd = new FormData();
+    fd.append('csrf_token', getCsrf());
+    if (path) fd.append('path', path);
+    const r = await fetch('/servers/' + SID + '/fim/scan', {
+      method: 'POST',
+      body: fd,
+      headers: { 'Accept': 'application/json', 'X-CSRF-Token': getCsrf() }
+    });
+    const res = await r.json().catch(() => ({}));
+    if (r.ok && res.ok !== false) {
+      showToast(res.detail || (isEn ? 'Integrity scan command sent.' : 'Perintah pemindaian integritas dikirim ke agen.'), true);
+      triggerFastPoll();
+      if (typeof pollSystem === 'function') {
+        pollSystem(true);
+        setTimeout(() => pollSystem(true), 1200);
+        setTimeout(() => pollSystem(true), 3000);
+      }
+      if (typeof filterServerActionHistory === 'function') filterServerActionHistory();
+    } else {
+      showToast(res.detail || (isEn ? 'Failed to request integrity scan.' : 'Gagal mengirim permintaan pindai integritas.'), false);
+    }
+  } catch (err) {
+    showToast(isEn ? 'Network error during request.' : 'Terjadi gangguan jaringan saat memproses permintaan.', false);
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = orig; }
+  }
+}
+
+async function rebaselineFimPath(path, btn) {
+  if (typeof IS_ONLINE !== 'undefined' && !IS_ONLINE) {
+    showToast('Server sedang offline. Aksi dinonaktifkan.', false);
+    return;
+  }
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
+  const targetLabel = path || (isEn ? 'All FIM Paths' : 'Seluruh Jalur');
+  const ok = await showConfirmModal({
+    title: isEn ? 'Update Baseline Reference' : 'Perbarui Acuan Baseline',
+    target: targetLabel,
+    message: isEn ? 'Update baseline reference for this path using the latest hash and attributes.' : 'Perbarui acuan baseline untuk jalur ini dengan nilai hash dan atribut terkini yang valid.',
+    btnText: isEn ? 'Update Baseline' : 'Perbarui Acuan',
+    btnClass: 'btn-primary',
+    iconType: 'warning',
+    badge: 'FIM'
+  });
+  if (!ok) return;
+
+  const orig = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+  try {
+    const fd = new FormData();
+    fd.append('csrf_token', getCsrf());
+    if (path) fd.append('path', path);
+    const r = await fetch('/servers/' + SID + '/fim/rebaseline', {
+      method: 'POST',
+      body: fd,
+      headers: { 'Accept': 'application/json', 'X-CSRF-Token': getCsrf() }
+    });
+    const res = await r.json().catch(() => ({}));
+    if (r.ok && res.ok !== false) {
+      showToast(res.detail || (isEn ? 'Baseline updated.' : 'Acuan baseline diperbarui.'), true);
+      triggerFastPoll();
+      if (typeof pollSystem === 'function') {
+        pollSystem(true);
+        setTimeout(() => pollSystem(true), 1200);
+        setTimeout(() => pollSystem(true), 3000);
+      }
+      if (typeof filterServerActionHistory === 'function') filterServerActionHistory();
+    } else {
+      showToast(res.detail || (isEn ? 'Failed to update baseline.' : 'Gagal memperbarui acuan baseline.'), false);
+    }
+  } catch (err) {
+    showToast(isEn ? 'Network error during request.' : 'Terjadi kesalahan jaringan.', false);
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = orig; }
+  }
+}
+
+async function removeFimPath(path, btn) {
+  if (typeof IS_ONLINE !== 'undefined' && !IS_ONLINE) {
+    showToast('Server sedang offline. Aksi dinonaktifkan.', false);
+    return;
+  }
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
+  const ok = await showConfirmModal({
+    title: isEn ? 'Remove Monitored Path' : 'Hapus Jalur Pemantauan',
+    target: path,
+    message: isEn ? 'Remove this path from integrity monitoring?' : 'Hapus jalur ini dari daftar pemantauan integritas FIM?',
+    btnText: isEn ? 'Remove Path' : 'Hapus Jalur',
+    btnClass: 'btn-danger',
+    iconType: 'danger',
+    badge: 'HAPUS'
+  });
+  if (!ok) return;
+
+  const orig = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+  try {
+    const fd = new FormData();
+    fd.append('csrf_token', getCsrf());
+    fd.append('path', path);
+    const r = await fetch('/servers/' + SID + '/fim/remove-path', {
+      method: 'POST',
+      body: fd,
+      headers: { 'Accept': 'application/json', 'X-CSRF-Token': getCsrf() }
+    });
+    const res = await r.json().catch(() => ({}));
+    if (r.ok && res.ok !== false) {
+      showToast(res.detail || (isEn ? 'Path removed.' : 'Jalur berhasil dihapus dari pemantauan.'), true);
+      triggerFastPoll();
+      if (typeof pollSystem === 'function') {
+        pollSystem(true);
+        setTimeout(() => pollSystem(true), 1200);
+        setTimeout(() => pollSystem(true), 3000);
+      }
+      if (typeof filterServerActionHistory === 'function') filterServerActionHistory();
+    } else {
+      showToast(res.detail || (isEn ? 'Failed to remove path.' : 'Gagal menghapus jalur.'), false);
+    }
+  } catch (err) {
+    showToast(isEn ? 'Network error.' : 'Gangguan jaringan.', false);
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = orig; }
+  }
+}
+
+async function submitAddFimPath(event) {
+  if (event) event.preventDefault();
+  if (typeof IS_ONLINE !== 'undefined' && !IS_ONLINE) {
+    showToast('Server sedang offline. Aksi dinonaktifkan.', false);
+    return;
+  }
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
+  const pathInput = document.getElementById('fim-path-input');
+  const scopeSelect = document.getElementById('fim-scope-select');
+  const submitBtn = document.getElementById('fim-submit-btn');
+
+  const path = pathInput ? pathInput.value.trim() : '';
+  const scope = scopeSelect ? scopeSelect.value : 'single_file';
+
+  if (!path) {
+    showToast(isEn ? 'Path cannot be empty.' : 'Path file atau direktori tidak boleh kosong.', false);
+    return;
+  }
+  if (!path.startsWith('/')) {
+    showToast(isEn ? 'Path must be an absolute path starting with /.' : 'Path harus berupa path absolut Linux (diawali /).', false);
+    return;
+  }
+
+  const orig = submitBtn ? submitBtn.innerHTML : '';
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '…'; }
+
+  try {
+    const fd = new FormData();
+    fd.append('csrf_token', getCsrf());
+    fd.append('path', path);
+    fd.append('scope', scope);
+
+    const r = await fetch('/servers/' + SID + '/fim/add-path', {
+      method: 'POST',
+      body: fd,
+      headers: { 'Accept': 'application/json', 'X-CSRF-Token': getCsrf() }
+    });
+    const res = await r.json().catch(() => ({}));
+    if (r.ok && res.ok !== false) {
+      showToast(res.detail || (isEn ? 'Monitored path added successfully.' : 'Jalur baru berhasil didaftarkan ke pemantauan.'), true);
+      closeAddFimPathModal();
+      if (pathInput) pathInput.value = '';
+      triggerFastPoll();
+      if (typeof pollSystem === 'function') {
+        pollSystem(true);
+        setTimeout(() => pollSystem(true), 1200);
+        setTimeout(() => pollSystem(true), 3000);
+      }
+      if (typeof filterServerActionHistory === 'function') filterServerActionHistory();
+    } else {
+      showToast(res.detail || (isEn ? 'Failed to add path.' : 'Gagal menambahkan jalur pemantauan.'), false);
+    }
+  } catch (err) {
+    showToast(isEn ? 'Network error during request.' : 'Terjadi gangguan jaringan.', false);
+  } finally {
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = orig; }
+  }
 }
 
 
@@ -10903,6 +10998,168 @@ function renderSsl(sslList) {
   });
 }
 
+function renderFim(paths, events) {
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
+  const pathList = Array.isArray(paths) ? paths : [];
+  const eventList = Array.isArray(events) ? events : [];
+
+  // Update header badges
+  const countBadge = document.getElementById('fim-count-badge');
+  if (countBadge) {
+    countBadge.textContent = pathList.length + (isEn ? ' paths monitored' : ' jalur dipantau');
+  }
+
+  const statusBadge = document.getElementById('fim-status-badge');
+  if (statusBadge) {
+    const anomalies = pathList.filter(p => p.status && p.status !== 'VALID').length;
+    if (anomalies > 0) {
+      statusBadge.className = 'noc-head-badge noc-head-badge-danger';
+      statusBadge.textContent = anomalies + (isEn ? ' anomalies detected' : ' anomali terdeteksi');
+    } else {
+      statusBadge.className = 'noc-head-badge noc-head-badge-success';
+      statusBadge.textContent = isEn ? 'All normal' : 'Semua normal';
+    }
+  }
+
+  const eventsBadge = document.getElementById('fim-events-badge');
+  if (eventsBadge) {
+    eventsBadge.textContent = eventList.length + (isEn ? ' event logs' : ' log kejadian');
+  }
+
+  // Render Table 1: Paths
+  const tblPaths = document.getElementById('tbl-fim-paths');
+  if (tblPaths) {
+    const tbody = tblPaths.querySelector('tbody');
+    if (tbody) {
+      if (pathList.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="empty-msg" style="text-align:center;padding:20px 12px;color:var(--dim)">${isEn ? 'No monitored paths.' : 'Belum ada jalur pemantauan integritas.'}</td></tr>`;
+      } else {
+        tbody.innerHTML = pathList.map(p => {
+          const isCustom = p.category === 'custom';
+          const pathColor = isCustom ? 'var(--blue)' : 'var(--text-bright)';
+          const catBadge = isCustom
+            ? `<span class="badge badge-info" style="font-size:9.5px;padding:1px 6px">${isEn ? 'Custom' : 'Kustom'}</span>`
+            : `<span class="badge badge-muted" style="font-size:9.5px;padding:1px 6px">${isEn ? 'System' : 'Sistem'}</span>`;
+
+          let statusBadgeHtml = `<span class="badge badge-muted" style="font-size:9.5px;padding:1px 6px">${escHtml(p.status || 'UNKNOWN')}</span>`;
+          if (p.status === 'VALID') {
+            statusBadgeHtml = `<span class="badge badge-up" style="font-size:9.5px;padding:1px 6px">VALID</span>`;
+          } else if (p.status === 'CHANGED') {
+            statusBadgeHtml = `<span class="badge badge-danger" style="font-size:9.5px;padding:1px 6px">${isEn ? 'MODIFIED' : 'DIUBAH'}</span>`;
+          } else if (p.status === 'MISSING') {
+            statusBadgeHtml = `<span class="badge badge-warn" style="font-size:9.5px;padding:1px 6px">${isEn ? 'MISSING' : 'HILANG'}</span>`;
+          }
+
+          const hasValidHash = p.sha256_hash && p.sha256_hash !== '-' && p.sha256_hash.length === 64;
+          const hashHtml = hasValidHash
+            ? `<span class="mono" style="font-size:11px;color:var(--text-bright);cursor:pointer;white-space:nowrap" title="${isEn ? 'Click to copy SHA-256 Checksum' : 'Klik untuk menyalin Checksum SHA-256 lengkap'}" onclick="copyFimChecksum('${escHtml(p.sha256_hash)}', '${escHtml(p.path)}')">${escHtml(p.sha256_hash)}</span>`
+            : `<span class="mono" style="font-size:11px;color:var(--dim)">${escHtml(p.sha256_hash || '—')}</span>`;
+
+          let checkTime = isEn ? 'Not yet scanned' : 'Belum dipindai';
+          if (p.last_checked_at) {
+            try {
+              const dt = new Date(p.last_checked_at);
+              checkTime = dt.toLocaleTimeString();
+            } catch(e) {
+              checkTime = p.last_checked_at;
+            }
+          }
+
+          let copyBtnHtml = '';
+          if (hasValidHash) {
+            copyBtnHtml = `<button type="button" class="noc-act-dropdown-item" onclick="copyFimChecksum('${escHtml(p.sha256_hash)}', '${escHtml(p.path)}')">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              <span>${isEn ? 'Copy Checksum' : 'Salin Checksum'}</span>
+            </button>`;
+          }
+
+          let removeBtnHtml = '';
+          if (isCustom) {
+            removeBtnHtml = `<button type="button" class="noc-act-dropdown-item danger" onclick="removeFimPath('${escHtml(p.path)}', this)">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              <span>${isEn ? 'Remove Path' : 'Hapus Jalur'}</span>
+            </button>`;
+          }
+
+          return `<tr>
+            <td class="col-fixed-cell"><code class="mono" style="font-size:11.5px;color:${pathColor};font-weight:600">${escHtml(p.path)}</code></td>
+            <td class="col-fixed-cell">${catBadge}</td>
+            <td class="col-fixed-cell col-center-cell">${statusBadgeHtml}</td>
+            <td class="col-fixed-cell col-num-cell mono" style="font-size:11px">${escHtml(p.size_human || '—')}</td>
+            <td class="col-hero-cell">${hashHtml}</td>
+            <td class="col-fixed-cell mono" style="font-size:10.5px;color:var(--dim)">${escHtml(checkTime)}</td>
+            <td class="col-fixed-cell col-act" style="text-align:center">
+              <details class="noc-act-dropdown">
+                <summary class="btn btn-xs btn-ghost btn-noc-act">${isEn ? 'Action ▾' : 'Aksi ▾'}</summary>
+                <div class="noc-act-dropdown-menu">
+                  <button type="button" class="noc-act-dropdown-item text-primary" onclick="scanFimPath('${escHtml(p.path)}', this)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                    <span>${isEn ? 'Scan Now' : 'Pindai Sekarang'}</span>
+                  </button>
+                  ${copyBtnHtml}
+                  <button type="button" class="noc-act-dropdown-item" onclick="rebaselineFimPath('${escHtml(p.path)}', this)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                    <span>${isEn ? 'Update Baseline' : 'Perbarui Acuan'}</span>
+                  </button>
+                  ${removeBtnHtml}
+                </div>
+              </details>
+            </td>
+          </tr>`;
+        }).join('');
+      }
+    }
+  }
+
+  // Render Table 2: Events
+  const tblEvents = document.getElementById('tbl-fim-events');
+  if (tblEvents) {
+    const tbody = tblEvents.querySelector('tbody');
+    if (tbody) {
+      if (eventList.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="empty-msg" style="text-align:center;padding:20px 12px;color:var(--dim)">${isEn ? 'No integrity changes detected. All monitored files match baseline reference.' : 'Belum ada perubahan file yang terdeteksi. Seluruh file sistem dan jalur kustom cocok dengan acuan baseline.'}</td></tr>`;
+      } else {
+        tbody.innerHTML = eventList.map(e => {
+          let typeBadge = `<span class="badge badge-muted" style="font-size:9.5px;padding:1px 6px">${escHtml(e.event_type)}</span>`;
+          if (e.event_type === 'MODIFIED') {
+            typeBadge = `<span class="badge badge-danger" style="font-size:9.5px;padding:1px 6px">MODIFIED</span>`;
+          } else if (e.event_type === 'DELETED') {
+            typeBadge = `<span class="badge badge-warn" style="font-size:9.5px;padding:1px 6px">DELETED</span>`;
+          } else if (e.event_type === 'CREATED') {
+            typeBadge = `<span class="badge badge-info" style="font-size:9.5px;padding:1px 6px">CREATED</span>`;
+          }
+
+          let sevBadge = `<span class="badge badge-info" style="font-size:9.5px;padding:1px 6px">INFO</span>`;
+          if (e.severity === 'danger') {
+            sevBadge = `<span class="badge badge-danger" style="font-size:9.5px;padding:1px 6px">${isEn ? 'DANGER' : 'BAHAYA'}</span>`;
+          } else if (e.severity === 'warning') {
+            sevBadge = `<span class="badge badge-warn" style="font-size:9.5px;padding:1px 6px">${isEn ? 'WARNING' : 'PERINGATAN'}</span>`;
+          }
+
+          let evTime = e.detected_at || '—';
+          if (e.detected_at && e.detected_at.includes('T')) {
+            evTime = e.detected_at.replace('T', ' ').slice(0, 19);
+          }
+
+          return `<tr>
+            <td class="col-fixed-cell mono" style="font-size:11px;color:var(--dim);white-space:nowrap">${escHtml(evTime)}</td>
+            <td class="col-fixed-cell"><code class="mono" style="font-size:11px;color:var(--text-bright);font-weight:600">${escHtml(e.path)}</code></td>
+            <td class="col-fixed-cell">${typeBadge}</td>
+            <td class="col-fixed-cell col-center-cell">${sevBadge}</td>
+            <td class="col-hero-cell mono" style="font-size:11px;color:var(--text)">${escHtml(e.details || '—')}</td>
+            <td class="col-fixed-cell col-act" style="text-align:center">
+              <button type="button" class="btn btn-xs btn-ghost" title="${isEn ? 'Update baseline reference to this state' : 'Perbarui acuan baseline ke kondisi ini'}" onclick="rebaselineFimPath('${escHtml(e.path)}', this)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                <span>${isEn ? 'Update' : 'Perbarui'}</span>
+              </button>
+            </td>
+          </tr>`;
+        }).join('');
+      }
+    }
+  }
+}
+
 let _sysFetching = false;
 async function pollSystem(force = false) {
   if (_sysFetching && !force) return;
@@ -10930,6 +11187,9 @@ async function pollSystem(force = false) {
       try {
         if (Array.isArray(data.ssl_certs) && typeof renderSsl === 'function') renderSsl(data.ssl_certs);
       } catch (e) { console.error('renderSsl error:', e); }
+      try {
+        if (Array.isArray(data.fim_paths) && typeof renderFim === 'function') renderFim(data.fim_paths, data.fim_events);
+      } catch (e) { console.error('renderFim error:', e); }
       try {
         if (!aptRunning && typeof renderApt === 'function') renderApt(data);
       } catch (e) { console.error('renderApt error:', e); }

@@ -5,14 +5,14 @@ from sqlalchemy import inspect, text
 
 try:
     from models import (
-        Base, MaintenanceWindow, ProbeLog, ProbeTarget, Server, ServerExtras,
+        Base, FIMEvent, FIMPath, MaintenanceWindow, ProbeLog, ProbeTarget, Server, ServerExtras,
         ServerProblem, Service, User,
     )
     from core.database import SessionLocal, engine
     from core.utils import KEY_PREFIX, hash_api_key
 except ImportError:
     from server.models import (
-        Base, MaintenanceWindow, ProbeLog, ProbeTarget, Server, ServerExtras,
+        Base, FIMEvent, FIMPath, MaintenanceWindow, ProbeLog, ProbeTarget, Server, ServerExtras,
         ServerProblem, Service, User,
     )
     from server.core.database import SessionLocal, engine
@@ -302,6 +302,50 @@ def migrate_maintenance_windows_system() -> None:
         logger.info("[startup] Tabel maintenance_windows siap")
 
 
+def migrate_fim_system() -> None:
+    """Migrasi tabel FIM (fim_paths dan fim_events) untuk pemantauan integritas file."""
+    Base.metadata.create_all(bind=engine, tables=[FIMPath.__table__, FIMEvent.__table__])
+    inspector = inspect(engine)
+    existing_tables = set(inspector.get_table_names())
+    if "fim_paths" in existing_tables:
+        logger.info("[startup] Tabel fim_paths dan fim_events siap")
+        db = SessionLocal()
+        try:
+            servers = db.query(Server).all()
+            default_paths = [
+                ("/etc/sudoers", "system", "single_file"),
+                ("/etc/passwd", "system", "single_file"),
+                ("/etc/shadow", "system", "single_file"),
+                ("/etc/ssh/sshd_config", "system", "single_file"),
+                ("/root/.ssh/authorized_keys", "system", "single_file"),
+                ("/etc/systemd/system", "system", "dir_shallow"),
+                ("/etc/crontab", "system", "single_file"),
+            ]
+            added_total = 0
+            for s in servers:
+                existing_p = {p[0] for p in db.query(FIMPath.path).filter(FIMPath.server_id == s.id).all()}
+                for path, cat, sc in default_paths:
+                    if path not in existing_p:
+                        fim_p = FIMPath(
+                            server_id=s.id,
+                            path=path,
+                            category=cat,
+                            scope=sc,
+                            status="VALID",
+                            created_by="system",
+                        )
+                        db.add(fim_p)
+                        added_total += 1
+            if added_total:
+                db.commit()
+                logger.info("[startup] Inisialisasi %d jalur default FIM untuk %d server", added_total, len(servers))
+        except Exception as e:
+            db.rollback()
+            logger.warning("[startup] Gagal inisialisasi default FIM paths: %s", e)
+        finally:
+            db.close()
+
+
 def run_all_migrations() -> None:
     """Jalankan semua migrasi schema saat server startup."""
     migrate_server_groups_and_thresholds()
@@ -313,3 +357,4 @@ def run_all_migrations() -> None:
     migrate_api_keys()
     migrate_probing_system()
     migrate_maintenance_windows_system()
+    migrate_fim_system()

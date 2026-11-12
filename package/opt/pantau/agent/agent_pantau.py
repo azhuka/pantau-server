@@ -479,7 +479,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.195"
+AGENT_VERSION = "4.8.196"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -607,6 +607,7 @@ def send_report(cfg: dict, services: list, system: dict,
     payload["firewall"] = collect_firewall()
     payload["listening_ports"] = collect_listening_ports()
     payload["ssl_certs"] = collect_ssl_certs()
+    payload["fim"] = collect_fim()
     payload["system_logs"] = collect_system_logs()
     payload["available_logs"] = collect_available_logs()
     payload["kernel_events"] = collect_kernel_events(syslogs=payload["system_logs"])
@@ -667,6 +668,8 @@ def execute_command(cfg: dict, command: dict) -> dict:
         result = _exec_cron_action(action, command)
     elif action in ("ssl_path_add", "ssl_path_remove"):
         result = _exec_ssl_action(action, command)
+    elif action in ("fim_path_add", "fim_path_remove", "fim_scan", "fim_rebaseline"):
+        result = _exec_fim_action(action, command)
     elif action == "restart_agent":
         result = _exec_restart_agent()
     elif action == "update_agent":
@@ -1385,6 +1388,50 @@ def _exec_ssl_action(action: str, command: dict) -> dict:
     res = _run_native(cmd, label)
     _ssl_cache["at"] = 0.0
     return {"ok": res.get("ok", False), "output": res.get("output", "")[:2000]}
+
+
+def _exec_fim_action(action: str, command: dict) -> dict:
+    """Eksekusi kontrol File Integrity Monitoring (FIM)."""
+    params = command.get("params") or {}
+    target_path = str(params.get("path", "")).strip()
+
+    if action == "fim_path_add":
+        if not target_path:
+            return {"ok": False, "output": "Jalur file/direktori wajib diisi."}
+        scope = str(params.get("scope", "single_file"))
+        custom_paths = _load_fim_custom_paths()
+        exists = any(p["path"] == target_path for p in custom_paths)
+        if not exists:
+            custom_paths.append({"path": target_path, "scope": scope, "category": "custom"})
+            _save_fim_custom_paths(custom_paths)
+        _fim_cache["at"] = 0.0
+        collect_fim(force=True)
+        return {"ok": True, "output": f"Jalur '{target_path}' berhasil ditambahkan ke pemantauan FIM."}
+
+    elif action == "fim_path_remove":
+        if not target_path:
+            return {"ok": False, "output": "Jalur file/direktori wajib diisi."}
+        custom_paths = _load_fim_custom_paths()
+        new_paths = [p for p in custom_paths if p["path"] != target_path]
+        _save_fim_custom_paths(new_paths)
+        _remove_fim_baseline(target_path)
+        _fim_cache["at"] = 0.0
+        collect_fim(force=True)
+        return {"ok": True, "output": f"Jalur '{target_path}' berhasil dihapus dari pemantauan FIM."}
+
+    elif action == "fim_scan":
+        _fim_cache["at"] = 0.0
+        data = collect_fim(force=True)
+        return {"ok": True, "output": f"Pemindaian integritas selesai. {len(data.get('paths', []))} jalur diperiksa."}
+
+    elif action == "fim_rebaseline":
+        _fim_cache["at"] = 0.0
+        _rebaseline_fim_path(target_path)
+        collect_fim(force=True)
+        target_disp = target_path if target_path else "seluruh jalur"
+        return {"ok": True, "output": f"Acuan baseline untuk {target_disp} berhasil diperbarui."}
+
+    return {"ok": False, "output": f"Aksi FIM tidak dikenal: {action}"}
 
 
 def _exec_host_control(action: str) -> dict:
@@ -5960,6 +6007,298 @@ def collect_ssl_certs() -> list[dict]:
     _ssl_cache["data"] = certs
     _ssl_cache["at"] = now
     return certs
+
+
+_fim_cache: dict = {"at": 0.0, "data": None}
+FIM_CUSTOM_PATHS_FILE = "/etc/pantau/fim_paths.json"
+FIM_BASELINE_FILE = "/etc/pantau/fim_baseline.json"
+
+DEFAULT_FIM_PATHS = [
+    {"path": "/etc/sudoers", "scope": "single_file", "category": "system"},
+    {"path": "/etc/passwd", "scope": "single_file", "category": "system"},
+    {"path": "/etc/shadow", "scope": "single_file", "category": "system"},
+    {"path": "/etc/ssh/sshd_config", "scope": "single_file", "category": "system"},
+    {"path": "/root/.ssh/authorized_keys", "scope": "single_file", "category": "system"},
+    {"path": "/etc/systemd/system", "scope": "dir_shallow", "category": "system"},
+    {"path": "/etc/crontab", "scope": "single_file", "category": "system"},
+]
+
+
+def _load_fim_custom_paths() -> list[dict]:
+    if os.path.isfile(FIM_CUSTOM_PATHS_FILE):
+        try:
+            with open(FIM_CUSTOM_PATHS_FILE, "r", encoding="utf-8", errors="replace") as f:
+                res = json.load(f)
+                if isinstance(res, list):
+                    return res
+        except Exception:
+            pass
+    return []
+
+
+def _save_fim_custom_paths(paths: list[dict]) -> bool:
+    try:
+        content = json.dumps(paths, ensure_ascii=False, indent=2)
+        if IS_ROOT:
+            os.makedirs(os.path.dirname(FIM_CUSTOM_PATHS_FILE), exist_ok=True)
+            with open(FIM_CUSTOM_PATHS_FILE, "w", encoding="utf-8") as f:
+                f.write(content)
+            return True
+        else:
+            res = run_file_op("write", {"path": FIM_CUSTOM_PATHS_FILE, "content": content, "make_backup": False})
+            return res.get("ok", False)
+    except Exception:
+        return False
+
+
+def _load_fim_baseline() -> dict:
+    if os.path.isfile(FIM_BASELINE_FILE):
+        try:
+            with open(FIM_BASELINE_FILE, "r", encoding="utf-8", errors="replace") as f:
+                res = json.load(f)
+                if isinstance(res, dict):
+                    return res
+        except Exception:
+            pass
+    return {}
+
+
+def _save_fim_baseline(baseline: dict) -> bool:
+    try:
+        content = json.dumps(baseline, ensure_ascii=False, indent=2)
+        if IS_ROOT:
+            os.makedirs(os.path.dirname(FIM_BASELINE_FILE), exist_ok=True)
+            with open(FIM_BASELINE_FILE, "w", encoding="utf-8") as f:
+                f.write(content)
+            return True
+        else:
+            res = run_file_op("write", {"path": FIM_BASELINE_FILE, "content": content, "make_backup": False})
+            return res.get("ok", False)
+    except Exception:
+        return False
+
+
+def _inspect_fim_target(path: str) -> dict:
+    """Inspeksi status, ukuran, hak akses, dan SHA-256 hash dari target path."""
+    if os.path.exists(path) and (os.path.isdir(path) or os.access(path, os.R_OK)):
+        try:
+            st = os.stat(path)
+            is_dir = stat.S_ISDIR(st.st_mode)
+            oct_mode = oct(st.st_mode & 0o777)[2:].zfill(4)
+            try:
+                owner = pwd.getpwuid(st.st_uid).pw_name
+            except Exception:
+                owner = str(st.st_uid)
+            try:
+                group = grp.getgrgid(st.st_gid).gr_name
+            except Exception:
+                group = str(st.st_gid)
+            if is_dir:
+                try:
+                    entries = [e for e in os.listdir(path) if not e.startswith(".")]
+                    cnt = len(entries)
+                except Exception:
+                    cnt = 0
+                return {
+                    "exists": True,
+                    "is_dir": True,
+                    "size": st.st_size,
+                    "count": cnt,
+                    "mtime": int(st.st_mtime),
+                    "permissions": oct_mode,
+                    "owner_group": f"{owner}:{group}",
+                    "sha256": "",
+                }
+            else:
+                h = hashlib.sha256()
+                with open(path, "rb") as f:
+                    while chunk := f.read(65536):
+                        h.update(chunk)
+                return {
+                    "exists": True,
+                    "is_dir": False,
+                    "size": st.st_size,
+                    "mtime": int(st.st_mtime),
+                    "permissions": oct_mode,
+                    "owner_group": f"{owner}:{group}",
+                    "sha256": h.hexdigest(),
+                }
+        except Exception:
+            pass
+
+    res = run_file_op("hash", {"path": path})
+    if res.get("ok"):
+        return {
+            "exists": res.get("exists", True),
+            "is_dir": res.get("is_dir", False),
+            "size": res.get("size", 0),
+            "count": res.get("count", 0),
+            "mtime": res.get("mtime", 0),
+            "permissions": res.get("octal_mode", ""),
+            "owner_group": f"{res.get('owner', '')}:{res.get('group', '')}",
+            "sha256": res.get("sha256", ""),
+        }
+    return {
+        "exists": False,
+        "is_dir": False,
+        "size": 0,
+        "count": 0,
+        "mtime": 0,
+        "permissions": "",
+        "owner_group": "",
+        "sha256": "",
+    }
+
+
+def _format_size_human(size_bytes: int, is_dir: bool, count: int) -> str:
+    if is_dir:
+        return f"Direktori ({count} file)"
+    if size_bytes < 1024:
+        return f"{size_bytes} B"
+    elif size_bytes < 1024 * 1024:
+        return f"{size_bytes / 1024:.1f} KB"
+    elif size_bytes < 1024 * 1024 * 1024:
+        return f"{size_bytes / (1024 * 1024):.1f} MB"
+    return f"{size_bytes / (1024 * 1024 * 1024):.1f} GB"
+
+
+def _rebaseline_fim_path(target_path: str = "") -> None:
+    baseline = _load_fim_baseline()
+    paths_to_check = []
+    if target_path:
+        paths_to_check.append(target_path)
+    else:
+        all_specs = DEFAULT_FIM_PATHS + _load_fim_custom_paths()
+        paths_to_check = [s["path"] for s in all_specs]
+
+    for p in paths_to_check:
+        info = _inspect_fim_target(p)
+        if info.get("exists"):
+            baseline[p] = {
+                "sha256": info.get("sha256", ""),
+                "size": info.get("size", 0),
+                "mtime": info.get("mtime", 0),
+                "permissions": info.get("permissions", ""),
+                "owner_group": info.get("owner_group", ""),
+                "count": info.get("count", 0),
+            }
+        else:
+            baseline.pop(p, None)
+    _save_fim_baseline(baseline)
+
+
+def _remove_fim_baseline(target_path: str) -> None:
+    baseline = _load_fim_baseline()
+    if target_path in baseline:
+        baseline.pop(target_path, None)
+        _save_fim_baseline(baseline)
+
+
+def collect_fim(force: bool = False) -> dict:
+    """Kumpulkan telemetri integritas file (FIM) dan deteksi modifikasi terhadap baseline."""
+    now = time.monotonic()
+    if not force and _fim_cache["data"] is not None and (now - _fim_cache["at"] < 60):
+        return _fim_cache["data"]
+
+    all_specs = DEFAULT_FIM_PATHS + _load_fim_custom_paths()
+    baseline = _load_fim_baseline()
+    needs_save_baseline = False
+
+    paths_result = []
+    events_result = []
+    now_iso = datetime.now(timezone.utc).isoformat()
+
+    for item in all_specs:
+        p = item["path"]
+        cat = item.get("category", "custom")
+        sc = item.get("scope", "single_file")
+
+        info = _inspect_fim_target(p)
+        exists = info.get("exists", False)
+        is_dir = info.get("is_dir", False)
+        size_b = info.get("size", 0)
+        cnt = info.get("count", 0)
+        size_human = _format_size_human(size_b, is_dir, cnt)
+        cur_hash = info.get("sha256", "")
+        cur_perm = info.get("permissions", "")
+        cur_og = info.get("owner_group", "")
+        cur_mtime = info.get("mtime", 0)
+
+        base_info = baseline.get(p)
+        if not exists:
+            status = "MISSING"
+            base_hash = base_info.get("sha256", "") if base_info else ""
+            if base_info:
+                events_result.append({
+                    "path": p,
+                    "event_type": "DELETED",
+                    "severity": "danger",
+                    "details": f"File atau direktori telah dihapus dari sistem ({cur_og or 'root'})",
+                    "detected_at": now_iso,
+                })
+        else:
+            if base_info is None:
+                baseline[p] = {
+                    "sha256": cur_hash,
+                    "size": size_b,
+                    "mtime": cur_mtime,
+                    "permissions": cur_perm,
+                    "owner_group": cur_og,
+                    "count": cnt,
+                }
+                needs_save_baseline = True
+                status = "VALID"
+                base_hash = cur_hash
+            else:
+                base_hash = base_info.get("sha256", "")
+                base_perm = base_info.get("permissions", "")
+                base_size = base_info.get("size", 0)
+
+                diffs = []
+                if not is_dir and cur_hash and base_hash and cur_hash != base_hash:
+                    diffs.append(f"Hash SHA-256 berubah (awal: {base_hash[:8]}… -> terkini: {cur_hash[:8]}…)")
+                if cur_perm and base_perm and cur_perm != base_perm:
+                    diffs.append(f"Izin hak akses berubah ({base_perm} -> {cur_perm})")
+                if not is_dir and abs(size_b - base_size) > 0:
+                    diffs.append(f"Ukuran berubah ({base_size} B -> {size_b} B)")
+
+                if diffs:
+                    status = "CHANGED"
+                    events_result.append({
+                        "path": p,
+                        "event_type": "MODIFIED",
+                        "severity": "danger",
+                        "details": "; ".join(diffs),
+                        "detected_at": now_iso,
+                    })
+                else:
+                    status = "VALID"
+
+        paths_result.append({
+            "path": p,
+            "category": cat,
+            "scope": sc,
+            "status": status,
+            "size_bytes": size_b,
+            "size_human": size_human,
+            "sha256_hash": base_hash if exists and p in baseline else cur_hash,
+            "last_sha256_hash": cur_hash,
+            "permissions": cur_perm,
+            "owner_group": cur_og,
+            "last_checked_at": now_iso,
+        })
+
+    if needs_save_baseline:
+        _save_fim_baseline(baseline)
+
+    data = {
+        "paths": paths_result,
+        "events": events_result,
+        "checked_at": now_iso,
+    }
+    _fim_cache["data"] = data
+    _fim_cache["at"] = now
+    return data
 
 
 _syslog_cache: dict = {"at": 0.0, "data": []}

@@ -185,7 +185,10 @@ def _get_server_actions(db: Session, sid: int, limit: int = 50) -> list[dict]:
                 elif p_dict.get("ident"):
                     tgt_name = f"Cron {p_dict['ident']}"
                 elif p_dict.get("path"):
-                    tgt_name = f"SSL {p_dict['path']}"
+                    if c.action.startswith("fim_"):
+                        tgt_name = f"FIM {p_dict['path']}"
+                    else:
+                        tgt_name = f"SSL {p_dict['path']}"
                 elif p_dict.get("port"):
                     tgt_name = f"Port {p_dict['port']}"
                 elif c.action == "update_agent":
@@ -236,6 +239,10 @@ def _get_server_actions(db: Session, sid: int, limit: int = 50) -> list[dict]:
             "firewall_port_rule": "Aturan Port Firewall",
             "ssl_path_add": "Tambah Path SSL",
             "ssl_path_remove": "Hapus Path SSL",
+            "fim_scan": "Pindai Integritas",
+            "fim_rebaseline": "Perbarui Acuan FIM",
+            "fim_path_add": "Tambah Jalur FIM",
+            "fim_path_remove": "Hapus Jalur FIM",
         }.get(c.action, c.action.replace("_", " ").capitalize())
 
         status_cls = {

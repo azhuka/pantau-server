@@ -24,6 +24,7 @@ import time
 import tempfile
 import pwd
 import grp
+import hashlib
 from pathlib import Path
 
 # Direktori dan berkas kritis yang mutlak dilarang dimanipulasi/dihapus
@@ -96,6 +97,55 @@ def get_owner_group(st: os.stat_result) -> tuple[str, str]:
     except (KeyError, OverflowError):
         group = str(st.st_gid)
     return owner, group
+
+
+def action_hash(path: str) -> None:
+    if not path:
+        err_exit("Path wajib diisi.")
+    path = os.path.abspath(path)
+    if not os.path.exists(path):
+        err_exit(f"Path tidak ditemukan: {path}")
+    try:
+        st = os.stat(path)
+        is_dir = stat.S_ISDIR(st.st_mode)
+        owner, group = get_owner_group(st)
+        oct_mode = oct(st.st_mode & 0o777)[2:].zfill(4)
+        if is_dir:
+            try:
+                entries = [e for e in os.listdir(path) if not e.startswith(".")]
+                cnt = len(entries)
+            except Exception:
+                cnt = 0
+            ok_exit({
+                "path": path,
+                "is_dir": True,
+                "exists": True,
+                "size": st.st_size,
+                "count": cnt,
+                "mtime": int(st.st_mtime),
+                "octal_mode": oct_mode,
+                "owner": owner,
+                "group": group,
+                "sha256": ""
+            })
+        else:
+            h = hashlib.sha256()
+            with open(path, "rb") as f:
+                while chunk := f.read(65536):
+                    h.update(chunk)
+            ok_exit({
+                "path": path,
+                "is_dir": False,
+                "exists": True,
+                "size": st.st_size,
+                "mtime": int(st.st_mtime),
+                "octal_mode": oct_mode,
+                "owner": owner,
+                "group": group,
+                "sha256": h.hexdigest()
+            })
+    except Exception as e:
+        err_exit(f"Gagal memproses file/direktori: {e}")
 
 
 def action_ls(path: str) -> None:
@@ -715,6 +765,8 @@ def main():
             params["path"] = sys.argv[2]
         elif action == "cat" and len(sys.argv) > 2:
             params["path"] = sys.argv[2]
+        elif action == "hash" and len(sys.argv) > 2:
+            params["path"] = sys.argv[2]
         elif action == "mkdir" and len(sys.argv) > 2:
             params["path"] = sys.argv[2]
             if len(sys.argv) > 3:
@@ -737,6 +789,8 @@ def main():
         action_ls(params.get("path", "/"))
     elif action == "cat":
         action_cat(params.get("path", ""), params.get("max_bytes", MAX_TEXT_SIZE))
+    elif action == "hash":
+        action_hash(params.get("path", ""))
     elif action == "write":
         action_write(params.get("path", ""), params.get("content", ""), params.get("make_backup", True))
     elif action == "mkdir":

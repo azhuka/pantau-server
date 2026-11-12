@@ -527,3 +527,57 @@ class MaintenanceWindow(Base):
         Index("idx_mw_time", "is_active", "start_time", "end_time"),
         Index("idx_mw_status", "status"),
     )
+
+
+class FIMPath(Base):
+    """Jalur Pemantauan Integritas File (File Integrity Monitoring Path)."""
+
+    __tablename__ = "fim_paths"
+
+    id = Column(INTEGER_UNSIGNED, primary_key=True, autoincrement=True)
+    server_id = Column(INTEGER_UNSIGNED, ForeignKey("servers.id", ondelete="CASCADE"), nullable=False, index=True)
+    path = Column(String(500), nullable=False)
+    category = Column(String(20), nullable=False, default="custom")    # 'system' | 'custom'
+    scope = Column(String(30), nullable=False, default="single_file")   # 'single_file' | 'dir_shallow' | 'dir_deep'
+    status = Column(String(20), nullable=False, default="VALID")        # 'VALID' | 'CHANGED' | 'MISSING' | 'ERROR'
+    size_bytes = Column(BigInteger, nullable=True)
+    size_human = Column(String(50), nullable=True)                     # misal: '1.8 KB' atau '18 file'
+    sha256_hash = Column(String(64), nullable=True)                    # Hash SHA-256 acuan baseline
+    last_sha256_hash = Column(String(64), nullable=True)               # Hash SHA-256 pemeriksaan terkini
+    mtime = Column(DateTime, nullable=True)
+    permissions = Column(String(30), nullable=True)                    # misal: '0644'
+    owner_group = Column(String(60), nullable=True)                    # misal: 'root:root'
+    last_checked_at = Column(DateTime, nullable=True)
+    is_active = Column(SmallInteger, nullable=False, default=1)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_by = Column(String(64), nullable=True)
+
+    server = relationship("Server")
+
+    __table_args__ = (
+        Index("idx_fim_path_srv", "server_id", "path"),
+        Index("idx_fim_path_status", "server_id", "status"),
+    )
+
+
+class FIMEvent(Base):
+    """Riwayat Kejadian Perubahan Integritas File (FIM Audit Event Log)."""
+
+    __tablename__ = "fim_events"
+
+    id = Column(INTEGER_UNSIGNED, primary_key=True, autoincrement=True)
+    server_id = Column(INTEGER_UNSIGNED, ForeignKey("servers.id", ondelete="CASCADE"), nullable=False, index=True)
+    path = Column(String(500), nullable=False)
+    event_type = Column(String(50), nullable=False)                    # 'MODIFIED', 'PERMISSION_CHANGED', 'CREATED', 'DELETED'
+    severity = Column(String(20), nullable=False, default="warning")    # 'info', 'warning', 'danger'
+    details = Column(Text, nullable=True)                              # Rincian perubahan (ukuran, permission, hash lama -> baru)
+    detected_at = Column(DateTime, nullable=False, default=datetime.utcnow, index=True)
+    acknowledged = Column(SmallInteger, nullable=False, default=0)
+
+    server = relationship("Server")
+
+    __table_args__ = (
+        Index("idx_fim_events_srv_time", "server_id", "detected_at"),
+    )
+

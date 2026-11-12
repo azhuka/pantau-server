@@ -39,15 +39,17 @@ from core.utils import (
     _fmt_dt,
 )
 from models import (
+    Command,
+    FIMEvent,
+    FIMPath,
+    LogRequest,
+    Metric,
     Server,
     ServerExtras,
-    Service,
-    Metric,
-    SystemSnapshot,
-    SysSnapshotHour,
-    Command,
-    LogRequest,
     ServerProblem,
+    Service,
+    SysSnapshotHour,
+    SystemSnapshot,
     User,
 )
 from services.audit_service import _audit
@@ -1117,6 +1119,20 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
         available_logs_data.append({"id": "SYSLOG", "group": "Keamanan & Sistem", "name": "Syslog Sistem", "desc": "/var/log/syslog"})
         available_logs_data.append({"id": "DPKG", "group": "Keamanan & Sistem", "name": "Riwayat Paket (dpkg.log)", "desc": "/var/log/dpkg.log"})
 
+    fim_paths = (
+        db.query(FIMPath)
+        .filter(FIMPath.server_id == sid)
+        .order_by(FIMPath.category.desc(), FIMPath.path.asc())
+        .all()
+    )
+    fim_events = (
+        db.query(FIMEvent)
+        .filter(FIMEvent.server_id == sid)
+        .order_by(desc(FIMEvent.detected_at))
+        .limit(50)
+        .all()
+    )
+
     return tpl(
         request,
         "services.html",
@@ -1146,6 +1162,8 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
             "firewall": fw_data,
             "listening_ports": ports_data,
             "ssl_certs": ssl_data,
+            "fim_paths": fim_paths,
+            "fim_events": fim_events,
             "system_logs": sys_logs_data,
             "kernel_events": ke_obj,
             "oom_kill_count": oom_count,
@@ -2350,6 +2368,20 @@ def api_server_system(
     disks_raw = parse_list(latest.disks) if latest else []
     disks_enriched = _get_storage_runway_for_server(db, sid, disks_raw)
 
+    fim_paths_db = (
+        db.query(FIMPath)
+        .filter(FIMPath.server_id == sid)
+        .order_by(FIMPath.category.desc(), FIMPath.path.asc())
+        .all()
+    )
+    fim_events_db = (
+        db.query(FIMEvent)
+        .filter(FIMEvent.server_id == sid)
+        .order_by(desc(FIMEvent.detected_at))
+        .limit(50)
+        .all()
+    )
+
     return {
         "server_id": sid,
         "ts": latest.timestamp.isoformat() if latest else None,
@@ -2374,6 +2406,33 @@ def api_server_system(
         "cron_jobs": parse_dict(extra.cron_jobs if extra else None) if (extra and extra.cron_jobs) else None,
         "firewall": parse_dict(extra.firewall if extra else None) if (extra and extra.firewall) else None,
         "ssl_certs": parse_list(extra.ssl_certs if extra else None) if (extra and extra.ssl_certs) else None,
+        "fim_paths": [
+            {
+                "id": fp.id,
+                "path": fp.path,
+                "category": fp.category,
+                "scope": fp.scope,
+                "status": fp.status,
+                "size_human": fp.size_human or "-",
+                "sha256_hash": fp.sha256_hash or "-",
+                "last_sha256_hash": fp.last_sha256_hash or "-",
+                "permissions": fp.permissions or "-",
+                "owner_group": fp.owner_group or "-",
+                "last_checked_at": fp.last_checked_at.isoformat() if fp.last_checked_at else None,
+            }
+            for fp in fim_paths_db
+        ],
+        "fim_events": [
+            {
+                "id": fe.id,
+                "path": fe.path,
+                "event_type": fe.event_type,
+                "severity": fe.severity,
+                "details": fe.details or "-",
+                "detected_at": fe.detected_at.isoformat() if fe.detected_at else None,
+            }
+            for fe in fim_events_db
+        ],
         "systemd_units": parse_list(extra.systemd_units if extra else None) if (extra and extra.systemd_units) else None,
         "apt_upgradable": extra.apt_upgradable if extra else 0,
         "apt_last_update": extra.apt_last_update.isoformat() if (extra and extra.apt_last_update) else None,

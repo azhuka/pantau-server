@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 try:
     from config import settings
     from models import (
-        AuditLog, Command, LogRequest, Metric, Server, ServerExtras,
+        AuditLog, Command, FIMEvent, FIMPath, LogRequest, Metric, Server, ServerExtras,
         ServerProblem, Service, SysSnapshotHour, SystemSnapshot, User,
     )
     from core.database import get_db
@@ -37,7 +37,7 @@ try:
 except ImportError:
     from server.config import settings
     from server.models import (
-        AuditLog, Command, LogRequest, Metric, Server, ServerExtras,
+        AuditLog, Command, FIMEvent, FIMPath, LogRequest, Metric, Server, ServerExtras,
         ServerProblem, Service, SysSnapshotHour, SystemSnapshot, User,
     )
     from server.core.database import get_db
@@ -971,6 +971,91 @@ def agent_report(
             "events": clean_events,
         }
         extras.kernel_events = json.dumps(clean_ke)
+
+    # Validasi & Simpan Status Integritas File (FIM)
+    if isinstance(body.get("fim"), dict):
+        fim_payload = body["fim"]
+        reported_paths = fim_payload.get("paths") or []
+        reported_events = fim_payload.get("events") or []
+
+        existing_fim_paths = {p.path: p for p in db.query(FIMPath).filter(FIMPath.server_id == server.id).all()}
+        now_dt = datetime.utcnow()
+
+        for rp in reported_paths[:60]:
+            if not isinstance(rp, dict):
+                continue
+            r_path = _clean_str(rp.get("path"), "", 500)
+            if not r_path:
+                continue
+            r_cat = _clean_str(rp.get("category"), "custom", 20)
+            r_scope = _clean_str(rp.get("scope"), "single_file", 30)
+            r_status = _clean_str(rp.get("status"), "VALID", 20)
+            r_size_b = _clamp_int(rp.get("size_bytes"), 0, 0, 10_000_000_000_000)
+            r_size_h = _clean_str(rp.get("size_human"), "", 50)
+            r_sha = _clean_str(rp.get("sha256_hash"), "", 64)
+            r_last_sha = _clean_str(rp.get("last_sha256_hash"), "", 64)
+            r_perm = _clean_str(rp.get("permissions"), "", 30)
+            r_og = _clean_str(rp.get("owner_group"), "", 60)
+
+            if r_path in existing_fim_paths:
+                fp = existing_fim_paths[r_path]
+                fp.category = r_cat
+                fp.scope = r_scope
+                fp.status = r_status
+                fp.size_bytes = r_size_b
+                fp.size_human = r_size_h
+                if not fp.sha256_hash and r_sha:
+                    fp.sha256_hash = r_sha
+                fp.last_sha256_hash = r_last_sha
+                fp.permissions = r_perm
+                fp.owner_group = r_og
+                fp.last_checked_at = now_dt
+            else:
+                new_fp = FIMPath(
+                    server_id=server.id,
+                    path=r_path,
+                    category=r_cat,
+                    scope=r_scope,
+                    status=r_status,
+                    size_bytes=r_size_b,
+                    size_human=r_size_h,
+                    sha256_hash=r_sha,
+                    last_sha256_hash=r_last_sha,
+                    permissions=r_perm,
+                    owner_group=r_og,
+                    last_checked_at=now_dt,
+                    created_by="agent",
+                )
+                db.add(new_fp)
+
+        for ev in reported_events[:20]:
+            if not isinstance(ev, dict):
+                continue
+            ev_path = _clean_str(ev.get("path"), "", 500)
+            ev_type = _clean_str(ev.get("event_type"), "MODIFIED", 50)
+            ev_sev = _clean_str(ev.get("severity"), "warning", 20)
+            ev_det = _clean_str(ev.get("details"), "", 1000)
+            cutoff = now_dt - timedelta(minutes=5)
+            dup = (
+                db.query(FIMEvent)
+                .filter(
+                    FIMEvent.server_id == server.id,
+                    FIMEvent.path == ev_path,
+                    FIMEvent.event_type == ev_type,
+                    FIMEvent.detected_at >= cutoff,
+                )
+                .first()
+            )
+            if not dup:
+                new_ev = FIMEvent(
+                    server_id=server.id,
+                    path=ev_path,
+                    event_type=ev_type,
+                    severity=ev_sev,
+                    details=ev_det,
+                    detected_at=now_dt,
+                )
+                db.add(new_ev)
 
     extras.updated_at = datetime.utcnow()
     db.commit()

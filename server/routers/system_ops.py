@@ -1361,6 +1361,191 @@ def server_ssl_remove_path(
 
 
 # ---------------------------------------------------------------------------
+# FIM (FILE INTEGRITY MONITORING) OPERATIONS
+# ---------------------------------------------------------------------------
+@router.post("/servers/{sid}/fim/scan")
+def server_fim_scan(
+    request: Request,
+    sid: int,
+    path: str = Form(default=""),
+    csrf_token: str = Form(default=""),
+    db: Session = Depends(get_db),
+):
+    user = get_current_user(request, db)
+    is_json = "application/json" in request.headers.get("accept", "")
+    if not user or not (user.is_master_admin() or user.is_operator()):
+        if is_json:
+            return JSONResponse({"ok": False, "detail": "Akses ditolak"}, status_code=403)
+        return RedirectResponse("/", status_code=303)
+    _verify_csrf_form(request, csrf_token)
+    server = db.query(Server).filter(Server.id == sid).first()
+    if not server:
+        if is_json:
+            return JSONResponse({"ok": False, "detail": "Server tidak ditemukan"}, status_code=404)
+        return RedirectResponse("/servers", status_code=303)
+
+    path_clean = path.strip()
+    target_disp = path_clean if path_clean else "seluruh jalur"
+    _enqueue_mitigation(db, sid, "fim_scan", {"path": path_clean}, issued_by=user.username)
+    _audit(
+        db,
+        user.username,
+        "fim_scan",
+        f"{server.hostname}: pindai integritas {target_disp}",
+        "dikirim ke agen",
+        server_id=sid,
+    )
+    db.commit()
+    if is_json:
+        return JSONResponse({"ok": True, "detail": f"Perintah pemindaian integritas '{target_disp}' dikirim ke agen."})
+    return RedirectResponse(f"/servers/{sid}?tab=integritas", status_code=303)
+
+
+@router.post("/servers/{sid}/fim/rebaseline")
+def server_fim_rebaseline(
+    request: Request,
+    sid: int,
+    path: str = Form(default=""),
+    csrf_token: str = Form(default=""),
+    db: Session = Depends(get_db),
+):
+    user = get_current_user(request, db)
+    is_json = "application/json" in request.headers.get("accept", "")
+    if not user or not (user.is_master_admin() or user.is_operator()):
+        if is_json:
+            return JSONResponse({"ok": False, "detail": "Akses ditolak"}, status_code=403)
+        return RedirectResponse("/", status_code=303)
+    _verify_csrf_form(request, csrf_token)
+    server = db.query(Server).filter(Server.id == sid).first()
+    if not server:
+        if is_json:
+            return JSONResponse({"ok": False, "detail": "Server tidak ditemukan"}, status_code=404)
+        return RedirectResponse("/servers", status_code=303)
+
+    path_clean = path.strip()
+    target_disp = path_clean if path_clean else "seluruh jalur"
+    _enqueue_mitigation(db, sid, "fim_rebaseline", {"path": path_clean}, issued_by=user.username)
+    _audit(
+        db,
+        user.username,
+        "fim_rebaseline",
+        f"{server.hostname}: perbarui acuan baseline FIM {target_disp}",
+        "dikirim ke agen",
+        server_id=sid,
+    )
+    db.commit()
+    if is_json:
+        return JSONResponse({"ok": True, "detail": f"Perintah pembaruan acuan baseline '{target_disp}' dikirim ke agen."})
+    return RedirectResponse(f"/servers/{sid}?tab=integritas", status_code=303)
+
+
+@router.post("/servers/{sid}/fim/add-path")
+def server_fim_add_path(
+    request: Request,
+    sid: int,
+    path: str = Form(...),
+    scope: str = Form(default="single_file"),
+    csrf_token: str = Form(default=""),
+    db: Session = Depends(get_db),
+):
+    user = get_current_user(request, db)
+    is_json = "application/json" in request.headers.get("accept", "")
+    if not user or not (user.is_master_admin() or user.is_operator()):
+        if is_json:
+            return JSONResponse({"ok": False, "detail": "Akses ditolak"}, status_code=403)
+        return RedirectResponse("/", status_code=303)
+    _verify_csrf_form(request, csrf_token)
+    server = db.query(Server).filter(Server.id == sid).first()
+    if not server:
+        if is_json:
+            return JSONResponse({"ok": False, "detail": "Server tidak ditemukan"}, status_code=404)
+        return RedirectResponse("/servers", status_code=303)
+
+    path_clean = path.strip()
+    if not path_clean.startswith("/"):
+        if is_json:
+            return JSONResponse({"ok": False, "detail": "Path harus berupa path absolut Linux (diawali '/')."}, status_code=400)
+        return RedirectResponse(f"/servers/{sid}?tab=integritas", status_code=303)
+
+    scope_clean = scope.strip() if scope.strip() in ("single_file", "dir_shallow", "dir_deep") else "single_file"
+
+    try:
+        from models import FIMPath
+    except ImportError:
+        from server.models import FIMPath
+
+    existing = db.query(FIMPath).filter(FIMPath.server_id == sid, FIMPath.path == path_clean).first()
+    if not existing:
+        new_fp = FIMPath(
+            server_id=sid,
+            path=path_clean,
+            category="custom",
+            scope=scope_clean,
+            status="VALID",
+            created_by=user.username,
+        )
+        db.add(new_fp)
+
+    _enqueue_mitigation(db, sid, "fim_path_add", {"path": path_clean, "scope": scope_clean}, issued_by=user.username)
+    _audit(
+        db,
+        user.username,
+        "fim_path_add",
+        f"{server.hostname}: tambah jalur FIM {path_clean} ({scope_clean})",
+        "dikirim ke agen",
+        server_id=sid,
+    )
+    db.commit()
+    if is_json:
+        return JSONResponse({"ok": True, "detail": f"Jalur pemantauan FIM '{path_clean}' berhasil didaftarkan dan dikirim ke agen."})
+    return RedirectResponse(f"/servers/{sid}?tab=integritas", status_code=303)
+
+
+@router.post("/servers/{sid}/fim/remove-path")
+def server_fim_remove_path(
+    request: Request,
+    sid: int,
+    path: str = Form(...),
+    csrf_token: str = Form(default=""),
+    db: Session = Depends(get_db),
+):
+    user = get_current_user(request, db)
+    is_json = "application/json" in request.headers.get("accept", "")
+    if not user or not (user.is_master_admin() or user.is_operator()):
+        if is_json:
+            return JSONResponse({"ok": False, "detail": "Akses ditolak"}, status_code=403)
+        return RedirectResponse("/", status_code=303)
+    _verify_csrf_form(request, csrf_token)
+    server = db.query(Server).filter(Server.id == sid).first()
+    if not server:
+        if is_json:
+            return JSONResponse({"ok": False, "detail": "Server tidak ditemukan"}, status_code=404)
+        return RedirectResponse("/servers", status_code=303)
+
+    path_clean = path.strip()
+    try:
+        from models import FIMPath
+    except ImportError:
+        from server.models import FIMPath
+
+    db.query(FIMPath).filter(FIMPath.server_id == sid, FIMPath.path == path_clean, FIMPath.category == "custom").delete()
+
+    _enqueue_mitigation(db, sid, "fim_path_remove", {"path": path_clean}, issued_by=user.username)
+    _audit(
+        db,
+        user.username,
+        "fim_path_remove",
+        f"{server.hostname}: hapus jalur FIM {path_clean}",
+        "dikirim ke agen",
+        server_id=sid,
+    )
+    db.commit()
+    if is_json:
+        return JSONResponse({"ok": True, "detail": f"Jalur pemantauan FIM '{path_clean}' berhasil dihapus."})
+    return RedirectResponse(f"/servers/{sid}?tab=integritas", status_code=303)
+
+
+# ---------------------------------------------------------------------------
 # AGENT DISTRIBUTION (LATEST CODE & WRAPPERS)
 # ---------------------------------------------------------------------------
 @router.api_route("/api/agent/latest-code", methods=["GET", "HEAD"])
