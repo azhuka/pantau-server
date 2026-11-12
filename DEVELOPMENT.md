@@ -354,6 +354,23 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.201
+
+- **Tipe Rilis:** Perbaikan Kontras Tema Modal Insiden Kritis, Standardisasi Header Durasi Universal, Pembaruan Dinamis Judul Tab Browser, dan Eliminasi Benturan Warna Tema Terang (*Critical Alert Modal Theme Contrast Fix, Universal Duration Header Standardization, Browser Tab Title Dynamic Count Update, & Light Theme Conflict Elimination*)
+- **Fokus Utama:** Menyelesaikan permasalahan kontras rendah dan benturan warna pada modal popup insiden kritis (`#alertOverlay`), menghilangkan teks putih di atas latar putih serta teks merah di atas latar merah pada tema terang, menstandarisasi header kolom waktu menjadi "Durasi", dan memperbaiki logika pembaharuan judul tab browser agar jumlah insiden kritis selalu mencerminkan status terkini:
+  1. **Eliminasi Benturan Warna & Perbaikan Kontras Tinggi Modal Insiden Kritis (`base.html`):**
+     - Memperbaiki deklarasi warna `.alert-group-name` yang sebelumnya ter-hardcode `#fff` (putih di atas putih pada tema terang), diselaraskan menjadi `color: var(--text-heading, var(--text))` dan `#0f172a` pada tema terang.
+     - Mengganti latar belakang gelap hardcoded `rgba(0,0,0,0.32)` dan `rgba(0,0,0,0.25)` pada kotak keterangan (`.alert-group-info`), tabel daftar server (`.alert-servers-wrap`), dan footer modal (`.alert-panel-foot`) menjadi berbasis variabel tema adaptif (`var(--card)` dan `var(--bg-subtle)`).
+     - Menghilangkan kontras rendah "teks merah di atas latar merah" pada badge jumlah server terdampak (`.alert-group-count`) dan badge durasi (`.alert-dur-tag`), kini menggunakan teks merah tua `#991b1b` di atas latar mawar lembut `#fee2e2` dengan border `#fca5a5` pada tema terang (rasio kontras > 7:1, lolos WCAG AAA).
+     - Menstandarisasi tombol tindakan kritis (`.alert-panel .ack-btn` dan `.alert-panel .btn-danger`) menjadi latar solid merah tegas `#dc2626` dengan teks putih murni `#ffffff`, menjamin keterbacaan mutlak pada tema terang maupun gelap tanpa ambiguitas visual.
+  2. **Standardisasi Kolom "Durasi" Universal (`base.html`):**
+     - Mengubah header kolom tabel server terdampak dari "Durasi Terputus" menjadi **"Durasi"** yang berlaku universal dan akurat untuk seluruh jenis insiden (baik anomali integritas berkas FIM, service down, pemakaian CPU/RAM kritis, maupun server mati).
+  3. **Pembaruan Dinamis & Akurat Judul Tab Browser (`base.html`):**
+     - Memperbaiki bug pada logika `renderAlerts()` di mana judul tab browser terkunci pada jumlah insiden lama (`(!) 4 INSIDEN KRITIS`) akibat evaluasi `document.title.indexOf('(!)') !== 0`.
+     - Logika diperbarui untuk secara dinamis mengevaluasi `dangerTitle = '(!) ' + firingDangerN + ' INSIDEN KRITIS · ' + ORIG_TITLE;` dan memperbarui `document.title` setiap kali jumlah insiden kritis aktif berubah (misal turun dari 4 menjadi 1 setelah penanganan sebagian), serta mengembalikan `ORIG_TITLE` secara bersih saat seluruh insiden terselesaikan.
+  4. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.201` pada seluruh 7 berkas repositori.
+
 ## Versi 4.8.200
 
 - **Tipe Rilis:** Eliminasi Teks Kolom Ukuran FIM Tumpuk (*Anti-Overflow Ellipsis*), Standardisasi Dropdown Aksi Riwayat FIM, Penyelarasan Waktu 24-Jam Tanpa Detik (*Rule 3 Compliance*), dan Tooltip Waktu Rinci (*FIM Size Cell Anti-Overflow Truncation, FIM Event Action Dropdown Standardization, 24-Hour Compact Timestamp Alignment, & Detailed Tooltips*)

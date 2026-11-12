@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token }}">
 <title>{% block title %}Pantau Server{% endblock %}</title>
-<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.200' }}">
+<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.201' }}">
 <style id="noc-act-dropdown-anti-cache">
   /* Override Mutlak Anti-Cache untuk Tombol Dropdown Tindakan yang Non-Aktif (Disabled) */
   .noc-act-dropdown-item:disabled,
@@ -2341,37 +2341,61 @@ body.show-alert-banner .sidebar{padding-top:48px}
 body.show-alert-banner .main{padding-top:72px}
 .alert-overlay{display:none;position:fixed;inset:0;z-index:2000;background:rgba(5,5,10,.78);backdrop-filter:blur(2px);align-items:center;justify-content:center;padding:20px}
 .alert-overlay.show{display:flex}
-.alert-panel{background:var(--card);border:2px solid var(--red);border-radius:12px;max-width:780px;width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.6);display:flex;flex-direction:column}
+.alert-panel{background:var(--card);border:2px solid var(--red);border-radius:12px;max-width:800px;width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.6);display:flex;flex-direction:column}
 .alert-panel-head{background:var(--red-bg);color:var(--red);font-weight:800;font-size:15px;padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-shrink:0}
 .alert-panel-head .pulse{animation:apulse 1.2s infinite}
 @keyframes apulse{0%,100%{opacity:1}50%{opacity:.35}}
 .alert-panel-sub{font-size:12.5px;color:var(--text);padding:10px 18px 0;line-height:1.5;flex-shrink:0}
 .alert-list{padding:8px 18px;overflow-y:auto;flex:1}
-.alert-panel-foot{display:flex;justify-content:space-between;align-items:center;padding:12px 18px;background:rgba(0,0,0,0.25);border-top:1px solid var(--border);gap:12px;flex-wrap:wrap;flex-shrink:0}
+.alert-panel-foot{display:flex;justify-content:space-between;align-items:center;padding:12px 18px;background:var(--bg-subtle, rgba(0,0,0,0.03));border-top:1px solid var(--border);gap:12px;flex-wrap:wrap;flex-shrink:0}
 
 /* Gaya Pengelompokan Insiden Kritis (Unified Incident Grouping) */
-.alert-group{background:rgba(239,68,68,0.04);border:1px solid rgba(239,68,68,0.3);border-left:4px solid var(--red);border-radius:8px;padding:14px 16px;margin:12px 0}
+.alert-group{background:var(--red-bg);border:1px solid rgba(239,68,68,0.25);border-left:4px solid var(--red);border-radius:8px;padding:14px 16px;margin:12px 0}
 .alert-group-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
 .alert-group-title{display:flex;align-items:center;gap:8px}
-.alert-badge-critical{background:#ef4444;color:#fff;font-size:10px;font-weight:800;padding:2px 7px;border-radius:4px;letter-spacing:0.5px}
-.alert-group-name{font-size:14px;font-weight:700;color:#fff}
-.alert-group-count{font-size:11.5px;font-weight:600;color:#fca5a5;background:rgba(239,68,68,0.2);border:1px solid rgba(239,68,68,0.35);padding:2px 8px;border-radius:999px}
-.alert-group-info{background:rgba(0,0,0,0.32);border:1px solid rgba(255,255,255,0.08);border-radius:6px;padding:10px 14px;margin-bottom:12px;font-size:12.5px;line-height:1.55;display:flex;flex-direction:column;gap:6px}
+.alert-badge-critical{background:#dc2626;color:#ffffff;font-size:10px;font-weight:800;padding:2px 7px;border-radius:4px;letter-spacing:0.5px}
+.alert-group-name{font-size:14px;font-weight:700;color:var(--text-heading, var(--text))}
+.alert-group-count{font-size:11.5px;font-weight:700;color:var(--red);background:var(--card);border:1px solid var(--red);padding:2px 9px;border-radius:999px}
+.alert-group-info{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:10px 14px;margin-bottom:12px;font-size:12.5px;line-height:1.55;display:flex;flex-direction:column;gap:6px}
 .alert-info-row{display:flex;gap:7px;align-items:baseline}
-.alert-info-label{font-weight:700;color:#f8fafc;font-size:12px;white-space:nowrap;flex-shrink:0}
-.alert-info-desc{color:#cbd5e1}
-.alert-info-tip{color:#fde047}
-.alert-servers-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:6px;border:1px solid rgba(255,255,255,0.08);background:rgba(0,0,0,0.25)}
+.alert-info-label{font-weight:700;color:var(--text-heading, var(--text));font-size:12px;white-space:nowrap;flex-shrink:0}
+.alert-info-desc{color:var(--text)}
+.alert-info-tip{color:var(--yellow);font-weight:600}
+.alert-servers-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:6px;border:1px solid var(--border);background:var(--card)}
 .alert-servers-table{width:100%;border-collapse:collapse;font-size:12px}
-.alert-servers-table th{padding:8px 12px;border-bottom:1px solid rgba(255,255,255,0.1);color:var(--dim);font-size:11px;text-transform:none;font-weight:600;text-align:left}
-.alert-servers-table td{padding:9px 12px;border-bottom:1px solid rgba(255,255,255,0.05);vertical-align:middle}
+.alert-servers-table th{padding:8px 12px;border-bottom:1px solid var(--border);color:var(--dim);font-size:11px;text-transform:none;font-weight:600;text-align:left;background:var(--bg-subtle, transparent)}
+.alert-servers-table td{padding:9px 12px;border-bottom:1px solid var(--border-subtle, var(--border));vertical-align:middle;color:var(--text)}
 .alert-servers-table tr:last-child td{border-bottom:none}
 .alert-srv-cell{display:flex;align-items:center;gap:7px}
 .alert-dot-danger{width:7px;height:7px;border-radius:50%;background:#ef4444;box-shadow:0 0 6px #ef4444;flex-shrink:0}
-.alert-srv-name{font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:700;color:#fff;font-size:12.5px;text-decoration:none}
+.alert-srv-name{font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:700;color:var(--text-bright, var(--text));font-size:12.5px;text-decoration:none}
 .alert-srv-name:hover{text-decoration:underline;color:var(--blue)}
-.alert-dur-tag{font-size:11px;color:#fca5a5;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.25);padding:2px 6px;border-radius:4px;font-weight:600;white-space:nowrap}
+.alert-dur-tag{font-size:11px;color:var(--red);background:var(--red-bg);border:1px solid rgba(239,68,68,0.3);padding:2px 7px;border-radius:4px;font-weight:700;white-space:nowrap}
 .alert-acked-badge{color:var(--green);font-size:11.5px;font-weight:600;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.alert-panel .ack-btn, .alert-panel .btn-danger{background:#dc2626 !important;color:#ffffff !important;border:1px solid #b91c1c !important;box-shadow:0 1px 3px rgba(220,38,38,0.3) !important;font-weight:700}
+.alert-panel .ack-btn:hover, .alert-panel .btn-danger:hover{background:#b91c1c !important;color:#ffffff !important;border-color:#991b1b !important}
+
+/* Penyesuaian Kontras Tinggi Khusus Tema Terang (Light Mode) pada Modal Insiden Kritis */
+[data-theme="light"] .alert-panel{box-shadow:0 20px 60px rgba(0,0,0,0.22);border-color:#dc2626}
+[data-theme="light"] .alert-panel-head{background:#fef2f2;color:#991b1b;border-bottom-color:#fecaca}
+[data-theme="light"] .alert-panel-sub{color:#334155}
+[data-theme="light"] .alert-group{background:#fff5f5;border:1px solid #fecaca;border-left:4px solid #dc2626}
+[data-theme="light"] .alert-group-count{color:#991b1b !important;background:#fee2e2 !important;border:1px solid #fca5a5 !important}
+[data-theme="light"] .alert-group-info{background:#ffffff !important;border:1px solid #e2e8f0 !important}
+[data-theme="light"] .alert-info-desc{color:#334155 !important}
+[data-theme="light"] .alert-info-tip{color:#b45309 !important}
+[data-theme="light"] .alert-servers-wrap{background:#ffffff !important;border:1px solid #e2e8f0 !important}
+[data-theme="light"] .alert-servers-table th{background:#f8fafc !important;color:#475569 !important;border-bottom:1px solid #e2e8f0 !important}
+[data-theme="light"] .alert-servers-table td{border-bottom:1px solid #f1f5f9 !important;color:#0f172a !important}
+[data-theme="light"] .alert-srv-name{color:#0f172a !important}
+[data-theme="light"] .alert-dur-tag{color:#991b1b !important;background:#fee2e2 !important;border:1px solid #fca5a5 !important}
+[data-theme="light"] .alert-panel-foot{background:#f8fafc !important;border-top:1px solid #e2e8f0 !important}
+[data-theme="light"] .alert-panel .btn-ghost{color:#334155 !important;border:1px solid #cbd5e1 !important;background:#ffffff !important}
+[data-theme="light"] .alert-panel .btn-ghost:hover{color:#0f172a !important;border-color:#94a3b8 !important;background:#f1f5f9 !important}
+[data-theme="light"] .alert-panel .ack-btn,
+[data-theme="light"] .alert-panel .btn-danger{background:#dc2626 !important;color:#ffffff !important;border:1px solid #b91c1c !important}
+[data-theme="light"] .alert-panel .ack-btn:hover,
+[data-theme="light"] .alert-panel .btn-danger:hover{background:#b91c1c !important;color:#ffffff !important}
 
 /* Terminal live Update/Upgrade — Gaya Konsol Terminal Linux Modern */
 .terminal-window{background:#0b0e14;border:1px solid #282f3e;border-radius:10px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,.5);margin:0;width:100%;transition:border-color .2s,box-shadow .2s}
@@ -2871,7 +2895,7 @@ body.show-alert-banner .main{padding-top:72px}
   </nav>
   <div class="sidebar-footer">
     <div class="sb-footer-brand">Pantau Server</div>
-    <div class="sb-footer-ver">v{{ app_version or '4.8.200' }}</div>
+    <div class="sb-footer-ver">v{{ app_version or '4.8.201' }}</div>
     <div class="sb-footer-utc">UTC <span id="clockUtc" style="display:inline"></span></div>
   </div>
 </aside>
@@ -3844,7 +3868,8 @@ function jumpToLog(unit, filterText){
 }
 
 // ---------- alert DANGER: popup yang tidak bisa diabaikan ----------
-const ORIG_TITLE = document.title;
+const RAW_TITLE = document.title.replace(/^\(!\)\s*\d*\s*INSIDEN KRITIS\s*·\s*/i, '');
+const ORIG_TITLE = RAW_TITLE || document.title;
 function getCsrf(){
   return document.querySelector('meta[name="csrf-token"]')?.content || '';
 }
@@ -3973,7 +3998,7 @@ function renderAlertGroupsHtml(alerts) {
       + '<table class="alert-servers-table">'
       + '<thead><tr>'
       + '<th>Server Terdampak</th>'
-      + '<th>Durasi Terputus</th>'
+      + '<th>Durasi</th>'
       + '<th style="text-align:right">Tindakan</th>'
       + '</tr></thead>'
       + '<tbody>' + rowsHtml + '</tbody>'
@@ -4019,9 +4044,14 @@ function renderAlerts(d){
 
   // Perbarui judul tab browser hanya saat ada insiden kritis
   if (firingDangerN > 0) {
-    if (document.title.indexOf('(!)') !== 0) document.title = '(!) ' + firingDangerN + ' INSIDEN KRITIS · ' + ORIG_TITLE;
+    const dangerTitle = '(!) ' + firingDangerN + ' INSIDEN KRITIS · ' + ORIG_TITLE;
+    if (document.title !== dangerTitle) {
+      document.title = dangerTitle;
+    }
   } else {
-    document.title = ORIG_TITLE;
+    if (document.title !== ORIG_TITLE) {
+      document.title = ORIG_TITLE;
+    }
   }
 
   // Modal overlay darurat hanya mengunci fokus di dashboard agar tidak mengganggu terminal/form di halaman lain
