@@ -2418,6 +2418,7 @@ def api_server_system(
                 "last_sha256_hash": fp.last_sha256_hash or "-",
                 "permissions": fp.permissions or "-",
                 "owner_group": fp.owner_group or "-",
+                "created_by": fp.created_by or "",
                 "last_checked_at": fp.last_checked_at.isoformat() if fp.last_checked_at else None,
             }
             for fp in fim_paths_db

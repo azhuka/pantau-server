@@ -480,7 +480,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.198"
+AGENT_VERSION = "4.8.199"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -1407,29 +1407,29 @@ def _exec_fim_action(action: str, command: dict) -> dict:
             _save_fim_custom_paths(custom_paths)
         _fim_cache["at"] = 0.0
         collect_fim(force=True)
-        return {"ok": True, "output": f"Jalur '{target_path}' berhasil ditambahkan ke pemantauan FIM."}
+        return {"ok": True, "output": f"Path '{target_path}' berhasil ditambahkan ke pemantauan FIM."}
 
     elif action == "fim_path_remove":
         if not target_path:
-            return {"ok": False, "output": "Jalur file/direktori wajib diisi."}
+            return {"ok": False, "output": "Path file/direktori wajib diisi."}
         custom_paths = _load_fim_custom_paths()
         new_paths = [p for p in custom_paths if p["path"] != target_path]
         _save_fim_custom_paths(new_paths)
         _remove_fim_baseline(target_path)
         _fim_cache["at"] = 0.0
         collect_fim(force=True)
-        return {"ok": True, "output": f"Jalur '{target_path}' berhasil dihapus dari pemantauan FIM."}
+        return {"ok": True, "output": f"Path '{target_path}' berhasil dihapus dari pemantauan FIM."}
 
     elif action == "fim_scan":
         _fim_cache["at"] = 0.0
         data = collect_fim(force=True)
-        return {"ok": True, "output": f"Pemindaian integritas selesai. {len(data.get('paths', []))} jalur diperiksa."}
+        return {"ok": True, "output": f"Pemindaian integritas selesai. {len(data.get('paths', []))} path diperiksa."}
 
     elif action == "fim_rebaseline":
         _fim_cache["at"] = 0.0
         _rebaseline_fim_path(target_path)
         collect_fim(force=True)
-        target_disp = target_path if target_path else "seluruh jalur"
+        target_disp = target_path if target_path else "seluruh path"
         return {"ok": True, "output": f"Acuan baseline untuk {target_disp} berhasil diperbarui."}
 
     return {"ok": False, "output": f"Aksi FIM tidak dikenal: {action}"}
@@ -6115,10 +6115,13 @@ def _inspect_fim_target(path: str) -> dict:
 
         if is_dir:
             try:
-                entries = [e for e in os.listdir(path) if not e.startswith(".")]
+                entries = sorted([e for e in os.listdir(path) if not e.startswith(".")])
                 cnt = len(entries)
+                manifest_str = f"cnt:{cnt}|mtime:{int(st.st_mtime)}|" + ";;".join(entries[:500])
+                dir_hash = hashlib.sha256(manifest_str.encode("utf-8")).hexdigest()
             except Exception:
                 cnt = 0
+                dir_hash = f"meta:{oct_mode}:{st.st_size}:{int(st.st_mtime)}"
             return {
                 "exists": True,
                 "is_dir": True,
@@ -6127,7 +6130,7 @@ def _inspect_fim_target(path: str) -> dict:
                 "mtime": int(st.st_mtime),
                 "permissions": oct_mode,
                 "owner_group": f"{owner}:{group}",
-                "sha256": "",
+                "sha256": dir_hash,
             }
 
         # Target adalah file reguler: hitung hash SHA-256
@@ -6227,7 +6230,7 @@ def _remove_fim_baseline(target_path: str) -> None:
 def collect_fim(force: bool = False) -> dict:
     """Kumpulkan telemetri integritas file (FIM) dan deteksi modifikasi terhadap baseline."""
     now = time.monotonic()
-    if not force and _fim_cache["data"] is not None and (now - _fim_cache["at"] < 60):
+    if not force and _fim_cache["data"] is not None and (now - _fim_cache["at"] < 15):
         return _fim_cache["data"]
 
     all_specs = DEFAULT_FIM_PATHS + _load_fim_custom_paths()
@@ -6288,14 +6291,31 @@ def collect_fim(force: bool = False) -> dict:
                 base_hash = base_info.get("sha256", "")
                 base_perm = base_info.get("permissions", "")
                 base_size = base_info.get("size", 0)
+                base_cnt = base_info.get("count", 0)
+                base_og = base_info.get("owner_group", "")
+
+                # Auto-heal baseline direktori jika acuan sha256 belum terekam dari versi sebelumnya
+                if is_dir and not base_hash and cur_hash:
+                    base_info["sha256"] = cur_hash
+                    base_hash = cur_hash
+                    needs_save_baseline = True
 
                 diffs = []
-                if not is_dir and cur_hash and base_hash and cur_hash != base_hash:
-                    diffs.append(f"Hash SHA-256 berubah (awal: {base_hash[:8]}… -> terkini: {cur_hash[:8]}…)")
+                if is_dir:
+                    if cnt != base_cnt:
+                        diffs.append(f"Jumlah berkas dalam direktori berubah ({base_cnt} file -> {cnt} file)")
+                    elif cur_hash and base_hash and cur_hash != base_hash:
+                        diffs.append("Entri berkas dalam direktori termodifikasi (nama atau atribut berkas berubah)")
+                else:
+                    if cur_hash and base_hash and cur_hash != base_hash:
+                        diffs.append(f"Hash SHA-256 berubah (awal: {base_hash[:8]}… -> terkini: {cur_hash[:8]}…)")
+                    if abs(size_b - base_size) > 0:
+                        diffs.append(f"Ukuran berubah ({base_size} B -> {size_b} B)")
+
                 if cur_perm and base_perm and cur_perm != base_perm:
                     diffs.append(f"Izin hak akses berubah ({base_perm} -> {cur_perm})")
-                if not is_dir and abs(size_b - base_size) > 0:
-                    diffs.append(f"Ukuran berubah ({base_size} B -> {size_b} B)")
+                if cur_og and base_og and cur_og != base_og:
+                    diffs.append(f"Kepemilikan berubah ({base_og} -> {cur_og})")
 
                 if diffs:
                     status = "CHANGED"

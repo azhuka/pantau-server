@@ -112,10 +112,13 @@ def action_hash(path: str) -> None:
         oct_mode = oct(st.st_mode & 0o777)[2:].zfill(4)
         if is_dir:
             try:
-                entries = [e for e in os.listdir(path) if not e.startswith(".")]
+                entries = sorted([e for e in os.listdir(path) if not e.startswith(".")])
                 cnt = len(entries)
+                manifest_str = f"cnt:{cnt}|mtime:{int(st.st_mtime)}|" + ";;".join(entries[:500])
+                dir_hash = hashlib.sha256(manifest_str.encode("utf-8")).hexdigest()
             except Exception:
                 cnt = 0
+                dir_hash = f"meta:{oct_mode}:{st.st_size}:{int(st.st_mtime)}"
             ok_exit({
                 "path": path,
                 "is_dir": True,
@@ -126,7 +129,7 @@ def action_hash(path: str) -> None:
                 "octal_mode": oct_mode,
                 "owner": owner,
                 "group": group,
-                "sha256": ""
+                "sha256": dir_hash
             })
         else:
             h = hashlib.sha256()

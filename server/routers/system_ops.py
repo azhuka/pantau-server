@@ -1497,7 +1497,7 @@ def server_fim_add_path(
     )
     db.commit()
     if is_json:
-        return JSONResponse({"ok": True, "detail": f"Jalur pemantauan FIM '{path_clean}' berhasil didaftarkan dan dikirim ke agen."})
+        return JSONResponse({"ok": True, "detail": f"Path pemantauan FIM '{path_clean}' berhasil didaftarkan dan dikirim ke agen."})
     return RedirectResponse(f"/servers/{sid}?tab=integritas", status_code=303)
 
 
@@ -1541,7 +1541,7 @@ def server_fim_remove_path(
     )
     db.commit()
     if is_json:
-        return JSONResponse({"ok": True, "detail": f"Jalur pemantauan FIM '{path_clean}' berhasil dihapus."})
+        return JSONResponse({"ok": True, "detail": f"Path pemantauan FIM '{path_clean}' berhasil dihapus."})
     return RedirectResponse(f"/servers/{sid}?tab=integritas", status_code=303)
 
 

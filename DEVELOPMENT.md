@@ -354,6 +354,25 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.199
+
+- **Tipe Rilis:** Deteksi Mutasi Direktori FIM Real-Time, Standardisasi Kolom Path, Tooltip Kategori Berbasis Akun Operator, dan Siklus Pemindaian Cepat (*Real-Time FIM Directory Mutation Detection, Standardized Path Column, Operator Account Category Tooltips, & High-Frequency Scan Cycle*)
+- **Fokus Utama:** Menyelesaikan permasalahan di mana penambahan atau penghapusan berkas di dalam direktori yang diawasi (seperti `/var/www/html/`) tidak tercatat pada riwayat kejadian integritas (FIM), menstandarisasi istilah antarmuka dari "Jalur" menjadi "Path", memperkaya tooltip kategori dengan identitas akun operator penentu, serta mempercepat interval deteksi FIM agen klien:
+  1. **Deteksi Mutasi Direktori FIM Real-Time (`agent_pantau.py` & `pantau-file`):**
+     - Memperbaiki `_inspect_fim_target()` dan sub-aksi `action_hash()` pada wrapper `/usr/local/sbin/pantau-file`: kini direktori menghitung hash manifest kriptografis SHA-256 dari seluruh daftar berkas terurut dan waktu modifikasi (`cnt:{count}|mtime:{mtime}|{entry1};;{entry2}...`).
+     - Menyusun ulang logika perbandingan baseline `collect_fim()`: direktori kini secara aktif mendeteksi perubahan jumlah berkas (`cnt != base_cnt`) dengan rincian `Jumlah berkas dalam direktori berubah (X file -> Y file)` dan mutasi isi/nama entri (`cur_hash != base_hash`), memicu status `CHANGED` dan rekaman kejadian `MODIFIED` ke server seketika.
+     - Menyediakan mekanisme migrasi otomatis (*auto-heal*): baseline direktori lama yang belum memiliki hash manifest otomatis diperbarui ke kondisi awal saat pembacaan pertama tanpa memerlukan intervensi manual.
+     - Menurunkan batas cache FIM lokal agen dari 60 detik menjadi 15 detik, sehingga perubahan berkas/direktori melalui terminal langsung terdeteksi dan terkirim dalam siklus telemetri reguler tanpa menunggu muat ulang halaman.
+  2. **Standardisasi Nama Kolom & Label Tindakan Menjadi "Path":**
+     - Mengubah header kolom pada tabel daftar pengawasan `#tbl-fim-paths` dan tabel riwayat kejadian `#tbl-fim-events` dari "Jalur" menjadi **"Path"** sesuai konvensi umum sistem komputasi/NOC.
+     - Mengubah label tombol aksi dari "Tambah Jalur" menjadi **"Tambah Path"**, dilengkapi pesan tooltip yang merinci fungsi: *"Tambah berkas atau direktori kustom ke dalam pengawasan integritas FIM untuk mendeteksi perubahan atribut, izin akses, dan isi berkas"*.
+     - Menstandarisasi aksi dropdown dan konfirmasi modal menjadi "Hapus Path" dan "Simpan Path".
+  3. **Penyempurnaan Tooltip Kolom Kategori (Sistem & Kustom):**
+     - Kolom kategori kini menampilkan tooltip informatif: `Path ditentukan otomatis` untuk kategori Sistem bawaan, dan `Path ditentukan (<akun operator>)` (misalnya `Path ditentukan (master-admin)`) untuk kategori Kustom yang ditambahkan oleh operator.
+     - Menyelaraskan data `created_by` pada endpoint telemetri `/api/servers/{sid}/system` dan sinkronisasi render dual-engine Jinja HTML dan JavaScript `renderFim()`.
+  4. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.199` pada seluruh 7 berkas repositori.
+
 ## Versi 4.8.198
 
 - **Tipe Rilis:** Eliminasi Alarm Palsu Berkas Opsional FIM, Pemotongan Ellipsis Checksum SHA-256 Anti-Overflow, Standardisasi Kolom Pemeriksaan & Tindakan, dan Tata Letak 2-Baris Kolom Server Insiden (*FIM Optional File False-Positive Alarm Elimination, SHA-256 Checksum Ellipsis Truncation, Inspection & Action Column Standardization, and 2-Row Server Column Layout*)
