@@ -2698,7 +2698,7 @@ div[style*="position: fixed"] .card {
                 <span class="badge badge-muted" style="font-size:9.5px;padding:1px 6px">{{ fp.status }}</span>
               {% endif %}
             </td>
-            <td class="col-fim-size mono" style="font-size:11px">{{ fp.size_human or '—' }}</td>
+            <td class="col-fim-size mono" style="font-size:11px" title="{{ fp.size_human or '—' }}">{{ fp.size_human or '—' }}</td>
             <td class="col-fim-hash">
               {% if fp.sha256_hash and fp.sha256_hash != '-' and fp.sha256_hash|length == 64 %}
                 <span class="mono fim-hash-text" title="Klik untuk menyalin Checksum SHA-256 lengkap: {{ fp.sha256_hash }}" onclick="copyFimChecksum('{{ fp.sha256_hash }}', '{{ fp.path }}')">{{ fp.sha256_hash }}</span>
@@ -2707,7 +2707,7 @@ div[style*="position: fixed"] .card {
               {% endif %}
             </td>
             <td class="col-fim-check mono" style="font-size:10.5px;color:var(--dim)">
-              {{ fp.last_checked_at.strftime('%H:%M:%S') if fp.last_checked_at else 'Belum dipindai' }}
+              <span title="Pemeriksaan terakhir: {{ fp.last_checked_at.strftime('%d %b %Y %H:%M:%S') if fp.last_checked_at else 'Belum dipindai' }}">{{ fp.last_checked_at.strftime('%H:%M') if fp.last_checked_at else 'Belum dipindai' }}</span>
             </td>
             <td class="col-fim-act" style="text-align:center">
               <details class="noc-act-dropdown">
@@ -2769,7 +2769,7 @@ div[style*="position: fixed"] .card {
             <th class="col-fixed-cell" style="width:150px" title="Jenis perubahan integritas">Kejadian</th>
             <th class="col-fixed-cell col-center-cell" style="width:90px" title="Tingkat keparahan dampak kejadian">Tingkat</th>
             <th class="col-hero-cell" title="Rincian perubahan ukuran, hak akses, atau hash">Rincian</th>
-            <th class="col-fixed-cell col-act" style="text-align:center">Tindakan</th>
+            <th class="col-fim-ev-act" style="text-align:center">Tindakan</th>
           </tr>
         </thead>
         <tbody>
@@ -2794,11 +2794,20 @@ div[style*="position: fixed"] .card {
               {% endif %}
             </td>
             <td class="col-hero-cell mono" style="font-size:11px;color:var(--text)">{{ fe.details or '—' }}</td>
-            <td class="col-fixed-cell col-act" style="text-align:center">
-              <button type="button" class="btn btn-xs btn-ghost" title="Perbarui acuan baseline ke kondisi ini" onclick="rebaselineFimPath('{{ fe.path }}', this)">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-                <span>Perbarui</span>
-              </button>
+            <td class="col-fim-ev-act" style="text-align:center">
+              <details class="noc-act-dropdown">
+                <summary class="btn btn-xs btn-ghost btn-noc-act">Aksi ▾</summary>
+                <div class="noc-act-dropdown-menu">
+                  <button type="button" class="noc-act-dropdown-item text-primary" onclick="scanFimPath('{{ fe.path }}', this)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                    <span>Pindai Sekarang</span>
+                  </button>
+                  <button type="button" class="noc-act-dropdown-item" onclick="rebaselineFimPath('{{ fe.path }}', this)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                    <span>Perbarui Acuan</span>
+                  </button>
+                </div>
+              </details>
             </td>
           </tr>
           {% else %}
@@ -11098,12 +11107,18 @@ function renderFim(paths, events) {
             : `<span class="mono fim-hash-text fim-hash-dim" title="${escHtml(p.sha256_hash || '—')}">${escHtml(p.sha256_hash || '—')}</span>`;
 
           let checkTime = isEn ? 'Not yet scanned' : 'Belum dipindai';
+          let checkTitle = isEn ? 'Not yet scanned' : 'Belum dipindai';
           if (p.last_checked_at) {
             try {
               const dt = new Date(p.last_checked_at);
-              checkTime = dt.toLocaleTimeString();
+              const hh = String(dt.getHours()).padStart(2, '0');
+              const mm = String(dt.getMinutes()).padStart(2, '0');
+              const ss = String(dt.getSeconds()).padStart(2, '0');
+              checkTime = `${hh}:${mm}`;
+              checkTitle = `${isEn ? 'Last checked: ' : 'Pemeriksaan terakhir: '}${dt.toLocaleDateString()} ${hh}:${mm}:${ss}`;
             } catch(e) {
               checkTime = p.last_checked_at;
+              checkTitle = p.last_checked_at;
             }
           }
 
@@ -11127,9 +11142,9 @@ function renderFim(paths, events) {
             <td class="col-fim-path"><code class="mono" style="font-size:11.5px;color:${pathColor};font-weight:600" title="${escHtml(p.path)}">${escHtml(p.path)}</code></td>
             <td class="col-fim-cat">${catBadge}</td>
             <td class="col-fim-status">${statusBadgeHtml}</td>
-            <td class="col-fim-size mono" style="font-size:11px">${escHtml(p.size_human || '—')}</td>
+            <td class="col-fim-size mono" style="font-size:11px" title="${escHtml(p.size_human || '—')}">${escHtml(p.size_human || '—')}</td>
             <td class="col-fim-hash">${hashHtml}</td>
-            <td class="col-fim-check mono" style="font-size:10.5px;color:var(--dim)">${escHtml(checkTime)}</td>
+            <td class="col-fim-check mono" style="font-size:10.5px;color:var(--dim)"><span title="${escHtml(checkTitle)}">${escHtml(checkTime)}</span></td>
             <td class="col-fim-act" style="text-align:center">
               <details class="noc-act-dropdown">
                 <summary class="btn btn-xs btn-ghost btn-noc-act">${isEn ? 'Action ▾' : 'Aksi ▾'}</summary>
@@ -11189,11 +11204,20 @@ function renderFim(paths, events) {
             <td class="col-fixed-cell">${typeBadge}</td>
             <td class="col-fixed-cell col-center-cell">${sevBadge}</td>
             <td class="col-hero-cell mono" style="font-size:11px;color:var(--text)">${escHtml(e.details || '—')}</td>
-            <td class="col-fixed-cell col-act" style="text-align:center">
-              <button type="button" class="btn btn-xs btn-ghost" title="${isEn ? 'Update baseline reference to this state' : 'Perbarui acuan baseline ke kondisi ini'}" onclick="rebaselineFimPath('${escHtml(e.path)}', this)">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-                <span>${isEn ? 'Update' : 'Perbarui'}</span>
-              </button>
+            <td class="col-fim-ev-act" style="text-align:center">
+              <details class="noc-act-dropdown">
+                <summary class="btn btn-xs btn-ghost btn-noc-act">${isEn ? 'Action ▾' : 'Aksi ▾'}</summary>
+                <div class="noc-act-dropdown-menu">
+                  <button type="button" class="noc-act-dropdown-item text-primary" onclick="scanFimPath('${escHtml(e.path)}', this)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                    <span>${isEn ? 'Scan Now' : 'Pindai Sekarang'}</span>
+                  </button>
+                  <button type="button" class="noc-act-dropdown-item" onclick="rebaselineFimPath('${escHtml(e.path)}', this)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                    <span>${isEn ? 'Update Baseline' : 'Perbarui Acuan'}</span>
+                  </button>
+                </div>
+              </details>
             </td>
           </tr>`;
         }).join('');

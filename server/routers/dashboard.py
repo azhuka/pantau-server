@@ -776,11 +776,13 @@ def api_problems(
         p = dict(prob)
         if isinstance(p.get("started_at"), datetime):
             p["started_at_iso"] = p["started_at"].replace(tzinfo=None).isoformat() + "Z"
-            p["started_at_str"] = _fmt_dt(p["started_at"], with_sec=True)
+            p["started_at_full"] = _fmt_dt(p["started_at"], with_sec=True)
+            p["started_at_str"] = _fmt_short_dt(p["started_at"])
             p["started_at"] = _fmt_dt(p["started_at"], with_sec=True)
         if isinstance(p.get("resolved_at"), datetime):
             p["resolved_at_iso"] = p["resolved_at"].replace(tzinfo=None).isoformat() + "Z"
-            p["resolved_at_str"] = _fmt_dt(p["resolved_at"], with_sec=True)
+            p["resolved_at_full"] = _fmt_dt(p["resolved_at"], with_sec=True)
+            p["resolved_at_str"] = _fmt_short_dt(p["resolved_at"])
             p["resolved_at_date"] = p["resolved_at"].strftime("%Y-%m-%d")
             p["resolved_at"] = _fmt_dt(p["resolved_at"], with_sec=True)
         if isinstance(p.get("acknowledged_at"), datetime):

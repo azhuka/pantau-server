@@ -1638,7 +1638,7 @@ window.poll = async function(opts = {}) {
               data-prob-sid="${p.server_id}"
               data-prob-context="${ctxStr}">
               <td class="col-time cell-nowrap" style="width:82px;min-width:80px;white-space:nowrap">
-                <span class="mono" style="font-size:11px;font-weight:600;color:var(--text);letter-spacing:0.2px" title="${(isEn ? 'Started: ' : 'Mulai: ') + _esc(p.started_at_str || '')}">${_esc((p.started_at_str || '').replace(/\s*\d{4}\s*/, ' '))}</span>
+                <span class="mono" style="font-size:11px;font-weight:600;color:var(--text);letter-spacing:0.2px" title="${(isEn ? 'Started: ' : 'Waktu Mulai: ') + _esc(p.started_at_full || p.started_at_str || '')}">${_esc(p.started_at_str || '—')}</span>
               </td>
               <td class="col-srv" style="min-width:115px;max-width:150px;overflow:hidden;white-space:nowrap;padding:4px 8px">
                 <div style="display:flex;flex-direction:column;gap:2px;max-width:100%">
@@ -1733,8 +1733,8 @@ window.poll = async function(opts = {}) {
               data-prob-host="${_esc(p.hostname)}"
               data-prob-sid="${p.server_id}">
             <td style="padding:4px 6px;white-space:nowrap" class="col-time-detailed">
-              <span class="mono" style="font-size:11px;color:var(--text-bright);font-weight:600" title="${(isEn ? 'Started: ' : 'Mulai: ') + _esc(p.started_at || p.started_at_str || '—') + ' | ' + (isEn ? 'Resolved: ' : 'Selesai: ') + _esc(p.resolved_at || p.resolved_at_str || '—')}">
-                ${_esc((p.resolved_at || p.resolved_at_str || p.started_at || p.started_at_str || '—').replace(/\s*\d{4}\s*/, ' '))}
+              <span class="mono" style="font-size:11px;color:var(--text-bright);font-weight:600" title="${(isEn ? 'Started: ' : 'Waktu Mulai: ') + _esc(p.started_at_full || p.started_at || '—') + ' | ' + (isEn ? 'Resolved: ' : 'Waktu Selesai: ') + _esc(p.resolved_at_full || p.resolved_at || '—')}">
+                ${_esc(p.resolved_at_str || p.started_at_str || '—')}
               </span>
             </td>
             <td style="padding:4px 6px;white-space:nowrap" class="col-server">

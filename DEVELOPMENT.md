@@ -354,6 +354,26 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.200
+
+- **Tipe Rilis:** Eliminasi Teks Kolom Ukuran FIM Tumpuk (*Anti-Overflow Ellipsis*), Standardisasi Dropdown Aksi Riwayat FIM, Penyelarasan Waktu 24-Jam Tanpa Detik (*Rule 3 Compliance*), dan Tooltip Waktu Rinci (*FIM Size Cell Anti-Overflow Truncation, FIM Event Action Dropdown Standardization, 24-Hour Compact Timestamp Alignment, & Detailed Tooltips*)
+- **Fokus Utama:** Menyelesaikan permasalahan tabrakan visual teks ukuran direktori panjang dengan checksum SHA-256 pada tabel FIM, menstandarisasi tombol tindakan pada riwayat FIM menjadi menu seragam `Aksi ▾`, serta menyelaraskan format tampilan waktu pada seluruh tabel NOC agar tidak lagi memajang detik non-esensial di dalam sel:
+  1. **Eliminasi Tabrakan Visual Kolom Ukuran & Checksum FIM (`services.html` & `pantau-noc.css`):**
+     - Memperbaiki deklarasi CSS `.col-fim-size`: menambah lebar kolom menjadi `width: 130px !important; min-width: 120px !important` dan menerapkan batas pemotongan mutlak `overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important`.
+     - Menyematkan atribut `title="{{ fp.size_human or '—' }}"` dan `${escHtml(p.size_human || '—')}` pada sel ukuran, menjamin string panjang seperti `Direktori (396 file)` tidak pernah lagi meluber menimpa teks Checksum SHA-256 di sebelahnya.
+  2. **Standardisasi Format Waktu Pemeriksaan FIM (24-Jam NOC Tanpa Detik):**
+     - Mengeliminasi format 12-jam AM/PM (`3:17:37 PM`) hasil bawaan `toLocaleTimeString()` pada browser klien.
+     - Mengubah format sel `Pemeriksaan` pada Jinja dan JavaScript `renderFim()` menjadi format 24-jam padat `HH:mm` (misal `15:17`), memindahkan detail detik dan tanggal penuh ke pesan tooltip (`title="Pemeriksaan terakhir: DD Mon YYYY HH:MM:SS"`).
+     - Mengoptimalkan lebar kolom `.col-fim-check` dari 110px menjadi 75px, memberikan ruang lebih luas bagi kolom data informatif lainnya.
+  3. **Penyelarasan Waktu Mulai Insiden Sesuai Aturan Hierarki Data (`problems.html` & `dashboard.py`):**
+     - Memperbaiki endpoint `/api/problems`: menyajikan `started_at_str` dan `resolved_at_str` dalam format ringkas `_fmt_short_dt` (`DD Mon HH:mm`), serta menyediakan `started_at_full` dan `resolved_at_full` dengan detik penuh untuk atribut tooltip `title="..."`.
+     - Menghilangkan detik non-esensial (`:10`, `:09`) dari sel waktu mulai di tabel insiden, mematuhi prinsip hierarki data NOC (Aturan 3 GEMINI.md).
+  4. **Standardisasi Menu Dropdown `Aksi ▾` pada Riwayat Perubahan Integritas (FIM Events):**
+     - Mengganti tombol tunggal inline `Perbarui` pada tabel `#tbl-fim-events` menjadi menu seragam `<details class="noc-act-dropdown">` berlabel **`Aksi ▾`**.
+     - Menyediakan opsi tindakan ganda yang konsisten: `Pindai Sekarang` dan `Perbarui Acuan`, menciptakan keseragaman penuh dengan tabel jalur pengawasan di atasnya.
+  5. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.200` pada seluruh 7 berkas repositori.
+
 ## Versi 4.8.199
 
 - **Tipe Rilis:** Deteksi Mutasi Direktori FIM Real-Time, Standardisasi Kolom Path, Tooltip Kategori Berbasis Akun Operator, dan Siklus Pemindaian Cepat (*Real-Time FIM Directory Mutation Detection, Standardized Path Column, Operator Account Category Tooltips, & High-Frequency Scan Cycle*)

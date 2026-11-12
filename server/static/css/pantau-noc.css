@@ -1346,9 +1346,11 @@ tr.is-disabled > td:not(.col-act) {
 }
 #tbl-fim-paths th.col-fim-size,
 #tbl-fim-paths td.col-fim-size {
-  width: 110px !important;
-  min-width: 100px !important;
+  width: 130px !important;
+  min-width: 120px !important;
   white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 #tbl-fim-paths th.col-fim-hash,
 #tbl-fim-paths td.col-fim-hash {
@@ -1359,15 +1361,23 @@ tr.is-disabled > td:not(.col-act) {
 }
 #tbl-fim-paths th.col-fim-check,
 #tbl-fim-paths td.col-fim-check {
-  width: 110px !important;
-  min-width: 110px !important;
-  max-width: 115px !important;
+  width: 75px !important;
+  min-width: 70px !important;
+  max-width: 80px !important;
   text-align: right !important;
   white-space: nowrap !important;
   font-size: 10.5px !important;
 }
 #tbl-fim-paths th.col-fim-act,
 #tbl-fim-paths td.col-fim-act {
+  width: 85px !important;
+  min-width: 85px !important;
+  max-width: 90px !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+}
+#tbl-fim-events th.col-fim-ev-act,
+#tbl-fim-events td.col-fim-ev-act {
   width: 85px !important;
   min-width: 85px !important;
   max-width: 90px !important;
