@@ -480,7 +480,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.201"
+AGENT_VERSION = "4.8.202"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -1938,6 +1938,13 @@ def _exec_update_agent(cfg: dict, command: dict) -> dict:
             ensure_pantau_firewall_updated(force=True)
         except Exception as we:
             print(f"[OTA] Peringatan saat pembaruan wrapper mandiri: {we}")
+
+        # Auto-rebaseline /etc/systemd/system sebelum restart agar pembaruan OTA tidak memicu alarm FIM
+        try:
+            _rebaseline_fim_path("/etc/systemd/system")
+            _fim_cache["at"] = 0.0
+        except Exception as fe:
+            print(f"[OTA] Peringatan saat auto-rebaseline FIM: {fe}")
 
         _exec_restart_agent()
 
@@ -6217,6 +6224,7 @@ def _rebaseline_fim_path(target_path: str = "") -> None:
             }
         else:
             baseline.pop(p, None)
+    baseline["_meta_agent_version"] = AGENT_VERSION
     _save_fim_baseline(baseline)
 
 
@@ -6236,6 +6244,24 @@ def collect_fim(force: bool = False) -> dict:
     all_specs = DEFAULT_FIM_PATHS + _load_fim_custom_paths()
     baseline = _load_fim_baseline()
     needs_save_baseline = False
+
+    # Deteksi pembaruan versi agen: jika versi berubah (misal pasca update OTA/install.sh/git),
+    # otomatis sinkronkan acuan direktori /etc/systemd/system agar tidak memicu alarm FIM palsu.
+    last_agent_ver = baseline.get("_meta_agent_version", "")
+    if last_agent_ver != AGENT_VERSION:
+        baseline["_meta_agent_version"] = AGENT_VERSION
+        if "/etc/systemd/system" in baseline:
+            info_sysd = _inspect_fim_target("/etc/systemd/system")
+            if info_sysd.get("exists"):
+                baseline["/etc/systemd/system"] = {
+                    "sha256": info_sysd.get("sha256", ""),
+                    "size": info_sysd.get("size", 0),
+                    "mtime": info_sysd.get("mtime", 0),
+                    "permissions": info_sysd.get("permissions", ""),
+                    "owner_group": info_sysd.get("owner_group", ""),
+                    "count": info_sysd.get("count", 0),
+                }
+        needs_save_baseline = True
 
     paths_result = []
     events_result = []
@@ -6263,10 +6289,11 @@ def collect_fim(force: bool = False) -> dict:
                 # Berkas sebelumnya tercatat di baseline, lalu sekarang lenyap -> Pelanggaran integritas nyata!
                 status = "MISSING"
                 base_hash = base_info.get("sha256", "")
+                ev_sev = "warning" if cat == "system" else "info"
                 events_result.append({
                     "path": p,
                     "event_type": "DELETED",
-                    "severity": "danger",
+                    "severity": ev_sev,
                     "details": f"File atau direktori telah dihapus dari sistem ({cur_og or 'root'})",
                     "detected_at": now_iso,
                 })
@@ -6319,10 +6346,11 @@ def collect_fim(force: bool = False) -> dict:
 
                 if diffs:
                     status = "CHANGED"
+                    ev_sev = "warning" if cat == "system" else "info"
                     events_result.append({
                         "path": p,
                         "event_type": "MODIFIED",
-                        "severity": "danger",
+                        "severity": ev_sev,
                         "details": "; ".join(diffs),
                         "detected_at": now_iso,
                     })

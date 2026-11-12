@@ -247,7 +247,7 @@ except Exception as e:
     print("UNREACHABLE:%s" % e); raise SystemExit
 try:
     req = urllib.request.Request(url + "/api/commands")
-    req.add_header("User-Agent", "AgentPantau-Installer/4.8.201")
+    req.add_header("User-Agent", "AgentPantau-Installer/4.8.202")
     req.add_header("X-Api-Key", key)
     with urllib.request.urlopen(req, timeout=8) as r:
         print("OK" if r.status == 200 else "HTTP%d" % r.status)
@@ -284,6 +284,37 @@ if ! systemctl restart agent_pantau.service; then
     exit 1
 fi
 echo "[OK]   agent_pantau.service aktif (jalan sebagai 'pantau')."
+
+# Auto-rebaseline /etc/systemd/system agar pembaruan agen tidak memicu alarm FIM palsu
+if [ -f /etc/pantau/fim_baseline.json ] && [ -f /usr/local/sbin/pantau-file ]; then
+    /usr/local/sbin/pantau-file hash /etc/systemd/system >/tmp/pantau_fim_sysd.json 2>/dev/null || true
+    if [ -s /tmp/pantau_fim_sysd.json ]; then
+        python3 - <<'PY' || true
+import json, os
+try:
+    with open('/tmp/pantau_fim_sysd.json') as f:
+        res = json.load(f)
+    if res.get('ok') and os.path.isfile('/etc/pantau/fim_baseline.json'):
+        with open('/etc/pantau/fim_baseline.json') as f:
+            base = json.load(f)
+        if '/etc/systemd/system' in base:
+            base['/etc/systemd/system'] = {
+                'sha256': res.get('sha256', ''),
+                'size': res.get('size', 0),
+                'mtime': res.get('mtime', 0),
+                'permissions': res.get('octal_mode', ''),
+                'owner_group': f"{res.get('owner', '')}:{res.get('group', '')}",
+                'count': res.get('count', 0),
+            }
+            base['_meta_agent_version'] = "4.8.202"
+            with open('/etc/pantau/fim_baseline.json', 'w') as f:
+                json.dump(base, f, indent=2)
+except Exception:
+    pass
+PY
+        rm -f /tmp/pantau_fim_sysd.json
+    fi
+fi
 
 echo
 echo "=================================================================="

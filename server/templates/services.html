@@ -1919,7 +1919,7 @@ div[style*="position: fixed"] .card {
   {% set ignored_open = open_problems | selectattr('is_ignored') | list %}
   <button class="tab" data-tab="masalah" role="tab" id="tab-masalah-btn" data-i18n="tab_masalah"><span class="tab-text">Insiden</span> <span class="badge badge-{{ pmeta[problem_level][1] if (active_open and problem_level in pmeta) else 'muted' }}" id="tab-masalah-badge" style="display:{{ 'inline-block' if open_problems else 'none' }};margin-left:4px;font-size:10px;padding:1px 5px">{% if active_open %}{{ active_open|length }}{% elif ignored_open %}{{ ignored_open|length }}{% else %}0{% endif %}</span></button>
   {% set fim_anom_cnt = (fim_paths | selectattr('status', 'in', ['CHANGED', 'MISSING', 'ERROR']) | list | length) if fim_paths else 0 %}
-  <button class="tab" data-tab="integritas" role="tab" id="tab-integritas-btn"><span class="tab-text">Integritas</span> <span class="badge badge-danger" id="tab-integritas-badge" style="display:{{ 'inline-block' if fim_anom_cnt > 0 else 'none' }};margin-left:4px;font-size:10px;padding:1px 5px">{{ fim_anom_cnt if fim_anom_cnt > 0 else '' }}</span></button>
+  <button class="tab" data-tab="integritas" role="tab" id="tab-integritas-btn"><span class="tab-text">Integritas</span> <span class="badge badge-warn" id="tab-integritas-badge" style="display:{{ 'inline-block' if fim_anom_cnt > 0 else 'none' }};margin-left:4px;font-size:10px;padding:1px 5px">{{ fim_anom_cnt if fim_anom_cnt > 0 else '' }}</span></button>
   <button class="tab" data-tab="layanan" role="tab" id="tab-layanan-btn" data-i18n="tab_layanan"><span class="tab-text">Services</span></button>
   <button class="tab" data-tab="packages" role="tab" id="tab-packages-btn"><span class="tab-text">Packages</span>{% if apt_upgradable and apt_upgradable > 0 %} <span class="badge badge-warn" id="tab-packages-badge" style="margin-left:4px;font-size:10px;padding:1px 5px">{{ apt_upgradable }}</span>{% endif %}</button>
   <button class="tab" data-tab="proses" role="tab" id="tab-proses-btn" data-i18n="tab_proses"><span class="tab-text">Tasks</span></button>
@@ -2649,7 +2649,7 @@ div[style*="position: fixed"] .card {
         {% set fim_err = (fim_paths | selectattr('status', 'equalto', 'ERROR') | list | length) if fim_paths else 0 %}
         <span class="noc-head-badge noc-head-badge-info" id="fim-count-badge">{{ fim_total }} path dipantau</span>
         {% if fim_changed > 0 or fim_missing > 0 or fim_err > 0 %}
-          <span class="noc-head-badge noc-head-badge-danger" id="fim-status-badge">{{ fim_changed + fim_missing + fim_err }} anomali terdeteksi</span>
+          <span class="noc-head-badge noc-head-badge-warn" id="fim-status-badge">{{ fim_changed + fim_missing + fim_err }} anomali terdeteksi</span>
         {% else %}
           <span class="noc-head-badge noc-head-badge-success" id="fim-status-badge">Semua normal</span>
         {% endif %}
@@ -11034,7 +11034,7 @@ function renderFim(paths, events) {
   const statusBadge = document.getElementById('fim-status-badge');
   if (statusBadge) {
     if (anomalies > 0) {
-      statusBadge.className = 'noc-head-badge noc-head-badge-danger';
+      statusBadge.className = 'noc-head-badge noc-head-badge-warn';
       statusBadge.textContent = anomalies + (isEn ? ' anomalies detected' : ' anomali terdeteksi');
     } else {
       statusBadge.className = 'noc-head-badge noc-head-badge-success';
@@ -11047,6 +11047,7 @@ function renderFim(paths, events) {
   if (tabBadge) {
     if (anomalies > 0) {
       tabBadge.textContent = anomalies;
+      tabBadge.className = 'badge badge-warn';
       tabBadge.style.display = 'inline-block';
     } else {
       tabBadge.style.display = 'none';

@@ -354,6 +354,24 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.202
+
+- **Tipe Rilis:** Reklasifikasi Tingkat Keparahan FIM (Peringatan & Info), Auto-Rebaseline Cerdas Saat Pembaruan Agen, dan Penyelarasan Badge Integritas (*FIM Severity Reclassification to Warning & Info, Smart Agent-Upgrade Auto-Rebaseline, & Integrity Badge Alignment*)
+- **Fokus Utama:** Mengeliminasi pemicuan alarm palsu darurat gawat pada modal insiden kritis saat instalasi atau pembaruan berkas agen pantau di seluruh server klien, mereklasifikasi tingkat keparahan anomali FIM sesuai hierarki wajar (path sistem menjadi Peringatan/Warning dan path kustom menjadi Info), serta menyelaraskan badge visual tab dan header Integritas:
+  1. **Reklasifikasi Tingkat Keparahan Anomali FIM (`problem_service.py`):**
+     - Mengubah penetapan tingkat keparahan pada `problem_service.py` dari `danger` (gawat/kritis darurat) menjadi `ap_sev = "warning" if ap.category == "system" else "info"`.
+     - Anomali path sistem otomatis (seperti `/etc/passwd`, `/etc/shadow`, `/etc/systemd/system`) kini berkategori **`warning`** (Peringatan): tercatat pada daftar insiden dan tab Integritas dengan badge kuning, namun tidak lagi memicu modal popup darurat merah (`#alertOverlay`) atau mengunci judul tab browser.
+     - Anomali path kustom operator (seperti `/var/www/html/`) kini berkategori **`info`** (Informasi / Catatan Audit), berfungsi murni sebagai jejak audit perubahan tanpa membunyikan alarm sistem.
+  2. **Auto-Rebaseline Cerdas Saat Pembaruan Agen (`agent_pantau.py` & `install.sh`):**
+     - Menanamkan deteksi pergantian versi agen (`_meta_agent_version`) pada siklus `collect_fim()`: saat agen di-upgrade ke versi baru, agen secara otomatis menyinkronkan acuan baseline direktori `/etc/systemd/system` ke sidik jari manifest terbaru.
+     - Menyematkan auto-rebaseline pada alur OTA `_exec_update_agent()` sebelum restart agen dijadwalkan, serta pada skrip instalasi `package/install.sh` pasca daemon-reload systemd.
+     - Hasil: Pembaruan versi Pantau pada puluhan server klien terdaftar tidak akan lagi memicu alarm FIM palsu untuk `/etc/systemd/system`, membebaskan operator dari keharusan memperbarui acuan secara manual di setiap server.
+  3. **Penyelarasan Badge Tab & Header Integritas (`services.html`):**
+     - Menyelaraskan badge indikator anomali pada tombol tab Integritas (`#tab-integritas-badge`) dari `badge-danger` menjadi `badge-warn`.
+     - Menyelaraskan status badge pada header kartu Integritas (`#fim-status-badge`) dari `noc-head-badge-danger` menjadi `noc-head-badge-warn` saat anomali terdeteksi, mempertahankan konsistensi semantik visual dengan tingkat keparahan Peringatan.
+  4. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.202` pada seluruh 7 berkas repositori.
+
 ## Versi 4.8.201
 
 - **Tipe Rilis:** Perbaikan Kontras Tema Modal Insiden Kritis, Standardisasi Header Durasi Universal, Pembaruan Dinamis Judul Tab Browser, dan Eliminasi Benturan Warna Tema Terang (*Critical Alert Modal Theme Contrast Fix, Universal Duration Header Standardization, Browser Tab Title Dynamic Count Update, & Light Theme Conflict Elimination*)

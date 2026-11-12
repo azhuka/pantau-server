@@ -1784,7 +1784,7 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
                 if ap.status == "MISSING" and not ap.sha256_hash:
                     continue
                 st_label = "Modifikasi Terdeteksi" if ap.status == "CHANGED" else ("File Hilang" if ap.status == "MISSING" else "Galat Integritas")
-                ap_sev = "danger" if (ap.category == "system" or is_prod) else "warning"
+                ap_sev = "warning" if ap.category == "system" else "info"
                 inst.append({
                     "key": f"fim_anomaly:{ap.path}",
                     "severity": ap_sev,
