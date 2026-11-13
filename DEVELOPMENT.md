@@ -354,6 +354,17 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.204
+
+- **Tipe Rilis:** Penegakan Aturan Baku Paginasi Cerdas FIM: Sembunyikan Otomatis Jika Data <= 10 Baris (*FIM Smart Pagination Rule Enforcement: Auto-Hide for <= 10 Rows*)
+- **Fokus Utama:** Menegakkan kepatuhan aturan baku antarmuka NOC Pantau Server mengenai perilaku paginasi tabel:
+  1. **Penegakan Aturan Jika-Maka Paginasi (`server/templates/services.html`):**
+     - Menghapus opsi keliru `alwaysShow: true` pada inisialisasi paginasi tabel Daftar Path FIM (`#tbl-fim-paths`) dan Riwayat Kejadian FIM (`#tbl-fim-events`), baik pada `initServicesTabPagination()` maupun di dalam fungsi re-render `renderFim()`.
+     - Mengembalikan perilaku ke aturan baku mesin universal `attachTablePagination`: bilah kontrol paginasi (`.table-pagination-bar`) **wajib otomatis disembunyikan (`display: none !important`) apabila jumlah baris data <= 10**, dan **hanya muncul (`display: flex`) apabila jumlah baris data melebihi 10 baris**.
+  2. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.204` pada seluruh 7 berkas inti repositori.
+
+
 ## Versi 4.8.203
 
 - **Tipe Rilis:** Paginasi Terpadu Tabel Integritas Berkas (FIM) dan Riwayat Perubahan Integritas (*Unified Table Pagination for File Integrity Monitoring & FIM Event History Tables*)
