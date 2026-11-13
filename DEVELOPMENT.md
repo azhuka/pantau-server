@@ -354,6 +354,22 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.203
+
+- **Tipe Rilis:** Paginasi Terpadu Tabel Integritas Berkas (FIM) dan Riwayat Perubahan Integritas (*Unified Table Pagination for File Integrity Monitoring & FIM Event History Tables*)
+- **Fokus Utama:** Mengimplementasikan mesin kontrol paginasi standar terpadu (*Universal Table Pagination Engine*) secara menyeluruh pada kedua tabel tab Integritas (`services.html`), yaitu tabel Daftar Path Pengawasan FIM (`#tbl-fim-paths`) dan tabel Riwayat Perubahan Integritas (`#tbl-fim-events`), memenuhi standarisasi seluruh tabel NOC:
+  1. **Integrasi Kontainer HTML Paginasi Terpadu (`services.html`):**
+     - Menambahkan elemen bar paginasi `.table-pagination-bar` berpenanda `data-for-table="tbl-fim-paths"` (`#fim-paths-pagination-bar`) pada bagian bawah Kartu 1 (Daftar Path Integritas FIM).
+     - Menambahkan elemen bar paginasi `.table-pagination-bar` berpenanda `data-for-table="tbl-fim-events"` (`#fim-events-pagination-bar`) pada bagian bawah Kartu 2 (Riwayat Perubahan Integritas FIM).
+  2. **Inisialisasi Paginasi Terpadu (`initServicesTabPagination`):**
+     - Mendaftarkan entri ke-19 `_servicesTabPagination['fim-paths']` dengan konfigurasi limit default 10 path per halaman, opsi dropdown ukuran halaman `[10, 25, 50, 'all']`, dan `alwaysShow: true`.
+     - Mendaftarkan entri ke-20 `_servicesTabPagination['fim-events']` dengan konfigurasi limit default 10 kejadian per halaman, opsi dropdown ukuran halaman `[10, 25, 50, 100, 'all']`, dan `alwaysShow: true`.
+  3. **Sinkronisasi Re-Render Klien & Peralihan Tab (`services.html`):**
+     - Menambahkan panggilan re-evaluasi paginasi pada `showTab('integritas')` untuk memastikan limit dan navigasi halaman langsung terbarui saat operator beralih tab.
+     - Menyematkan pembaruan paginasi dinamis (`.update()`) pada fungsi re-render telemetri `renderFim(paths, events)` untuk kedua tabel setelah manipulasi DOM `tbody.innerHTML`, menjamin nomor halaman, rentang indeks baris, serta visibilitas tombol prev/next selalu selaras secara real-time.
+  4. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.203` pada seluruh 7 berkas repositori.
+
 ## Versi 4.8.202
 
 - **Tipe Rilis:** Reklasifikasi Tingkat Keparahan FIM (Peringatan & Info), Auto-Rebaseline Cerdas Saat Pembaruan Agen, dan Penyelarasan Badge Integritas (*FIM Severity Reclassification to Warning & Info, Smart Agent-Upgrade Auto-Rebaseline, & Integrity Badge Alignment*)

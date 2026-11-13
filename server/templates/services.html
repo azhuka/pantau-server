@@ -2747,6 +2747,7 @@ div[style*="position: fixed"] .card {
         </tbody>
       </table>
     </div>
+    <div class="table-pagination-bar" data-for-table="tbl-fim-paths" id="fim-paths-pagination-bar"></div>
   </div>
 
   <!-- Kartu 2: Riwayat Perubahan Integritas (FIM Events) -->
@@ -2820,6 +2821,7 @@ div[style*="position: fixed"] .card {
         </tbody>
       </table>
     </div>
+    <div class="table-pagination-bar" data-for-table="tbl-fim-events" id="fim-events-pagination-bar"></div>
   </div>
 </div>
 
@@ -5045,6 +5047,12 @@ function showTab(name) {
     if (typeof probFilter === 'function') probFilter();
     if (typeof filterServerActionHistory === 'function') filterServerActionHistory();
   }
+  if (name === 'integritas') {
+    if (typeof _servicesTabPagination !== 'undefined') {
+      if (_servicesTabPagination['fim-paths']) _servicesTabPagination['fim-paths'].update();
+      if (_servicesTabPagination['fim-events']) _servicesTabPagination['fim-events'].update();
+    }
+  }
   if (['akun', 'ports', 'firewall', 'ssl', 'cron', 'perf', 'integritas'].includes(name)) {
     if (typeof pollSystem === 'function') pollSystem();
   }
@@ -5175,6 +5183,26 @@ function initServicesTabPagination() {
   // 18. Tab Riwayat Tindakan Host Server
   if (document.getElementById('tbl-action-history') && !_servicesTabPagination['actions']) {
     _servicesTabPagination['actions'] = attachTablePagination('#tbl-action-history', { unitLabel: 'tindakan', defaultLimit: 10, pageSizeOptions: [10, 25, 50, 100, 'all'] });
+  }
+  // 19. Tab Integritas (Daftar Path FIM)
+  if (document.getElementById('tbl-fim-paths') && !_servicesTabPagination['fim-paths']) {
+    _servicesTabPagination['fim-paths'] = attachTablePagination('#tbl-fim-paths', {
+      unitLabel: 'path',
+      defaultLimit: 10,
+      pageSizeOptions: [10, 25, 50, 'all'],
+      container: document.getElementById('fim-paths-pagination-bar'),
+      alwaysShow: true
+    });
+  }
+  // 20. Tab Integritas (Riwayat Perubahan FIM Events)
+  if (document.getElementById('tbl-fim-events') && !_servicesTabPagination['fim-events']) {
+    _servicesTabPagination['fim-events'] = attachTablePagination('#tbl-fim-events', {
+      unitLabel: 'kejadian',
+      defaultLimit: 10,
+      pageSizeOptions: [10, 25, 50, 100, 'all'],
+      container: document.getElementById('fim-events-pagination-bar'),
+      alwaysShow: true
+    });
   }
 }
 
@@ -11167,6 +11195,17 @@ function renderFim(paths, events) {
         }).join('');
       }
     }
+    if (typeof _servicesTabPagination !== 'undefined' && _servicesTabPagination['fim-paths']) {
+      _servicesTabPagination['fim-paths'].update();
+    } else if (typeof attachTablePagination === 'function') {
+      _servicesTabPagination['fim-paths'] = attachTablePagination('#tbl-fim-paths', {
+        unitLabel: 'path',
+        defaultLimit: 10,
+        pageSizeOptions: [10, 25, 50, 'all'],
+        container: document.getElementById('fim-paths-pagination-bar'),
+        alwaysShow: true
+      });
+    }
   }
 
   // Render Table 2: Events
@@ -11223,6 +11262,17 @@ function renderFim(paths, events) {
           </tr>`;
         }).join('');
       }
+    }
+    if (typeof _servicesTabPagination !== 'undefined' && _servicesTabPagination['fim-events']) {
+      _servicesTabPagination['fim-events'].update();
+    } else if (typeof attachTablePagination === 'function') {
+      _servicesTabPagination['fim-events'] = attachTablePagination('#tbl-fim-events', {
+        unitLabel: 'kejadian',
+        defaultLimit: 10,
+        pageSizeOptions: [10, 25, 50, 100, 'all'],
+        container: document.getElementById('fim-events-pagination-bar'),
+        alwaysShow: true
+      });
     }
   }
 }
