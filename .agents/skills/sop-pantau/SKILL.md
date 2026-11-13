@@ -37,33 +37,39 @@ Prosedur ini merupakan keharusan baku bagi AI/developer dalam mengelola reposito
 
 ### C. Setelah Men-generate Kode (After — WAJIB OTOMATIS)
 Setiap kali menyelesaikan perbaikan bug (*patch*), penambahan fitur (*minor*), atau perombakan (*major*):
+**Wajib menggunakan skrip otomatisasi satu perintah [`tools/sop_release.py`](file:///home/bos/rj45/tools/sop_release.py)** agar seluruh rangkaian SemVer 7-berkas, kompilasi, daemon restart, git commit, push, tag, dan GitHub Release selesai dalam **15–30 detik** tanpa membuang waktu secara serial:
+```bash
+./tools/sop_release.py [versi_baru] \
+  --commit-msg "jenis(lingkup): deskripsi bahasa baku (vX.Y.Z)" \
+  --title "vX.Y.Z - Judul Baku Bahasa Indonesia" \
+  --notes "Rincian rilis untuk GitHub Releases" \
+  --changelog "Blok catatan teknis untuk dimasukkan ke DEVELOPMENT.md" \
+  --extra-files <berkas_tambahan_yang_diubah>
+```
+
+Skrip tersebut secara otomatis dan atomik mengeksekusi:
 1. **Menaikkan Versi SemVer Secara Sinkron di 7 Berkas:**
    - `server/config.py` (`APP_VERSION`)
    - `server/templates/base.html` (`v{{ app_version ... }}`)
    - `package/opt/pantau/agent/agent_pantau.py` (`AGENT_VERSION`)
    - `agent/agent_pantau.py` (sinkron identik)
-   - `package/install.sh` (User-Agent installer)
+   - `package/install.sh` (User-Agent installer & meta version)
    - `README.md` (header & fitur utama)
-   - `DEVELOPMENT.md` (blok changelog rilis baru dengan tanggal dan detail lengkap)
+   - `DEVELOPMENT.md` (blok changelog rilis baru dengan format terstruktur)
 2. **Kompilasi & Uji Sintaksis:**
-   - Jalankan `python3 -m py_compile` pada seluruh berkas Python yang diubah.
-   - Jalankan `bash -n` pada seluruh berkas skrip shell yang diubah.
+   - Menjalankan `python3 -m py_compile` pada seluruh berkas Python.
+   - Menjalankan `bash -n` pada seluruh skrip shell.
+   - Menguji validitas kompilasi template Jinja (`base.html`, `services.html`).
 3. **Penyebaran Agen & Restart Service Pusat:**
-   - Salin agen yang diperbarui ke `/opt/pantau/agent/agent_pantau.py`.
-   - Restart service agen: `sudo systemctl restart agent_pantau.service`.
-   - Restart server pusat: `sudo systemctl restart pantau-server.service` dan pastikan status `active`.
-4. **Alur Git, Tag & GitHub Releases (Satu Rangkaian Kerja Tanpa Menunggu Diminta):**
-   - Stage semua berkas terkait: `git add <berkas>`
-   - Commit dengan pesan deskriptif Bahasa Indonesia baku:
-     `git commit -m "jenis(lingkup): deskripsi bahasa baku (vX.Y.Z)"`
-   - Dorong commit ke repositori utama:
-     `git push origin master`
-   - Buat tag beranotasi:
-     `git tag -a vX.Y.Z -m "Release vX.Y.Z: Judul Bahasa Indonesia Baku"`
-   - Dorong tag ke remote:
-     `git push origin vX.Y.Z`
-   - Terbitkan GitHub Release melalui GitHub CLI (`gh`):
-     `gh release create vX.Y.Z --title "vX.Y.Z - Judul Baku Bahasa Indonesia" --notes "..."`
+   - Menyalin agen ke `/opt/pantau/agent/agent_pantau.py`.
+   - Me-restart `agent_pantau.service` dan `pantau-server.service` serta memverifikasi status `active (running)`.
+4. **Alur Git, Tag & GitHub Releases:**
+   - `git add <berkas>`
+   - `git commit -m "jenis(lingkup): deskripsi bahasa baku (vX.Y.Z)"`
+   - `git push origin master`
+   - `git tag -a vX.Y.Z -m "Release vX.Y.Z: Judul Bahasa Indonesia Baku"`
+   - `git push origin vX.Y.Z`
+   - `gh release create vX.Y.Z --title "vX.Y.Z - Judul Baku Bahasa Indonesia" --notes "..."`
 
 ---
 
