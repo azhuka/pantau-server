@@ -480,7 +480,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.204"
+AGENT_VERSION = "4.8.205"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -6121,19 +6121,34 @@ def _inspect_fim_target(path: str) -> dict:
             group = str(st.st_gid)
 
         if is_dir:
+            dir_count = 0
+            file_count = 0
             try:
                 entries = sorted([e for e in os.listdir(path) if not e.startswith(".")])
+                for e in entries:
+                    sub = os.path.join(path, e)
+                    try:
+                        if os.path.isdir(sub):
+                            dir_count += 1
+                        else:
+                            file_count += 1
+                    except Exception:
+                        file_count += 1
                 cnt = len(entries)
-                manifest_str = f"cnt:{cnt}|mtime:{int(st.st_mtime)}|" + ";;".join(entries[:500])
+                manifest_str = f"cnt:{cnt}|dirs:{dir_count}|files:{file_count}|mtime:{int(st.st_mtime)}|" + ";;".join(entries[:500])
                 dir_hash = hashlib.sha256(manifest_str.encode("utf-8")).hexdigest()
             except Exception:
                 cnt = 0
+                dir_count = 0
+                file_count = 0
                 dir_hash = f"meta:{oct_mode}:{st.st_size}:{int(st.st_mtime)}"
             return {
                 "exists": True,
                 "is_dir": True,
                 "size": st.st_size,
                 "count": cnt,
+                "dir_count": dir_count,
+                "file_count": file_count,
                 "mtime": int(st.st_mtime),
                 "permissions": oct_mode,
                 "owner_group": f"{owner}:{group}",
@@ -6162,6 +6177,8 @@ def _inspect_fim_target(path: str) -> dict:
             "is_dir": False,
             "size": st.st_size,
             "count": 0,
+            "dir_count": 0,
+            "file_count": 0,
             "mtime": int(st.st_mtime),
             "permissions": oct_mode,
             "owner_group": f"{owner}:{group}",
@@ -6179,6 +6196,8 @@ def _inspect_fim_target(path: str) -> dict:
                 "is_dir": res.get("is_dir", False),
                 "size": res.get("size", 0),
                 "count": res.get("count", 0),
+                "dir_count": res.get("dir_count", 0),
+                "file_count": res.get("file_count", 0),
                 "mtime": res.get("mtime", 0),
                 "permissions": res.get("octal_mode", ""),
                 "owner_group": f"{res.get('owner', '')}:{res.get('group', '')}",
@@ -6190,9 +6209,9 @@ def _inspect_fim_target(path: str) -> dict:
     return empty_result
 
 
-def _format_size_human(size_bytes: int, is_dir: bool, count: int) -> str:
+def _format_size_human(size_bytes: int, is_dir: bool, count: int = 0) -> str:
     if is_dir:
-        return f"Direktori ({count} file)"
+        return "Direktori"
     if size_bytes < 1024:
         return f"{size_bytes} B"
     elif size_bytes < 1024 * 1024:
@@ -6277,7 +6296,13 @@ def collect_fim(force: bool = False) -> dict:
         is_dir = info.get("is_dir", False)
         size_b = info.get("size", 0)
         cnt = info.get("count", 0)
+        dir_count = info.get("dir_count", 0)
+        file_count = info.get("file_count", 0)
         size_human = _format_size_human(size_b, is_dir, cnt)
+        if is_dir:
+            size_detail = f"{dir_count} direktori, {file_count} file"
+        else:
+            size_detail = f"{size_b} B" if size_b < 1024 else f"{size_b:,} byte ({size_human})"
         cur_hash = info.get("sha256", "")
         cur_perm = info.get("permissions", "")
         cur_og = info.get("owner_group", "")
@@ -6330,7 +6355,7 @@ def collect_fim(force: bool = False) -> dict:
                 diffs = []
                 if is_dir:
                     if cnt != base_cnt:
-                        diffs.append(f"Jumlah berkas dalam direktori berubah ({base_cnt} file -> {cnt} file)")
+                        diffs.append(f"Jumlah isi direktori berubah ({base_cnt} item -> {cnt} item: {dir_count} direktori, {file_count} file)")
                     elif cur_hash and base_hash and cur_hash != base_hash:
                         diffs.append("Entri berkas dalam direktori termodifikasi (nama atau atribut berkas berubah)")
                 else:
@@ -6364,6 +6389,10 @@ def collect_fim(force: bool = False) -> dict:
             "status": status,
             "size_bytes": size_b,
             "size_human": size_human,
+            "size_detail": size_detail,
+            "is_dir": is_dir,
+            "dir_count": dir_count,
+            "file_count": file_count,
             "sha256_hash": base_hash if exists and p in baseline else cur_hash,
             "last_sha256_hash": cur_hash,
             "permissions": cur_perm,

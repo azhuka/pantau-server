@@ -354,6 +354,23 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.205
+
+- **Tipe Rilis:** Penyederhanaan Kolom Ukuran Direktori FIM & Tooltip Rincian Jumlah Direktori dan File (*FIM Directory Size Cell Simplification & Detailed Directory/File Count Tooltip*)
+- **Fokus Utama:** Menyederhanakan tampilan isi sel kolom Ukuran pada tabel Integritas Berkas (FIM) agar hanya memuat teks ringkas "Direktori" dan memindahkan rincian penghitungan ke dalam tooltip:
+  1. **Penghitungan Terpisah Subdirektori & Berkas Agen (`agent_pantau.py` & `pantau-file`):**
+     - Memperbarui fungsi inspeksi target `_inspect_fim_target()` dan sub-aksi `action_hash` pada wrapper `pantau-file` untuk secara akurat membedakan jumlah subdirektori (`dir_count`) dan berkas biasa (`file_count`), alih-alih menggeneralisasi semuanya sebagai file.
+     - Mengubah fungsi `_format_size_human()` agar mengembalikan label baku "Direktori" untuk direktori dan mengisi metadata `size_detail` dengan string informatif (contoh: "26 direktori, 415 file").
+  2. **Ekstensi Skema Database & Sinkronisasi API (`models.py`, `api_agent.py`, `servers.py`):**
+     - Menambahkan kolom `size_detail` pada model `FIMPath` dan tabel `fim_paths` di MariaDB.
+     - Menyinkronkan endpoint penerima laporan telemetri agen `/api/report` dan endpoint data sistem `/api/servers/{sid}/system` untuk menyimpan serta menyajikan data `size_detail` ke frontend.
+  3. **Penyelarasan Tampilan Antarmuka Dwi-Render (`services.html`):**
+     - Menyederhanakan teks sel tabel kolom Ukuran pada rendering server-side Jinja dan client-side JavaScript (`renderFim`) menjadi teks bersih "Direktori".
+     - Menyematkan rincian lengkap "X direktori, Y file" pada atribut `title="..."` (tooltip hover) sel tabel, sehingga tata letak kolom tetap rapi dan operator mendapatkan informasi rinci saat mengarahkan kursor.
+  4. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.205` pada seluruh 7 berkas inti repositori.
+
+
 ## Versi 4.8.204
 
 - **Tipe Rilis:** Penegakan Aturan Baku Paginasi Cerdas FIM: Sembunyikan Otomatis Jika Data <= 10 Baris (*FIM Smart Pagination Rule Enforcement: Auto-Hide for <= 10 Rows*)

@@ -992,6 +992,18 @@ def agent_report(
             r_status = _clean_str(rp.get("status"), "VALID", 20)
             r_size_b = _clamp_int(rp.get("size_bytes"), 0, 0, 10_000_000_000_000)
             r_size_h = _clean_str(rp.get("size_human"), "", 50)
+            if "Direktori" in r_size_h:
+                r_size_h = "Direktori"
+            r_size_d = _clean_str(rp.get("size_detail"), "", 100)
+            if not r_size_d:
+                d_cnt = rp.get("dir_count")
+                f_cnt = rp.get("file_count")
+                if d_cnt is not None and f_cnt is not None:
+                    r_size_d = f"{d_cnt} direktori, {f_cnt} file"
+                elif r_size_h == "Direktori":
+                    r_size_d = "Direktori"
+                else:
+                    r_size_d = r_size_h
             r_sha = _clean_str(rp.get("sha256_hash"), "", 64)
             r_last_sha = _clean_str(rp.get("last_sha256_hash"), "", 64)
             r_perm = _clean_str(rp.get("permissions"), "", 30)
@@ -1008,6 +1020,7 @@ def agent_report(
                 fp.status = r_status
                 fp.size_bytes = r_size_b
                 fp.size_human = r_size_h
+                fp.size_detail = r_size_d
                 if not fp.sha256_hash and r_sha:
                     fp.sha256_hash = r_sha
                 fp.last_sha256_hash = r_last_sha
@@ -1023,6 +1036,7 @@ def agent_report(
                     status=r_status,
                     size_bytes=r_size_b,
                     size_human=r_size_h,
+                    size_detail=r_size_d,
                     sha256_hash=r_sha,
                     last_sha256_hash=r_last_sha,
                     permissions=r_perm,

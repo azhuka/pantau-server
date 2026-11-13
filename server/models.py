@@ -541,7 +541,8 @@ class FIMPath(Base):
     scope = Column(String(30), nullable=False, default="single_file")   # 'single_file' | 'dir_shallow' | 'dir_deep'
     status = Column(String(20), nullable=False, default="VALID")        # 'VALID' | 'CHANGED' | 'MISSING' | 'ERROR'
     size_bytes = Column(BigInteger, nullable=True)
-    size_human = Column(String(50), nullable=True)                     # misal: '1.8 KB' atau '18 file'
+    size_human = Column(String(50), nullable=True)                     # misal: '1.8 KB' atau 'Direktori'
+    size_detail = Column(String(100), nullable=True)                   # misal: '26 direktori, 415 file'
     sha256_hash = Column(String(64), nullable=True)                    # Hash SHA-256 acuan baseline
     last_sha256_hash = Column(String(64), nullable=True)               # Hash SHA-256 pemeriksaan terkini
     mtime = Column(DateTime, nullable=True)

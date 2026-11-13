@@ -2698,7 +2698,10 @@ div[style*="position: fixed"] .card {
                 <span class="badge badge-muted" style="font-size:9.5px;padding:1px 6px">{{ fp.status }}</span>
               {% endif %}
             </td>
-            <td class="col-fim-size mono" style="font-size:11px" title="{{ fp.size_human or '—' }}">{{ fp.size_human or '—' }}</td>
+            {% set is_dir_item = (fp.size_human and 'Direktori' in fp.size_human) or (fp.size_detail and 'direktori' in fp.size_detail) %}
+            {% set size_display = 'Direktori' if is_dir_item else (fp.size_human or '—') %}
+            {% set size_tooltip = fp.size_detail or (fp.size_human if not is_dir_item else 'Direktori') %}
+            <td class="col-fim-size mono" style="font-size:11px" title="{{ size_tooltip }}">{{ size_display }}</td>
             <td class="col-fim-hash">
               {% if fp.sha256_hash and fp.sha256_hash != '-' and fp.sha256_hash|length == 64 %}
                 <span class="mono fim-hash-text" title="Klik untuk menyalin Checksum SHA-256 lengkap: {{ fp.sha256_hash }}" onclick="copyFimChecksum('{{ fp.sha256_hash }}', '{{ fp.path }}')">{{ fp.sha256_hash }}</span>
@@ -11165,11 +11168,26 @@ function renderFim(paths, events) {
             </button>`;
           }
 
+          const isDir = (p.is_dir === true) || (p.size_human && p.size_human.includes('Direktori')) || (p.size_detail && p.size_detail.includes('direktori'));
+          const sizeDisplay = isDir ? (isEn ? 'Directory' : 'Direktori') : (p.size_human || '—');
+          let sizeTitle = p.size_detail || p.size_human || '—';
+          if (isDir) {
+            if (p.dir_count !== undefined && p.file_count !== undefined) {
+              sizeTitle = isEn
+                ? `${p.dir_count} directories, ${p.file_count} files`
+                : `${p.dir_count} direktori, ${p.file_count} file`;
+            } else if (p.size_detail) {
+              sizeTitle = p.size_detail;
+            } else {
+              sizeTitle = isEn ? 'Directory' : 'Direktori';
+            }
+          }
+
           return `<tr>
             <td class="col-fim-path"><code class="mono" style="font-size:11.5px;color:${pathColor};font-weight:600" title="${escHtml(p.path)}">${escHtml(p.path)}</code></td>
             <td class="col-fim-cat">${catBadge}</td>
             <td class="col-fim-status">${statusBadgeHtml}</td>
-            <td class="col-fim-size mono" style="font-size:11px" title="${escHtml(p.size_human || '—')}">${escHtml(p.size_human || '—')}</td>
+            <td class="col-fim-size mono" style="font-size:11px" title="${escHtml(sizeTitle)}">${escHtml(sizeDisplay)}</td>
             <td class="col-fim-hash">${hashHtml}</td>
             <td class="col-fim-check mono" style="font-size:10.5px;color:var(--dim)"><span title="${escHtml(checkTitle)}">${escHtml(checkTime)}</span></td>
             <td class="col-fim-act" style="text-align:center">
