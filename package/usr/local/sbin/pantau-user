@@ -81,10 +81,33 @@ case "$ACTION" in
         fi
 
         if [ "$IS_SUDO" = "1" ] || [ "$IS_SUDO" = "true" ]; then
-            usermod -aG sudo "$USERNAME" 2>/dev/null || usermod -aG wheel "$USERNAME" 2>/dev/null || true
+            usermod -aG sudo,adm "$USERNAME" 2>/dev/null || usermod -aG sudo "$USERNAME" 2>/dev/null || usermod -aG wheel "$USERNAME" 2>/dev/null || true
         fi
 
         echo "OK: Pengguna '$USERNAME' berhasil dibuat (Shell: $SHELL_PATH, Sudo: $IS_SUDO)"
+        ;;
+
+    add-group)
+        USERNAME="${1:-}"
+        NEW_GROUPS="${2:-}"
+        [ -n "$USERNAME" ] || fail "Username wajib diisi"
+        [ -n "$NEW_GROUPS" ] || fail "Grup tujuan wajib diisi"
+        validate_username "$USERNAME"
+        IFS=',' read -ra ADDM_GRPS <<< "$NEW_GROUPS"
+        for g in "${ADDM_GRPS[@]}"; do
+            g="$(echo "$g" | tr -d ' ')"
+            case "$g" in
+                sudo|adm|wheel)
+                    if getent group "$g" >/dev/null 2>&1; then
+                        usermod -aG "$g" "$USERNAME" 2>/dev/null || true
+                    fi
+                    ;;
+                *)
+                    fail "Grup '$g' tidak diizinkan untuk eskalasi otomatis"
+                    ;;
+            esac
+        done
+        echo "OK: Grup '$NEW_GROUPS' berhasil ditambahkan ke '$USERNAME'"
         ;;
 
     lock)
@@ -169,6 +192,6 @@ case "$ACTION" in
         ;;
 
     *)
-        fail "Aksi tidak dikenal: '$ACTION' (harus create, lock, unlock, delete, list-locked, terminate-session)"
+        fail "Aksi tidak dikenal: '$ACTION' (harus create, add-group, lock, unlock, delete, list-locked, terminate-session)"
         ;;
 esac

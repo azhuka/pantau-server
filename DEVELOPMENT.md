@@ -354,6 +354,15 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.216
+
+### Perbaikan & Peningkatan (v4.8.216)
+- **Penyeragaman Grup Operator (sudo & adm):** Menyeragamkan penugasan grup pada akun pengguna terdedikasi operator di seluruh armada klien agar secara konsisten tergabung dalam grup sudo dan adm (mendukung inspeksi berkas log sistem Linux).
+- **Aksi add-group pada pantau-user:** Menambahkan aksi add-group pada wrapper /usr/local/sbin/pantau-user dengan variabel NEW_GROUPS yang aman untuk eskalasi grup terawasi (sudo, adm, wheel).
+- **Deteksi Sesi Web Terminal Realtime:** Mengimplementasikan pelacakan sesi aktif internal _ACTIVE_WEB_TERMINALS dan penyempurnaan pemindai PTY proses _parse_who() agar mengaitkan terminal pts/ secara tepat ke pengguna operator (bukan proses runner root), sehingga kartu Sesi Aktif dan status login menampilkan informasi akurat.
+- **Auto-Update Tampilan Aktivitas Pengguna:** Memperbarui antarmuka user_activity.html agar kartu statistik sesi aktif dan waktu login terakhir diperbarui secara dinamis saat data aktivitas disegarkan.
+
+
 ## Versi 4.8.215
 
 - **Deteksi Sesi PTY Interaktif Aktif:** Memperluas mesin deteksi _parse_who() untuk memindai proses shell interaktif pada terminal pts/ (Web Terminal), sehingga sesi aktif langsung menyala hijau di Tab Users dan menggantikan teks 'Never logged in' dengan waktu sesi aktif presisi.

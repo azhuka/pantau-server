@@ -480,7 +480,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.215"
+AGENT_VERSION = "4.8.216"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -1109,10 +1109,33 @@ case "$ACTION" in
         fi
 
         if [ "$IS_SUDO" = "1" ] || [ "$IS_SUDO" = "true" ]; then
-            usermod -aG sudo "$USERNAME" 2>/dev/null || usermod -aG wheel "$USERNAME" 2>/dev/null || true
+            usermod -aG sudo,adm "$USERNAME" 2>/dev/null || usermod -aG sudo "$USERNAME" 2>/dev/null || usermod -aG wheel "$USERNAME" 2>/dev/null || true
         fi
 
         echo "OK: Pengguna '$USERNAME' berhasil dibuat (Shell: $SHELL_PATH, Sudo: $IS_SUDO)"
+        ;;
+
+    add-group)
+        USERNAME="${1:-}"
+        NEW_GROUPS="${2:-}"
+        [ -n "$USERNAME" ] || fail "Username wajib diisi"
+        [ -n "$NEW_GROUPS" ] || fail "Grup tujuan wajib diisi"
+        validate_username "$USERNAME"
+        IFS=',' read -ra ADDM_GRPS <<< "$NEW_GROUPS"
+        for g in "${ADDM_GRPS[@]}"; do
+            g="$(echo "$g" | tr -d ' ')"
+            case "$g" in
+                sudo|adm|wheel)
+                    if getent group "$g" >/dev/null 2>&1; then
+                        usermod -aG "$g" "$USERNAME" 2>/dev/null || true
+                    fi
+                    ;;
+                *)
+                    fail "Grup '$g' tidak diizinkan untuk eskalasi otomatis"
+                    ;;
+            esac
+        done
+        echo "OK: Grup '$NEW_GROUPS' berhasil ditambahkan ke '$USERNAME'"
         ;;
 
     lock)
@@ -1197,14 +1220,14 @@ case "$ACTION" in
         ;;
 
     *)
-        fail "Aksi tidak dikenal: '$ACTION' (harus create, lock, unlock, delete, list-locked, terminate-session)"
+        fail "Aksi tidak dikenal: '$ACTION' (harus create, add-group, lock, unlock, delete, list-locked, terminate-session)"
         ;;
 esac
 """
 
 
 def ensure_pantau_user_updated(force: bool = False) -> bool:
-    """Memastikan wrapper /usr/local/sbin/pantau-user mendukung fitur terbaru (misal: terminate-session).
+    """Memastikan wrapper /usr/local/sbin/pantau-user mendukung fitur terbaru (misal: terminate-session, add-group).
     Jika berkas belum ada, versi usang, atau force=True, otomatis perbarui via root langsung atau sudo pantau-file.
     """
     try:
@@ -1215,7 +1238,7 @@ def ensure_pantau_user_updated(force: bool = False) -> bool:
                     cur_content = f.read()
             except Exception:
                 pass
-            if "terminate-session" in cur_content:
+            if "terminate-session" in cur_content and "add-group" in cur_content:
                 return True
 
         content_to_write = PANTAU_USER_SCRIPT_BODY.strip() + "\n"
@@ -3085,6 +3108,8 @@ def _parse_lastlog() -> dict[str, str]:
 
 
 _who_re = re.compile(r"^(\S+)\s+(\S+)\s+(.+?)(?:\s+(\.|\d+:\d+|old))?\s*(?:(\d+))?\s*(?:\((.*?)\))?$")
+_ACTIVE_WEB_TERMINALS: dict[str, dict] = {}
+_LAST_SEEN_USER_LOGIN: dict[str, str] = {}
 
 
 def _parse_who() -> list[dict]:
@@ -3113,8 +3138,25 @@ def _parse_who() -> list[dict]:
     # yang tidak tercatat dalam basis data login formal utmp
     try:
         seen_ttys = {s.get("tty") for s in sessions if s.get("tty")}
+
+        # 1. Sesi Web Terminal yang sedang dijalankan agen secara realtime
+        for sess_info in list(_ACTIVE_WEB_TERMINALS.values()):
+            tty_name = sess_info.get("tty", "").replace("/dev/", "")
+            if tty_name and tty_name not in seen_ttys:
+                seen_ttys.add(tty_name)
+                sessions.append({
+                    "user": sess_info.get("user", "operator"),
+                    "tty": tty_name,
+                    "time": sess_info.get("time", ""),
+                    "idle": ".",
+                    "pid": str(sess_info.get("pid", "")),
+                    "from": "Web Terminal",
+                })
+
+        # 2. Pindai seluruh proses PTY di sistem
         ps_res = _run_cmd(["ps", "-eo", "user,tty,pid,stat,comm,lstart,args", "--no-headers"], timeout=4)
         if ps_res and ps_res.stdout:
+            pts_candidates: dict[str, list[dict]] = {}
             for pline in ps_res.stdout.splitlines():
                 parts = pline.split()
                 if len(parts) >= 10:
@@ -3134,15 +3176,41 @@ def _parse_who() -> list[dict]:
                         t_str = raw_lstart
 
                     src_desc = "Web Terminal" if ("pantau-shell" in p_args or p_user == "operator") else "(lokal)"
-                    seen_ttys.add(p_tty)
-                    sessions.append({
+                    pts_candidates.setdefault(p_tty, []).append({
                         "user": p_user,
                         "tty": p_tty,
                         "time": t_str,
                         "idle": ".",
                         "pid": p_pid,
                         "from": src_desc,
+                        "args": p_args,
+                        "is_operator": (p_user == "operator"),
+                        "is_root": (p_user == "root"),
                     })
+
+            for p_tty, c_list in pts_candidates.items():
+                if p_tty in seen_ttys:
+                    continue
+                # Urutkan prioritas:
+                # 0: operator (Web Terminal)
+                # 1: user reguler non-root
+                # 2: root langsung
+                # 3: wrapper root (misal: pantau-shell atau sudo wrapper)
+                c_list.sort(key=lambda x: (
+                    0 if x["is_operator"]
+                    else (1 if not x["is_root"]
+                    else (3 if "pantau-shell" in x["args"] else 2))
+                ))
+                chosen = c_list[0]
+                seen_ttys.add(p_tty)
+                sessions.append({
+                    "user": chosen["user"],
+                    "tty": chosen["tty"],
+                    "time": chosen["time"],
+                    "idle": chosen["idle"],
+                    "pid": chosen["pid"],
+                    "from": chosen["from"],
+                })
     except Exception:
         pass
 
@@ -3253,12 +3321,29 @@ def collect_accounts() -> list[dict]:
         is_locked = pw.pw_name in locked_set
 
         last_login_val = lastlog.get(pw.pw_name, "")
-        if (not last_login_val or "Never logged in" in last_login_val) and sessions:
-            s_first = sessions[0]
-            s_time = s_first.get("time", "")
-            s_from = s_first.get("from") or "terminal"
-            if s_time:
-                last_login_val = f"{s_time} ({s_from})"
+        if not last_login_val or "Never logged in" in last_login_val:
+            if sessions:
+                s_first = sessions[0]
+                s_time = s_first.get("time", "")
+                s_from = s_first.get("from") or "Web Terminal"
+                if s_time:
+                    last_login_val = f"{s_time} ({s_from})"
+                    _LAST_SEEN_USER_LOGIN[pw.pw_name] = last_login_val
+            elif pw.pw_name in _LAST_SEEN_USER_LOGIN:
+                last_login_val = _LAST_SEEN_USER_LOGIN[pw.pw_name]
+            elif pw.pw_name == "operator" or pw.pw_uid >= 1000:
+                op_home = pw.pw_dir or f"/home/{pw.pw_name}"
+                hist_file = os.path.join(op_home, ".bash_history")
+                try:
+                    if os.path.isfile(hist_file) and os.path.getsize(hist_file) > 0:
+                        mtime = os.path.getmtime(hist_file)
+                        dt_str = datetime.fromtimestamp(mtime).strftime("%Y-%m-%d %H:%M:%S")
+                        last_login_val = f"{dt_str} (Web Terminal)"
+                        _LAST_SEEN_USER_LOGIN[pw.pw_name] = last_login_val
+                except Exception:
+                    pass
+        elif last_login_val and "Never logged in" not in last_login_val:
+            _LAST_SEEN_USER_LOGIN[pw.pw_name] = last_login_val
 
         accounts.append({
             "user": pw.pw_name,
@@ -5453,6 +5538,41 @@ def collect_user_logins(max_events: int = 100, target_user: str | None = None) -
                             "alert": "",
                             "method": cmd_val,
                         })
+                    # Sinkronisasi event siklus hidup sesi Web Terminal
+                    if cmd_val == "[Sesi Web Terminal Dibuka]":
+                        open_key = (u, ts_iso, tty_val, "login")
+                        if open_key not in seen_sessions:
+                            seen_sessions.add(open_key)
+                            events.append({
+                                "ts": ts_iso,
+                                "user": u,
+                                "type": "login",
+                                "from": "Web Terminal",
+                                "tty": tty_val,
+                                "login_time": ts_iso,
+                                "pwd": pwd_val,
+                                "target_user": u,
+                                "alert": "",
+                                "method": f"{tty_val} (Web Terminal)",
+                                "active": False,
+                            })
+                    elif cmd_val.startswith("[Sesi Web Terminal Ditutup"):
+                        close_key = (u, ts_iso, tty_val, "selesai")
+                        if close_key not in seen_sessions:
+                            seen_sessions.add(close_key)
+                            events.append({
+                                "ts": ts_iso,
+                                "user": u,
+                                "type": "selesai",
+                                "from": "Web Terminal",
+                                "tty": tty_val,
+                                "logout_time": ts_iso,
+                                "pwd": pwd_val,
+                                "target_user": u,
+                                "alert": "",
+                                "method": f"{tty_val} (Web Terminal)",
+                                "active": False,
+                            })
         except Exception:
             pass
 
@@ -7411,6 +7531,20 @@ def ensure_pantau_operator_account() -> bool:
             elif os.path.isfile(PANTAU_USER_CMD):
                 subprocess.run(["/usr/bin/sudo", "-n", PANTAU_USER_CMD, "create", "operator", "/bin/bash", "1", "Pantau Web Terminal Operator"], capture_output=True, timeout=10)
 
+        # Pastikan akun operator selalu tergabung dalam grup sudo dan adm secara seragam di seluruh armada
+        try:
+            if IS_ROOT:
+                for grp_name in ("sudo", "adm"):
+                    try:
+                        grp.getgrnam(grp_name)
+                        subprocess.run(["usermod", "-aG", grp_name, "operator"], capture_output=True, timeout=5)
+                    except Exception:
+                        pass
+            elif os.path.isfile(PANTAU_USER_CMD):
+                subprocess.run(["/usr/bin/sudo", "-n", PANTAU_USER_CMD, "add-group", "operator", "sudo,adm"], capture_output=True, timeout=5)
+        except Exception:
+            pass
+
         # Pastikan direktori home dan berkas history operator tersedia
         try:
             op_entry = pwd.getpwnam("operator")
@@ -7792,6 +7926,11 @@ def _run_terminal_session(cfg: dict, session_id: str) -> None:
     ensure_pantau_shell_updated()
     master_fd, slave_fd = pty.openpty()
     _set_terminal_winsize(master_fd, 24, 80)
+    slave_name = ""
+    try:
+        slave_name = os.ttyname(slave_fd).replace("/dev/", "")
+    except Exception:
+        slave_name = ""
 
     if os.path.exists(PANTAU_SHELL_CMD):
         cmd = [PANTAU_SHELL_CMD] if IS_ROOT else ["/usr/bin/sudo", "-n", PANTAU_SHELL_CMD]
@@ -7829,6 +7968,15 @@ def _run_terminal_session(cfg: dict, session_id: str) -> None:
         )
         http_json_request(cfg, f"/api/agent/terminal/{session_id}/close", method="POST", timeout=5)
         return
+
+    # Registrasi sesi Web Terminal aktif untuk pemantauan realtime
+    start_ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    _ACTIVE_WEB_TERMINALS[session_id] = {
+        "tty": slave_name,
+        "pid": proc.pid,
+        "user": "operator",
+        "time": start_ts,
+    }
 
     # Tutup slave_fd di proses induk agar master_fd menerima EOF saat anak selesai
     try:
@@ -8021,6 +8169,8 @@ def _run_terminal_session(cfg: dict, session_id: str) -> None:
         http_json_request(cfg, f"/api/agent/terminal/{session_id}/close", method="POST", timeout=5)
     except Exception:
         pass
+    finally:
+        _ACTIVE_WEB_TERMINALS.pop(session_id, None)
 
 
 def _terminal_worker_loop(cfg: dict) -> None:

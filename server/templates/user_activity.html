@@ -66,7 +66,7 @@
         </span>
       {% endif %}
     </div>
-    <div style="font-size:11px;color:var(--dim);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="{{ account.last_login or '-' }}">
+    <div id="stat-last-login-value" style="font-size:11px;color:var(--dim);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="{{ account.last_login or '-' }}">
       {{ account.last_login or 'Belum ada riwayat login' }}
     </div>
   </div>
@@ -308,6 +308,26 @@ function renderChips(logins) {
       elStatSessions.innerHTML = `${c.aktif} Sesi <span style="font-size:11px;color:var(--green);font-weight:normal;margin-left:4px">(${escapeHtml(actTtys)})</span>`;
     } else {
       elStatSessions.textContent = '0 Sesi';
+    }
+  }
+  const elStatLastLogin = document.getElementById('stat-last-login-value');
+  if (elStatLastLogin) {
+    const actSess = logins.filter(x => x.type === 'aktif');
+    if (actSess.length > 0) {
+      const s0 = actSess[0];
+      const tStr = s0.login_time || s0.ts || '';
+      if (tStr) {
+        const fromDesc = (s0.from && s0.from !== '(lokal)') ? s0.from : 'Web Terminal';
+        elStatLastLogin.textContent = `${tStr} (${fromDesc})`;
+        elStatLastLogin.title = `${tStr} (${fromDesc})`;
+      }
+    } else if (elStatLastLogin.textContent.includes('Never logged in') || elStatLastLogin.textContent.includes('Belum ada riwayat')) {
+      const lastEv = logins.find(x => x.type === 'login' || x.type === 'selesai' || x.type === 'shell' || x.type === 'sudo');
+      if (lastEv && lastEv.ts) {
+        const fromDesc = (lastEv.from && lastEv.from !== '(lokal)') ? lastEv.from : 'Web Terminal';
+        elStatLastLogin.textContent = `${lastEv.ts} (${fromDesc})`;
+        elStatLastLogin.title = `${lastEv.ts} (${fromDesc})`;
+      }
     }
   }
   const topTermBtns = document.querySelectorAll('.top-btn-term-session');
@@ -683,16 +703,6 @@ function renderLoginsData(rawLogins) {
         + '</td>'
         + '<td><span class="mono" style="color:var(--text);font-weight:600">' + escapeHtml(x.user || '-') + '</span></td>'
         + '<td><span class="badge ' + cls + '" ' + badgeStyle + '>' + typeLabel + '</span></td>'
-        + '<td>' + termInfo + '</td>'
-        + '<td>' + fromCell + '</td>'
-        + '<td>' + pwdCell + '</td>'
-        + '<td class="col-detail">' + methodCell + '</td>'
-        + '</tr>';
-        + '<td class="mono col-time" style="font-size:10.5px;white-space:nowrap" title="' + escapeHtml(timeTooltip) + '">'
-        + '<span class="mono" style="font-size:10.5px;color:var(--text);font-weight:600">' + escapeHtml(essentialTime) + '</span>'
-        + '</td>'
-        + '<td><span class="mono" style="color:var(--text);font-weight:600">' + escapeHtml(x.user || '-') + '</span></td>'
-        + '<td><span class="badge ' + cls + '">' + typeLabel + '</span></td>'
         + '<td>' + termInfo + '</td>'
         + '<td>' + fromCell + '</td>'
         + '<td>' + pwdCell + '</td>'
