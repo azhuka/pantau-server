@@ -111,40 +111,80 @@ def action_hash(path: str) -> None:
         owner, group = get_owner_group(st)
         oct_mode = oct(st.st_mode & 0o777)[2:].zfill(4)
         if is_dir:
+            files_map = {}
             dir_count = 0
             file_count = 0
+            total_size = 0
+            ignored_dirs = {".git", ".svn", ".cache", "node_modules", "__pycache__", ".idea", ".vscode"}
             try:
-                entries = sorted([e for e in os.listdir(path) if not e.startswith(".")])
-                for e in entries:
-                    sub = os.path.join(path, e)
-                    try:
-                        if os.path.isdir(sub):
-                            dir_count += 1
+                for root, dirs, files in os.walk(path, topdown=True, followlinks=False):
+                    dirs[:] = [d for d in dirs if not d.startswith(".") and d not in ignored_dirs]
+                    rel_root = os.path.relpath(root, path)
+                    depth = 0 if rel_root == "." else len(rel_root.split(os.sep))
+                    if depth >= 10:
+                        dirs.clear()
+                        continue
+                    dir_count += len(dirs)
+                    for f in files:
+                        if f.startswith("."):
+                            continue
+                        if file_count >= 5000:
+                            break
+                        full_p = os.path.join(root, f)
+                        rel_f = os.path.relpath(full_p, path)
+                        try:
+                            st_f = os.stat(full_p)
+                        except Exception:
+                            continue
+                        f_own, f_grp = get_owner_group(st_f)
+                        f_perm = oct(st_f.st_mode & 0o777)[2:].zfill(4)
+                        f_sz = st_f.st_size
+                        f_mt = int(st_f.st_mtime)
+                        total_size += f_sz
+                        if f_sz <= 5 * 1024 * 1024:
+                            try:
+                                h_f = hashlib.sha256()
+                                with open(full_p, "rb") as fh:
+                                    while chk := fh.read(65536):
+                                        h_f.update(chk)
+                                f_h = h_f.hexdigest()
+                            except Exception:
+                                f_h = f"meta:{f_perm}:{f_sz}:{f_mt}"
                         else:
-                            file_count += 1
-                    except Exception:
+                            f_h = f"meta:{f_perm}:{f_sz}:{f_mt}"
+                        files_map[rel_f] = {
+                            "size": f_sz,
+                            "mtime": f_mt,
+                            "perm": f_perm,
+                            "owner": f_own,
+                            "group": f_grp,
+                            "sha256": f_h,
+                        }
                         file_count += 1
-                cnt = len(entries)
-                manifest_str = f"cnt:{cnt}|dirs:{dir_count}|files:{file_count}|mtime:{int(st.st_mtime)}|" + ";;".join(entries[:500])
-                dir_hash = hashlib.sha256(manifest_str.encode("utf-8")).hexdigest()
+                    if file_count >= 5000:
+                        break
             except Exception:
-                cnt = 0
-                dir_count = 0
-                file_count = 0
-                dir_hash = f"meta:{oct_mode}:{st.st_size}:{int(st.st_mtime)}"
+                pass
+            manifest_items = []
+            for k in sorted(files_map.keys())[:1500]:
+                fm = files_map[k]
+                manifest_items.append(f"{k}:{fm['sha256']}:{fm['size']}:{fm['perm']}:{fm['owner']}")
+            manifest_str = f"cnt:{file_count}|dirs:{dir_count}|files:{file_count}|" + ";;".join(manifest_items)
+            dir_hash = hashlib.sha256(manifest_str.encode("utf-8")).hexdigest()
             ok_exit({
                 "path": path,
                 "is_dir": True,
                 "exists": True,
-                "size": st.st_size,
-                "count": cnt,
+                "size": total_size if total_size > 0 else st.st_size,
+                "count": file_count + dir_count,
                 "dir_count": dir_count,
                 "file_count": file_count,
                 "mtime": int(st.st_mtime),
                 "octal_mode": oct_mode,
                 "owner": owner,
                 "group": group,
-                "sha256": dir_hash
+                "sha256": dir_hash,
+                "files": files_map,
             })
         else:
             h = hashlib.sha256()

@@ -354,6 +354,13 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.208
+
+- **Pemindaian Rekursif Pohon Direktori (Subfolder FIM):** Mengembangkan mesin pemindaian FIM agen (_scan_dir_tree) untuk menjangkau seluruh subdirektori secara rekursif (hingga 10 level kedalaman) dengan pembatasan beban aman (maksimal 5.000 file) serta pengabaian direktori noise (.git, node_modules, dll.).
+- **Pelaporan Insiden Terperinci & Spesifik:** Setiap anomali modifikasi, penambahan, penghapusan, atau perubahan hak akses pada direktori yang dipantau (seperti /var/www/html) kini melaporkan file spesifik beserta identitas user pemiliknya di server klien (contoh: 'File test.txt telah diubah oleh root' atau 'File /folder_test/folder_test/test.txt telah diubah oleh www-data'), menghilangkan inspeksi buta oleh operator NOC.
+- **Sinkronisasi Deduplikasi Kejadian di Server:** Memperluas kriteria deduplikasi FIMEvent di api_agent.py dengan mempertimbangkan details kejadian, memastikan seluruh file berbeda yang termodifikasi dalam satu direktori tercatat lengkap di riwayat kejadian tanpa terbuang.
+
+
 ## Versi 4.8.207
 
 - **Dispatch Instan Pembaruan Agen:** Menghapus batasan kaku cooldown 5 menit pada api_agent.py yang sebelumnya memblokir pengiriman perintah pembaruan versi baru secara global.

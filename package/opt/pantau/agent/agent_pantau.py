@@ -480,7 +480,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.207"
+AGENT_VERSION = "4.8.208"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -6086,6 +6086,140 @@ def _save_fim_baseline(baseline: dict) -> bool:
         return False
 
 
+def _scan_dir_tree(dir_path: str, max_depth: int = 10, max_files: int = 5000) -> dict:
+    """
+    Pemindaian pohon direktori secara rekursif hingga kedalaman tertentu (maksimal max_depth subfolder).
+    Mengumpulkan peta file spesifik (ukuran, mtime, permissions, user/owner, sha256) untuk
+    deteksi insiden integritas mendalam hingga ke file dalam subdirektori.
+    """
+    dir_path_clean = os.path.abspath(dir_path)
+    empty_res = {
+        "exists": False,
+        "is_dir": True,
+        "size": 0,
+        "count": 0,
+        "dir_count": 0,
+        "file_count": 0,
+        "mtime": 0,
+        "permissions": "0755",
+        "owner_group": "root:root",
+        "sha256": "",
+        "files": {},
+    }
+    if not os.path.exists(dir_path_clean):
+        return empty_res
+
+    try:
+        st_root = os.stat(dir_path_clean)
+    except Exception:
+        return empty_res
+
+    try:
+        root_owner = pwd.getpwuid(st_root.st_uid).pw_name
+    except Exception:
+        root_owner = str(st_root.st_uid)
+    try:
+        root_group = grp.getgrgid(st_root.st_gid).gr_name
+    except Exception:
+        root_group = str(st_root.st_gid)
+    root_perm = oct(st_root.st_mode & 0o777)[2:].zfill(4)
+
+    files_map = {}
+    dir_count = 0
+    file_count = 0
+    total_size = 0
+
+    ignored_dirs = {".git", ".svn", ".cache", "node_modules", "__pycache__", ".idea", ".vscode"}
+
+    try:
+        for root, dirs, files in os.walk(dir_path_clean, topdown=True, followlinks=False):
+            dirs[:] = [d for d in dirs if not d.startswith(".") and d not in ignored_dirs]
+            rel_root = os.path.relpath(root, dir_path_clean)
+            depth = 0 if rel_root == "." else len(rel_root.split(os.sep))
+            if depth >= max_depth:
+                dirs.clear()
+                continue
+
+            dir_count += len(dirs)
+
+            for f in files:
+                if f.startswith("."):
+                    continue
+                if file_count >= max_files:
+                    break
+                full_path = os.path.join(root, f)
+                rel_file = os.path.relpath(full_path, dir_path_clean)
+
+                try:
+                    st = os.stat(full_path)
+                except Exception:
+                    continue
+
+                try:
+                    f_owner = pwd.getpwuid(st.st_uid).pw_name
+                except Exception:
+                    f_owner = str(st.st_uid)
+                try:
+                    f_group = grp.getgrgid(st.st_gid).gr_name
+                except Exception:
+                    f_group = str(st.st_gid)
+                f_perm = oct(st.st_mode & 0o777)[2:].zfill(4)
+                f_size = st.st_size
+                f_mtime = int(st.st_mtime)
+                total_size += f_size
+
+                # Hitung hash SHA-256 untuk file <= 5MB, metadata hash untuk file > 5MB
+                f_hash = ""
+                if f_size <= 5 * 1024 * 1024:
+                    try:
+                        h = hashlib.sha256()
+                        with open(full_path, "rb") as fh:
+                            while chunk := fh.read(65536):
+                                h.update(chunk)
+                        f_hash = h.hexdigest()
+                    except Exception:
+                        f_hash = f"meta:{f_perm}:{f_size}:{f_mtime}"
+                else:
+                    f_hash = f"meta:{f_perm}:{f_size}:{f_mtime}"
+
+                files_map[rel_file] = {
+                    "size": f_size,
+                    "mtime": f_mtime,
+                    "perm": f_perm,
+                    "owner": f_owner,
+                    "group": f_group,
+                    "sha256": f_hash,
+                }
+                file_count += 1
+
+            if file_count >= max_files:
+                break
+    except Exception:
+        pass
+
+    # Hitung hash pohon direktori terpadu
+    manifest_items = []
+    for k in sorted(files_map.keys())[:1500]:
+        fm = files_map[k]
+        manifest_items.append(f"{k}:{fm['sha256']}:{fm['size']}:{fm['perm']}:{fm['owner']}")
+    manifest_str = f"cnt:{file_count}|dirs:{dir_count}|files:{file_count}|" + ";;".join(manifest_items)
+    tree_hash = hashlib.sha256(manifest_str.encode("utf-8")).hexdigest()
+
+    return {
+        "exists": True,
+        "is_dir": True,
+        "size": total_size if total_size > 0 else st_root.st_size,
+        "count": file_count + dir_count,
+        "dir_count": dir_count,
+        "file_count": file_count,
+        "mtime": int(st_root.st_mtime),
+        "permissions": root_perm,
+        "owner_group": f"{root_owner}:{root_group}",
+        "sha256": tree_hash,
+        "files": files_map,
+    }
+
+
 def _inspect_fim_target(path: str) -> dict:
     """Inspeksi status, ukuran, hak akses, dan SHA-256 hash dari target path.
     Mempertahankan prinsip zero-external dependency dan toleransi terhadap boundary hak akses.
@@ -6095,10 +6229,13 @@ def _inspect_fim_target(path: str) -> dict:
         "is_dir": False,
         "size": 0,
         "count": 0,
+        "dir_count": 0,
+        "file_count": 0,
         "mtime": 0,
         "permissions": "",
         "owner_group": "",
         "sha256": "",
+        "files": {},
     }
     if not path:
         return empty_result
@@ -6121,39 +6258,7 @@ def _inspect_fim_target(path: str) -> dict:
             group = str(st.st_gid)
 
         if is_dir:
-            dir_count = 0
-            file_count = 0
-            try:
-                entries = sorted([e for e in os.listdir(path) if not e.startswith(".")])
-                for e in entries:
-                    sub = os.path.join(path, e)
-                    try:
-                        if os.path.isdir(sub):
-                            dir_count += 1
-                        else:
-                            file_count += 1
-                    except Exception:
-                        file_count += 1
-                cnt = len(entries)
-                manifest_str = f"cnt:{cnt}|dirs:{dir_count}|files:{file_count}|mtime:{int(st.st_mtime)}|" + ";;".join(entries[:500])
-                dir_hash = hashlib.sha256(manifest_str.encode("utf-8")).hexdigest()
-            except Exception:
-                cnt = 0
-                dir_count = 0
-                file_count = 0
-                dir_hash = f"meta:{oct_mode}:{st.st_size}:{int(st.st_mtime)}"
-            return {
-                "exists": True,
-                "is_dir": True,
-                "size": st.st_size,
-                "count": cnt,
-                "dir_count": dir_count,
-                "file_count": file_count,
-                "mtime": int(st.st_mtime),
-                "permissions": oct_mode,
-                "owner_group": f"{owner}:{group}",
-                "sha256": dir_hash,
-            }
+            return _scan_dir_tree(path)
 
         # Target adalah file reguler: hitung hash SHA-256
         cur_hash = ""
@@ -6183,6 +6288,7 @@ def _inspect_fim_target(path: str) -> dict:
             "permissions": oct_mode,
             "owner_group": f"{owner}:{group}",
             "sha256": cur_hash,
+            "files": {},
         }
     except Exception:
         pass
@@ -6202,6 +6308,7 @@ def _inspect_fim_target(path: str) -> dict:
                 "permissions": res.get("octal_mode", ""),
                 "owner_group": f"{res.get('owner', '')}:{res.get('group', '')}",
                 "sha256": res.get("sha256", ""),
+                "files": res.get("files", {}),
             }
     except Exception:
         pass
@@ -6240,6 +6347,9 @@ def _rebaseline_fim_path(target_path: str = "") -> None:
                 "permissions": info.get("permissions", ""),
                 "owner_group": info.get("owner_group", ""),
                 "count": info.get("count", 0),
+                "dir_count": info.get("dir_count", 0),
+                "file_count": info.get("file_count", 0),
+                "files": info.get("files", {}),
             }
         else:
             baseline.pop(p, None)
@@ -6279,6 +6389,9 @@ def collect_fim(force: bool = False) -> dict:
                     "permissions": info_sysd.get("permissions", ""),
                     "owner_group": info_sysd.get("owner_group", ""),
                     "count": info_sysd.get("count", 0),
+                    "dir_count": info_sysd.get("dir_count", 0),
+                    "file_count": info_sysd.get("file_count", 0),
+                    "files": info_sysd.get("files", {}),
                 }
         needs_save_baseline = True
 
@@ -6335,6 +6448,9 @@ def collect_fim(force: bool = False) -> dict:
                     "permissions": cur_perm,
                     "owner_group": cur_og,
                     "count": cnt,
+                    "dir_count": dir_count,
+                    "file_count": file_count,
+                    "files": info.get("files", {}),
                 }
                 needs_save_baseline = True
                 status = "VALID"
@@ -6346,39 +6462,104 @@ def collect_fim(force: bool = False) -> dict:
                 base_cnt = base_info.get("count", 0)
                 base_og = base_info.get("owner_group", "")
 
-                # Auto-heal baseline direktori jika acuan sha256 belum terekam dari versi sebelumnya
-                if is_dir and not base_hash and cur_hash:
-                    base_info["sha256"] = cur_hash
-                    base_hash = cur_hash
-                    needs_save_baseline = True
-
                 diffs = []
                 if is_dir:
-                    if cnt != base_cnt:
-                        diffs.append(f"Jumlah isi direktori berubah ({base_cnt} item -> {cnt} item: {dir_count} direktori, {file_count} file)")
-                    elif cur_hash and base_hash and cur_hash != base_hash:
-                        diffs.append("Entri berkas dalam direktori termodifikasi (nama atau atribut berkas berubah)")
+                    cur_files = info.get("files", {})
+                    base_files = base_info.get("files")
+                    if base_files is None:
+                        # Auto-upgrade acuan baseline lama tanpa memicu alarm palsu
+                        base_info["files"] = cur_files
+                        base_files = cur_files
+                        needs_save_baseline = True
+
+                    ev_sev = "warning" if cat == "system" else "info"
+
+                    # 1. Deteksi file yang dihapus dari direktori atau subfolder
+                    for rel_f, b_f in base_files.items():
+                        if rel_f not in cur_files:
+                            owner = b_f.get("owner", "user")
+                            disp_name = f"/{rel_f}" if ("/" in rel_f or os.sep in rel_f) else rel_f
+                            msg = f"File {disp_name} telah dihapus dari direktori oleh {owner}"
+                            events_result.append({
+                                "path": p,
+                                "event_type": "DELETED",
+                                "severity": ev_sev,
+                                "details": msg,
+                                "detected_at": now_iso,
+                            })
+                            diffs.append(msg)
+
+                    # 2. Deteksi file baru yang ditambahkan ke direktori atau subfolder
+                    for rel_f, c_f in cur_files.items():
+                        if rel_f not in base_files:
+                            owner = c_f.get("owner", "user")
+                            disp_name = f"/{rel_f}" if ("/" in rel_f or os.sep in rel_f) else rel_f
+                            msg = f"File {disp_name} baru ditambahkan oleh {owner}"
+                            events_result.append({
+                                "path": p,
+                                "event_type": "CREATED",
+                                "severity": ev_sev,
+                                "details": msg,
+                                "detected_at": now_iso,
+                            })
+                            diffs.append(msg)
+
+                    # 3. Deteksi file yang dimodifikasi atau diubah hak aksesnya
+                    for rel_f, c_f in cur_files.items():
+                        if rel_f in base_files:
+                            b_f = base_files[rel_f]
+                            cur_owner = c_f.get("owner", "user")
+                            cur_hash_f = c_f.get("sha256", "")
+                            base_hash_f = b_f.get("sha256", "")
+                            cur_size_f = c_f.get("size", 0)
+                            base_size_f = b_f.get("size", 0)
+                            cur_perm_f = c_f.get("perm", "")
+                            base_perm_f = b_f.get("perm", "")
+                            disp_name = f"/{rel_f}" if ("/" in rel_f or os.sep in rel_f) else rel_f
+
+                            # Modifikasi isi file
+                            if (cur_hash_f and base_hash_f and cur_hash_f != base_hash_f) or (cur_size_f != base_size_f) or (c_f.get("mtime") != b_f.get("mtime")):
+                                msg = f"File {disp_name} telah diubah oleh {cur_owner}"
+                                events_result.append({
+                                    "path": p,
+                                    "event_type": "MODIFIED",
+                                    "severity": ev_sev,
+                                    "details": msg,
+                                    "detected_at": now_iso,
+                                })
+                                diffs.append(msg)
+                            elif cur_perm_f and base_perm_f and cur_perm_f != base_perm_f:
+                                msg_p = f"Hak akses file {disp_name} diubah oleh {cur_owner} ({base_perm_f} -> {cur_perm_f})"
+                                events_result.append({
+                                    "path": p,
+                                    "event_type": "PERMISSION_CHANGED",
+                                    "severity": "warning",
+                                    "details": msg_p,
+                                    "detected_at": now_iso,
+                                })
+                                diffs.append(msg_p)
                 else:
                     if cur_hash and base_hash and cur_hash != base_hash:
                         diffs.append(f"Hash SHA-256 berubah (awal: {base_hash[:8]}… -> terkini: {cur_hash[:8]}…)")
                     if abs(size_b - base_size) > 0:
                         diffs.append(f"Ukuran berubah ({base_size} B -> {size_b} B)")
+                    if cur_perm and base_perm and cur_perm != base_perm:
+                        diffs.append(f"Izin hak akses berubah ({base_perm} -> {cur_perm})")
+                    if cur_og and base_og and cur_og != base_og:
+                        diffs.append(f"Kepemilikan berubah ({base_og} -> {cur_og})")
 
-                if cur_perm and base_perm and cur_perm != base_perm:
-                    diffs.append(f"Izin hak akses berubah ({base_perm} -> {cur_perm})")
-                if cur_og and base_og and cur_og != base_og:
-                    diffs.append(f"Kepemilikan berubah ({base_og} -> {cur_og})")
+                    if diffs:
+                        ev_sev = "warning" if cat == "system" else "info"
+                        events_result.append({
+                            "path": p,
+                            "event_type": "MODIFIED",
+                            "severity": ev_sev,
+                            "details": "; ".join(diffs),
+                            "detected_at": now_iso,
+                        })
 
                 if diffs:
                     status = "CHANGED"
-                    ev_sev = "warning" if cat == "system" else "info"
-                    events_result.append({
-                        "path": p,
-                        "event_type": "MODIFIED",
-                        "severity": ev_sev,
-                        "details": "; ".join(diffs),
-                        "detected_at": now_iso,
-                    })
                 else:
                     status = "VALID"
 

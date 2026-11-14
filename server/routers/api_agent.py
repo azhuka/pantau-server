@@ -1061,7 +1061,7 @@ def agent_report(
                 )
                 db.add(new_fp)
 
-        for ev in reported_events[:20]:
+        for ev in reported_events[:100]:
             if not isinstance(ev, dict):
                 continue
             ev_path = _clean_str(ev.get("path"), "", 500)
@@ -1075,6 +1075,7 @@ def agent_report(
                     FIMEvent.server_id == server.id,
                     FIMEvent.path == ev_path,
                     FIMEvent.event_type == ev_type,
+                    FIMEvent.details == ev_det,
                     FIMEvent.detected_at >= cutoff,
                 )
                 .first()
