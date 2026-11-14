@@ -354,6 +354,14 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.217
+
+### Perbaikan & Peningkatan (v4.8.217)
+- **Proteksi needrestart APT Upgrade:** Mengonfigurasikan override resmi upstream Debian/Ubuntu (/etc/needrestart/conf.d/99pantau-override.conf) di seluruh armada klien agar needrestart tidak mematikan service agent_pantau via sinyal SIGTERM (rc=-15) saat sedang memantau proses apt upgrade paket OS.
+- **Deteksi Cerdas Hasil Upgrade APT:** Menambahkan mekanisme verifikasi pada _run_apt_task: jika terminasi sinyal terjadi di tahap akhir penyegaran layanan (restarting services) sementara seluruh paket telah sukses terkonfigurasi (upgradable: 0), proses dilaporkan sukses.
+- **Home Direktori File Manager (/home/operator):** Mengarahkan jalur awal (default landing path) dan tombol Home pada antarmuka File Manager ke /home/operator/ dengan fallback otomatis ke root (/) jika diperlukan, menyelaraskan ruang kerja berkas dengan Web Terminal non-root.
+
+
 ## Versi 4.8.216
 
 ### Perbaikan & Peningkatan (v4.8.216)

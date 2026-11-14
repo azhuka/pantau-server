@@ -126,7 +126,7 @@
         <button type="button" class="fm-nav-btn" id="fm-btn-up" onclick="fmGoUp()" title="Ke Folder Induk" aria-label="Ke Folder Induk">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
         </button>
-        <button type="button" class="fm-nav-btn" id="fm-btn-home" onclick="fmGoHome()" title="Ke Root Directory (/)" aria-label="Root">
+        <button type="button" class="fm-nav-btn" id="fm-btn-home" onclick="fmGoHome()" title="Ke Home Operator (/home/operator)" aria-label="Home">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
         </button>
         <button type="button" class="fm-nav-btn" onclick="fmRefresh()" title="Refresh Directory" aria-label="Reload">
@@ -785,7 +785,7 @@ async function fmFetch(url, options = {}) {
 // ===========================================================================
 // STATE FILE MANAGER
 // ===========================================================================
-let fmCurrentPath = '/';
+let fmCurrentPath = '/home/operator';
 const _savedFmPath = sessionStorage.getItem('fm_path_' + SID);
 if (_savedFmPath && _savedFmPath.startsWith('/') && !_savedFmPath.startsWith('/var/www')) {
   fmCurrentPath = _savedFmPath;
@@ -838,7 +838,7 @@ function fmGoUp() {
 }
 
 function fmGoHome() {
-  fmLoadDir('/');
+  fmLoadDir('/home/operator');
 }
 
 function fmRefresh() {
@@ -1197,6 +1197,11 @@ async function fmLoadDir(path, pushHistory = true) {
       </td></tr>`;
       statsInfo.innerHTML = `<span style="color:var(--yellow)">` + (isEn ? 'Session Locked' : 'Sesi Terkunci') + `</span>`;
       fmUpdateNavButtons();
+      return;
+    }
+    if (path === '/home/operator' && !err.isLocked) {
+      console.warn('Fallback from /home/operator to / due to error:', err.message);
+      fmLoadDir('/', pushHistory);
       return;
     }
     errBanner.textContent = (isEn ? 'Failed to open directory: ' : 'Gagal membuka directory: ') + err.message;

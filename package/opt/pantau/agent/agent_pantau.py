@@ -480,7 +480,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.216"
+AGENT_VERSION = "4.8.217"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -3664,6 +3664,11 @@ if [ "$PKG_MGR" = "apt" ]; then
         exit 3
     fi
 
+    # Pastikan needrestart tidak me-restart agent_pantau.service di tengah upgrade
+    if [ -d /etc/needrestart/conf.d ] && [ ! -f /etc/needrestart/conf.d/99pantau-override.conf ]; then
+        printf '$nrconf{override_rc}{qr(^agent_pantau)} = 0;\n$nrconf{override_rc}{qr(^pantau)} = 0;\n' > /etc/needrestart/conf.d/99pantau-override.conf 2>/dev/null || true
+    fi
+
     case "${1:-}" in
         update)
             export DEBIAN_FRONTEND=noninteractive
@@ -3833,6 +3838,34 @@ def ensure_pantau_apt_updated() -> bool:
                     except Exception:
                         pass
 
+        # Konfigurasi needrestart override agar agent_pantau tidak di-restart otomatis oleh APT
+        nr_conf_dir = "/etc/needrestart/conf.d"
+        nr_conf_file = os.path.join(nr_conf_dir, "99pantau-override.conf")
+        if os.path.isdir(nr_conf_dir) and not os.path.isfile(nr_conf_file):
+            nr_content = (
+                "# Pantau Agent: Jangan restart agent_pantau saat needrestart dijalankan otomatis oleh APT\n"
+                "# Mencegah pemutusan proses upgrade aktif oleh SIGTERM (rc=-15).\n"
+                "$nrconf{override_rc}{qr(^agent_pantau)} = 0;\n"
+                "$nrconf{override_rc}{qr(^pantau)} = 0;\n"
+            )
+            if IS_ROOT:
+                try:
+                    with open(nr_conf_file, "w", encoding="utf-8") as f:
+                        f.write(nr_content)
+                except Exception:
+                    pass
+            else:
+                pantau_file = "/usr/local/sbin/pantau-file"
+                if os.path.isfile(pantau_file):
+                    try:
+                        payload = json.dumps({
+                            "action": "write",
+                            "params": {"path": nr_conf_file, "content": nr_content, "make_backup": False}
+                        })
+                        subprocess.run(["/usr/bin/sudo", "-n", pantau_file], input=payload, text=True, capture_output=True, timeout=5)
+                    except Exception:
+                        pass
+
         cur_content = ""
         if os.path.isfile(PANTAU_APT_CMD):
             try:
@@ -3840,7 +3873,7 @@ def ensure_pantau_apt_updated() -> bool:
                     cur_content = f.read()
             except Exception:
                 pass
-        if "PKG_MGR" in cur_content and "Always-Include-Phased-Updates" in cur_content and "upgrade-pkg" in cur_content and "clean" in cur_content and "-qfec" in cur_content:
+        if "PKG_MGR" in cur_content and "Always-Include-Phased-Updates" in cur_content and "upgrade-pkg" in cur_content and "clean" in cur_content and "-qfec" in cur_content and "99pantau-override" in cur_content:
             return True
 
         if IS_ROOT:
@@ -4674,6 +4707,17 @@ def _run_apt_inner(cfg: dict, rid: int, kind: str, detail: str = ""):
                 "fetch_err_reason": fetch_err_reason or "Sebagian indeks repositori gagal diunduh.",
                 "warning": fetch_err_reason or "Sebagian indeks repositori gagal diunduh.",
                 "rc": proc.returncode,
+            })
+        elif proc is not None and proc.returncode in (-15, 143) and ("restarting services" in low_full or "scanning processes" in low_full or (apt and apt.get("upgradable") == 0)):
+            # Deteksi cerdas: paket telah selesai diinstal dan dikonfigurasi penuh,
+            # namun needrestart/systemd me-restart service di akhir proses (SIGTERM)
+            result_ok = True
+            msg = json.dumps({
+                "type": kind,
+                "output": full[-APT_AGENT_OUTPUT_MAX:],
+                "apt": apt,
+                "warning": "Pembaruan paket selesai sukses. Layanan sistem telah disegarkan oleh OS.",
+                "rc": 0,
             })
         else:
             result_ok = False

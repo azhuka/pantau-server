@@ -28,6 +28,11 @@ if [ "$PKG_MGR" = "apt" ]; then
         exit 3
     fi
 
+    # Pastikan needrestart tidak me-restart agent_pantau.service di tengah upgrade
+    if [ -d /etc/needrestart/conf.d ] && [ ! -f /etc/needrestart/conf.d/99pantau-override.conf ]; then
+        printf '$nrconf{override_rc}{qr(^agent_pantau)} = 0;\n$nrconf{override_rc}{qr(^pantau)} = 0;\n' > /etc/needrestart/conf.d/99pantau-override.conf 2>/dev/null || true
+    fi
+
     case "${1:-}" in
         update)
             export DEBIAN_FRONTEND=noninteractive

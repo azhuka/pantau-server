@@ -215,6 +215,12 @@ if [ -f /etc/bash.bashrc ] && ! grep -q "pantau-history.sh" /etc/bash.bashrc; th
 fi
 echo "[OK]   Profile hook -> /etc/profile.d/pantau-history.sh & /etc/bash.bashrc"
 
+# Konfigurasi needrestart override agar agent_pantau tidak dibunuh saat apt upgrade
+if [ -d /etc/needrestart/conf.d ]; then
+    printf '$nrconf{override_rc}{qr(^agent_pantau)} = 0;\n$nrconf{override_rc}{qr(^pantau)} = 0;\n' > /etc/needrestart/conf.d/99pantau-override.conf 2>/dev/null || true
+    echo "[OK]   needrestart override -> /etc/needrestart/conf.d/99pantau-override.conf"
+fi
+
 # ---------------------------------------------------------------------------
 # 3. Arahkan ke Dashboard (config) — pakai lama bila valid, selain itu minta.
 # ---------------------------------------------------------------------------
@@ -275,7 +281,7 @@ except Exception as e:
     print("UNREACHABLE:%s" % e); raise SystemExit
 try:
     req = urllib.request.Request(url + "/api/commands")
-    req.add_header("User-Agent", "AgentPantau-Installer/4.8.216")
+    req.add_header("User-Agent", "AgentPantau-Installer/4.8.217")
     req.add_header("X-Api-Key", key)
     with urllib.request.urlopen(req, timeout=8) as r:
         print("OK" if r.status == 200 else "HTTP%d" % r.status)
@@ -334,7 +340,7 @@ try:
                 'owner_group': f"{res.get('owner', '')}:{res.get('group', '')}",
                 'count': res.get('count', 0),
             }
-            base['_meta_agent_version'] = "4.8.216"
+            base['_meta_agent_version'] = "4.8.217"
             with open('/etc/pantau/fim_baseline.json', 'w') as f:
                 json.dump(base, f, indent=2)
 except Exception:
