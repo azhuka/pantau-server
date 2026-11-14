@@ -140,3 +140,27 @@ Skrip tersebut secara otomatis mengeksekusi 4 pilar SOP:
    - `git tag -a vX.Y.Z -m "Release vX.Y.Z: Judul Baku"`
    - `git push origin vX.Y.Z`
    - `gh release create vX.Y.Z --title "vX.Y.Z - Judul Baku" --notes "..."`
+
+---
+
+## 9. Kebijakan Keandalan Auto-OTA Armada Klien & Validasi Lapangan Mutlak (Zero-Stall OTA)
+- **Larangan Keras Klaim Selesai Buta (*Anti-Blind Completion Claim*):**
+  - Dilarang keras berasumsi atau menyatakan tugas rilis selesai hanya karena perintah build atau skrip rilis berhasil.
+  - Asisten **WAJIB melakukan kueri verifikasi lapangan nyata ke basis data** (`SELECT s.id, s.hostname, e.agent_version, s.last_seen FROM servers s LEFT JOIN server_extras e ON s.id=e.server_id ORDER BY s.id;`) untuk membuktikan 100% armada host klien aktif telah menerima, me-restart, dan melaporkan versi baru ke server sebelum menyatakan pekerjaan tuntas kepada operator.
+- **Arsitektur Antrean OTA Bebas Penguncian (*Zero-Lockout Pipeline*):**
+  - **Larangan Keras Cooldown Global:** Dilarang keras menaruh filter waktu tunggu kaku (seperti pemblokiran global 5 menit) pada `/api/commands` yang memblokir dispatch versi baru. Versi baru wajib dapat di-dispatch seketika (*instant dispatch*) pada heartbeat berikutnya.
+  - **Auto-Heal Timeout Maksimal 2 Menit:** Setiap perintah `update_agent` yang tersangkut di status `executing` lebih dari 2 menit wajib otomatis di-failkan oleh server agar antrean pembaruan tidak tersumbat.
+  - **Auto-Resolve via Heartbeat `/api/report`:** Server wajib otomatis menyelesaikan status perintah `update_agent` menjadi `success` begitu menerima telemetri aktif pertama dari agen klien yang membuktikan versi agennya telah naik.
+  - **Jeda Restart Daemon Agen Minimal 4 Detik:** Jeda terminasi proses lama pada `_exec_restart_agent()` di `agent_pantau.py` wajib minimal 4 detik (`sleep 4; kill -TERM <pid>`), memberikan waktu yang aman bagi agen untuk mengirimkan status laporan hasil via HTTP POST ke server sebelum proses lama ditutup.
+
+---
+
+## 10. Daftar Ceklis Disiplin AI Sebelum Melapor (Pre-Flight AI Checklist)
+Sebelum asisten AI membalas atau menyatakan tugas selesai ke operator, asisten wajib memverifikasi secara mental & teknis:
+1. **Proteksi Dasbor:** Apakah berkas `dashboard.html` tetap utuh dan tidak disentuh sama sekali? (**Wajib: YA**).
+2. **Paginasi Universal:** Apakah aturan paginasi $\le 10$ baris disembunyikan otomatis (`display: none !important`) dipatuhi tanpa `alwaysShow: true`? (**Wajib: YA**).
+3. **Standarisasi Tindakan:** Apakah header kolom tombol bernama "Tindakan" dengan kapitalisasi benar dan seragam se-tabel (inline jika $\le 2$ aksi, dropdown `Aksi ▾` jika $> 2$ aksi)? (**Wajib: YA**).
+4. **Kontras Multi-Tema:** Apakah kontras multi-tema aman (tidak ada teks putih di latar putih / teks gelap di latar gelap)? (**Wajib: YA**).
+5. **Dual-Render Sinkron:** Apakah dual-render Jinja server-side dan JS client-side disinkronkan identik tanpa selisih? (**Wajib: YA**).
+6. **Otomasi SemVer 7 Berkas:** Apakah versi SemVer dinaikkan sinkron di 7 berkas via skrip `sop_release.py`? (**Wajib: YA**).
+7. **Verifikasi Lapangan 100% Armada:** Apakah 100% server klien aktif telah diverifikasi nyata di basis data sudah melapor pada versi baru? (**Wajib: YA**).
