@@ -1150,8 +1150,8 @@ def api_commands_pending(
     except Exception:
         pass
     if extras and extras.agent_version and _is_agent_outdated(extras.agent_version, target_ver):
-        # Auto-heal: Bersihkan perintah update_agent lama yang tersangkut di status 'executing' > 5 menit
-        stale_cutoff = datetime.utcnow() - timedelta(minutes=5)
+        # Auto-heal: Bersihkan perintah update_agent lama yang tersangkut di status 'executing' > 2 menit
+        stale_cutoff = datetime.utcnow() - timedelta(minutes=2)
         stale_cmds = (
             db.query(Command)
             .filter(
@@ -1185,20 +1185,23 @@ def api_commands_pending(
                 .first()
             )
             if not in_flight:
-                # Cegah loop berulang: jika sudah ada perintah update dalam 5 menit terakhir, jangan dispatch lagi
-                recent_cmd = (
-                    db.query(Command)
-                    .filter(
-                        Command.server_id == server.id,
-                        Command.action == "update_agent",
-                        Command.created_at > datetime.utcnow() - timedelta(minutes=5)
-                    )
-                    .first()
-                )
-                if not recent_cmd:
-                    try:
-                        _, sha256_hash, file_ver = _get_agent_code_and_sha256()
-                        if _is_agent_outdated(extras.agent_version, file_ver):
+                try:
+                    _, sha256_hash, file_ver = _get_agent_code_and_sha256()
+                    if _is_agent_outdated(extras.agent_version, file_ver):
+                        # Cegah loop gagal berulang pada versi yang sama:
+                        # Jika versi target yang persis sama pernah gagal dalam 2 menit terakhir, beri jeda singkat
+                        recent_failed_same_ver = (
+                            db.query(Command)
+                            .filter(
+                                Command.server_id == server.id,
+                                Command.action == "update_agent",
+                                Command.status == "failed",
+                                Command.params.like(f'%"version": "{file_ver}"%'),
+                                Command.created_at > datetime.utcnow() - timedelta(minutes=2)
+                            )
+                            .first()
+                        )
+                        if not recent_failed_same_ver:
                             base_url = str(request.base_url).rstrip("/")
                             ota_params = {
                                 "url": f"{base_url}/api/agent/latest-code",
@@ -1216,12 +1219,12 @@ def api_commands_pending(
                             db.commit()
                             pending.append(auto_cmd)
                             logger.info("[AUTO-OTA] Otomatis mendispatch self-update agen v%s ke %s (ID %s)", file_ver, server.hostname, server.id)
-                    except Exception as ota_err:
-                        try:
-                            db.rollback()
-                        except Exception:
-                            pass
-                        logger.warning("[AUTO-OTA] Gagal memproses auto-OTA untuk %s: %s", server.hostname, ota_err)
+                except Exception as ota_err:
+                    try:
+                        db.rollback()
+                    except Exception:
+                        pass
+                    logger.warning("[AUTO-OTA] Gagal memproses auto-OTA untuk %s: %s", server.hostname, ota_err)
 
     return {
         "commands": [

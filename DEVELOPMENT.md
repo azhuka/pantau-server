@@ -354,6 +354,12 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.207
+
+- **Dispatch Instan Pembaruan Agen:** Menghapus batasan kaku cooldown 5 menit pada api_agent.py yang sebelumnya memblokir pengiriman perintah pembaruan versi baru secara global.
+- **Proteksi Anti-Loop Selektif Per-Versi:** Mengganti filter global dengan pengecekan kegagalan per target versi, sehingga rilis versi baru akan dieksekusi instan tanpa jeda tunggu buatan.
+
+
 ## Versi 4.8.206
 
 - **Auto-Heal & Timeout Perintah OTA Agen:** Menambahkan pembersihan otomatis terhadap perintah pembaruan agen (update_agent) yang tersangkut pada status executing lebih dari 5 menit di server/routers/api_agent.py, mencegah pemblokiran antrean pembaruan pada siklus berikutnya.
