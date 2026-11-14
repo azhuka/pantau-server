@@ -354,6 +354,12 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.209
+
+- **Pelacakan Runtime Delta State FIM:** Mengimplementasikan fim_last_state.json pada agen klien untuk merekam perubahan antar-siklus pemindaian, memungkinkan berkas baru yang telah dilaporkan CREATED langsung terdeteksi sebagai MODIFIED saat diedit kembali.
+- **Penyesuaian Jendela Deduplikasi Server:** Memperkecil batas deduplikasi kejadian FIM di api_agent.py menjadi 20 detik agar perubahan beruntun oleh operator tetap tercatat kronologis.
+
+
 ## Versi 4.8.208
 
 - **Pemindaian Rekursif Pohon Direktori (Subfolder FIM):** Mengembangkan mesin pemindaian FIM agen (_scan_dir_tree) untuk menjangkau seluruh subdirektori secara rekursif (hingga 10 level kedalaman) dengan pembatasan beban aman (maksimal 5.000 file) serta pengabaian direktori noise (.git, node_modules, dll.).

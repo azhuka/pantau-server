@@ -1068,7 +1068,7 @@ def agent_report(
             ev_type = _clean_str(ev.get("event_type"), "MODIFIED", 50)
             ev_sev = _clean_str(ev.get("severity"), "warning", 20)
             ev_det = _clean_str(ev.get("details"), "", 1000)
-            cutoff = now_dt - timedelta(minutes=5)
+            cutoff = now_dt - timedelta(seconds=20)
             dup = (
                 db.query(FIMEvent)
                 .filter(

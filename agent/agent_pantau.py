@@ -480,7 +480,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.208"
+AGENT_VERSION = "4.8.209"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -6020,6 +6020,7 @@ def collect_ssl_certs() -> list[dict]:
 _fim_cache: dict = {"at": 0.0, "data": None}
 FIM_CUSTOM_PATHS_FILE = "/etc/pantau/fim_paths.json"
 FIM_BASELINE_FILE = "/etc/pantau/fim_baseline.json"
+FIM_LAST_STATE_FILE = "/etc/pantau/fim_last_state.json"
 
 DEFAULT_FIM_PATHS = [
     {"path": "/etc/sudoers", "scope": "single_file", "category": "system"},
@@ -6081,6 +6082,33 @@ def _save_fim_baseline(baseline: dict) -> bool:
             return True
         else:
             res = run_file_op("write", {"path": FIM_BASELINE_FILE, "content": content, "make_backup": False})
+            return res.get("ok", False)
+    except Exception:
+        return False
+
+
+def _load_fim_last_state() -> dict:
+    if os.path.isfile(FIM_LAST_STATE_FILE):
+        try:
+            with open(FIM_LAST_STATE_FILE, "r", encoding="utf-8", errors="replace") as f:
+                res = json.load(f)
+                if isinstance(res, dict):
+                    return res
+        except Exception:
+            pass
+    return {}
+
+
+def _save_fim_last_state(state: dict) -> bool:
+    try:
+        content = json.dumps(state, ensure_ascii=False, indent=2)
+        if IS_ROOT:
+            os.makedirs(os.path.dirname(FIM_LAST_STATE_FILE), exist_ok=True)
+            with open(FIM_LAST_STATE_FILE, "w", encoding="utf-8") as f:
+                f.write(content)
+            return True
+        else:
+            res = run_file_op("write", {"path": FIM_LAST_STATE_FILE, "content": content, "make_backup": False})
             return res.get("ok", False)
     except Exception:
         return False
@@ -6330,6 +6358,7 @@ def _format_size_human(size_bytes: int, is_dir: bool, count: int = 0) -> str:
 
 def _rebaseline_fim_path(target_path: str = "") -> None:
     baseline = _load_fim_baseline()
+    last_state = _load_fim_last_state()
     paths_to_check = []
     if target_path:
         paths_to_check.append(target_path)
@@ -6340,7 +6369,7 @@ def _rebaseline_fim_path(target_path: str = "") -> None:
     for p in paths_to_check:
         info = _inspect_fim_target(p)
         if info.get("exists"):
-            baseline[p] = {
+            data_p = {
                 "sha256": info.get("sha256", ""),
                 "size": info.get("size", 0),
                 "mtime": info.get("mtime", 0),
@@ -6351,17 +6380,29 @@ def _rebaseline_fim_path(target_path: str = "") -> None:
                 "file_count": info.get("file_count", 0),
                 "files": info.get("files", {}),
             }
+            baseline[p] = data_p
+            last_state[p] = data_p
         else:
             baseline.pop(p, None)
+            last_state.pop(p, None)
     baseline["_meta_agent_version"] = AGENT_VERSION
     _save_fim_baseline(baseline)
+    _save_fim_last_state(last_state)
 
 
 def _remove_fim_baseline(target_path: str) -> None:
     baseline = _load_fim_baseline()
+    last_state = _load_fim_last_state()
+    changed = False
     if target_path in baseline:
         baseline.pop(target_path, None)
+        changed = True
+    if target_path in last_state:
+        last_state.pop(target_path, None)
+        changed = True
+    if changed:
         _save_fim_baseline(baseline)
+        _save_fim_last_state(last_state)
 
 
 def collect_fim(force: bool = False) -> dict:
@@ -6372,7 +6413,9 @@ def collect_fim(force: bool = False) -> dict:
 
     all_specs = DEFAULT_FIM_PATHS + _load_fim_custom_paths()
     baseline = _load_fim_baseline()
+    last_state = _load_fim_last_state()
     needs_save_baseline = False
+    needs_save_last_state = False
 
     # Deteksi pembaruan versi agen: jika versi berubah (misal pasca update OTA/install.sh/git),
     # otomatis sinkronkan acuan direktori /etc/systemd/system agar tidak memicu alarm FIM palsu.
@@ -6382,7 +6425,7 @@ def collect_fim(force: bool = False) -> dict:
         if "/etc/systemd/system" in baseline:
             info_sysd = _inspect_fim_target("/etc/systemd/system")
             if info_sysd.get("exists"):
-                baseline["/etc/systemd/system"] = {
+                sysd_data = {
                     "sha256": info_sysd.get("sha256", ""),
                     "size": info_sysd.get("size", 0),
                     "mtime": info_sysd.get("mtime", 0),
@@ -6393,6 +6436,9 @@ def collect_fim(force: bool = False) -> dict:
                     "file_count": info_sysd.get("file_count", 0),
                     "files": info_sysd.get("files", {}),
                 }
+                baseline["/etc/systemd/system"] = sysd_data
+                last_state["/etc/systemd/system"] = sysd_data
+                needs_save_last_state = True
         needs_save_baseline = True
 
     paths_result = []
@@ -6420,23 +6466,167 @@ def collect_fim(force: bool = False) -> dict:
         cur_perm = info.get("permissions", "")
         cur_og = info.get("owner_group", "")
         cur_mtime = info.get("mtime", 0)
+        cur_files = info.get("files", {}) if is_dir else {}
 
         base_info = baseline.get(p)
+        last_info = last_state.get(p)
+        ev_sev = "warning" if cat == "system" else "info"
+
+        # -------------------------------------------------------------
+        # 1. EVALUASI KEJADIAN RUNTIME TERKINI TERHADAP LAST_STATE
+        # -------------------------------------------------------------
         if not exists:
-            if base_info and base_info.get("sha256"):
-                # Berkas sebelumnya tercatat di baseline, lalu sekarang lenyap -> Pelanggaran integritas nyata!
-                status = "MISSING"
-                base_hash = base_info.get("sha256", "")
-                ev_sev = "warning" if cat == "system" else "info"
+            if last_info and last_info.get("sha256"):
                 events_result.append({
                     "path": p,
                     "event_type": "DELETED",
                     "severity": ev_sev,
-                    "details": f"File atau direktori telah dihapus dari sistem ({cur_og or 'root'})",
+                    "details": f"File atau direktori telah dihapus dari sistem ({last_info.get('owner_group', 'root')})",
                     "detected_at": now_iso,
                 })
+                last_state[p] = {"exists": False, "sha256": "", "files": {}}
+                needs_save_last_state = True
+        else:
+            if last_info is None:
+                # Inisialisasi awal pelacakan runtime terkini
+                last_state[p] = {
+                    "exists": True,
+                    "is_dir": is_dir,
+                    "sha256": cur_hash,
+                    "size": size_b,
+                    "mtime": cur_mtime,
+                    "permissions": cur_perm,
+                    "owner_group": cur_og,
+                    "count": cnt,
+                    "dir_count": dir_count,
+                    "file_count": file_count,
+                    "files": dict(cur_files),
+                }
+                last_info = last_state[p]
+                needs_save_last_state = True
+
+            if is_dir:
+                last_files = last_info.get("files", {})
+
+                # 1a. Deteksi file yang dihapus sejak pemindaian terakhir
+                for rel_f, l_f in last_files.items():
+                    if rel_f not in cur_files:
+                        owner = l_f.get("owner", "user")
+                        disp_name = f"/{rel_f}" if ("/" in rel_f or os.sep in rel_f) else rel_f
+                        events_result.append({
+                            "path": p,
+                            "event_type": "DELETED",
+                            "severity": ev_sev,
+                            "details": f"File {disp_name} telah dihapus dari direktori oleh {owner}",
+                            "detected_at": now_iso,
+                        })
+
+                # 1b. Deteksi file baru yang ditambahkan sejak pemindaian terakhir
+                for rel_f, c_f in cur_files.items():
+                    if rel_f not in last_files:
+                        owner = c_f.get("owner", "user")
+                        disp_name = f"/{rel_f}" if ("/" in rel_f or os.sep in rel_f) else rel_f
+                        events_result.append({
+                            "path": p,
+                            "event_type": "CREATED",
+                            "severity": ev_sev,
+                            "details": f"File {disp_name} baru ditambahkan oleh {owner}",
+                            "detected_at": now_iso,
+                        })
+
+                # 1c. Deteksi modifikasi file atau perubahan hak akses sejak pemindaian terakhir
+                for rel_f, c_f in cur_files.items():
+                    if rel_f in last_files:
+                        l_f = last_files[rel_f]
+                        cur_owner = c_f.get("owner", "user")
+                        cur_h_f = c_f.get("sha256", "")
+                        last_h_f = l_f.get("sha256", "")
+                        cur_sz_f = c_f.get("size", 0)
+                        last_sz_f = l_f.get("size", 0)
+                        cur_perm_f = c_f.get("perm", "")
+                        last_perm_f = l_f.get("perm", "")
+                        disp_name = f"/{rel_f}" if ("/" in rel_f or os.sep in rel_f) else rel_f
+
+                        if (cur_h_f and last_h_f and cur_h_f != last_h_f) or (cur_sz_f != last_sz_f) or (c_f.get("mtime") != l_f.get("mtime")):
+                            events_result.append({
+                                "path": p,
+                                "event_type": "MODIFIED",
+                                "severity": ev_sev,
+                                "details": f"File {disp_name} telah diubah oleh {cur_owner}",
+                                "detected_at": now_iso,
+                            })
+                        elif cur_perm_f and last_perm_f and cur_perm_f != last_perm_f:
+                            events_result.append({
+                                "path": p,
+                                "event_type": "PERMISSION_CHANGED",
+                                "severity": "warning",
+                                "details": f"Hak akses file {disp_name} diubah oleh {cur_owner} ({last_perm_f} -> {cur_perm_f})",
+                                "detected_at": now_iso,
+                            })
+
+                last_state[p] = {
+                    "exists": True,
+                    "is_dir": True,
+                    "sha256": cur_hash,
+                    "size": size_b,
+                    "mtime": cur_mtime,
+                    "permissions": cur_perm,
+                    "owner_group": cur_og,
+                    "count": cnt,
+                    "dir_count": dir_count,
+                    "file_count": file_count,
+                    "files": dict(cur_files),
+                }
+                needs_save_last_state = True
+
             else:
-                # Berkas opsional memang belum pernah dikonfigurasi di sistem (misal /root/.ssh/authorized_keys)
+                last_h = last_info.get("sha256", "")
+                last_sz = last_info.get("size", 0)
+                last_m = last_info.get("mtime", 0)
+                last_p = last_info.get("permissions", "")
+                last_og = last_info.get("owner_group", "")
+                cur_owner = cur_og.split(":")[0] if ":" in cur_og else "user"
+
+                diffs_single = []
+                if (cur_hash and last_h and cur_hash != last_h) or (size_b != last_sz) or (cur_mtime != last_m):
+                    diffs_single.append(f"File telah diubah oleh {cur_owner}")
+                elif cur_perm and last_p and cur_perm != last_p:
+                    diffs_single.append(f"Hak akses file diubah oleh {cur_owner} ({last_p} -> {cur_perm})")
+                elif cur_og and last_og and cur_og != last_og:
+                    diffs_single.append(f"Kepemilikan file diubah ({last_og} -> {cur_og})")
+
+                if diffs_single:
+                    events_result.append({
+                        "path": p,
+                        "event_type": "MODIFIED",
+                        "severity": ev_sev,
+                        "details": "; ".join(diffs_single),
+                        "detected_at": now_iso,
+                    })
+
+                last_state[p] = {
+                    "exists": True,
+                    "is_dir": False,
+                    "sha256": cur_hash,
+                    "size": size_b,
+                    "mtime": cur_mtime,
+                    "permissions": cur_perm,
+                    "owner_group": cur_og,
+                    "count": 0,
+                    "dir_count": 0,
+                    "file_count": 0,
+                    "files": {},
+                }
+                needs_save_last_state = True
+
+        # -------------------------------------------------------------
+        # 2. EVALUASI STATUS PATH TERHADAP BASELINE (VALID vs CHANGED)
+        # -------------------------------------------------------------
+        if not exists:
+            if base_info and base_info.get("sha256"):
+                status = "MISSING"
+                base_hash = base_info.get("sha256", "")
+            else:
                 status = "NOT_CONFIGURED"
                 base_hash = ""
         else:
@@ -6450,7 +6640,7 @@ def collect_fim(force: bool = False) -> dict:
                     "count": cnt,
                     "dir_count": dir_count,
                     "file_count": file_count,
-                    "files": info.get("files", {}),
+                    "files": dict(cur_files),
                 }
                 needs_save_baseline = True
                 status = "VALID"
@@ -6459,109 +6649,32 @@ def collect_fim(force: bool = False) -> dict:
                 base_hash = base_info.get("sha256", "")
                 base_perm = base_info.get("permissions", "")
                 base_size = base_info.get("size", 0)
-                base_cnt = base_info.get("count", 0)
                 base_og = base_info.get("owner_group", "")
 
-                diffs = []
+                is_changed = False
                 if is_dir:
-                    cur_files = info.get("files", {})
                     base_files = base_info.get("files")
                     if base_files is None:
-                        # Auto-upgrade acuan baseline lama tanpa memicu alarm palsu
-                        base_info["files"] = cur_files
-                        base_files = cur_files
+                        base_info["files"] = dict(cur_files)
+                        base_files = base_info["files"]
                         needs_save_baseline = True
 
-                    ev_sev = "warning" if cat == "system" else "info"
-
-                    # 1. Deteksi file yang dihapus dari direktori atau subfolder
-                    for rel_f, b_f in base_files.items():
-                        if rel_f not in cur_files:
-                            owner = b_f.get("owner", "user")
-                            disp_name = f"/{rel_f}" if ("/" in rel_f or os.sep in rel_f) else rel_f
-                            msg = f"File {disp_name} telah dihapus dari direktori oleh {owner}"
-                            events_result.append({
-                                "path": p,
-                                "event_type": "DELETED",
-                                "severity": ev_sev,
-                                "details": msg,
-                                "detected_at": now_iso,
-                            })
-                            diffs.append(msg)
-
-                    # 2. Deteksi file baru yang ditambahkan ke direktori atau subfolder
-                    for rel_f, c_f in cur_files.items():
-                        if rel_f not in base_files:
-                            owner = c_f.get("owner", "user")
-                            disp_name = f"/{rel_f}" if ("/" in rel_f or os.sep in rel_f) else rel_f
-                            msg = f"File {disp_name} baru ditambahkan oleh {owner}"
-                            events_result.append({
-                                "path": p,
-                                "event_type": "CREATED",
-                                "severity": ev_sev,
-                                "details": msg,
-                                "detected_at": now_iso,
-                            })
-                            diffs.append(msg)
-
-                    # 3. Deteksi file yang dimodifikasi atau diubah hak aksesnya
-                    for rel_f, c_f in cur_files.items():
-                        if rel_f in base_files:
-                            b_f = base_files[rel_f]
-                            cur_owner = c_f.get("owner", "user")
-                            cur_hash_f = c_f.get("sha256", "")
-                            base_hash_f = b_f.get("sha256", "")
-                            cur_size_f = c_f.get("size", 0)
-                            base_size_f = b_f.get("size", 0)
-                            cur_perm_f = c_f.get("perm", "")
-                            base_perm_f = b_f.get("perm", "")
-                            disp_name = f"/{rel_f}" if ("/" in rel_f or os.sep in rel_f) else rel_f
-
-                            # Modifikasi isi file
-                            if (cur_hash_f and base_hash_f and cur_hash_f != base_hash_f) or (cur_size_f != base_size_f) or (c_f.get("mtime") != b_f.get("mtime")):
-                                msg = f"File {disp_name} telah diubah oleh {cur_owner}"
-                                events_result.append({
-                                    "path": p,
-                                    "event_type": "MODIFIED",
-                                    "severity": ev_sev,
-                                    "details": msg,
-                                    "detected_at": now_iso,
-                                })
-                                diffs.append(msg)
-                            elif cur_perm_f and base_perm_f and cur_perm_f != base_perm_f:
-                                msg_p = f"Hak akses file {disp_name} diubah oleh {cur_owner} ({base_perm_f} -> {cur_perm_f})"
-                                events_result.append({
-                                    "path": p,
-                                    "event_type": "PERMISSION_CHANGED",
-                                    "severity": "warning",
-                                    "details": msg_p,
-                                    "detected_at": now_iso,
-                                })
-                                diffs.append(msg_p)
+                    if cur_hash != base_hash or len(cur_files) != len(base_files):
+                        is_changed = True
+                    else:
+                        for rf, cf in cur_files.items():
+                            bf = base_files.get(rf)
+                            if not bf:
+                                is_changed = True
+                                break
+                            if cf.get("sha256") != bf.get("sha256") or cf.get("size") != bf.get("size") or cf.get("perm") != bf.get("perm"):
+                                is_changed = True
+                                break
                 else:
-                    if cur_hash and base_hash and cur_hash != base_hash:
-                        diffs.append(f"Hash SHA-256 berubah (awal: {base_hash[:8]}… -> terkini: {cur_hash[:8]}…)")
-                    if abs(size_b - base_size) > 0:
-                        diffs.append(f"Ukuran berubah ({base_size} B -> {size_b} B)")
-                    if cur_perm and base_perm and cur_perm != base_perm:
-                        diffs.append(f"Izin hak akses berubah ({base_perm} -> {cur_perm})")
-                    if cur_og and base_og and cur_og != base_og:
-                        diffs.append(f"Kepemilikan berubah ({base_og} -> {cur_og})")
+                    if (cur_hash and base_hash and cur_hash != base_hash) or (size_b != base_size) or (cur_perm and base_perm and cur_perm != base_perm) or (cur_og and base_og and cur_og != base_og):
+                        is_changed = True
 
-                    if diffs:
-                        ev_sev = "warning" if cat == "system" else "info"
-                        events_result.append({
-                            "path": p,
-                            "event_type": "MODIFIED",
-                            "severity": ev_sev,
-                            "details": "; ".join(diffs),
-                            "detected_at": now_iso,
-                        })
-
-                if diffs:
-                    status = "CHANGED"
-                else:
-                    status = "VALID"
+                status = "CHANGED" if is_changed else "VALID"
 
         paths_result.append({
             "path": p,
@@ -6583,6 +6696,8 @@ def collect_fim(force: bool = False) -> dict:
 
     if needs_save_baseline:
         _save_fim_baseline(baseline)
+    if needs_save_last_state:
+        _save_fim_last_state(last_state)
 
     data = {
         "paths": paths_result,
