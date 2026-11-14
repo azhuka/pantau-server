@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token }}">
 <title>{% block title %}Pantau Server{% endblock %}</title>
-<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.211' }}">
+<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.212' }}">
 <style id="noc-act-dropdown-anti-cache">
   /* Override Mutlak Anti-Cache untuk Tombol Dropdown Tindakan yang Non-Aktif (Disabled) */
   .noc-act-dropdown-item:disabled,
@@ -312,6 +312,46 @@
 }
 [data-theme="light"] .sidebar-footer div {
   color:#475569 !important;
+}
+[data-theme="light"] .sb-clock-card {
+  background:#ffffff !important;
+  border:1px solid rgba(0,0,0,0.12) !important;
+  box-shadow:0 1px 3px rgba(0,0,0,0.04);
+}
+[data-theme="light"] .sb-clock-card:hover {
+  background:#f8fafc !important;
+  border-color:#0284c7 !important;
+}
+[data-theme="light"] .sb-clock-digits {
+  color:#0f172a !important;
+}
+[data-theme="light"] .sb-clock-tz-badge {
+  background:#e0f2fe !important;
+  color:#0369a1 !important;
+  border-color:#bae6fd !important;
+}
+[data-theme="light"] .sb-clock-date {
+  color:#64748b !important;
+}
+[data-theme="light"] .sb-clock-mode-label {
+  background:#f1f5f9 !important;
+  color:#475569 !important;
+}
+[data-theme="light"] .noc-topbar-clock {
+  background:rgba(0,0,0,0.03) !important;
+  border-color:rgba(0,0,0,0.12) !important;
+}
+[data-theme="light"] .noc-topbar-clock:hover {
+  background:#f1f5f9 !important;
+  border-color:#0284c7 !important;
+}
+[data-theme="light"] .noc-topbar-clock-time {
+  color:#0f172a !important;
+}
+[data-theme="light"] .noc-topbar-clock-tz {
+  background:#e0f2fe !important;
+  color:#0369a1 !important;
+  border-color:#bae6fd !important;
 }
 [data-theme="light"] table th,
 [data-theme="light"] .tab-body .card table th {
@@ -851,7 +891,138 @@ body{
 .sidebar-footer{padding:8px 12px;border-top:1px solid var(--border);font-size:11px;color:var(--dim);background:rgba(0,0,0,0.14);text-align:center}
 .sb-footer-brand{font-size:11px;font-weight:700;color:var(--text);letter-spacing:0.2px}
 .sb-footer-ver{font-size:10px;color:var(--dim);font-family:var(--font-mono, monospace);margin-top:1px}
-.sb-footer-utc{font-size:9.5px;color:var(--dim-subtle, #64748b);font-family:var(--font-mono, monospace);margin-top:2px}
+
+/* Jam Interaktif Footer Sidebar */
+.sb-clock-card {
+  margin-top: 6px;
+  padding: 5px 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  text-align: center;
+}
+.sb-clock-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--blue, #38bdf8);
+}
+.sb-clock-time-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+.sb-clock-live-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--green, #22c55e);
+  box-shadow: 0 0 5px var(--green, #22c55e);
+  display: inline-block;
+  flex-shrink: 0;
+  animation: clockLivePulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+@keyframes clockLivePulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.85); }
+}
+.sb-clock-digits {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.4px;
+}
+.sb-clock-tz-badge {
+  font-size: 8.5px;
+  font-weight: 700;
+  font-family: var(--font-mono, monospace);
+  padding: 0.5px 4px;
+  border-radius: 3px;
+  background: rgba(56, 189, 248, 0.15);
+  color: var(--blue, #38bdf8);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+.sb-clock-info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 9px;
+  color: var(--dim);
+}
+.sb-clock-date {
+  font-size: 9px;
+  letter-spacing: 0.2px;
+}
+.sb-clock-mode-label {
+  font-size: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 0.5px 3.5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--dim);
+  font-weight: 600;
+}
+
+/* Jam Interaktif Topbar */
+.noc-topbar-clock {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 8px;
+  height: 28px;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s ease;
+}
+.noc-topbar-clock:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--blue, #38bdf8);
+}
+.noc-topbar-clock-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--green, #22c55e);
+  box-shadow: 0 0 5px var(--green, #22c55e);
+  display: inline-block;
+  flex-shrink: 0;
+  animation: clockLivePulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+.noc-topbar-clock-time {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: 0.3px;
+}
+.noc-topbar-clock-tz {
+  font-size: 8.5px;
+  font-weight: 700;
+  font-family: var(--font-mono, monospace);
+  padding: 0.5px 4px;
+  border-radius: 3px;
+  background: rgba(56, 189, 248, 0.15);
+  color: var(--blue, #38bdf8);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  line-height: 1.2;
+}
+@media (max-width: 640px) {
+  .noc-topbar-clock {
+    display: none !important;
+  }
+}
 
 .main{
   flex: 1;
@@ -2895,8 +3066,25 @@ body.show-alert-banner .main{padding-top:72px}
   </nav>
   <div class="sidebar-footer">
     <div class="sb-footer-brand">Pantau Server</div>
-    <div class="sb-footer-ver">v{{ app_version or '4.8.211' }}</div>
-    <div class="sb-footer-utc">UTC <span id="clockUtc" style="display:inline"></span></div>
+    <div class="sb-footer-ver">v{{ app_version or '4.8.212' }}</div>
+    <div class="sb-clock-card" id="sbClockBox" 
+         data-server-tz="{{ server_tz or 'WITA' }}" 
+         data-server-offset="{{ server_tz_offset if server_tz_offset is defined else 480 }}"
+         onclick="toggleSidebarClockMode()" 
+         onkeydown="if(event.key==='Enter'||event.key===' ')toggleSidebarClockMode()"
+         role="button"
+         tabindex="0"
+         title="Memuat waktu...">
+      <div class="sb-clock-time-row">
+        <span class="sb-clock-live-dot" title="Detak Waktu Nyata"></span>
+        <span id="sbClockTime" class="sb-clock-digits mono">--:--:--</span>
+        <span id="sbClockTz" class="sb-clock-tz-badge">{{ server_tz or 'WITA' }}</span>
+      </div>
+      <div class="sb-clock-info-row">
+        <span id="sbClockDate" class="sb-clock-date">-- --- ----</span>
+        <span id="sbClockModeLabel" class="sb-clock-mode-label">Lokal</span>
+      </div>
+    </div>
   </div>
 </aside>
 
@@ -2920,7 +3108,12 @@ body.show-alert-banner .main{padding-top:72px}
       </div>
     </div>
 
-    <div class="topbar-global-right">
+    <div class="topbar-global-right" style="display:flex;align-items:center;gap:8px">
+      <div class="noc-topbar-clock" id="topbarClockWidget" onclick="toggleSidebarClockMode()" onkeydown="if(event.key==='Enter'||event.key===' ')toggleSidebarClockMode()" role="button" tabindex="0" title="Memuat waktu...">
+        <span class="noc-topbar-clock-dot"></span>
+        <span class="noc-topbar-clock-time mono" id="topbarClockTime">--:--:--</span>
+        <span class="noc-topbar-clock-tz" id="topbarClockTz">{{ server_tz or 'WITA' }}</span>
+      </div>
       {% include "topbar_user.html" %}
     </div>
   </header>
@@ -3813,15 +4006,109 @@ function tickAllDurations(){
 }
 setInterval(tickAllDurations, 1000);
 
-// ---------- jam UTC footer sidebar (semua timestamp UI memakai UTC; lokal Anda bisa berbeda) ----------
-function tickUtcClock(){
-  const now = new Date();
-  const timeSec = now.toISOString().substring(11, 19);
-  const elFooter = document.getElementById('clockUtc');
-  if (elFooter) elFooter.textContent = timeSec.substring(0, 5) + ' UTC';
+// ---------- Jam Interaktif Waktu Lokal Server & UTC ----------
+const _serverClockMeta = {
+  tz: '{{ server_tz or "WITA" }}',
+  offsetMin: parseInt('{{ server_tz_offset if server_tz_offset is defined else 480 }}', 10) || 480,
+  mode: (function(){
+    try {
+      return localStorage.getItem('pantau_clock_mode') || 'server_local';
+    } catch (e) {
+      return 'server_local';
+    }
+  })()
+};
+
+const _NOC_DAYS_ID = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+const _NOC_DAYS_LONG = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+const _NOC_MONTHS_ID = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+const _NOC_MONTHS_LONG = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+function toggleSidebarClockMode() {
+  _serverClockMeta.mode = (_serverClockMeta.mode === 'server_local') ? 'utc' : 'server_local';
+  try {
+    localStorage.setItem('pantau_clock_mode', _serverClockMeta.mode);
+  } catch (e) {}
+  tickServerClock();
 }
-tickUtcClock();
-setInterval(tickUtcClock, 1000);
+
+function tickServerClock() {
+  const sbBox = document.getElementById('sbClockBox');
+  if (sbBox) {
+    if (sbBox.dataset.serverTz) _serverClockMeta.tz = sbBox.dataset.serverTz;
+    if (sbBox.dataset.serverOffset) {
+      const parsed = parseInt(sbBox.dataset.serverOffset, 10);
+      if (!isNaN(parsed)) _serverClockMeta.offsetMin = parsed;
+    }
+  }
+
+  const now = new Date();
+  const utcMs = now.getTime() + (now.getTimezoneOffset() * 60000);
+  const serverMs = utcMs + (_serverClockMeta.offsetMin * 60000);
+  const serverDate = new Date(serverMs);
+  const utcDate = new Date(utcMs);
+
+  const isUtc = (_serverClockMeta.mode === 'utc');
+  const targetDate = isUtc ? utcDate : serverDate;
+  const targetTz = isUtc ? 'UTC' : _serverClockMeta.tz;
+  const modeLabel = isUtc ? 'UTC' : 'Lokal';
+
+  const hh = String(targetDate.getHours()).padStart(2, '0');
+  const mm = String(targetDate.getMinutes()).padStart(2, '0');
+  const ss = String(targetDate.getSeconds()).padStart(2, '0');
+  const timeStr = `${hh}:${mm}:${ss}`;
+
+  const dayStr = _NOC_DAYS_ID[targetDate.getDay()];
+  const dateNum = targetDate.getDate();
+  const monStr = _NOC_MONTHS_ID[targetDate.getMonth()];
+  const yearStr = targetDate.getFullYear();
+  const dateFormatted = `${dayStr}, ${dateNum} ${monStr} ${yearStr}`;
+
+  // Formulasi tooltip yang informatif dan profesional
+  const sHh = String(serverDate.getHours()).padStart(2, '0');
+  const sMm = String(serverDate.getMinutes()).padStart(2, '0');
+  const sSs = String(serverDate.getSeconds()).padStart(2, '0');
+  const sDay = _NOC_DAYS_LONG[serverDate.getDay()];
+  const sDate = `${sDay}, ${serverDate.getDate()} ${_NOC_MONTHS_LONG[serverDate.getMonth()]} ${serverDate.getFullYear()}`;
+  const sSign = _serverClockMeta.offsetMin >= 0 ? '+' : '-';
+  const sOffAbs = Math.abs(_serverClockMeta.offsetMin);
+  const sOffHr = String(Math.floor(sOffAbs / 60)).padStart(2, '0');
+  const sOffMin = String(sOffAbs % 60).padStart(2, '0');
+  const sOffsetStr = `UTC${sSign}${sOffHr}:${sOffMin}`;
+
+  const uHh = String(utcDate.getHours()).padStart(2, '0');
+  const uMm = String(utcDate.getMinutes()).padStart(2, '0');
+  const uSs = String(utcDate.getSeconds()).padStart(2, '0');
+  const uDay = _NOC_DAYS_LONG[utcDate.getDay()];
+  const uDate = `${uDay}, ${utcDate.getDate()} ${_NOC_MONTHS_LONG[utcDate.getMonth()]} ${utcDate.getFullYear()}`;
+
+  const tooltipText = `[ ${isUtc ? 'Universal Time (UTC)' : 'Waktu Lokal Server (' + _serverClockMeta.tz + ')'} ]\n` +
+                      `• Waktu Server: ${sHh}:${sMm}:${sSs} ${_serverClockMeta.tz} (${sOffsetStr}) · ${sDate}\n` +
+                      `• Waktu Universal: ${uHh}:${uMm}:${uSs} UTC · ${uDate}\n` +
+                      `• Mode Aktif: ${isUtc ? 'UTC (Universal)' : 'Lokal Server'}\n` +
+                      `(Klik atau tekan Enter untuk beralih mode Waktu Server / UTC)`;
+
+  // Update Sidebar Clock
+  const elTime = document.getElementById('sbClockTime');
+  const elTz = document.getElementById('sbClockTz');
+  const elDate = document.getElementById('sbClockDate');
+  const elMode = document.getElementById('sbClockModeLabel');
+  if (elTime) elTime.textContent = timeStr;
+  if (elTz) elTz.textContent = targetTz;
+  if (elDate) elDate.textContent = dateFormatted;
+  if (elMode) elMode.textContent = modeLabel;
+  if (sbBox) sbBox.title = tooltipText;
+
+  // Update Topbar Clock
+  const topBox = document.getElementById('topbarClockWidget');
+  const elTopTime = document.getElementById('topbarClockTime');
+  const elTopTz = document.getElementById('topbarClockTz');
+  if (elTopTime) elTopTime.textContent = timeStr;
+  if (elTopTz) elTopTz.textContent = targetTz;
+  if (topBox) topBox.title = tooltipText;
+}
+tickServerClock();
+setInterval(tickServerClock, 1000);
 
 // ---------- log: lompat ke kartu log + unit ----------
 function jumpToLog(unit, filterText){

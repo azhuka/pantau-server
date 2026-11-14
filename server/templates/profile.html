@@ -130,7 +130,7 @@
             <span style="color:var(--dim)">Login Terakhir</span>
             <span style="color:var(--text)" class="mono">
               {% if user.last_login_at %}
-              {{ user.last_login_at.strftime('%Y-%m-%d %H:%M:%S UTC') }}
+              {{ _fmt_dt(user.last_login_at) }}
               {% if user.last_login_ip %}<span style="color:var(--dim);font-size:10.5px">({{ user.last_login_ip }})</span>{% endif %}
               {% else %}-{% endif %}
             </span>
@@ -139,7 +139,7 @@
             <span style="color:var(--dim)">Password Terakhir Diubah</span>
             <span style="color:var(--text)" class="mono">
               {% if user.password_changed_at %}
-              {{ user.password_changed_at.strftime('%Y-%m-%d %H:%M:%S UTC') }}
+              {{ _fmt_dt(user.password_changed_at) }}
               {% else %}Belum pernah{% endif %}
             </span>
           </div>
@@ -414,7 +414,7 @@
               </td>
               <td class="col-time mono cell-nowrap" style="padding:6px 12px;font-size:11px;letter-spacing:-0.025em;color:var(--dim)">
                 {% if u.last_login_at %}
-                <span title="{{ u.last_login_at.strftime('%d %b %Y %H:%M:%S UTC') }}">{{ u.last_login_at.strftime('%d %b %H:%M') }}</span>
+                <span title="{{ _fmt_dt(u.last_login_at) }}">{{ _fmt_short_dt(u.last_login_at) }}</span>
                 {% else %}
                 <span style="color:var(--dim);opacity:0.6">-</span>
                 {% endif %}

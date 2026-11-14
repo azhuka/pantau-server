@@ -178,10 +178,37 @@ def api_key_fingerprint(api_key: str) -> str:
     return h[:8] + "…" + h[-8:] if len(h) > 16 else h
 
 
+def get_server_timezone_meta() -> dict:
+    """Deteksi zona waktu lokal server pantau-server, singkatan nama, dan offset menit."""
+    try:
+        now_local = datetime.now().astimezone()
+        tz_name = now_local.tzname() or "WITA"
+        offset_sec = int(now_local.utcoffset().total_seconds()) if now_local.utcoffset() else 28800
+        offset_min = offset_sec // 60
+        return {
+            "tz": tz_name,
+            "offset_min": offset_min,
+            "offset_sec": offset_sec,
+        }
+    except Exception:
+        return {
+            "tz": "WITA",
+            "offset_min": 480,
+            "offset_sec": 28800,
+        }
+
+
 def _fmt_dt(dt: datetime | None, with_sec: bool = True) -> str:
-    """Format tanggal dan waktu rinci dalam bahasa Indonesia: DD Mon YYYY HH:MM:SS."""
+    """Format tanggal dan waktu rinci dalam waktu lokal server & bahasa Indonesia: DD Mon YYYY HH:MM:SS."""
     if not dt or not isinstance(dt, datetime):
         return "—"
+    try:
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc).astimezone()
+        else:
+            dt = dt.astimezone()
+    except Exception:
+        pass
     mon = MONTHS_ID[dt.month - 1]
     if with_sec:
         return f"{dt.day:02d} {mon} {dt.year} {dt.hour:02d}:{dt.minute:02d}:{dt.second:02d}"
@@ -189,9 +216,16 @@ def _fmt_dt(dt: datetime | None, with_sec: bool = True) -> str:
 
 
 def _fmt_short_dt(dt: datetime | None) -> str:
-    """Format tanggal dan waktu ringkas untuk tabel insiden: DD Mon HH:MM."""
+    """Format tanggal dan waktu ringkas dalam waktu lokal server: DD Mon HH:MM."""
     if not dt or not isinstance(dt, datetime):
         return "—"
+    try:
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc).astimezone()
+        else:
+            dt = dt.astimezone()
+    except Exception:
+        pass
     mon = MONTHS_ID[dt.month - 1]
     return f"{dt.day:02d} {mon} {dt.hour:02d}:{dt.minute:02d}"
 

@@ -354,6 +354,13 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.212
+
+- **Jam Interaktif Footer Sidebar & Topbar:** Menggantikan teks statis ganda 'UTC 03:57 UTC' dengan komponen jam interaktif informatif yang menampilkan waktu lokal host server secara presisi, tanggal hari lengkap bahasa Indonesia, dan singkatan zona waktu.
+- **Opsi Beralih Waktu (Interactive Toggle & Tooltip):** Pengguna dapat mengklik jam untuk berganti instan antara Waktu Lokal Server dan Universal Time (UTC) dengan persistensi preferensi di browser (localStorage).
+- **Sinkronisasi Waktu Server-Side:** Menyelaraskan fungsi pemformat waktu server (_fmt_dt & _fmt_short_dt) agar mengonversi timestamp database ke zona waktu lokal server secara otomatis.
+
+
 ## Versi 4.8.211
 
 - **Sinkronisasi Sesi Aktif:** Memastikan kartu stat 'Sesi Aktif & Terakhir' selalu selaras dengan chip 'Sesi Aktif' saat sesi bernilai 0 dan menyembunyikan tombol terminasi jika sesi tidak aktif.

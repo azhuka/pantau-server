@@ -4708,7 +4708,7 @@ div[style*="position: fixed"] .card {
     <div style="margin-bottom:16px;padding:12px 14px;background:var(--bg);border:1px solid var(--border);border-radius:6px;font-size:13px">
       Status saat ini: <strong style="color:{% if server.is_maintenance %}#facc15{% else %}#22c55e{% endif %}">{% if server.is_maintenance %}Aktif (Dalam Pemeliharaan){% else %}Tidak Aktif (Normal){% endif %}</strong>
       {% if server.maintenance_reason %}<div style="color:var(--dim);font-size:12px;margin-top:4px">Alasan: {{ server.maintenance_reason }}</div>{% endif %}
-      {% if server.maintenance_until %}<div style="color:var(--dim);font-size:12px;margin-top:2px">Berakhir: {{ server.maintenance_until.strftime('%H:%M %d/%m/%Y UTC') }}</div>{% endif %}
+      {% if server.maintenance_until %}<div style="color:var(--dim);font-size:12px;margin-top:2px">Berakhir: {{ _fmt_dt(server.maintenance_until) }} ({{ server_tz or 'WITA' }})</div>{% endif %}
     </div>
 
     <div>

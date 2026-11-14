@@ -14,14 +14,14 @@ try:
     from models import SystemSetting
     from core.database import SessionLocal
     from core.security import _csrf_token, SESSION_COOKIE
-    from core.utils import _fmt_dt, _fmt_short_dt, _rel_dt
+    from core.utils import _fmt_dt, _fmt_short_dt, _rel_dt, get_server_timezone_meta
     from services.maintenance_service import get_active_maintenance_info
 except ImportError:
     from server.config import settings
     from server.models import SystemSetting
     from server.core.database import SessionLocal
     from server.core.security import _csrf_token, SESSION_COOKIE
-    from server.core.utils import _fmt_dt, _fmt_short_dt, _rel_dt
+    from server.core.utils import _fmt_dt, _fmt_short_dt, _rel_dt, get_server_timezone_meta
     from server.services.maintenance_service import get_active_maintenance_info
 
 templates = Jinja2Templates(directory=settings.templates_dir)
@@ -32,6 +32,9 @@ templates.env.globals["_fmt_short_dt"] = _fmt_short_dt
 templates.env.globals["_rel_dt"] = _rel_dt
 templates.env.globals["getattr"] = getattr
 templates.env.globals["bool"] = bool
+_tz_info = get_server_timezone_meta()
+templates.env.globals["server_tz"] = _tz_info["tz"]
+templates.env.globals["server_tz_offset"] = _tz_info["offset_min"]
 
 # ---------------------------------------------------------------------------
 # Pengaturan Identitas & Pengumuman Organisasi (Branding & MOTD)
@@ -98,6 +101,9 @@ def tpl(request: Request, name: str, context: Optional[dict] = None, status_code
     active_m_count, active_m_titles = get_active_maintenance_info()
     ctx.setdefault("active_maintenance_count", active_m_count)
     ctx.setdefault("active_maintenance_titles", active_m_titles)
+    meta_tz = get_server_timezone_meta()
+    ctx.setdefault("server_tz", meta_tz["tz"])
+    ctx.setdefault("server_tz_offset", meta_tz["offset_min"])
     resp = templates.TemplateResponse(request, name, ctx, status_code=status_code)
     resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     resp.headers["Pragma"] = "no-cache"
