@@ -354,6 +354,15 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.215
+
+- **Deteksi Sesi PTY Interaktif Aktif:** Memperluas mesin deteksi _parse_who() untuk memindai proses shell interaktif pada terminal pts/ (Web Terminal), sehingga sesi aktif langsung menyala hijau di Tab Users dan menggantikan teks 'Never logged in' dengan waktu sesi aktif presisi.
+- **Audit Perintah Konsol Web Terminal:** Menyuntikkan hook audit real-time __pantau_prompt_audit dan mengaktifkan HISTFILE=/home/operator/.bash_history pada wrapper pantau-shell, merekam setiap ketikan perintah diagnostik secara langsung ke audit trail Tab Users.
+- **Pencatatan Siklus Sesi Terminal:** Menambahkan logging terstruktur saat sesi Web Terminal dibuka dan ditutup, tercatat resmi pada riwayat login/logout pengguna.
+- **Auto-Rebaseline FIM Otomatis:** Menjalankan pembaruan acuan hash baseline FIM untuk /etc/passwd dan /etc/shadow secara mandiri saat inisialisasi akun operator, mengembalikan status integritas menjadi VALID/AMAN.
+- **Sinkronisasi Hash FIM Server:** Memperbarui router api_agent agar menyelaraskan baseline hash server saat menerima status VALID dari agen klien.
+
+
 ## Versi 4.8.214
 
 - **Web Terminal Non-Root Dedicated Operator:** Mengalihkan arsitektur sesi interaktif shell dari direct root menjadi akun non-root terdedikasi 'operator' di direktori kerja /home/operator.

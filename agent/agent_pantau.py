@@ -480,7 +480,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.214"
+AGENT_VERSION = "4.8.215"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -1091,7 +1091,11 @@ case "$ACTION" in
         COMMENT="${COMMENT//$'\n'/ }"
         COMMENT="${COMMENT//$'\r'/ }"
 
-        useradd -m -s "$SHELL_PATH" -c "$COMMENT" "$USERNAME" || fail "Gagal membuat pengguna '$USERNAME'"
+        if getent group "$USERNAME" >/dev/null 2>&1; then
+            useradd -m -s "$SHELL_PATH" -g "$USERNAME" -c "$COMMENT" "$USERNAME" 2>/dev/null || useradd -m -s "$SHELL_PATH" -c "$COMMENT" "$USERNAME" || fail "Gagal membuat pengguna '$USERNAME'"
+        else
+            useradd -m -s "$SHELL_PATH" -c "$COMMENT" "$USERNAME" || fail "Gagal membuat pengguna '$USERNAME'"
+        fi
 
         if [ -n "$PASSWORD" ]; then
             if [[ "$PASSWORD" == *$'\n'* ]] || [[ "$PASSWORD" == *$'\r'* ]]; then
@@ -3088,23 +3092,60 @@ def _parse_who() -> list[dict]:
     res = _run_cmd(["who", "-u"], timeout=5)
     if res is None:
         res = _run_cmd(["who"], timeout=5)
-    if res is None:
-        return sessions
-    for line in res.stdout.splitlines():
-        line = line.strip()
-        if not line:
-            continue
-        m = _who_re.match(line)
-        if m:
-            u, tty, t, idle, pid, src = m.groups()
-            sessions.append({
-                "user": u,
-                "tty": tty,
-                "time": re.sub(r"\s+", " ", t).strip(),
-                "idle": idle or "",
-                "pid": pid or "",
-                "from": (src or "").strip(),
-            })
+    if res is not None:
+        for line in res.stdout.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            m = _who_re.match(line)
+            if m:
+                u, tty, t, idle, pid, src = m.groups()
+                sessions.append({
+                    "user": u,
+                    "tty": tty,
+                    "time": re.sub(r"\s+", " ", t).strip(),
+                    "idle": idle or "",
+                    "pid": pid or "",
+                    "from": (src or "").strip(),
+                })
+
+    # Pindai sesi interaktif PTY aktif (Web Terminal, tmux, konsol lokal)
+    # yang tidak tercatat dalam basis data login formal utmp
+    try:
+        seen_ttys = {s.get("tty") for s in sessions if s.get("tty")}
+        ps_res = _run_cmd(["ps", "-eo", "user,tty,pid,stat,comm,lstart,args", "--no-headers"], timeout=4)
+        if ps_res and ps_res.stdout:
+            for pline in ps_res.stdout.splitlines():
+                parts = pline.split()
+                if len(parts) >= 10:
+                    p_user, p_tty, p_pid, p_stat, p_comm = parts[:5]
+                    if not p_tty.startswith("pts/") or p_tty in seen_ttys or p_user == "pantau":
+                        continue
+                    p_args = " ".join(parts[10:])
+                    is_shell_proc = p_comm in ("bash", "sh", "zsh", "fish") or p_comm.startswith("tmux")
+                    if not is_shell_proc:
+                        continue
+                    raw_lstart = " ".join(parts[5:10])
+                    t_str = ""
+                    try:
+                        dt = datetime.strptime(raw_lstart, "%a %b %d %H:%M:%S %Y")
+                        t_str = dt.strftime("%Y-%m-%d %H:%M:%S")
+                    except Exception:
+                        t_str = raw_lstart
+
+                    src_desc = "Web Terminal" if ("pantau-shell" in p_args or p_user == "operator") else "(lokal)"
+                    seen_ttys.add(p_tty)
+                    sessions.append({
+                        "user": p_user,
+                        "tty": p_tty,
+                        "time": t_str,
+                        "idle": ".",
+                        "pid": p_pid,
+                        "from": src_desc,
+                    })
+    except Exception:
+        pass
+
     return sessions
 
 
@@ -3211,6 +3252,14 @@ def collect_accounts() -> list[dict]:
         is_protected = is_system or (pw.pw_name in protected_set)
         is_locked = pw.pw_name in locked_set
 
+        last_login_val = lastlog.get(pw.pw_name, "")
+        if (not last_login_val or "Never logged in" in last_login_val) and sessions:
+            s_first = sessions[0]
+            s_time = s_first.get("time", "")
+            s_from = s_first.get("from") or "terminal"
+            if s_time:
+                last_login_val = f"{s_time} ({s_from})"
+
         accounts.append({
             "user": pw.pw_name,
             "uid": pw.pw_uid,
@@ -3219,7 +3268,7 @@ def collect_accounts() -> list[dict]:
             "groups": supp_groups[:20],
             "home": pw.pw_dir or "",
             "shell": pw.pw_shell or "",
-            "last_login": lastlog.get(pw.pw_name, ""),
+            "last_login": last_login_val,
             "sessions": sessions[:5],
             "is_system": is_system,
             "is_sudo": is_sudo,
@@ -7168,14 +7217,14 @@ PANTAU_SHELL_SCRIPT_BODY = r"""#!/bin/sh
 # HANYA ketika operator dashboard membuka Terminal Bawaan pada halaman Rincian
 # Server.
 #
-# Arsitektur Keamanan:
+# Arsitektur Keamanan & Audit:
 #   - Terminal terbuka sebagai user non-root terdedikasi ('operator') di direktori /home/operator.
 #   - Perintah diagnostik (ls, ps, top, htop, cat, ping, curl, dll.) berjalan aman tanpa hak root.
 #   - Jika membutuhkan akses administratif penuh, operator dapat menjalankan:
 #       sudo <perintah>    atau    sudo -i / sudo su -
 #   - Seluruh tindakan eskalasi tercatat otomatis di auth.log/journalctl (audit trail).
-#   - Dijalankan lewat pty supaya bash/tmux berperilaku sama seperti di SSH.
-#   - Setiap sesi dicatat ke syslog (tag pantau-shell).
+#   - Hook __pantau_prompt_audit mencatat seluruh ketikan perintah di konsol ke syslog real-time.
+#   - Riwayat terminal dicatat ke ~/.bash_history dan didukung PTY penuh di browser.
 #
 # Menutup sesi: ketik "exit" atau Ctrl+D.
 
@@ -7207,6 +7256,13 @@ if [ "$(id -u)" -eq 0 ]; then
         chmod 750 "$TARGET_HOME" 2>/dev/null || true
     fi
 
+    # Pastikan berkas .bash_history ada dan dimiliki oleh operator
+    if [ ! -f "$TARGET_HOME/.bash_history" ]; then
+        touch "$TARGET_HOME/.bash_history" 2>/dev/null || true
+        chown "$TARGET_USER:$TARGET_USER" "$TARGET_HOME/.bash_history" 2>/dev/null || chown "$TARGET_USER" "$TARGET_HOME/.bash_history" 2>/dev/null || true
+        chmod 600 "$TARGET_HOME/.bash_history" 2>/dev/null || true
+    fi
+
     # Pastikan rule sudoers untuk operator tersedia
     if [ -f /etc/sudoers.d/pantau-agent ] && ! grep -q "operator ALL=" /etc/sudoers.d/pantau-agent; then
         printf "\n# Web Terminal Akun Khusus Non-Root (operator) dengan Eskalasi Sudo Terkontrol\noperator ALL=(ALL:ALL) NOPASSWD: ALL\n" >> /etc/sudoers.d/pantau-agent 2>/dev/null || true
@@ -7229,11 +7285,48 @@ export LANG=${LANG:-C.UTF-8}
 RCFILE=$(mktemp /tmp/pantau-shellrc.XXXXXX)
 chmod 644 "$RCFILE"
 trap 'rm -f "$RCFILE"' EXIT INT TERM
-cat >"$RCFILE" <<EOF
-PS1='\u@${HOSTN}:\w\$ '
+cat >"$RCFILE" <<'EOF'
+PS1='\u@\h:\w\$ '
 PS2='> '
-HISTFILE=/dev/null
-HISTSIZE=2000
+export HISTFILE="$HOME/.bash_history"
+export HISTSIZE=5000
+export HISTFILESIZE=10000
+export HISTTIMEFORMAT="%Y-%m-%d %H:%M:%S "
+shopt -s histappend 2>/dev/null || true
+
+__pantau_prompt_audit() {
+    local h
+    h=$(history 1 2>/dev/null)
+    [ -z "$h" ] && return
+    h="${h#"${h%%[! ]*}"}"
+    h="${h#*[0-9] }"
+    h="${h#"${h%%[! ]*}"}"
+    local cmd
+    if [[ "$h" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}[[:space:]][0-9]{2}:[0-9]{2}:[0-9]{2}[[:space:]]+(.*)$ ]]; then
+        cmd="${BASH_REMATCH[1]}"
+    else
+        cmd="$h"
+    fi
+    [ -z "$cmd" ] && return
+    if [ "$cmd" != "$__PANTAU_LAST_CMD" ]; then
+        __PANTAU_LAST_CMD="$cmd"
+        case "$cmd" in
+            *__pantau*|*logger*|"history -a"*) ;;
+            *)
+                local t
+                t=$(tty 2>/dev/null || echo "lokal")
+                t=${t#/dev/}
+                logger -t pantau-shell -p auth.notice -- "[USER=$USER] [PWD=$PWD] [TTY=$t] CMD: $cmd" 2>/dev/null || true
+                ;;
+        esac
+    fi
+    history -a 2>/dev/null || true
+}
+
+case "$PROMPT_COMMAND" in
+    *__pantau_prompt_audit*) ;;
+    *) export PROMPT_COMMAND="__pantau_prompt_audit${PROMPT_COMMAND:+; $PROMPT_COMMAND}" ;;
+esac
 EOF
 
 LOG_TAG=pantau-shell
@@ -7244,7 +7337,9 @@ log() {
     fi
 }
 
-log "shell dibuka oleh uid=$(id -u) (target=$TARGET_USER) host=$HOSTN"
+CURRENT_TTY=$(tty 2>/dev/null || echo "pts")
+CURRENT_TTY=${CURRENT_TTY#/dev/}
+log "[USER=$TARGET_USER] [PWD=$TARGET_HOME] [TTY=$CURRENT_TTY] CMD: [Sesi Web Terminal Dibuka]"
 
 # Jalankan shell sebagai TARGET_USER
 run_as_target() {
@@ -7281,14 +7376,14 @@ else
         /bin/bash --noprofile --rcfile "$RCFILE" -i
         _rc=$?
     fi
-    log "shell ditutup dengan kode=$_rc"
+    log "[USER=$TARGET_USER] [PWD=$TARGET_HOME] [TTY=$CURRENT_TTY] CMD: [Sesi Web Terminal Ditutup (kode=$_rc)]"
     exit $_rc
 fi
 """
 
 
 def ensure_pantau_operator_account() -> bool:
-    """Memastikan user non-root 'operator' dan izin sudoers tersedia untuk Web Terminal."""
+    """Memastikan user non-root 'operator', izin sudoers, dan sinkronisasi baseline FIM tersedia untuk Web Terminal."""
     try:
         user_exists = False
         try:
@@ -7297,32 +7392,43 @@ def ensure_pantau_operator_account() -> bool:
         except KeyError:
             pass
 
-        if not user_exists and IS_ROOT:
-            has_grp = False
-            try:
-                grp.getgrnam("operator")
-                has_grp = True
-            except KeyError:
-                pass
+        if not user_exists:
+            if IS_ROOT:
+                has_grp = False
+                try:
+                    grp.getgrnam("operator")
+                    has_grp = True
+                except KeyError:
+                    pass
 
-            cmd = ["useradd", "-m", "-s", "/bin/bash"]
-            if has_grp:
-                cmd.extend(["-g", "operator"])
-            cmd.extend(["-G", "sudo,adm", "operator"])
-            res = subprocess.run(cmd, capture_output=True, timeout=10)
-            if res.returncode != 0:
-                subprocess.run(["useradd", "-m", "-s", "/bin/bash", "-G", "sudo", "operator"], capture_output=True, timeout=10)
+                cmd = ["useradd", "-m", "-s", "/bin/bash"]
+                if has_grp:
+                    cmd.extend(["-g", "operator"])
+                cmd.extend(["-G", "sudo,adm", "operator"])
+                res = subprocess.run(cmd, capture_output=True, timeout=10)
+                if res.returncode != 0:
+                    subprocess.run(["useradd", "-m", "-s", "/bin/bash", "-G", "sudo", "operator"], capture_output=True, timeout=10)
+            elif os.path.isfile(PANTAU_USER_CMD):
+                subprocess.run(["/usr/bin/sudo", "-n", PANTAU_USER_CMD, "create", "operator", "/bin/bash", "1", "Pantau Web Terminal Operator"], capture_output=True, timeout=10)
 
-        if IS_ROOT:
-            try:
-                op_entry = pwd.getpwnam("operator")
-                op_home = op_entry.pw_dir or "/home/operator"
+        # Pastikan direktori home dan berkas history operator tersedia
+        try:
+            op_entry = pwd.getpwnam("operator")
+            op_home = op_entry.pw_dir or "/home/operator"
+            if IS_ROOT:
                 if not os.path.isdir(op_home):
                     os.makedirs(op_home, mode=0o750, exist_ok=True)
                     os.chown(op_home, op_entry.pw_uid, op_entry.pw_gid)
-            except Exception:
-                pass
+                hist_f = os.path.join(op_home, ".bash_history")
+                if not os.path.isfile(hist_f):
+                    with open(hist_f, "w") as hf:
+                        pass
+                    os.chmod(hist_f, 0o600)
+                    os.chown(hist_f, op_entry.pw_uid, op_entry.pw_gid)
+        except Exception:
+            pass
 
+        if IS_ROOT:
             sd_file = "/etc/sudoers.d/pantau-agent"
             if os.path.isfile(sd_file):
                 try:
@@ -7334,6 +7440,15 @@ def ensure_pantau_operator_account() -> bool:
                         os.chmod(sd_file, 0o440)
                 except Exception:
                     pass
+
+        # Auto-rebaseline FIM untuk /etc/passwd dan /etc/shadow
+        try:
+            _rebaseline_fim_path("/etc/passwd")
+            _rebaseline_fim_path("/etc/shadow")
+            _fim_cache["at"] = 0.0
+        except Exception:
+            pass
+
         return True
     except Exception as e:
         print(f"[OPERATOR] ensure_pantau_operator_account error: {e}")
@@ -7352,7 +7467,7 @@ def ensure_pantau_shell_updated(force: bool = False) -> bool:
                     cur_content = f.read()
             except Exception:
                 pass
-            if 'TARGET_USER="operator"' in cur_content and "run_as_target" in cur_content:
+            if 'TARGET_USER="operator"' in cur_content and "__pantau_prompt_audit" in cur_content and "run_as_target" in cur_content:
                 return True
 
         content_to_write = PANTAU_SHELL_SCRIPT_BODY.strip() + "\n"

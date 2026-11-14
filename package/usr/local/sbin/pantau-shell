@@ -7,14 +7,14 @@
 # HANYA ketika operator dashboard membuka Terminal Bawaan pada halaman Rincian
 # Server.
 #
-# Arsitektur Keamanan:
+# Arsitektur Keamanan & Audit:
 #   - Terminal terbuka sebagai user non-root terdedikasi ('operator') di direktori /home/operator.
 #   - Perintah diagnostik (ls, ps, top, htop, cat, ping, curl, dll.) berjalan aman tanpa hak root.
 #   - Jika membutuhkan akses administratif penuh, operator dapat menjalankan:
 #       sudo <perintah>    atau    sudo -i / sudo su -
 #   - Seluruh tindakan eskalasi tercatat otomatis di auth.log/journalctl (audit trail).
-#   - Dijalankan lewat pty supaya bash/tmux berperilaku sama seperti di SSH.
-#   - Setiap sesi dicatat ke syslog (tag pantau-shell).
+#   - Hook __pantau_prompt_audit mencatat seluruh ketikan perintah di konsol ke syslog real-time.
+#   - Riwayat terminal dicatat ke ~/.bash_history dan didukung PTY penuh di browser.
 #
 # Menutup sesi: ketik "exit" atau Ctrl+D.
 
@@ -46,6 +46,13 @@ if [ "$(id -u)" -eq 0 ]; then
         chmod 750 "$TARGET_HOME" 2>/dev/null || true
     fi
 
+    # Pastikan berkas .bash_history ada dan dimiliki oleh operator
+    if [ ! -f "$TARGET_HOME/.bash_history" ]; then
+        touch "$TARGET_HOME/.bash_history" 2>/dev/null || true
+        chown "$TARGET_USER:$TARGET_USER" "$TARGET_HOME/.bash_history" 2>/dev/null || chown "$TARGET_USER" "$TARGET_HOME/.bash_history" 2>/dev/null || true
+        chmod 600 "$TARGET_HOME/.bash_history" 2>/dev/null || true
+    fi
+
     # Pastikan rule sudoers untuk operator tersedia
     if [ -f /etc/sudoers.d/pantau-agent ] && ! grep -q "operator ALL=" /etc/sudoers.d/pantau-agent; then
         printf "\n# Web Terminal Akun Khusus Non-Root (operator) dengan Eskalasi Sudo Terkontrol\noperator ALL=(ALL:ALL) NOPASSWD: ALL\n" >> /etc/sudoers.d/pantau-agent 2>/dev/null || true
@@ -68,11 +75,48 @@ export LANG=${LANG:-C.UTF-8}
 RCFILE=$(mktemp /tmp/pantau-shellrc.XXXXXX)
 chmod 644 "$RCFILE"
 trap 'rm -f "$RCFILE"' EXIT INT TERM
-cat >"$RCFILE" <<EOF
-PS1='\u@${HOSTN}:\w\$ '
+cat >"$RCFILE" <<'EOF'
+PS1='\u@\h:\w\$ '
 PS2='> '
-HISTFILE=/dev/null
-HISTSIZE=2000
+export HISTFILE="$HOME/.bash_history"
+export HISTSIZE=5000
+export HISTFILESIZE=10000
+export HISTTIMEFORMAT="%Y-%m-%d %H:%M:%S "
+shopt -s histappend 2>/dev/null || true
+
+__pantau_prompt_audit() {
+    local h
+    h=$(history 1 2>/dev/null)
+    [ -z "$h" ] && return
+    h="${h#"${h%%[! ]*}"}"
+    h="${h#*[0-9] }"
+    h="${h#"${h%%[! ]*}"}"
+    local cmd
+    if [[ "$h" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}[[:space:]][0-9]{2}:[0-9]{2}:[0-9]{2}[[:space:]]+(.*)$ ]]; then
+        cmd="${BASH_REMATCH[1]}"
+    else
+        cmd="$h"
+    fi
+    [ -z "$cmd" ] && return
+    if [ "$cmd" != "$__PANTAU_LAST_CMD" ]; then
+        __PANTAU_LAST_CMD="$cmd"
+        case "$cmd" in
+            *__pantau*|*logger*|"history -a"*) ;;
+            *)
+                local t
+                t=$(tty 2>/dev/null || echo "lokal")
+                t=${t#/dev/}
+                logger -t pantau-shell -p auth.notice -- "[USER=$USER] [PWD=$PWD] [TTY=$t] CMD: $cmd" 2>/dev/null || true
+                ;;
+        esac
+    fi
+    history -a 2>/dev/null || true
+}
+
+case "$PROMPT_COMMAND" in
+    *__pantau_prompt_audit*) ;;
+    *) export PROMPT_COMMAND="__pantau_prompt_audit${PROMPT_COMMAND:+; $PROMPT_COMMAND}" ;;
+esac
 EOF
 
 LOG_TAG=pantau-shell
@@ -83,7 +127,9 @@ log() {
     fi
 }
 
-log "shell dibuka oleh uid=$(id -u) (target=$TARGET_USER) host=$HOSTN"
+CURRENT_TTY=$(tty 2>/dev/null || echo "pts")
+CURRENT_TTY=${CURRENT_TTY#/dev/}
+log "[USER=$TARGET_USER] [PWD=$TARGET_HOME] [TTY=$CURRENT_TTY] CMD: [Sesi Web Terminal Dibuka]"
 
 # Jalankan shell sebagai TARGET_USER
 run_as_target() {
@@ -120,6 +166,6 @@ else
         /bin/bash --noprofile --rcfile "$RCFILE" -i
         _rc=$?
     fi
-    log "shell ditutup dengan kode=$_rc"
+    log "[USER=$TARGET_USER] [PWD=$TARGET_HOME] [TTY=$CURRENT_TTY] CMD: [Sesi Web Terminal Ditutup (kode=$_rc)]"
     exit $_rc
 fi

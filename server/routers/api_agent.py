@@ -1036,9 +1036,9 @@ def agent_report(
                 fp.size_bytes = r_size_b
                 fp.size_human = r_size_h
                 fp.size_detail = r_size_d
-                if not fp.sha256_hash and r_sha:
+                if (r_status == "VALID" and r_sha) or (not fp.sha256_hash and r_sha):
                     fp.sha256_hash = r_sha
-                fp.last_sha256_hash = r_last_sha
+                fp.last_sha256_hash = r_last_sha or r_sha
                 fp.permissions = r_perm
                 fp.owner_group = r_og
                 fp.last_checked_at = now_dt

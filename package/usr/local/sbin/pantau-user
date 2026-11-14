@@ -63,7 +63,11 @@ case "$ACTION" in
         COMMENT="${COMMENT//$'\n'/ }"
         COMMENT="${COMMENT//$'\r'/ }"
 
-        useradd -m -s "$SHELL_PATH" -c "$COMMENT" "$USERNAME" || fail "Gagal membuat pengguna '$USERNAME'"
+        if getent group "$USERNAME" >/dev/null 2>&1; then
+            useradd -m -s "$SHELL_PATH" -g "$USERNAME" -c "$COMMENT" "$USERNAME" 2>/dev/null || useradd -m -s "$SHELL_PATH" -c "$COMMENT" "$USERNAME" || fail "Gagal membuat pengguna '$USERNAME'"
+        else
+            useradd -m -s "$SHELL_PATH" -c "$COMMENT" "$USERNAME" || fail "Gagal membuat pengguna '$USERNAME'"
+        fi
 
         if [ -n "$PASSWORD" ]; then
             if [[ "$PASSWORD" == *$'\n'* ]] || [[ "$PASSWORD" == *$'\r'* ]]; then
