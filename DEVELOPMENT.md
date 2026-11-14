@@ -354,6 +354,15 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.214
+
+- **Web Terminal Non-Root Dedicated Operator:** Mengalihkan arsitektur sesi interaktif shell dari direct root menjadi akun non-root terdedikasi 'operator' di direktori kerja /home/operator.
+- **Eskalasi Sudo On-Demand:** Operator web terminal dapat menjalankan seluruh perintah diagnostik harian tanpa hak root, serta mengelevasi hak administratif secara transparan via `sudo <perintah>` atau `sudo -i` saat dibutuhkan.
+- **Dynamic PS1 Prompt:** Pembaruan format prompt terminal shell menjadi dinamis (`\u@\h:\w$`), menampilkan direktori kerja aktif secara presisi dan beralih otomatis ke tanda `#` saat berada dalam mode root.
+- **Otomasi Self-Healing Akun & Sudoers:** Penambahan fungsi `ensure_pantau_operator_account()` dan `ensure_pantau_shell_updated()` pada agen untuk menjamin ketersediaan akun operator, direktori home, dan izin sudoers secara mandiri saat startup dan pembaruan OTA.
+- **Audit Trail Ganda:** Seluruh eskalasi administratif tercatat otomatis pada auth.log/journalctl sistem operasi dan terintegrasi dengan audit trail aktivitas pengguna Pantau Server.
+
+
 ## Versi 4.8.213
 
 - **Animasi Loading Grafik Riwayat Services:** Menyediakan skeleton loader dengan pemutar spinner dan teks informatif kontekstual pada grafik waktu respon, koneksi aktif, garis waktu ketersediaan (timeline strip), dan badge status saat beralih service atau rentang waktu.

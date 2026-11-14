@@ -1921,7 +1921,7 @@ def api_logs_request(
                server.hostname, "dikirim ke agen", server_id=sid)
     elif is_shell:
         _audit(db, user.username, "terminal_shell_open", server.hostname,
-               "membuka Terminal Bawaan (shell root)", server_id=sid)
+               "membuka Terminal Bawaan (shell operator)", server_id=sid)
     db.commit()
     db.refresh(logreq)
 

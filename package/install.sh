@@ -122,6 +122,34 @@ else
     echo "[SKIP] User 'pantau' sudah ada"
 fi
 
+# User khusus non-root 'operator' untuk Web Terminal
+if ! id -u operator >/dev/null 2>&1; then
+    if getent group operator >/dev/null 2>&1; then
+        useradd -m -s /bin/bash -g operator -G sudo,adm operator 2>/dev/null || \
+        useradd -m -s /bin/bash -g operator -G sudo operator 2>/dev/null || \
+        useradd -m -s /bin/bash -g operator operator 2>/dev/null || { echo "[ERROR] Gagal membuat user 'operator'."; exit 1; }
+    else
+        useradd -m -s /bin/bash -G sudo,adm operator 2>/dev/null || \
+        useradd -m -s /bin/bash -G sudo operator 2>/dev/null || \
+        useradd -m -s /bin/bash operator 2>/dev/null || { echo "[ERROR] Gagal membuat user 'operator'."; exit 1; }
+    fi
+    echo "[OK]   User 'operator' dibuat (/home/operator, shell: /bin/bash)"
+else
+    echo "[SKIP] User 'operator' sudah ada"
+    OP_HOME="$(getent passwd operator 2>/dev/null | cut -d: -f6)"
+    OP_HOME="${OP_HOME:-/home/operator}"
+    if [ ! -d "$OP_HOME" ]; then
+        mkdir -p "$OP_HOME" 2>/dev/null || true
+        chown -R operator:operator "$OP_HOME" 2>/dev/null || chown -R operator "$OP_HOME" 2>/dev/null || true
+        chmod 750 "$OP_HOME" 2>/dev/null || true
+    fi
+    for grp in sudo wheel adm; do
+        if getent group "$grp" >/dev/null 2>&1; then
+            usermod -a -G "$grp" operator 2>/dev/null || true
+        fi
+    done
+fi
+
 ADDED_LOG_GROUP=0
 for grp in adm systemd-journal; do
     if getent group "$grp" >/dev/null 2>&1; then
@@ -247,7 +275,7 @@ except Exception as e:
     print("UNREACHABLE:%s" % e); raise SystemExit
 try:
     req = urllib.request.Request(url + "/api/commands")
-    req.add_header("User-Agent", "AgentPantau-Installer/4.8.213")
+    req.add_header("User-Agent", "AgentPantau-Installer/4.8.214")
     req.add_header("X-Api-Key", key)
     with urllib.request.urlopen(req, timeout=8) as r:
         print("OK" if r.status == 200 else "HTTP%d" % r.status)
@@ -306,7 +334,7 @@ try:
                 'owner_group': f"{res.get('owner', '')}:{res.get('group', '')}",
                 'count': res.get('count', 0),
             }
-            base['_meta_agent_version'] = "4.8.213"
+            base['_meta_agent_version'] = "4.8.214"
             with open('/etc/pantau/fim_baseline.json', 'w') as f:
                 json.dump(base, f, indent=2)
 except Exception:

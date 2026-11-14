@@ -159,3 +159,15 @@ Sebelum asisten AI membalas atau menyatakan tugas selesai ke operator, asisten w
 5. **Dual-Render Sinkron:** Apakah dual-render Jinja server-side dan JS client-side disinkronkan identik tanpa selisih? (**Wajib: YA**).
 6. **Otomasi SemVer 7 Berkas:** Apakah versi SemVer dinaikkan sinkron di 7 berkas via skrip `sop_release.py`? (**Wajib: YA**).
 7. **Verifikasi Lapangan 100% Armada:** Apakah 100% server klien aktif telah diverifikasi nyata di basis data sudah melapor pada versi baru? (**Wajib: YA**).
+8. **Kesetaraan Otoritas Operator (RBAC Parity):** Apakah perlindungan integritas akun (larangan hapus diri sendiri & master-admin) serta kesetaraan wewenang operator penuh dipatuhi? (**Wajib: YA**).
+
+---
+
+## 11. Aturan Baku Manajemen Pengguna & Kesetaraan Otoritas Operator (RBAC Parity)
+- **Kesetaraan Fungsional Operator Penuh:** Akun `master_admin` berhak mengangkat akun `operator` dengan hak akses global penuh (seperti `sysadmin_sadri`) yang memiliki otoritas operasional identik dengan `master-admin` atas seluruh server klien di armada.
+- **Proteksi Mutlak Integritas Akun:**
+  - Akun operator DILARANG KERAS menghapus akun dirinya sendiri.
+  - Akun operator DILARANG KERAS menghapus akun `master-admin`.
+- **Tata Kelola Wewenang Berbasis Izin Granular (`can_*`):** Pembagian tugas di Pantau Server murni didasarkan pada matriks izin granular yang diberikan oleh administrator. Jika seluruh izin diberikan, akun tersebut adalah operator penuh tanpa diskriminasi kapabilitas teknis di lapangan.
+- **Perlakuan Keamanan Setara:** Setiap fitur keamanan sistem (termasuk Web Terminal non-root, eskalasi `sudo`, penegakan 2FA/TOTP, dan kontrol daya) wajib memperlakukan operator berakses penuh secara setara dengan `master-admin`.
+

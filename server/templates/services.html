@@ -1889,7 +1889,7 @@ div[style*="position: fixed"] .card {
     <div class="terminal-titlebar">
       <div class="terminal-title">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
-        <span id="term-title">Terminal Bawaan &middot; shell root</span>
+        <span id="term-title">Terminal Bawaan &middot; shell operator</span>
       </div>
       <div class="terminal-actions">
         <span id="term-active-banner" class="terminal-status-badge" style="display:none;color:#86efac;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.35);font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px" title="Sesi terminal sedang aktif di server klien. Proses tetap berjalan di latar belakang jika jendela ditutup.">
@@ -8630,7 +8630,7 @@ class WebTerminal {
     this.aptActive = false;
     this.setProcessRunning(false);
     const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
-    if (this.titleEl) this.titleEl.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg><span>' + (isEn ? 'Embedded Terminal &middot; root shell' : 'Terminal Bawaan &middot; shell root') + '</span>';
+    if (this.titleEl) this.titleEl.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg><span>' + (isEn ? 'Embedded Terminal &middot; operator shell' : 'Terminal Bawaan &middot; shell operator') + '</span>';
     if (this.wasLiveBeforeApt && this.state === 'live') {
       this.status(isEn ? 'connected &middot; shell ready' : 'terhubung &middot; shell siap', 'var(--green)', 'active');
       this.focus();
@@ -9137,7 +9137,7 @@ async function openTerminalWithCommand(commandToRun = null, customReason = '') {
   }
 }
 
-// Tombol Terminal: Buka / konfirmasi sembunyikan terminal shell root
+// Tombol Terminal: Buka / konfirmasi sembunyikan terminal shell operator
 function toggleTerminalView() {
   const term = getTerm();
   if (term && term.windowEl && term.windowEl.style.display !== 'none') {

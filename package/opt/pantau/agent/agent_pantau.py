@@ -468,7 +468,7 @@ APT_AGENT_OUTPUT_MAX = 4_000_000
 # Tampilan LIVE hanya ekor output (seperti `tail -f`); hasil final tetap penuh.
 APT_PROGRESS_TAIL_CHARS = 200_000
 
-# Terminal Bawaan: shell root interaktif milik admin dashboard. Berjalan di pty
+# Terminal Bawaan: shell interaktif non-root ('operator') terdedikasi dengan eskalasi sudo. Berjalan di pty
 # sehingga echo/warna/SIGINT berperilaku seperti SSH.
 SHELL_TIMEOUT_SECS = 8 * 3600          # 8 jam; admin boleh stepping away
 SHELL_OUTPUT_MAX = 8_000_000           # kuota output satu sesi shell
@@ -480,7 +480,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.213"
+AGENT_VERSION = "4.8.214"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -1928,7 +1928,7 @@ def _exec_update_agent(cfg: dict, command: dict) -> dict:
                 elif os.path.exists(PANTAU_CRON_CMD):
                     subprocess.run(["/usr/bin/sudo", "-n", PANTAU_CRON_CMD, "run", "root", "systemctl daemon-reload"], timeout=10)
                 elif os.path.exists(PANTAU_SHELL_CMD):
-                    subprocess.run(["/usr/bin/sudo", "-n", PANTAU_SHELL_CMD], input="systemctl daemon-reload\nexit\n", text=True, timeout=10)
+                    subprocess.run(["/usr/bin/sudo", "-n", PANTAU_SHELL_CMD], input="sudo systemctl daemon-reload\nexit\n", text=True, timeout=10)
                 print("[OTA] systemctl daemon-reload berhasil dieksekusi.")
             except Exception as e:
                 print(f"[OTA] Gagal reload systemd daemon: {e}")
@@ -1937,6 +1937,8 @@ def _exec_update_agent(cfg: dict, command: dict) -> dict:
             ensure_pantau_user_updated(force=True)
             ensure_pantau_apt_updated()
             ensure_pantau_firewall_updated(force=True)
+            ensure_pantau_operator_account()
+            ensure_pantau_shell_updated(force=True)
         except Exception as we:
             print(f"[OTA] Peringatan saat pembaruan wrapper mandiri: {we}")
 
@@ -4629,12 +4631,14 @@ def _stdin_writer_thread_polled(cfg: dict, rid: int, proc, poll_secs: float) -> 
 
 
 def _run_shell_inner(cfg: dict, rid: int) -> None:
-    """Jalankan shell root interaktif dengan streaming live ke Dashboard.
+    """Jalankan shell interaktif non-root (operator) dengan streaming live ke Dashboard.
 
     Berbeda dari alur apt, ini bukan proses sekali jalan: shell hidup sampai
     admin mengetik "exit", dashboard menutup jendelanya, atau timeout 8 jam.
     Semua ketikan admin diteruskan apa adanya ke stdin shell lewat pty.
     """
+    ensure_pantau_operator_account()
+    ensure_pantau_shell_updated()
     cmd = [PANTAU_SHELL_CMD] if IS_ROOT else ["/usr/bin/sudo", "-n", PANTAU_SHELL_CMD]
     output_parts: list[str] = []
     raw_len = 0
@@ -7155,6 +7159,230 @@ def ensure_pantau_history_updated(force: bool = False) -> bool:
     return False
 
 
+PANTAU_SHELL_SCRIPT_BODY = r"""#!/bin/sh
+# pantau-shell - Shell interaktif untuk Terminal Bawaan di Dashboard Pantau.
+#
+# Membuka sesi shell interaktif terdedikasi non-root ('operator') dengan akses
+# eskalasi 'sudo' on-demand jika dibutuhkan untuk tugas administratif.
+# Dipanggil agen 'pantau' via sudo NOPASSWD (lihat /etc/sudoers.d/pantau-agent)
+# HANYA ketika operator dashboard membuka Terminal Bawaan pada halaman Rincian
+# Server.
+#
+# Arsitektur Keamanan:
+#   - Terminal terbuka sebagai user non-root terdedikasi ('operator') di direktori /home/operator.
+#   - Perintah diagnostik (ls, ps, top, htop, cat, ping, curl, dll.) berjalan aman tanpa hak root.
+#   - Jika membutuhkan akses administratif penuh, operator dapat menjalankan:
+#       sudo <perintah>    atau    sudo -i / sudo su -
+#   - Seluruh tindakan eskalasi tercatat otomatis di auth.log/journalctl (audit trail).
+#   - Dijalankan lewat pty supaya bash/tmux berperilaku sama seperti di SSH.
+#   - Setiap sesi dicatat ke syslog (tag pantau-shell).
+#
+# Menutup sesi: ketik "exit" atau Ctrl+D.
+
+set -e
+
+HOSTN=$(hostname -s 2>/dev/null || cat /etc/hostname 2>/dev/null || echo server)
+TARGET_USER="operator"
+
+# Pastikan akun operator terdedikasi dan direktori home tersedia bila dijalankan oleh root
+if [ "$(id -u)" -eq 0 ]; then
+    if ! id -u "$TARGET_USER" >/dev/null 2>&1; then
+        if getent group "$TARGET_USER" >/dev/null 2>&1; then
+            useradd -m -s /bin/bash -g "$TARGET_USER" -G sudo,adm "$TARGET_USER" 2>/dev/null || \
+            useradd -m -s /bin/bash -g "$TARGET_USER" -G sudo "$TARGET_USER" 2>/dev/null || \
+            useradd -m -s /bin/bash -g "$TARGET_USER" "$TARGET_USER" 2>/dev/null || true
+        else
+            useradd -m -s /bin/bash -G sudo,adm "$TARGET_USER" 2>/dev/null || \
+            useradd -m -s /bin/bash -G sudo "$TARGET_USER" 2>/dev/null || \
+            useradd -m -s /bin/bash "$TARGET_USER" 2>/dev/null || true
+        fi
+    fi
+
+    # Pastikan direktori home ada dan berizin aman
+    TARGET_HOME=$(getent passwd "$TARGET_USER" 2>/dev/null | cut -d: -f6)
+    TARGET_HOME=${TARGET_HOME:-/home/$TARGET_USER}
+    if [ ! -d "$TARGET_HOME" ]; then
+        mkdir -p "$TARGET_HOME" 2>/dev/null || true
+        chown -R "$TARGET_USER:$TARGET_USER" "$TARGET_HOME" 2>/dev/null || chown -R "$TARGET_USER" "$TARGET_HOME" 2>/dev/null || true
+        chmod 750 "$TARGET_HOME" 2>/dev/null || true
+    fi
+
+    # Pastikan rule sudoers untuk operator tersedia
+    if [ -f /etc/sudoers.d/pantau-agent ] && ! grep -q "operator ALL=" /etc/sudoers.d/pantau-agent; then
+        printf "\n# Web Terminal Akun Khusus Non-Root (operator) dengan Eskalasi Sudo Terkontrol\noperator ALL=(ALL:ALL) NOPASSWD: ALL\n" >> /etc/sudoers.d/pantau-agent 2>/dev/null || true
+        chmod 440 /etc/sudoers.d/pantau-agent 2>/dev/null || true
+    fi
+fi
+
+TARGET_HOME=$(getent passwd "$TARGET_USER" 2>/dev/null | cut -d: -f6)
+TARGET_HOME=${TARGET_HOME:-/home/$TARGET_USER}
+if [ -d "$TARGET_HOME" ]; then
+    cd "$TARGET_HOME" 2>/dev/null || cd /tmp
+else
+    cd /tmp
+fi
+
+export TERM=xterm-256color
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+export LANG=${LANG:-C.UTF-8}
+
+RCFILE=$(mktemp /tmp/pantau-shellrc.XXXXXX)
+chmod 644 "$RCFILE"
+trap 'rm -f "$RCFILE"' EXIT INT TERM
+cat >"$RCFILE" <<EOF
+PS1='\u@${HOSTN}:\w\$ '
+PS2='> '
+HISTFILE=/dev/null
+HISTSIZE=2000
+EOF
+
+LOG_TAG=pantau-shell
+
+log() {
+    if command -v logger >/dev/null 2>&1; then
+        logger -t "$LOG_TAG" -p authpriv.notice -- "$*" 2>/dev/null || true
+    fi
+}
+
+log "shell dibuka oleh uid=$(id -u) (target=$TARGET_USER) host=$HOSTN"
+
+# Jalankan shell sebagai TARGET_USER
+run_as_target() {
+    if [ "$(id -u)" -eq 0 ]; then
+        if command -v runuser >/dev/null 2>&1; then
+            exec runuser -u "$TARGET_USER" -- env TERM=xterm-256color PATH="$PATH" LANG="$LANG" HOME="$TARGET_HOME" USER="$TARGET_USER" "$@"
+        elif command -v sudo >/dev/null 2>&1; then
+            exec sudo -u "$TARGET_USER" -H env TERM=xterm-256color PATH="$PATH" LANG="$LANG" "$@"
+        else
+            exec su -s /bin/bash "$TARGET_USER" -c "cd '$TARGET_HOME' && exec $*"
+        fi
+    else
+        exec "$@"
+    fi
+}
+
+# Jika tmux tersedia di server klien, gunakan sesi persisten tmux (auto-create atau attach).
+# Jika tmux tidak ada, fallback ke bash murni (didukung Python Native PTY Supervisor di Agen).
+if command -v tmux >/dev/null 2>&1; then
+    run_as_target tmux -u new-session -A -s pantau-shell /bin/bash --noprofile --rcfile "$RCFILE" -i
+else
+    if [ "$(id -u)" -eq 0 ]; then
+        if command -v runuser >/dev/null 2>&1; then
+            runuser -u "$TARGET_USER" -- env TERM=xterm-256color PATH="$PATH" LANG="$LANG" HOME="$TARGET_HOME" USER="$TARGET_USER" /bin/bash --noprofile --rcfile "$RCFILE" -i
+            _rc=$?
+        elif command -v sudo >/dev/null 2>&1; then
+            sudo -u "$TARGET_USER" -H env TERM=xterm-256color PATH="$PATH" LANG="$LANG" /bin/bash --noprofile --rcfile "$RCFILE" -i
+            _rc=$?
+        else
+            su -s /bin/bash "$TARGET_USER" -c "cd '$TARGET_HOME' && exec /bin/bash --noprofile --rcfile '$RCFILE' -i"
+            _rc=$?
+        fi
+    else
+        /bin/bash --noprofile --rcfile "$RCFILE" -i
+        _rc=$?
+    fi
+    log "shell ditutup dengan kode=$_rc"
+    exit $_rc
+fi
+"""
+
+
+def ensure_pantau_operator_account() -> bool:
+    """Memastikan user non-root 'operator' dan izin sudoers tersedia untuk Web Terminal."""
+    try:
+        user_exists = False
+        try:
+            pwd.getpwnam("operator")
+            user_exists = True
+        except KeyError:
+            pass
+
+        if not user_exists and IS_ROOT:
+            has_grp = False
+            try:
+                grp.getgrnam("operator")
+                has_grp = True
+            except KeyError:
+                pass
+
+            cmd = ["useradd", "-m", "-s", "/bin/bash"]
+            if has_grp:
+                cmd.extend(["-g", "operator"])
+            cmd.extend(["-G", "sudo,adm", "operator"])
+            res = subprocess.run(cmd, capture_output=True, timeout=10)
+            if res.returncode != 0:
+                subprocess.run(["useradd", "-m", "-s", "/bin/bash", "-G", "sudo", "operator"], capture_output=True, timeout=10)
+
+        if IS_ROOT:
+            try:
+                op_entry = pwd.getpwnam("operator")
+                op_home = op_entry.pw_dir or "/home/operator"
+                if not os.path.isdir(op_home):
+                    os.makedirs(op_home, mode=0o750, exist_ok=True)
+                    os.chown(op_home, op_entry.pw_uid, op_entry.pw_gid)
+            except Exception:
+                pass
+
+            sd_file = "/etc/sudoers.d/pantau-agent"
+            if os.path.isfile(sd_file):
+                try:
+                    with open(sd_file, "r", encoding="utf-8", errors="replace") as sf:
+                        sd_c = sf.read()
+                    if "operator ALL=" not in sd_c:
+                        with open(sd_file, "a", encoding="utf-8") as sf:
+                            sf.write("\n# Web Terminal Akun Khusus Non-Root (operator) dengan Eskalasi Sudo Terkontrol\noperator ALL=(ALL:ALL) NOPASSWD: ALL\n")
+                        os.chmod(sd_file, 0o440)
+                except Exception:
+                    pass
+        return True
+    except Exception as e:
+        print(f"[OPERATOR] ensure_pantau_operator_account error: {e}")
+        return False
+
+
+def ensure_pantau_shell_updated(force: bool = False) -> bool:
+    """Memastikan wrapper /usr/local/sbin/pantau-shell dikonfigurasi untuk non-root user 'operator'.
+    Jika berkas belum ada, masih menggunakan direct root shell, atau force=True, otomatis perbarui via root langsung atau sudo pantau-file.
+    """
+    try:
+        cur_content = ""
+        if not force and os.path.isfile(PANTAU_SHELL_CMD):
+            try:
+                with open(PANTAU_SHELL_CMD, "r", encoding="utf-8", errors="replace") as f:
+                    cur_content = f.read()
+            except Exception:
+                pass
+            if 'TARGET_USER="operator"' in cur_content and "run_as_target" in cur_content:
+                return True
+
+        content_to_write = PANTAU_SHELL_SCRIPT_BODY.strip() + "\n"
+        if IS_ROOT:
+            with open(PANTAU_SHELL_CMD, "w", encoding="utf-8") as f:
+                f.write(content_to_write)
+            os.chmod(PANTAU_SHELL_CMD, 0o755)
+            print("[SHELL] Wrapper /usr/local/sbin/pantau-shell berhasil diperbarui (root)")
+            return True
+
+        pantau_file = "/usr/local/sbin/pantau-file"
+        if os.path.isfile(pantau_file):
+            payload_write = json.dumps({
+                "action": "write",
+                "params": {"path": PANTAU_SHELL_CMD, "content": content_to_write, "make_backup": False}
+            })
+            pw = subprocess.run(["/usr/bin/sudo", "-n", pantau_file], input=payload_write, text=True, capture_output=True, timeout=10)
+            if pw.returncode == 0:
+                payload_chmod = json.dumps({
+                    "action": "chmod",
+                    "params": {"path": PANTAU_SHELL_CMD, "mode": "0755"}
+                })
+                subprocess.run(["/usr/bin/sudo", "-n", pantau_file], input=payload_chmod, text=True, capture_output=True, timeout=10)
+                print("[SHELL] Wrapper /usr/local/sbin/pantau-shell berhasil diperbarui via pantau-file")
+                return True
+    except Exception as e:
+        print(f"[SHELL] ensure_pantau_shell_updated error: {e}")
+    return False
+
+
 _HIST_EPOCH = re.compile(r"^#(\d{9,12})$")                      # bash: baris before command (#epoch)
 _HIST_MTIME = re.compile(r"^#PANTAU_MTIME:(\d{9,12})$")          # metadata mtime wrapper
 _HIST_ZSH = re.compile(r"^: (\d{9,12}):\d*;(.*)$")              # zsh: : <epoch>:<status>;<command>
@@ -7445,6 +7673,8 @@ def _run_terminal_session(cfg: dict, session_id: str) -> None:
 
     Terkoneksi langsung ke sesi WebSocket browser via bridge dashboard Pantau.
     """
+    ensure_pantau_operator_account()
+    ensure_pantau_shell_updated()
     master_fd, slave_fd = pty.openpty()
     _set_terminal_winsize(master_fd, 24, 80)
 
@@ -7753,6 +7983,8 @@ def main():
     ensure_pantau_user_updated()
     ensure_pantau_history_updated()
     ensure_pantau_firewall_updated()
+    ensure_pantau_operator_account()
+    ensure_pantau_shell_updated()
     print()
 
     running = True

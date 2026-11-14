@@ -1,48 +1,76 @@
 #!/bin/sh
-# pantau-shell - Root shell interaktif untuk Terminal Bawaan di Dashboard.
+# pantau-shell - Shell interaktif untuk Terminal Bawaan di Dashboard Pantau.
 #
+# Membuka sesi shell interaktif terdedikasi non-root ('operator') dengan akses
+# eskalasi 'sudo' on-demand jika dibutuhkan untuk tugas administratif.
 # Dipanggil agen 'pantau' via sudo NOPASSWD (lihat /etc/sudoers.d/pantau-agent)
-# HANYA ketika admin dashboard membuka Terminal Bawaan pada halaman Rincian
-# Server. Ini EKIVALEN shell root SSH: siapa pun yang bisa memicu wrapper ini
-# sudah memegang hak root penuh atas mesin tersebut. Batasnya ada di sisi
-# Dashboard (peran admin + audit), bukan di sini.
+# HANYA ketika operator dashboard membuka Terminal Bawaan pada halaman Rincian
+# Server.
 #
-# Berbeda dari wrapper lain (pantau-apt/pantau-restart) yang sempit per-opsi,
-# wrapper ini memang tujuannya memberi shell. Yang dijaga di sini:
-#   - Dijalankan lewat pty (script -qefc) supaya bash berperilaku sama seperti
-#     di SSH: echo karakter, warna, program interaktif (vim/less/htop), dan
-#     Ctrl+C yang benar-benar mengirim SIGINT ke proses di depan pty.
-#   - Setiap sesi dicatat ke syslog (tag pantau-shell) sehingga selalu ada
-#     jejak kapan shell dibuka, dibuka oleh siapa, dan berapa lama.
-#   - bash dijalankan tanpa .bashrc/.profile supaya perilaku shell di Dashboard
-#     selalu sama dan bisa diprediksi, apa pun isi file DOTFILES root.
+# Arsitektur Keamanan:
+#   - Terminal terbuka sebagai user non-root terdedikasi ('operator') di direktori /home/operator.
+#   - Perintah diagnostik (ls, ps, top, htop, cat, ping, curl, dll.) berjalan aman tanpa hak root.
+#   - Jika membutuhkan akses administratif penuh, operator dapat menjalankan:
+#       sudo <perintah>    atau    sudo -i / sudo su -
+#   - Seluruh tindakan eskalasi tercatat otomatis di auth.log/journalctl (audit trail).
+#   - Dijalankan lewat pty supaya bash/tmux berperilaku sama seperti di SSH.
+#   - Setiap sesi dicatat ke syslog (tag pantau-shell).
 #
 # Menutup sesi: ketik "exit" atau Ctrl+D.
-#
-# Batas keamanan TIDAK ada di file ini. Kalau nama file ini muncul di
-# /etc/sudoers.d/pantau-agent tanpa "Defaults!pantau-shell !requiretty" dan
-# tanpa batas waktu,anyone yang bisa login sebagai 'pantau' bisa langsung
-# `sudo pantau-shell` dan menjadi root tanpa lewat dashboard sama sekali.
 
 set -e
 
 HOSTN=$(hostname -s 2>/dev/null || cat /etc/hostname 2>/dev/null || echo server)
+TARGET_USER="operator"
+
+# Pastikan akun operator terdedikasi dan direktori home tersedia bila dijalankan oleh root
+if [ "$(id -u)" -eq 0 ]; then
+    if ! id -u "$TARGET_USER" >/dev/null 2>&1; then
+        if getent group "$TARGET_USER" >/dev/null 2>&1; then
+            useradd -m -s /bin/bash -g "$TARGET_USER" -G sudo,adm "$TARGET_USER" 2>/dev/null || \
+            useradd -m -s /bin/bash -g "$TARGET_USER" -G sudo "$TARGET_USER" 2>/dev/null || \
+            useradd -m -s /bin/bash -g "$TARGET_USER" "$TARGET_USER" 2>/dev/null || true
+        else
+            useradd -m -s /bin/bash -G sudo,adm "$TARGET_USER" 2>/dev/null || \
+            useradd -m -s /bin/bash -G sudo "$TARGET_USER" 2>/dev/null || \
+            useradd -m -s /bin/bash "$TARGET_USER" 2>/dev/null || true
+        fi
+    fi
+
+    # Pastikan direktori home ada dan berizin aman
+    TARGET_HOME=$(getent passwd "$TARGET_USER" 2>/dev/null | cut -d: -f6)
+    TARGET_HOME=${TARGET_HOME:-/home/$TARGET_USER}
+    if [ ! -d "$TARGET_HOME" ]; then
+        mkdir -p "$TARGET_HOME" 2>/dev/null || true
+        chown -R "$TARGET_USER:$TARGET_USER" "$TARGET_HOME" 2>/dev/null || chown -R "$TARGET_USER" "$TARGET_HOME" 2>/dev/null || true
+        chmod 750 "$TARGET_HOME" 2>/dev/null || true
+    fi
+
+    # Pastikan rule sudoers untuk operator tersedia
+    if [ -f /etc/sudoers.d/pantau-agent ] && ! grep -q "operator ALL=" /etc/sudoers.d/pantau-agent; then
+        printf "\n# Web Terminal Akun Khusus Non-Root (operator) dengan Eskalasi Sudo Terkontrol\noperator ALL=(ALL:ALL) NOPASSWD: ALL\n" >> /etc/sudoers.d/pantau-agent 2>/dev/null || true
+        chmod 440 /etc/sudoers.d/pantau-agent 2>/dev/null || true
+    fi
+fi
+
+TARGET_HOME=$(getent passwd "$TARGET_USER" 2>/dev/null | cut -d: -f6)
+TARGET_HOME=${TARGET_HOME:-/home/$TARGET_USER}
+if [ -d "$TARGET_HOME" ]; then
+    cd "$TARGET_HOME" 2>/dev/null || cd /tmp
+else
+    cd /tmp
+fi
 
 export TERM=xterm-256color
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 export LANG=${LANG:-C.UTF-8}
 
-# bash --norc MENGABAIKAN PS1 yang diwarisi dari environment (promptnya jadi
-# 'bash-5.2#'). Karena itu setelan shell ditulis di file rc sementara dan bash
-# dipanggil dengan --rcfile. File ini juga satu-satunya tempat perilaku shell
-# Dashboard ditentukan: apa pun isi .bashrc root, hasilnya sama.
 RCFILE=$(mktemp /tmp/pantau-shellrc.XXXXXX)
+chmod 644 "$RCFILE"
 trap 'rm -f "$RCFILE"' EXIT INT TERM
 cat >"$RCFILE" <<EOF
-PS1='root@${HOSTN}:~# '
+PS1='\u@${HOSTN}:\w\$ '
 PS2='> '
-# Riwayat ditangani Dashboard (panah atas/bawah tetap jalan dalam sesi),
-# tidak pernah menyentuh disk.
 HISTFILE=/dev/null
 HISTSIZE=2000
 EOF
@@ -55,16 +83,43 @@ log() {
     fi
 }
 
-# Shell dibuka: catat supaya selalu ada jejak kapan dan oleh siapa.
-log "shell dibuka oleh uid=$(id -u) host=$HOSTN"
+log "shell dibuka oleh uid=$(id -u) (target=$TARGET_USER) host=$HOSTN"
+
+# Jalankan shell sebagai TARGET_USER
+run_as_target() {
+    if [ "$(id -u)" -eq 0 ]; then
+        if command -v runuser >/dev/null 2>&1; then
+            exec runuser -u "$TARGET_USER" -- env TERM=xterm-256color PATH="$PATH" LANG="$LANG" HOME="$TARGET_HOME" USER="$TARGET_USER" "$@"
+        elif command -v sudo >/dev/null 2>&1; then
+            exec sudo -u "$TARGET_USER" -H env TERM=xterm-256color PATH="$PATH" LANG="$LANG" "$@"
+        else
+            exec su -s /bin/bash "$TARGET_USER" -c "cd '$TARGET_HOME' && exec $*"
+        fi
+    else
+        exec "$@"
+    fi
+}
 
 # Jika tmux tersedia di server klien, gunakan sesi persisten tmux (auto-create atau attach).
 # Jika tmux tidak ada, fallback ke bash murni (didukung Python Native PTY Supervisor di Agen).
 if command -v tmux >/dev/null 2>&1; then
-    exec tmux -u new-session -A -s pantau-shell /bin/bash --noprofile --rcfile "$RCFILE" -i
+    run_as_target tmux -u new-session -A -s pantau-shell /bin/bash --noprofile --rcfile "$RCFILE" -i
 else
-    /bin/bash --noprofile --rcfile "$RCFILE" -i
-    _rc=$?
+    if [ "$(id -u)" -eq 0 ]; then
+        if command -v runuser >/dev/null 2>&1; then
+            runuser -u "$TARGET_USER" -- env TERM=xterm-256color PATH="$PATH" LANG="$LANG" HOME="$TARGET_HOME" USER="$TARGET_USER" /bin/bash --noprofile --rcfile "$RCFILE" -i
+            _rc=$?
+        elif command -v sudo >/dev/null 2>&1; then
+            sudo -u "$TARGET_USER" -H env TERM=xterm-256color PATH="$PATH" LANG="$LANG" /bin/bash --noprofile --rcfile "$RCFILE" -i
+            _rc=$?
+        else
+            su -s /bin/bash "$TARGET_USER" -c "cd '$TARGET_HOME' && exec /bin/bash --noprofile --rcfile '$RCFILE' -i"
+            _rc=$?
+        fi
+    else
+        /bin/bash --noprofile --rcfile "$RCFILE" -i
+        _rc=$?
+    fi
     log "shell ditutup dengan kode=$_rc"
     exit $_rc
 fi
