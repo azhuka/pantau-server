@@ -354,6 +354,14 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.213
+
+- **Animasi Loading Grafik Riwayat Services:** Menyediakan skeleton loader dengan pemutar spinner dan teks informatif kontekstual pada grafik waktu respon, koneksi aktif, garis waktu ketersediaan (timeline strip), dan badge status saat beralih service atau rentang waktu.
+- **Transisi Opasitas & Umpan Balik Visual:** Menerapkan efek redup kartu (opacity 0.65) dengan transisi mulus saat query riwayat service sedang diproses, menyelaraskan perilakunya dengan kartu Riwayat Metrik Performa pada tab performa.
+- **Pencegahan Race Condition Asinkron:** Mengimplementasikan nomor urut request asinkron (_svcHistorySeq) untuk menjamin data usang tidak menimpa tampilan saat operator berganti service secara cepat.
+- **Navigasi Cepat dari Tabel Services:** Menjadikan nama service pada kolom tabel dapat diklik dan menambahkan opsi 'Lihat Riwayat Grafik' pada menu dropdown tindakan untuk berpindah langsung ke grafik service terkait.
+
+
 ## Versi 4.8.212
 
 - **Jam Interaktif Footer Sidebar & Topbar:** Menggantikan teks statis ganda 'UTC 03:57 UTC' dengan komponen jam interaktif informatif yang menampilkan waktu lokal host server secara presisi, tanggal hari lengkap bahasa Indonesia, dan singkatan zona waktu.

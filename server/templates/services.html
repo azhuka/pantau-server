@@ -967,6 +967,17 @@ body.show-alert-banner .tabbar {
   padding: 0 14px 14px 14px !important;
   gap: 14px !important;
 }
+.svc-table-name-link {
+  transition: all .15s ease;
+  cursor: pointer;
+}
+.svc-table-name-link:hover {
+  color: var(--blue, #38bdf8) !important;
+}
+.svc-table-name-link:hover svg {
+  opacity: 1 !important;
+  stroke: var(--blue, #38bdf8) !important;
+}
 .tab-body #tab-firewall .card:first-child > div[style*="display:grid"] {
   gap: 10px !important;
   margin: 10px 14px 12px 14px !important;
@@ -2916,7 +2927,10 @@ div[style*="position: fixed"] .card {
     {% for svc in services %}
     <tr>
       <td>
-        <strong>{{ svc.service_name }}</strong>
+        <a href="javascript:void(0)" onclick="selectServiceForGraph({{ svc.id }})" style="color:var(--text);text-decoration:none;font-weight:700;display:inline-flex;align-items:center;gap:5px" title="Klik untuk melihat riwayat grafik service {{ svc.service_name }}" class="svc-table-name-link">
+          <span>{{ svc.service_name }}</span>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" opacity="0.45" style="vertical-align:middle"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+        </a>
       </td>
       <td class="mono">{{ svc.port }}</td>
       <td class="mono">{{ svc.process_name }}</td>
@@ -2979,6 +2993,10 @@ div[style*="position: fixed"] .card {
               <button type="button" class="noc-act-dropdown-item" onclick='openServiceLogModal({{ svc.service_name|tojson }}, {{ (svc._status or "")|tojson }}, {{ (svc.port or "")|tojson }})' title="Buka konsol log kontekstual {{ svc.service_name }}">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
                 <span>Lihat Log Service</span>
+              </button>
+              <button type="button" class="noc-act-dropdown-item" onclick="selectServiceForGraph({{ svc.id }})" title="Lihat riwayat grafik ketersediaan dan performa {{ svc.service_name }}">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                <span>Lihat Riwayat Grafik</span>
               </button>
               {% if svc._is_ignored %}
                 <button type="button" class="noc-act-dropdown-item" title="Aktifkan kembali pemantauan insiden untuk {{ svc.service_name }}" data-id="{{ svc._problem.id if svc._problem else '' }}" data-svcid="{{ svc.id }}" data-sid="{{ server.id }}" onclick="unignoreProblem(this)">
@@ -5811,6 +5829,7 @@ function renderServiceActions(sid, svcId, name, status, isPending, problem, isSe
   items += `<button type="button" class="noc-act-dropdown-item ${startDis ? 'is-disabled' : ''}" ${startDis ? `disabled style="${disStyle}" onclick="${noopClick}"` : `onclick="svcAction('start', ${sid}, ${svcId}, '${escHtml(name)}', this)"`} title="${startTitle}">${svgStart} <span>${isEn ? ('Start Service' + (isUp ? ' (Running)' : '')) : ('Nyalakan Service' + (isUp ? ' (Aktif)' : ''))}</span></button>`;
   items += `<button type="button" class="noc-act-dropdown-item ${stopDis ? 'is-disabled' : ''}" ${stopDis ? `disabled style="${disStyle}" onclick="${noopClick}"` : `onclick="svcAction('stop', ${sid}, ${svcId}, '${escHtml(name)}', this)"`} title="${stopTitle}">${svgStop} <span>${isEn ? ('Stop Service' + (!isUp ? ' (Stopped)' : '')) : ('Hentikan Service' + (!isUp ? ' (Terhenti)' : ''))}</span></button>`;
   items += `<button type="button" class="noc-act-dropdown-item" onclick="openServiceLogModal('${escHtml(name)}', '${escHtml(status || '')}')" title="${logTitle}">${svgLog} <span>${isEn ? 'View Service Logs' : 'Lihat Log Service'}</span></button>`;
+  items += `<button type="button" class="noc-act-dropdown-item" onclick="selectServiceForGraph(${svcId})" title="${isEn ? 'View availability and metrics chart for ' + name : 'Lihat riwayat grafik ketersediaan dan performa ' + name}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg> <span>${isEn ? 'View Metrics Chart' : 'Lihat Riwayat Grafik'}</span></button>`;
 
   if (isIgnored) {
     items += `<button type="button" class="noc-act-dropdown-item" data-id="${probId}" data-svcid="${svcId}" data-sid="${sid}" onclick="unignoreProblem(this)" title="${isEn ? 'Cancel ignore for this service' : 'Aktifkan kembali pemantauan insiden untuk service ini'}">${svgBell} <span>${isEn ? 'Monitor Again' : 'Pantau Kembali'}</span></button>`;
@@ -12150,17 +12169,78 @@ function initSvcCharts() {
   }
 }
 
-async function loadSvcHistory() {
+let _svcHistorySeq = 0;
+
+function showSvcChartLoaders(svcName, rangeLabel) {
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
+  const targetLabel = svcName ? svcName : (isEn ? 'service' : 'service');
+  const rangeTxt = rangeLabel ? ` (${rangeLabel})` : '';
+  const txtRt = isEn ? `Loading response time (${targetLabel}${rangeTxt})...` : `Memuat waktu respon (${targetLabel}${rangeTxt})...`;
+  const txtConn = isEn ? `Loading active connections (${targetLabel}${rangeTxt})...` : `Memuat koneksi aktif (${targetLabel}${rangeTxt})...`;
+
+  const skeletonRt = `<div class="perf-chart-skeleton" style="min-height:90px;height:100%"><div class="spinner-sm"></div><span>${txtRt}</span></div>`;
+  const skeletonConn = `<div class="perf-chart-skeleton" style="min-height:90px;height:100%"><div class="spinner-sm"></div><span>${txtConn}</span></div>`;
+
+  const elRt = document.getElementById('chart-svc-rt');
+  if (elRt) elRt.innerHTML = skeletonRt;
+
+  const elConn = document.getElementById('chart-svc-conn');
+  if (elConn) elConn.innerHTML = skeletonConn;
+
+  const stripEl = document.getElementById('svc-status-strip');
+  if (stripEl) {
+    stripEl.innerHTML = `<div class="perf-chart-skeleton" style="display:flex;flex-direction:row;align-items:center;justify-content:center;height:24px;min-height:24px;gap:6px;font-size:10.5px;background:var(--card-hover, rgba(0,0,0,0.25));border-radius:4px;user-select:none"><div class="spinner-sm" style="width:12px;height:12px;border-width:1.5px"></div><span>${isEn ? `Loading availability timeline (${targetLabel})...` : `Memuat garis waktu ketersediaan (${targetLabel})...`}</span></div>`;
+  }
+
+  const pill = document.getElementById('svc-uptime-pill');
+  if (pill) {
+    pill.textContent = isEn ? 'loading...' : 'memuat...';
+    pill.className = 'badge badge-muted';
+  }
+
+  const curEl = document.getElementById('svc-current');
+  if (curEl) {
+    curEl.textContent = isEn ? `Loading metrics history for ${targetLabel}...` : `Memuat data riwayat metrik ${targetLabel}…`;
+  }
+}
+
+async function loadSvcHistory(isSilent = false) {
   const sel = document.getElementById('svc-graph-sel');
   if (!sel || !sel.value) return;
+  const currentSeq = ++_svcHistorySeq;
+
+  const card = document.querySelector('#tab-layanan .card:first-child') || sel.closest('.card');
+  const selectedText = sel.options[sel.selectedIndex]?.text || '';
+  const svcName = selectedText.split(' (port')[0].trim();
+  const activeRangeBtn = document.querySelector('#svc-ranges .btn.is-on');
+  const rangeLabel = activeRangeBtn ? activeRangeBtn.textContent.trim() : '';
+
+  if (!isSilent) {
+    if (card) {
+      card.style.opacity = '0.65';
+      card.style.transition = 'opacity .15s ease';
+    }
+    showSvcChartLoaders(svcName, rangeLabel);
+  }
+
   document.querySelectorAll('#svc-ranges .btn').forEach(b =>
     b.classList.toggle('is-on', b.dataset.range === svcRange));
+
   let data;
   try {
     const r = await fetch('/api/servers/' + SID + '/services/' + sel.value + '/history?range=' + svcRange, {credentials: 'same-origin'});
     if (!r.ok) return;
     data = await r.json();
-  } catch (e) { return; }
+  } catch (e) {
+    return;
+  } finally {
+    if (currentSeq === _svcHistorySeq && card) {
+      card.style.opacity = '1';
+    }
+  }
+
+  if (currentSeq !== _svcHistorySeq) return;
+
   const svc = data.service || {};
   const now = data.now || {};
   const pts = data.points || [];
@@ -12187,14 +12267,28 @@ async function loadSvcHistory() {
   renderSvcStrip('svc-status-strip', pts, tMin, tMax);
 }
 
+function selectServiceForGraph(svcId) {
+  const sel = document.getElementById('svc-graph-sel');
+  if (!sel) return;
+  sel.value = String(svcId);
+  const card = document.querySelector('#tab-layanan .card:first-child');
+  if (card) {
+    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  loadSvcHistory(false);
+}
+
 function primeSvcGraph(services) {
   const sel = document.getElementById('svc-graph-sel');
   if (!sel || !services || !services.length || sel.options.length > 1) return;
   const prev = sel.value;
   sel.replaceChildren(...services.map(s =>
-    new Option(escHtml(s.name) + ' (port ' + s.port + ')', s.id)));
+    new Option(s.name + ' (port ' + s.port + ')', s.id)));
   sel.value = prev && services.some(s => String(s.id) === prev) ? prev : String(services[0].id);
-  loadSvcHistory();
+  const selectedText = sel.options[sel.selectedIndex]?.text || '';
+  const svcName = selectedText.split(' (port')[0].trim();
+  showSvcChartLoaders(svcName);
+  loadSvcHistory(false);
 }
 
 // ---------- Log Aktivitas Server (NOC Terminal Console Engine) ----------
@@ -13606,21 +13700,18 @@ setTimeout(() => loadPerf('today'), 400);
 setInterval(() => { if (!document.hidden) loadPerf(); }, 30000);
 
 const svcSel = document.getElementById('svc-graph-sel');
-if (svcSel) svcSel.addEventListener('change', loadSvcHistory);
+if (svcSel) {
+  svcSel.addEventListener('change', () => {
+    loadSvcHistory(false);
+  });
+}
 document.querySelectorAll('#svc-ranges .btn').forEach(b =>
   b.addEventListener('click', () => {
     svcRange = b.dataset.range;
     document.querySelectorAll('#svc-ranges .btn').forEach(btn => btn.classList.toggle('is-on', btn === b));
-    const card = document.querySelector('#tab-layanan .card:first-child');
-    if (card) {
-      card.style.opacity = '0.55';
-      card.style.transition = 'opacity .15s ease';
-    }
-    loadSvcHistory().finally(() => {
-      if (card) card.style.opacity = '1';
-    });
+    loadSvcHistory(false);
   }));
-setInterval(() => { if (!document.hidden) loadSvcHistory(); }, 30000);
+setInterval(() => { if (!document.hidden) loadSvcHistory(true); }, 30000);
 
 // Deep-link tab via ?tab= (dijalankan setelah semua fungsi dan state selesai dimuat)
 (function () {
