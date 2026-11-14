@@ -480,7 +480,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.205"
+AGENT_VERSION = "4.8.206"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -1528,14 +1528,14 @@ def _exec_host_control(action: str) -> dict:
 
 
 def _exec_restart_agent() -> dict:
-    """Jadwalkan restart agen ~2 dtk setelah respon terkirim (proses lama ia yang kill diri sendiri).
+    """Jadwalkan restart agen ~4 dtk setelah respon terkirim (proses lama ia yang kill diri sendiri).
 
     Tanpa sudo: systemd unit agent_pantau memakai Restart=always, jadi agen
     cukup TERMINATE dirinya sendiri secara tertunda; systemd yang menghidupkan ulang.
     """
     try:
         subprocess.Popen(
-            ["/bin/sh", "-c", f"sleep 2; kill -TERM {os.getpid()}"],
+            ["/bin/sh", "-c", f"sleep 4; kill -TERM {os.getpid()}"],
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
             start_new_session=True, close_fds=True,
         )

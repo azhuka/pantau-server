@@ -633,6 +633,21 @@ def agent_report(
     extras.os_label = _clean_str(body.get("os_label"), None, 120) or None
     extras.arch = _clean_str(body.get("arch"), None, 24) or None
     extras.agent_version = _clean_str(body.get("agent_version"), None, 16) or None
+    if extras.agent_version:
+        # Jika agen melaporkan versi baru setelah restart, otomatis selesaikan perintah update_agent yang in-flight
+        inflight_updates = (
+            db.query(Command)
+            .filter(
+                Command.server_id == server.id,
+                Command.action == "update_agent",
+                Command.status.in_(["pending", "executing"])
+            )
+            .all()
+        )
+        for u_cmd in inflight_updates:
+            u_cmd.status = "success"
+            u_cmd.result = f"Pembaruan agen ke v{extras.agent_version} terverifikasi sukses via telemetri."
+            u_cmd.executed_at = datetime.utcnow()
     if "hardware_specs" in body and isinstance(body.get("hardware_specs"), dict):
         try:
             extras.hardware_specs = json.dumps(body["hardware_specs"])
@@ -1135,11 +1150,38 @@ def api_commands_pending(
     except Exception:
         pass
     if extras and extras.agent_version and _is_agent_outdated(extras.agent_version, target_ver):
+        # Auto-heal: Bersihkan perintah update_agent lama yang tersangkut di status 'executing' > 5 menit
+        stale_cutoff = datetime.utcnow() - timedelta(minutes=5)
+        stale_cmds = (
+            db.query(Command)
+            .filter(
+                Command.server_id == server.id,
+                Command.action == "update_agent",
+                Command.status == "executing",
+                Command.created_at < stale_cutoff
+            )
+            .all()
+        )
+        if stale_cmds:
+            for sc in stale_cmds:
+                sc.status = "failed"
+                sc.result = "Timeout: Proses pembaruan sebelumnya terputus saat restart daemon agen."
+                sc.executed_at = datetime.utcnow()
+            try:
+                db.commit()
+            except Exception:
+                db.rollback()
+
         has_ota = any(c.action == "update_agent" for c in pending)
         if not has_ota:
             in_flight = (
                 db.query(Command)
-                .filter(Command.server_id == server.id, Command.action == "update_agent", Command.status == "executing")
+                .filter(
+                    Command.server_id == server.id,
+                    Command.action == "update_agent",
+                    Command.status == "executing",
+                    Command.created_at >= stale_cutoff
+                )
                 .first()
             )
             if not in_flight:

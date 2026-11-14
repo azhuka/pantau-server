@@ -354,6 +354,13 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.206
+
+- **Auto-Heal & Timeout Perintah OTA Agen:** Menambahkan pembersihan otomatis terhadap perintah pembaruan agen (update_agent) yang tersangkut pada status executing lebih dari 5 menit di server/routers/api_agent.py, mencegah pemblokiran antrean pembaruan pada siklus berikutnya.
+- **Resolusi Otomatis via Telemetri:** Menambahkan logika auto-complete perintah update_agent menjadi success begitu laporan heartbeat telemetri pertama dari agen dengan versi baru diterima di /api/report.
+- **Perpanjangan Jeda Terminasi Restart Agen:** Menyesuaikan jeda sleep sebelum kill -TERM dari 2 detik menjadi 4 detik pada fungsi _exec_restart_agent() di agent_pantau.py, menjamin seluruh request ACK HTTP hasil eksekusi berhasil terkirim dan direspons tuntas oleh server sebelum proses lama berhenti.
+
+
 ## Versi 4.8.205
 
 - **Tipe Rilis:** Penyederhanaan Kolom Ukuran Direktori FIM & Tooltip Rincian Jumlah Direktori dan File (*FIM Directory Size Cell Simplification & Detailed Directory/File Count Tooltip*)
