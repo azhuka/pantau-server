@@ -480,7 +480,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.209"
+AGENT_VERSION = "4.8.210"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -1913,10 +1913,11 @@ def _exec_update_agent(cfg: dict, command: dict) -> dict:
                         os.chmod(svc_path, 0o644)
                         needs_reload = True
                     else:
-                        rw = run_file_op("write", {"path": svc_path, "content": clean_service_unit})
+                        rw = run_file_op("write", {"path": svc_path, "content": clean_service_unit, "make_backup": False})
                         if rw.get("ok"):
                             run_file_op("chmod", {"path": svc_path, "mode": "0644"})
                             needs_reload = True
+                _cleanup_systemd_bak()
         except Exception as e:
             print(f"[OTA] Peringatan saat sanitasi service unit: {e}")
 
@@ -6114,6 +6115,22 @@ def _save_fim_last_state(state: dict) -> bool:
         return False
 
 
+def _cleanup_systemd_bak() -> None:
+    """Bersihkan residu berkas cadangan otomatis lama (.bak) di /etc/systemd/system."""
+    try:
+        baks = glob.glob("/etc/systemd/system/agent_pantau.service.bak*")
+        for b in baks:
+            try:
+                if IS_ROOT:
+                    os.unlink(b)
+                else:
+                    run_file_op("rm", {"path": b})
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+
 def _scan_dir_tree(dir_path: str, max_depth: int = 10, max_files: int = 5000) -> dict:
     """
     Pemindaian pohon direktori secara rekursif hingga kedalaman tertentu (maksimal max_depth subfolder).
@@ -6422,6 +6439,7 @@ def collect_fim(force: bool = False) -> dict:
     last_agent_ver = baseline.get("_meta_agent_version", "")
     if last_agent_ver != AGENT_VERSION:
         baseline["_meta_agent_version"] = AGENT_VERSION
+        _cleanup_systemd_bak()
         if "/etc/systemd/system" in baseline:
             info_sysd = _inspect_fim_target("/etc/systemd/system")
             if info_sysd.get("exists"):

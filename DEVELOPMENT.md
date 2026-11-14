@@ -354,6 +354,12 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.210
+
+- **Pembersihan Residu Cadangan Systemd:** Menambahkan fungsi _cleanup_systemd_bak() untuk menghapus seluruh sisa file agent_pantau.service.bak.* pada /etc/systemd/system di semua server klien secara otomatis.
+- **Pencegahan Akumulasi Cadangan Unit Systemd:** Menonaktifkan opsi make_backup pada penulisan berkas unit systemd agen agar tidak lagi menghasilkan file cadangan .bak baru setiap kali update OTA.
+
+
 ## Versi 4.8.209
 
 - **Pelacakan Runtime Delta State FIM:** Mengimplementasikan fim_last_state.json pada agen klien untuk merekam perubahan antar-siklus pemindaian, memungkinkan berkas baru yang telah dilaporkan CREATED langsung terdeteksi sebagai MODIFIED saat diedit kembali.
