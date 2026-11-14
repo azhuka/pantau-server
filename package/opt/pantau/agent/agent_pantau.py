@@ -480,7 +480,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.210"
+AGENT_VERSION = "4.8.211"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -3172,6 +3172,8 @@ def collect_accounts() -> list[dict]:
     locked_set = _get_locked_users()
     sessions_by_user: dict[str, list[dict]] = {}
     for s in who:
+        if s.get("user") == "pantau":
+            continue
         sessions_by_user.setdefault(s["user"], []).append(s)
 
     gid_to_name: dict[int, str] = {}
@@ -4977,7 +4979,16 @@ def collect_user_logins(max_events: int = 100, target_user: str | None = None) -
                     else:
                         continue
                     pbase = pargs.split()[0].split("/")[-1].lstrip("-") if pargs else ""
-                    if "+" in pstat and ptty != "?" and pbase not in ("bash", "sh", "zsh", "su", "sshd", "ps", "logger") and not any(pargs.startswith(x) for x in ("-bash", "bash", "sshd", "-sh", "sh", "zsh", "su", "-su", "ps ", "logger ")):
+                    ignored_fg = (
+                        "bash", "sh", "zsh", "su", "sshd", "ps", "logger",
+                        "agetty", "getty", "login", "systemd", "init"
+                    )
+                    if (
+                        "+" in pstat
+                        and ptty != "?"
+                        and pbase not in ignored_fg
+                        and not any(pargs.startswith(x) for x in ("-bash", "bash", "sshd", "-sh", "sh", "zsh", "su", "-su", "ps ", "logger ", "agetty", "getty", "login"))
+                    ):
                         clean_tty = ptty if ptty.startswith("pts/") else f"pts/{ptty}"
                         for (u, t), act_dict in active_by_key.items():
                             if u == puser and (t == ptty or t == clean_tty or clean_tty.endswith(t) or t.endswith(ptty)):

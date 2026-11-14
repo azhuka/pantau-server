@@ -354,6 +354,13 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.211
+
+- **Sinkronisasi Sesi Aktif:** Memastikan kartu stat 'Sesi Aktif & Terakhir' selalu selaras dengan chip 'Sesi Aktif' saat sesi bernilai 0 dan menyembunyikan tombol terminasi jika sesi tidak aktif.
+- **Eliminasi Daemon Sistem dari Audit Perintah:** Menambahkan agetty, getty, login, systemd, dan init ke filter pengecualian proses foreground agar daemon konsol sistem tidak lagi dilaporkan sebagai perintah shell aktif pengguna.
+- **Penyempurnaan Tampilan Aktivitas:** Mengubah label badge perintah berjalan menjadi 'Berjalan' (badge-info) untuk membedakannya secara tegas dari 'Sesi Aktif' (badge-up), serta merampingkan proporsi kolom tabel guna mencegah scroll horizontal berlebih.
+
+
 ## Versi 4.8.210
 
 - **Pembersihan Residu Cadangan Systemd:** Menambahkan fungsi _cleanup_systemd_bak() untuk menghapus seluruh sisa file agent_pantau.service.bak.* pada /etc/systemd/system di semua server klien secara otomatis.

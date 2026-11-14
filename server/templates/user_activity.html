@@ -22,7 +22,7 @@
     {% if account and account.sessions and not user.is_viewer() %}
       {% for s in account.sessions %}
         {% if s.tty %}
-          <button type="button" class="btn btn-danger btn-sm" onclick="terminateSession('{{ s.tty }}', this)" title="Terminate session terminal {{ s.tty }}">
+          <button type="button" class="btn btn-danger btn-sm top-btn-term-session" data-tty="{{ s.tty }}" onclick="terminateSession('{{ s.tty }}', this)" title="Terminate session terminal {{ s.tty }}">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
             <span>Putus Sesi {{ s.tty }}</span>
           </button>
@@ -201,12 +201,12 @@
     <table id="ll-table" class="noc-table-dense">
       <thead>
         <tr>
-          <th class="col-fixed-cell" style="width:130px;min-width:125px" title="Waktu aktivitas (arahkan kursor untuk rincian lengkap)">Waktu</th>
-          <th class="col-fixed-cell" style="width:85px;min-width:85px">Pengguna</th>
-          <th class="col-fixed-cell" style="width:115px;min-width:115px">Jenis</th>
-          <th class="col-fixed-cell" style="width:130px;min-width:130px">Terminal</th>
-          <th class="col-fixed-cell" style="width:125px;min-width:125px">Sumber (IP)</th>
-          <th class="col-fixed-cell" style="width:150px;min-width:150px">Directory (PWD)</th>
+          <th class="col-fixed-cell" style="width:115px;min-width:105px" title="Waktu aktivitas (arahkan kursor untuk rincian lengkap)">Waktu</th>
+          <th class="col-fixed-cell" style="width:75px;min-width:65px">Pengguna</th>
+          <th class="col-fixed-cell" style="width:95px;min-width:85px">Jenis</th>
+          <th class="col-fixed-cell" style="width:75px;min-width:65px">Terminal</th>
+          <th class="col-fixed-cell" style="width:95px;min-width:85px">Sumber (IP)</th>
+          <th class="col-fixed-cell" style="width:130px;min-width:110px">Directory (PWD)</th>
           <th class="col-hero-cell">Perintah</th>
         </tr>
       </thead>
@@ -302,10 +302,24 @@ function renderChips(logins) {
   const elSudoGagal = document.getElementById('chip-sudo-gagal');
   if (elSudoGagal) elSudoGagal.textContent = c.sudo_gagal + c.polkit_gagal;
   const elStatSessions = document.getElementById('stat-sessions-value');
-  if (elStatSessions && c.aktif > 0) {
-    const actTtys = logins.filter(x => x.type === 'aktif').map(x => x.tty + (x.from && x.from !== '(lokal)' ? ' @ ' + x.from : '')).join(', ');
-    elStatSessions.innerHTML = `${c.aktif} Sesi <span style="font-size:11px;color:var(--green);font-weight:normal;margin-left:4px">(${escapeHtml(actTtys)})</span>`;
+  if (elStatSessions) {
+    if (c.aktif > 0) {
+      const actTtys = logins.filter(x => x.type === 'aktif').map(x => x.tty + (x.from && x.from !== '(lokal)' ? ' @ ' + x.from : '')).join(', ');
+      elStatSessions.innerHTML = `${c.aktif} Sesi <span style="font-size:11px;color:var(--green);font-weight:normal;margin-left:4px">(${escapeHtml(actTtys)})</span>`;
+    } else {
+      elStatSessions.textContent = '0 Sesi';
+    }
   }
+  const topTermBtns = document.querySelectorAll('.top-btn-term-session');
+  topTermBtns.forEach(b => {
+    if (c.aktif === 0) {
+      b.style.display = 'none';
+    } else {
+      const bTty = b.getAttribute('data-tty');
+      const stillActive = logins.some(x => x.type === 'aktif' && x.tty === bTty);
+      b.style.display = stillActive ? 'inline-flex' : 'none';
+    }
+  });
 }
 
 function getActualCommand(cmd) {
@@ -506,7 +520,7 @@ function renderLoginsData(rawLogins) {
       const isLogin = (x.type === 'login' || x.type === 'sukses');
 
       const cls = isAktif ? 'badge-up'
-                : (isShell && x.active) ? 'badge-up'
+                : (isShell && x.active) ? 'badge-info'
                 : (isSudo || isPolkit) ? 'badge-warn'
                 : isShell ? 'badge-info'
                 : (isGagal || isSudoGagal || isPolkitGagal) ? 'badge-down' : 'badge-muted';
@@ -529,7 +543,7 @@ function renderLoginsData(rawLogins) {
       } else if (isPolkitGagal) {
         typeLabel = 'Polkit Gagal';
       } else if (isShell) {
-        typeLabel = x.active ? '<span style="width:5px;height:5px;border-radius:50%;background:currentColor;display:inline-block;margin-right:4px"></span>Aktif' : 'Shell';
+        typeLabel = x.active ? '<span style="width:5px;height:5px;border-radius:50%;background:currentColor;display:inline-block;margin-right:4px"></span>Berjalan' : 'Shell';
       } else if (isGagal) {
         typeLabel = 'Login Gagal';
       } else {
