@@ -276,6 +276,17 @@
                 </div>
               </td>
             </tr>
+
+            <!-- EMPTY STATE ROW (Kondisi Bersih Awal) -->
+            <tr v-if="filteredServers.length === 0">
+              <td colspan="12" class="py-12 px-4 text-center">
+                <div class="flex flex-col items-center justify-center gap-2 select-none">
+                  <span class="text-3xl text-gray-600">📡</span>
+                  <div class="text-sm font-bold text-gray-200 font-mono tracking-wide">{{ t('fleet_empty_title') }}</div>
+                  <div class="text-xs text-gray-400 font-mono max-w-md">{{ t('fleet_empty_desc') }}</div>
+                </div>
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>

@@ -6,9 +6,9 @@ class Settings(BaseSettings):
     DB_PORT: int = 3306
     DB_USER: str = "pantau_db"
     DB_PASS: str = "pantau_server"
-    DB_NAME: str = "pantau_db"
+    DB_NAME: str = "pantau_server_db"
     SERVER_HOST: str = "0.0.0.0"
-    SERVER_PORT: int = 8400
+    SERVER_PORT: int = 8401
     SECRET_KEY: str = "default_secret_key"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
 

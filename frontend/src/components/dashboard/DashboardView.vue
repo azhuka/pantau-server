@@ -404,12 +404,32 @@
                 <span v-else class="text-gray-500 text-xs">-</span>
               </td>
             </tr>
+
+            <!-- Empty State Baris -->
+            <tr v-if="filteredServers.length === 0">
+              <td colspan="9" class="py-10 px-4 text-center text-gray-400 font-mono text-xs">
+                <div class="flex flex-col items-center justify-center gap-1.5 select-none">
+                  <span class="text-2xl text-gray-600">📡</span>
+                  <div class="font-bold text-gray-200">{{ t('fleet_empty_title') }}</div>
+                  <div class="text-gray-400 max-w-sm">{{ t('dash_fleet_empty') }}</div>
+                </div>
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>
 
       <!-- VIEW 2: KARTU GRID DASBOR -->
       <div v-else class="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 bg-[#090d16]/30">
+        <!-- Empty State Grid -->
+        <div v-if="filteredServers.length === 0" class="col-span-full py-10 text-center text-gray-400 font-mono text-xs">
+          <div class="flex flex-col items-center justify-center gap-1.5 select-none">
+            <span class="text-2xl text-gray-600">📡</span>
+            <div class="font-bold text-gray-200">{{ t('fleet_empty_title') }}</div>
+            <div class="text-gray-400 max-w-sm">{{ t('dash_fleet_empty') }}</div>
+          </div>
+        </div>
+
         <div
           v-for="s in filteredServers"
           :key="s.id"

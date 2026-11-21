@@ -64,6 +64,9 @@ export default {
   // Rincian Armada
   fleet_title: 'Inventaris & Telemetri Armada',
   fleet_subtitle: 'Spesifikasi fisik kernel, antarmuka jaringan, dan metrik operasional seluruh server.',
+  fleet_empty_title: 'Belum Ada Server Armada Terhubung',
+  fleet_empty_desc: 'Sistem aktif dalam kondisi baseline bersih (v0.1.0). Menunggu agen klien melapor.',
+  dash_fleet_empty: 'Belum ada server armada terdaftar. Sistem aktif dalam kondisi baseline bersih.',
   col_status: 'STATUS',
   col_server: 'SERVER / HOST',
   col_ip: 'IP / INTERFACE',

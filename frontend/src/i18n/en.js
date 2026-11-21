@@ -64,6 +64,9 @@ export default {
   // Fleet Table View
   fleet_title: 'Fleet Inventory & Telemetry',
   fleet_subtitle: 'Full kernel-grade hardware specs, network interfaces, and operational metrics.',
+  fleet_empty_title: 'No Fleet Servers Connected',
+  fleet_empty_desc: 'System is operating in pristine baseline state (v0.1.0). Waiting for client agents to report.',
+  dash_fleet_empty: 'No fleet servers registered yet. System is active in clean baseline state.',
   col_status: 'STATUS',
   col_server: 'SERVER / HOST',
   col_ip: 'IP / INTERFACE',
