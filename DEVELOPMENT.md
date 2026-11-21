@@ -174,6 +174,14 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.6
+
+- **Remote File Manager Modular**: Ekstraksi modal berkas ke komponen mandiri RemoteFileManagerModal.vue dengan reaktivitas Vue 3 dan Tailwind CSS.
+- **Kepatuhan Alur Kerja Canon ~/rj45**: Menyelaraskan navigasi breadcrumbs, bilah pintas folder cepat, dan status bar penyimpanan.
+- **Backend File Ops & Backup**: Menambahkan endpoint /touch, /mkdir, /rm, /download, dan mekanisme pencadangan otomatis .bak sebelum penimpaan berkas.
+- **Uji E2E Otomatis**: Menambahkan test_file_manager.py dan test_file_manager_ui.js.
+
+
 ### Versi v0.1.5
 
 - Sinkronisasi Agen Resmi: Menempatkan agent/agent_pantau.py resmi di dalam repositori pantau-server dengan toleransi pembacaan config lokal tanpa izin root.\n- Autentikasi Fleksibel API Key: Mendukung pencocokan API key raw maupun format ber-hash sha256: pada endpoint /api/report dan /api/commands.\n- Isolasi Total Lingkungan Lama: Menjalankan pelaporan telemetri real-time host rj45 ke port 8401 secara mandiri tanpa menyentuh daemon atau konfigurasi app lama di port 8400.

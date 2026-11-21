@@ -7,6 +7,7 @@ import grp
 import subprocess
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Body
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from core.database import get_db
 from routers.auth import get_current_user
@@ -237,6 +238,15 @@ def dispatch_server_action(
     params = body.get("params") or {}
     now = datetime.utcnow()
 
+    # Proteksi Proxmox HA pada aksi Power OFF
+    if action == "poweroff_host":
+        target_srv = db.query(Server).filter(Server.id == sid).first()
+        if target_srv and getattr(target_srv, "is_proxmox_ha", 0) == 1:
+            raise HTTPException(
+                status_code=400,
+                detail="Server dilindungi oleh Proxmox HA. Matikan mesin melalui Proxmox VE Web UI / Cluster Manager."
+            )
+
     cmd = Command(
         server_id=sid,
         action=action,
@@ -459,11 +469,22 @@ def save_file_content(
 
     path = body.get("path")
     content = body.get("content", "")
+    make_backup = bool(body.get("make_backup", True))
     if not path:
         raise HTTPException(status_code=400, detail="Path is required")
 
     target_path = os.path.abspath(path)
     try:
+        backup_created = None
+        if make_backup and os.path.exists(target_path):
+            import shutil
+            bak_path = target_path + ".bak"
+            try:
+                shutil.copy2(target_path, bak_path)
+                backup_created = bak_path
+            except Exception:
+                pass
+
         with open(target_path, "w", encoding="utf-8") as f:
             f.write(content)
 
@@ -473,15 +494,157 @@ def save_file_content(
             action="file_save",
             target=target_path,
             result="success",
-            meta=f"File {target_path} edited and saved by {user.username}",
+            meta=f"File {target_path} edited and saved by {user.username}" + (f" (backup: {backup_created})" if backup_created else ""),
             created_at=datetime.utcnow()
         )
         db.add(audit)
         db.commit()
 
-        return {"ok": True, "message": "File saved successfully"}
+        return {"ok": True, "message": "File saved successfully", "backup_created": backup_created}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{sid}/files/touch")
+def touch_server_file(
+    sid: int,
+    body: dict = Body(...),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Membuat file kosong baru."""
+    if not user.can_access_server(sid):
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    path = body.get("path")
+    if not path:
+        raise HTTPException(status_code=400, detail="Path is required")
+
+    target_path = os.path.abspath(path)
+    if os.path.exists(target_path):
+        raise HTTPException(status_code=400, detail="File or directory already exists")
+
+    try:
+        with open(target_path, "a", encoding="utf-8"):
+            pass
+
+        audit = AuditLog(
+            server_id=sid,
+            username=user.username,
+            action="file_touch",
+            target=target_path,
+            result="success",
+            meta=f"New file created by {user.username}",
+            created_at=datetime.utcnow()
+        )
+        db.add(audit)
+        db.commit()
+        return {"ok": True, "message": "File created"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{sid}/files/mkdir")
+def mkdir_server_dir(
+    sid: int,
+    body: dict = Body(...),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Membuat direktori baru."""
+    if not user.can_access_server(sid):
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    path = body.get("path")
+    if not path:
+        raise HTTPException(status_code=400, detail="Path is required")
+
+    target_path = os.path.abspath(path)
+    if os.path.exists(target_path):
+        raise HTTPException(status_code=400, detail="Directory or file already exists")
+
+    try:
+        os.makedirs(target_path, exist_ok=False)
+
+        audit = AuditLog(
+            server_id=sid,
+            username=user.username,
+            action="file_mkdir",
+            target=target_path,
+            result="success",
+            meta=f"Directory created by {user.username}",
+            created_at=datetime.utcnow()
+        )
+        db.add(audit)
+        db.commit()
+        return {"ok": True, "message": "Directory created"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{sid}/files/rm")
+def remove_server_file(
+    sid: int,
+    body: dict = Body(...),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Menghapus file atau direktori."""
+    if not user.can_access_server(sid):
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    path = body.get("path")
+    if not path:
+        raise HTTPException(status_code=400, detail="Path is required")
+
+    target_path = os.path.abspath(path)
+    # Proteksi direktori sistem vital
+    if target_path in ("/", "/root", "/home", "/etc", "/var", "/usr", "/bin", "/sbin", "/boot"):
+        raise HTTPException(status_code=400, detail="Protected system path cannot be deleted")
+
+    if not os.path.exists(target_path):
+        raise HTTPException(status_code=404, detail="File or directory not found")
+
+    try:
+        import shutil
+        if os.path.isdir(target_path):
+            shutil.rmtree(target_path)
+        else:
+            os.remove(target_path)
+
+        audit = AuditLog(
+            server_id=sid,
+            username=user.username,
+            action="file_delete",
+            target=target_path,
+            result="success",
+            meta=f"Deleted by {user.username}",
+            created_at=datetime.utcnow()
+        )
+        db.add(audit)
+        db.commit()
+        return {"ok": True, "message": "Deleted successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{sid}/files/download")
+def download_server_file(
+    sid: int,
+    path: str,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Mengunduh berkas dari server."""
+    if not user.can_access_server(sid):
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    target_path = os.path.abspath(path)
+    if not (os.path.exists(target_path) and os.path.isfile(target_path)):
+        raise HTTPException(status_code=404, detail="File not found")
+
+    filename = os.path.basename(target_path)
+    return FileResponse(target_path, filename=filename)
 
 
 @router.post("/{sid}/maintenance")

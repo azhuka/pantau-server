@@ -1126,227 +1126,19 @@
     </div>
 
     <!-- DEDICATED FLOATING REMOTE FILE MANAGER MODAL -->
-    <div
-      v-if="showFileManagerModal"
-      class="fixed inset-0 z-[10000] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 transition-all"
-      :class="{ '!p-0': isFMFullscreen || isFMFullWindow }"
-      @click.self="showFileManagerModal = false"
-    >
-      <div
-        class="bg-[#070b16] border border-cyan-500/50 shadow-[0_25px_60px_rgba(0,0,0,0.95)] flex flex-col transition-all overflow-hidden font-mono"
-        :class="[
-          isFMFullscreen || isFMFullWindow
-            ? 'w-full h-full rounded-none border-none'
-            : 'w-[94vw] max-w-[1240px] h-[82vh] min-h-[540px] rounded-xl'
-        ]"
-      >
-        <!-- FM Header -->
-        <div class="bg-[#090f20] border-b border-cyan-500/30 px-4 py-2.5 flex items-center justify-between select-none">
-          <div class="flex items-center gap-2 min-w-0">
-            <svg class="w-4 h-4 text-cyan-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/>
-            </svg>
-            <span class="text-xs font-bold text-cyan-300 uppercase tracking-wider shrink-0">
-              // REMOTE FILE MANAGER · {{ server?.hostname }}
-            </span>
-            <div class="hidden sm:flex items-center gap-1 text-[11px] bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-800 text-gray-300 truncate">
-              <span class="text-cyan-400 font-bold">Path:</span>
-              <span>{{ currentFmPath }}</span>
-            </div>
-          </div>
-
-          <div class="flex items-center gap-1 text-xs">
-            <!-- Full Window -->
-            <button
-              @click="isFMFullWindow = !isFMFullWindow"
-              class="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-cyan-300 hover:bg-gray-800/80 transition cursor-pointer"
-              :title="isFMFullWindow ? t('ws_restore') : t('fm_fullwindow')"
-            >
-              <svg v-if="!isFMFullWindow" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect width="18" height="18" x="3" y="3" rx="2"/>
-                <line x1="3" y1="9" x2="21" y2="9"/>
-              </svg>
-              <svg v-else class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect width="13" height="13" x="8" y="3" rx="1.5"/>
-                <path d="M4 8H3a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-1"/>
-              </svg>
-            </button>
-            <!-- Fullscreen -->
-            <button
-              @click="toggleFMFullscreen"
-              class="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-cyan-300 hover:bg-gray-800/80 transition cursor-pointer"
-              :title="t('fm_fullscreen')"
-            >
-              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="15 3 21 3 21 9"/>
-                <polyline points="9 21 3 21 3 15"/>
-                <line x1="21" y1="3" x2="14" y2="10"/>
-                <line x1="3" y1="21" x2="10" y2="14"/>
-              </svg>
-            </button>
-            <!-- Popout Window -->
-            <button
-              @click="popoutFileManagerWindow"
-              class="w-7 h-7 flex items-center justify-center rounded text-cyan-400 hover:text-white bg-cyan-950/60 hover:bg-cyan-900 border border-cyan-800/50 hover:border-cyan-500 transition cursor-pointer"
-              :title="t('fm_popout')"
-            >
-              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-                <polyline points="15 3 21 3 21 9"/>
-                <line x1="10" y1="14" x2="21" y2="3"/>
-              </svg>
-            </button>
-            <!-- Close -->
-            <button
-              @click="showFileManagerModal = false"
-              class="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-rose-400 hover:bg-rose-950/60 transition cursor-pointer"
-              :title="t('ws_close')"
-            >
-              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18"/>
-                <line x1="6" y1="6" x2="18" y2="18"/>
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        <!-- Explorer Toolbar -->
-        <div class="bg-[#050811] border-b border-cyan-500/20 px-4 py-2 flex items-center justify-between gap-3 text-xs">
-          <div class="flex items-center gap-2">
-            <button
-              @click="navigateFmUp"
-              class="px-2.5 py-1 rounded bg-gray-900 hover:bg-gray-800 text-gray-200 border border-gray-700 transition flex items-center gap-1.5 cursor-pointer font-bold"
-              :title="t('fm_up_dir')"
-            >
-              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="m18 15-6-6-6 6"/>
-              </svg>
-              <span>{{ t('fm_up_dir') }}</span>
-            </button>
-            <button
-              @click="fmRefresh"
-              class="px-2.5 py-1 rounded bg-gray-900 hover:bg-gray-800 text-gray-200 border border-gray-700 transition flex items-center gap-1.5 cursor-pointer"
-              :title="t('fm_refresh')"
-            >
-              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-                <path d="M3 3v5h5"/>
-                <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
-                <path d="M16 21h5v-5"/>
-              </svg>
-              <span>{{ t('fm_refresh') }}</span>
-            </button>
-            <button
-              @click="fmNewFilePrompt"
-              class="px-2.5 py-1 rounded bg-gray-900 hover:bg-cyan-950 text-cyan-300 border border-cyan-800 transition flex items-center gap-1.5 cursor-pointer font-bold"
-            >
-              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19"/>
-                <line x1="5" y1="12" x2="19" y2="12"/>
-              </svg>
-              <span>{{ t('fm_new_file') }}</span>
-            </button>
-          </div>
-
-          <div class="flex items-center gap-2">
-            <input
-              v-model="fmSearchFilter"
-              type="text"
-              placeholder="Filter files..."
-              class="bg-[#03050a] border border-cyan-900 rounded px-2.5 py-1 text-xs text-gray-100 placeholder-gray-500 focus:outline-none focus:border-cyan-400"
-            />
-            <span class="text-[10px] text-amber-400 font-bold px-2 py-0.5 rounded bg-amber-950/60 border border-amber-800/60 hidden sm:inline">
-              AUTO .bak ENABLED
-            </span>
-          </div>
-        </div>
-
-        <!-- Files List Table -->
-        <div class="flex-1 overflow-y-auto p-4 select-text">
-          <table class="w-full text-left text-xs border-collapse">
-            <thead class="border-b border-cyan-500/20 text-gray-400 uppercase font-bold tracking-wider">
-              <tr>
-                <th class="py-2.5 px-3">File Name</th>
-                <th class="py-2.5 px-3">Permissions</th>
-                <th class="py-2.5 px-3">Owner</th>
-                <th class="py-2.5 px-3">Size</th>
-                <th class="py-2.5 px-3">Modified</th>
-                <th class="py-2.5 px-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-800/40">
-              <tr v-for="item in filteredFmItems" :key="item.name" class="hover:bg-cyan-950/20 transition">
-                <td class="py-2 px-3 font-semibold flex items-center gap-2 cursor-pointer" @click="handleFmItemClick(item)">
-                  <svg v-if="item.is_dir" class="w-4 h-4 text-cyan-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/>
-                  </svg>
-                  <svg v-else class="w-4 h-4 text-gray-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
-                  </svg>
-                  <span :class="item.is_dir ? 'text-cyan-300 font-bold' : 'text-gray-200'">{{ item.name }}</span>
-                </td>
-                <td class="py-2 px-3 text-gray-400">{{ item.perms }}</td>
-                <td class="py-2 px-3 text-gray-400">{{ item.owner }}</td>
-                <td class="py-2 px-3 text-gray-300">{{ item.size }}</td>
-                <td class="py-2 px-3 text-gray-400">{{ item.mtime }}</td>
-                <td class="py-2 px-3 text-right">
-                  <div class="inline-flex items-center gap-1.5 justify-end">
-                    <button
-                      v-if="!item.is_dir"
-                      @click="openFmEditor(item)"
-                      class="px-2 py-0.5 rounded text-[11px] bg-cyan-950 text-cyan-300 border border-cyan-800 hover:bg-cyan-900 cursor-pointer font-bold inline-flex items-center gap-1"
-                      title="Edit File"
-                    >
-                      <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
-                      <span>Edit</span>
-                    </button>
-                    <button
-                      v-if="!item.is_dir"
-                      @click="downloadFmFile(item)"
-                      class="w-6 h-6 flex items-center justify-center rounded text-[11px] bg-gray-900 text-gray-300 border border-gray-700 hover:bg-gray-800 cursor-pointer"
-                      title="Download File"
-                    >
-                      <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-                      </svg>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Integrated File Editor Modal/Panel -->
-        <div v-if="fmEditingFile" class="absolute inset-0 bg-[#060a15] z-20 flex flex-col p-4 space-y-3">
-          <div class="flex items-center justify-between border-b border-cyan-500/30 pb-2">
-            <div class="flex items-center gap-2">
-              <svg class="w-4 h-4 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
-              <span class="text-xs font-bold text-cyan-300 font-mono">// EDITOR: {{ fmEditingFile.name }}</span>
-              <span class="text-[10px] text-emerald-400 font-mono bg-emerald-950 px-2 py-0.5 rounded border border-emerald-800">auto .bak backup</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <button @click="saveFmEditor" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded text-xs cursor-pointer">
-                Save
-              </button>
-              <button @click="fmEditingFile = null" class="px-3 py-1 bg-gray-800 hover:bg-gray-700 text-gray-200 rounded text-xs cursor-pointer">
-                Close
-              </button>
-            </div>
-          </div>
-          <textarea
-            v-model="fmEditorContent"
-            class="flex-1 w-full bg-[#03050a] border border-cyan-900/80 rounded p-3 text-xs font-mono text-gray-100 focus:outline-none focus:border-cyan-400 resize-none leading-relaxed"
-          ></textarea>
-        </div>
-      </div>
-    </div>
+    <RemoteFileManagerModal
+      :open="showFileManagerModal"
+      :server="server || { id: currentServerId, hostname: server?.hostname || 'Server', ip_address: server?.ip_address }"
+      @close="showFileManagerModal = false"
+      @open-terminal="handleTerminalFromFm"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useI18n } from '../i18n'
+import RemoteFileManagerModal from './workspace/RemoteFileManagerModal.vue'
 
 const props = defineProps({
   serverId: Number,
@@ -1382,155 +1174,13 @@ function openTerminalModal() {
 
 // Dedicated Floating File Manager State
 const showFileManagerModal = ref(false)
-const isFMFullWindow = ref(false)
-const isFMFullscreen = ref(false)
-const currentFmPath = ref('/root')
-const fmSearchFilter = ref('')
-const fmEditingFile = ref(null)
-const fmEditorContent = ref('')
-const fmLoading = ref(false)
-const fmItems = ref([])
-
-const filteredFmItems = computed(() => {
-  if (!fmSearchFilter.value) return fmItems.value
-  const q = fmSearchFilter.value.toLowerCase()
-  return fmItems.value.filter(i => i.name.toLowerCase().includes(q))
-})
-
-async function fetchFmDirectory(path = currentFmPath.value) {
-  fmLoading.value = true
-  const token = localStorage.getItem('pantau_token')
-  try {
-    const res = await fetch(`/api/servers/${currentServerId.value}/files?path=${encodeURIComponent(path)}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    const data = await res.json()
-    if (data.ok) {
-      currentFmPath.value = data.path
-      fmItems.value = data.items
-    } else {
-      alert(data.detail || 'Failed to list directory')
-    }
-  } catch (err) {
-    console.error('Error fetching files:', err)
-  } finally {
-    fmLoading.value = false
-  }
-}
 
 function openFileManagerModal() {
   showFileManagerModal.value = true
-  fetchFmDirectory(currentFmPath.value)
 }
 
-function toggleFMFullscreen() {
-  isFMFullscreen.value = !isFMFullscreen.value
-}
-
-function popoutFileManagerWindow() {
-  window.open(
-    `/?standalone=files&sid=${currentServerId.value}`,
-    `pantau_fm_${currentServerId.value}`,
-    'popup=yes,width=1200,height=800,menubar=no,toolbar=no,status=no'
-  )
-}
-
-function navigateFmUp() {
-  if (currentFmPath.value === '/' || currentFmPath.value === '') return
-  const parts = currentFmPath.value.split('/').filter(Boolean)
-  parts.pop()
-  const parent = '/' + parts.join('/')
-  fetchFmDirectory(parent)
-}
-
-function fmRefresh() {
-  fetchFmDirectory(currentFmPath.value)
-}
-
-function fmNewFilePrompt() {
-  const name = prompt('Enter new file name:')
-  if (name) {
-    const newPath = (currentFmPath.value.endsWith('/') ? currentFmPath.value : currentFmPath.value + '/') + name
-    fmEditingFile.value = { name, path: newPath, is_dir: false }
-    fmEditorContent.value = ''
-  }
-}
-
-async function handleFmItemClick(item) {
-  if (item.is_dir) {
-    if (item.name.startsWith('..')) {
-      navigateFmUp()
-    } else {
-      const nextPath = item.path || ((currentFmPath.value.endsWith('/') ? currentFmPath.value : currentFmPath.value + '/') + item.name)
-      await fetchFmDirectory(nextPath)
-    }
-  } else {
-    await openFmEditor(item)
-  }
-}
-
-async function openFmEditor(item) {
-  const token = localStorage.getItem('pantau_token')
-  try {
-    const res = await fetch(`/api/servers/${currentServerId.value}/files/content?path=${encodeURIComponent(item.path)}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    const data = await res.json()
-    if (data.ok) {
-      fmEditingFile.value = item
-      fmEditorContent.value = data.content
-    } else {
-      alert(data.detail || 'Unable to read file')
-    }
-  } catch (err) {
-    alert('Error reading file: ' + err.message)
-  }
-}
-
-async function saveFmEditor() {
-  if (!fmEditingFile.value) return
-  const token = localStorage.getItem('pantau_token')
-  try {
-    const res = await fetch(`/api/servers/${currentServerId.value}/files/save`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        path: fmEditingFile.value.path,
-        content: fmEditorContent.value
-      })
-    })
-    const data = await res.json()
-    if (data.ok) {
-      alert(`File ${fmEditingFile.value.name} successfully saved!`)
-      fmEditingFile.value = null
-      await fetchFmDirectory(currentFmPath.value)
-    } else {
-      alert(data.detail || 'Failed to save file')
-    }
-  } catch (err) {
-    alert('Error saving file: ' + err.message)
-  }
-}
-
-function downloadFmFile(item) {
-  const token = localStorage.getItem('pantau_token')
-  fetch(`/api/servers/${currentServerId.value}/files/content?path=${encodeURIComponent(item.path)}`, {
-    headers: { Authorization: `Bearer ${token}` }
-  })
-    .then(r => r.json())
-    .then(data => {
-      const blob = new Blob([data.content || ''], { type: 'text/plain' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = item.name
-      a.click()
-      URL.revokeObjectURL(url)
-    })
-    .catch(err => alert('Download failed: ' + err.message))
+function handleTerminalFromFm(payload) {
+  emit('open-terminal', payload)
 }
 
 const servicesList = ref([])
@@ -1617,7 +1267,6 @@ watch(() => props.initialFloatingTool, (tool) => {
     openTerminalModal()
   } else if (tool === 'files') {
     openFileManagerModal()
-    isFMFullWindow.value = true
   }
 }, { immediate: true })
 
