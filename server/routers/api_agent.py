@@ -14,7 +14,7 @@ def get_server_by_agent_key(x_api_key: str = Header(alias="X-Api-Key"), db: Sess
     if not x_api_key:
         raise HTTPException(status_code=401, detail="Header X-Api-Key is missing")
     hashed = hash_api_key(x_api_key)
-    server = db.query(Server).filter(Server.api_key == hashed).first()
+    server = db.query(Server).filter((Server.api_key == hashed) | (Server.api_key == x_api_key)).first()
     if not server:
         raise HTTPException(status_code=401, detail="Invalid API Key")
     return server

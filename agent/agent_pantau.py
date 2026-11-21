@@ -1,0 +1,10159 @@
+#!/usr/bin/env python3
+"""
+Agen Pantau v3.5 - Server Monitoring Agent (Production Package)
+================================================================
+- Auto-detect semua layanan listening (via sudo ss bila non-root)
+- Health check dalam: HTTP response time, TCP response time
+- Kinerja hardware/jaringan per siklus: CPU, load, memori, swap,
+  disk, uptime, serta statistik interface (RX/TX + rate)
+- Daftar akun user (login + sesi aktif) & unit layanan aktif
+- Lapor ke Dashboard Pantau tiap interval
+- Polling command dari Dashboard (restart/start/stop) dan eksekusi
+  lewat wrapper /usr/local/sbin/pantau-restart (divalidasi + deny-list)
+- Polling permintaan log layanan (journalctl / file syslog) dari
+  Dashboard dan kirim hasil (hak baca journal via grup 'adm')
+
+Instalasi (root):
+    sudo bash package/install.sh
+
+Config:
+    /etc/pantau/config.json   (di-install idempotently oleh install.sh)
+    fallback: config.json di direktori script
+
+Environment variable (override config):
+    MONITOR_SERVER_URL  - URL Dashboard Pantau
+    MONITOR_API_KEY     - API Key server ini
+    MONITOR_INTERVAL    - Interval laporan (detik)
+"""
+
+import fcntl
+import base64
+import glob
+import grp
+import hashlib
+import http.client
+import ipaddress
+import json
+import os
+import platform
+import pty
+import pwd
+import random
+import re
+import select
+import shutil
+import signal
+import stat
+import socket
+import ssl
+import struct
+import subprocess
+import sys
+import termios
+import threading
+import time
+import traceback
+import urllib.request
+import urllib.error
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from pathlib import Path
+
+IS_ROOT = os.geteuid() == 0
+
+ALLOWED_SYSTEMCTL_ACTIONS = frozenset({"restart", "start", "stop", "reload", "enable", "disable"})
+VALID_PROCESS_NAME_RE = re.compile(r'^[a-zA-Z0-9@._:\-]{1,64}$')
+
+PANTAU_RESTART = "/usr/local/sbin/pantau-restart"
+PANTAU_FIREWALL = "/usr/local/sbin/pantau-firewall"
+PANTAU_FILE_CMD = "/usr/local/sbin/pantau-file"
+PANTAU_USER_CMD = "/usr/local/sbin/pantau-user"
+PANTAU_CRON_CMD = "/usr/local/sbin/pantau-cron"
+PANTAU_SSL_CMD = "/usr/local/sbin/pantau-ssl"
+SS_BIN = "/usr/bin/ss"
+SYSLOG_FILE = "/var/log/syslog"
+AUTH_FILE = "/var/log/auth.log"
+
+_sudo_ss_warned = False
+
+
+# ---------------------------------------------------------------------------
+# Config
+# ---------------------------------------------------------------------------
+def load_config():
+    base = {
+        "server_url": "http://127.0.0.1:8400",
+        "api_key": "",
+        "interval_seconds": 5,
+        "exclude_ports": [],
+    }
+
+    # Utamakan config produksi /etc/pantau, fallback config lokal
+    for cfg_path in ("/etc/pantau/config.json", str(Path(__file__).parent / "config.json")):
+        try:
+            path = Path(cfg_path)
+            if path.exists():
+                with open(path) as f:
+                    base.update(json.load(f))
+                break
+        except (PermissionError, OSError, json.JSONDecodeError) as e:
+            pass
+
+    if v := os.environ.get("MONITOR_SERVER_URL"):
+        base["server_url"] = v
+    if v := os.environ.get("MONITOR_API_KEY"):
+        base["api_key"] = v
+    if v := os.environ.get("MONITOR_INTERVAL"):
+        try:
+            base["interval_seconds"] = max(5, int(v))
+        except ValueError:
+            pass
+
+    if not base["api_key"]:
+        print("[FATAL] API Key belum dikonfigurasi!")
+        print("  Set MONITOR_API_KEY atau isi /etc/pantau/config.json")
+        sys.exit(1)
+
+    return base
+
+
+# ---------------------------------------------------------------------------
+# Service detection
+# ---------------------------------------------------------------------------
+def _run_cmd(cmd: list[str], timeout: int = 5) -> "subprocess.CompletedProcess | None":
+    try:
+        return subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        return None
+
+
+def run_ss(args: list[str]):
+    """
+    Jalankan ss dengan visibilitas nama proses milik user lain.
+    - root             : ss langsung
+    - non-root + sudo  : sudo -n /usr/bin/ss (requirement deteksi lengkap)
+    - lainnya          : fallback ss langsung (visibilitas terbatas)
+    """
+    if IS_ROOT:
+        return _run_cmd([SS_BIN] + args)
+    res = _run_cmd(["/usr/bin/sudo", "-n", SS_BIN] + args)
+    if res is not None and res.returncode == 0:
+        return res
+    global _sudo_ss_warned
+    if res is not None and res.returncode != 0 and not _sudo_ss_warned:
+        _sudo_ss_warned = True
+        print(f"[WARN] sudo ss gagal (rc={res.returncode}), fallback ke ss tanpa hak root: "
+              f"{(res.stderr or '').strip()[:120]}")
+    return _run_cmd([SS_BIN] + args)
+
+
+def get_process_path(pid: int) -> str:
+    try:
+        if sys.platform.startswith("linux"):
+            return os.readlink(f"/proc/{pid}/exe")
+    except OSError:
+        pass
+    return ""
+
+
+DEV_TOOL_NAME_HINTS = (
+    "mainthread", "code-", "vscode", "electron", "jupyter",
+    "chrome", "chromedriver", "google-chrome", "chromium", "selenium", "playwright", "pytest",
+    "opencode", "agy", "antigravity",
+)
+
+
+def is_dev_tool(proc_name: str | None, pid: int | None) -> bool:
+    """Filter tools dev (VS Code, Jupyter, test runners, dll) supaya tidak jadi service palsu."""
+    if not proc_name:
+        return False
+    low = proc_name.lower()
+    # Deteksi by nama — andal walau /proc milik user lain tidak bisa dibaca
+    if any(hint in low for hint in DEV_TOOL_NAME_HINTS):
+        return True
+    if pid:
+        path = get_process_path(pid)
+        if ".vscode" in path or "vscode-server" in path:
+            return True
+        if "node" in path and "/usr/bin" not in path:
+            return True
+        if any(hint in path.lower() for hint in ("chrome", "chromedriver", "selenium", "playwright")):
+            return True
+    return False
+
+
+def get_systemd_socket_service(port: int) -> str | None:
+    """Temukan service pemilik socket listening via systemctl list-sockets secara dinamis (tanpa tebak-tebak port)."""
+    try:
+        res = subprocess.run(["systemctl", "list-sockets", "--no-legend"], capture_output=True, text=True, timeout=5)
+        if res.returncode == 0:
+            for line in res.stdout.strip().split("\n"):
+                parts = line.split()
+                if len(parts) >= 3 and f":{port}" in parts[0]:
+                    svc = parts[2]
+                    if svc.endswith(".service"):
+                        svc = svc[:-8]
+                    if svc and svc != "-":
+                        return svc
+    except Exception:
+        pass
+    return None
+
+
+def normalize_process_name(name: str) -> str:
+    mapping = {
+        "sshd": "sshd", "ssh": "sshd", "nginx": "nginx",
+        "apache2": "apache2", "httpd": "httpd",
+        "mysqld": "mysql", "mariadbd": "mysql",
+        "postgres": "postgresql", "postgresql": "postgresql",
+        "redis-server": "redis", "redis": "redis",
+        "dockerd": "docker", "docker": "docker",
+        "node": "nodejs", "python3": "python", "uvicorn": "uvicorn",
+        "gunicorn": "gunicorn", "cron": "cron", "crond": "cron",
+        "rsyslogd": "rsyslog", "chronyd": "ntp", "ntpd": "ntp",
+        "mariadb-server": "mariadb",
+        "master": "smtpd", "postfix": "smtpd",
+        "zabbix_agent2": "zabbix-agent2", "zabbix_agent": "zabbix-agent",
+        "zabbix-agent2": "zabbix-agent2", "zabbix-agent": "zabbix-agent",
+    }
+    lower = name.lower()
+    for key, val in mapping.items():
+        if key in lower:
+            return val
+    return name
+
+
+def get_systemd_unit_from_pid(pid: int | None) -> str | None:
+    """Ekstrak nama unit systemd dari /proc/<pid>/cgroup secara akurat."""
+    if not pid:
+        return None
+    try:
+        with open(f"/proc/{pid}/cgroup", "r", encoding="utf-8", errors="ignore") as f:
+            for line in f:
+                m = re.search(r'/([^/]+)\.service', line)
+                if m:
+                    unit = m.group(1)
+                    if not unit.startswith("session-") and not unit.startswith("user@"):
+                        return unit
+    except Exception:
+        pass
+    return None
+
+
+def parse_ss_listening() -> list[dict]:
+    result = run_ss(["-tlnp"])
+    if result is None:
+        return []
+
+    EPHEMERAL_START = 32768
+    services = []
+    for line in result.stdout.strip().split("\n")[1:]:
+        if not line.strip():
+            continue
+        port_match = re.search(r':(\d+)\s', line)
+        if not port_match:
+            continue
+        port = int(port_match.group(1))
+
+        proc_match = re.search(r'users:\(\("([^"]+)"', line)
+        proc_name = proc_match.group(1) if proc_match else None
+        pid_match = re.search(r'pid=(\d+)', line)
+        pid = int(pid_match.group(1)) if pid_match else None
+
+        if is_dev_tool(proc_name, pid):
+            continue
+
+        unit_name = get_systemd_unit_from_pid(pid)
+        socket_svc = None
+        if not proc_name:
+            socket_svc = get_systemd_socket_service(port)
+            if socket_svc:
+                proc_name = socket_svc
+            else:
+                proc_name = f"port-{port}"
+
+        # Abaikan port ephemeral (>= 32768) jika bukan unit service systemd resmi
+        if port >= EPHEMERAL_START and not unit_name and not socket_svc:
+            continue
+
+        if unit_name:
+            proc_name = normalize_process_name(unit_name)
+        else:
+            proc_name = normalize_process_name(proc_name)
+
+        bind_match = re.search(r'(\S+):' + str(port) + r'\s', line)
+        bind_addr = bind_match.group(1) if bind_match else "0.0.0.0"
+
+        services.append({
+            "port": port,
+            "process_name": proc_name,
+            "service_name": proc_name,
+            "bind_address": bind_addr,
+        })
+    return services
+
+
+def count_established(port: int) -> int:
+    result = run_ss(["-tn", "state", "established", f"( sport = :{port} )"])
+    if result is None:
+        return 0
+    lines = [l for l in result.stdout.strip().split("\n") if l.strip()]
+    return max(0, len(lines) - 1)
+
+
+def is_web_port(port: int) -> bool:
+    """Port umum untuk web service."""
+    return port in (80, 443, 8080, 8443, 8081, 8082, 3000, 5000)
+
+
+# ---------------------------------------------------------------------------
+# Health checks dalam
+# ---------------------------------------------------------------------------
+def _connect_host(addr: str | None) -> str:
+    """
+    Normalisasi bind address dari `ss` untuk dipakai koneksi health check.
+    - potong suffix interface: '127.0.0.53%lo' -> '127.0.0.53'
+    - buka kurung IPv6:        '[::1]' -> '::1'
+    - wildcard dipetakan ke localhost
+    """
+    if not addr:
+        return "127.0.0.1"
+    if "%" in addr:
+        addr = addr.split("%", 1)[0]
+    addr = addr.strip().lstrip("[").rstrip("]")
+    if addr in ("0.0.0.0", "::", "*", ""):
+        return "127.0.0.1"
+    if addr == "::1":
+        return "::1"
+    return addr
+
+
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    """Redirect TIDAK diikuti oleh health check.
+
+    Probe harus menilai web server-nya sendiri, bukan isi halaman yang
+    dialingihkan. Mengikuti redirect pernah membuat nginx yang `active`
+    ditandai `down`: 301 -> https://domain-publik, lalu probe ikut gagal
+    karena DNS/CDN publik tidak terjangkau dari server tersebut.
+    """
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+# ProxyHandler({}) mematikan proxies dari environment (http_proxy/https_proxy).
+# Tanpa ini probe bisa keluar lewat proxy dan mengukur koneksi proxy, bukan
+# service lokal yang sedang diukur.
+_ssl_ctx = ssl._create_unverified_context() if hasattr(ssl, "_create_unverified_context") else None
+_HTTP_OPENER = urllib.request.build_opener(
+    urllib.request.ProxyHandler({}),
+    urllib.request.HTTPSHandler(context=_ssl_ctx) if _ssl_ctx else urllib.request.HTTPSHandler(),
+    _NoRedirect
+)
+
+# Server membalas lalu menutup koneksi tanpa HTTP response yang valid
+# (port nginx dibuka dengan `return 444`, keepalive salah, dsb). Port-nya
+# hidup, jadi ini BUKAN "service mati" - hanya respons halamannya tidak benar.
+_HTTP_BAD_RESPONSE = (
+    http.client.RemoteDisconnected,
+    http.client.BadStatusLine,
+    http.client.IncompleteRead,
+    http.client.ResponseNotReady,
+    http.client.LineTooLong,
+)
+
+# TCP-nya sendiri gagal: ini baru service yang benar-benar tidak melayani.
+_CONNECT_FAIL = (
+    ConnectionRefusedError,
+    ConnectionResetError,
+    socket.timeout,
+    TimeoutError,
+    socket.gaierror,
+    OSError,
+)
+
+
+def http_health_check(port: int, addr: str) -> dict:
+    """
+    HTTP health check: GET / tanpa follow redirect, ukur response time.
+
+    Return: {response_time_ms, health_message, healthy}
+
+    Setiap respons HTTP (200/301/403/404/500) berarti web server hidup dan
+    dihitung `healthy` - yang penting service-nya melayani atau tidak.
+    hanya kalau tidak ada satu byte pun yang kembali, atau handshake TLS gagal
+    total karena sertifikat tidak bisa diverifikasi.
+    """
+    scheme = "https" if port in (443, 8443) else "http"
+    host = _connect_host(addr)
+    url = f"{scheme}://{host}:{port}/"
+
+    start = time.monotonic()
+    try:
+        req = urllib.request.Request(url, method="GET")
+        req.add_header("Host", f"{host}:{port}")
+        req.add_header("User-Agent", "pantau-agent/health-check")
+        req.add_header("Connection", "close")
+        with _HTTP_OPENER.open(req, timeout=5) as resp:
+            elapsed = (time.monotonic() - start) * 1000
+            code = resp.status
+            note = ""
+            if code >= 500:
+                note = " (halaman error, service hidup)"
+            elif code in (301, 302, 307, 308):
+                note = " (redirect, service hidup)"
+            return {
+                "response_time_ms": int(elapsed),
+                "health_message": f"HTTP {code}{note}",
+                "healthy": True,
+            }
+    except urllib.error.HTTPError as e:
+        # 4xx/5xx tetap berarti ada proses yang melayani di port ini.
+        elapsed = (time.monotonic() - start) * 1000
+        return {
+            "response_time_ms": int(elapsed),
+            "health_message": f"HTTP {e.code} (service hidup)",
+            "healthy": True,
+        }
+    except _HTTP_BAD_RESPONSE as e:
+        # TCP connect jalan, tapi tidak ada HTTP response yang benar.
+        elapsed = (time.monotonic() - start) * 1000
+        return {
+            "response_time_ms": int(elapsed),
+            "health_message": f"Port terbuka, respons HTTP tidak valid: {type(e).__name__}",
+            "healthy": True,
+        }
+    except ssl.SSLError as e:
+        elapsed = (time.monotonic() - start) * 1000
+        # TLS handshake gagal: port hidup, sertifikat/HTTPS-nya yang bermasalah.
+        return {
+            "response_time_ms": int(elapsed),
+            "health_message": f"TLS gagal ({e.reason or type(e).__name__}), service hidup",
+            "healthy": True,
+        }
+    except (urllib.error.URLError, OSError, ValueError) as e:
+        elapsed = (time.monotonic() - start) * 1000
+        reason = getattr(e, "reason", None)
+        if isinstance(reason, ssl.SSLError):
+            return {
+                "response_time_ms": int(elapsed),
+                "health_message": f"TLS gagal ({reason.reason or type(reason).__name__}), service hidup",
+                "healthy": True,
+            }
+        if isinstance(reason, _HTTP_BAD_RESPONSE):
+            return {
+                "response_time_ms": int(elapsed),
+                "health_message": f"Port terbuka, respons HTTP tidak valid: {type(reason).__name__}",
+                "healthy": True,
+            }
+        if isinstance(reason, _CONNECT_FAIL):
+            return {
+                "response_time_ms": int(elapsed),
+                "health_message": f"Tidak ada yang melayani: {reason}",
+                "healthy": False,
+            }
+        return {
+            "response_time_ms": int(elapsed),
+            "health_message": f"Gagal connect: {e}",
+            "healthy": False,
+        }
+
+
+# Jumlah kegagalan probe berurutan sebelum sebuah service ditandai "down"
+# (anti-flapping; port yang benar-benar hilang tetap down via laporan tak-lengkap).
+SERVICE_DOWN_AFTER_FAILS = 3
+
+# Streak kegagalan probe per port (persist antar siklus proses agen).
+_svc_fail_streak: dict[int, int] = {}
+
+# Wrapper sudo sempit yang dipasang install.sh (hak minimum, idempoten).
+PANTAU_APT_CMD = "/usr/local/sbin/pantau-apt"
+PANTAU_HISTORY_CMD = "/usr/local/sbin/pantau-history"
+PANTAU_HOST_CMD = "/usr/local/sbin/pantau-host"
+PANTAU_SHELL_CMD = "/usr/local/sbin/pantau-shell"
+
+# Kuota output apt update/upgrade (praktis penuh; MEDIUMTEXT baseline 16MB,
+# streaming server punya kuota sama).
+APT_AGENT_OUTPUT_MAX = 4_000_000
+
+# Tampilan LIVE hanya ekor output (seperti `tail -f`); hasil final tetap penuh.
+APT_PROGRESS_TAIL_CHARS = 200_000
+
+# Terminal Bawaan: shell interaktif non-root ('operator') terdedikasi dengan eskalasi sudo. Berjalan di pty
+# sehingga echo/warna/SIGINT berperilaku seperti SSH.
+SHELL_TIMEOUT_SECS = 8 * 3600          # 8 jam; admin boleh stepping away
+SHELL_OUTPUT_MAX = 8_000_000           # kuota output satu sesi shell
+SHELL_PROGRESS_TAIL_CHARS = 250_000
+SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashboard (responsif)
+# Shell harus terasa "langsung": kirim output tiap ada perubahan (tahanminimal
+# 120ms supaya satu ketikan tidak jadi 10 request), bukan dikelompokkan 1,2 dtk
+# seperti apt. Didukung polling 250ms di sisi dashboard.
+SHELL_POST_MIN_SECS = 0.12
+
+# Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
+AGENT_VERSION = "4.11.27"
+
+
+def tcp_health_check(port: int, addr: str) -> dict:
+    """TCP connect check: ukur response time."""
+    host = _connect_host(addr)
+    start = time.monotonic()
+    try:
+        with socket.create_connection((host, port), timeout=5):
+            elapsed = (time.monotonic() - start) * 1000
+            return {
+                "response_time_ms": int(elapsed),
+                "health_message": "TCP connect OK",
+                "healthy": True,
+            }
+    except (OSError, ValueError) as e:
+        elapsed = (time.monotonic() - start) * 1000
+        return {
+            "response_time_ms": int(elapsed),
+            "health_message": f"TCP connect gagal: {e}",
+            "healthy": False,
+        }
+
+
+def run_health_check(svc: dict) -> dict:
+    """Health check sesuai jenis service."""
+    if is_web_port(svc["port"]):
+        return http_health_check(svc["port"], svc.get("bind_address", "0.0.0.0"))
+    return tcp_health_check(svc["port"], svc.get("bind_address", "0.0.0.0"))
+
+
+def detect_all_services() -> list[dict]:
+    listening = parse_ss_listening()
+
+    seen_ports = set()
+    unique = []
+    for svc in listening:
+        if svc["port"] in seen_ports:
+            continue
+        seen_ports.add(svc["port"])
+
+        svc["active_connections"] = count_established(svc["port"])
+
+        # Health check dalam
+        health = run_health_check(svc)
+        svc["response_time_ms"] = health["response_time_ms"]
+        svc["health_message"] = health["health_message"]
+
+        # Status up HANYA jika port LISTEN dan health check sehat.
+        # Anti-flapping: "down" baru dicatat setelah beberapa kegagalan
+        # beruntun, agar daemon yang lambat tidak tertera down-di-momen.
+        _fail_streak = _svc_fail_streak.get(svc["port"], 0)
+        if health["healthy"]:
+            _svc_fail_streak[svc["port"]] = 0
+            svc["status"] = "up"
+        else:
+            _svc_fail_streak[svc["port"]] = _fail_streak + 1
+            svc["status"] = "down" if _fail_streak + 1 >= SERVICE_DOWN_AFTER_FAILS else "up"
+
+        unique.append(svc)
+
+    for stale in [p for p in _svc_fail_streak if p not in seen_ports]:
+        del _svc_fail_streak[stale]
+
+    return unique
+
+
+# ---------------------------------------------------------------------------
+# HTTP helpers
+# ---------------------------------------------------------------------------
+def http_json_request(cfg: dict, path: str, method: str = "GET", data: dict | None = None, timeout: int = 10):
+    """HTTP JSON request dengan API key. Return (status_code, response_dict)."""
+    url = cfg["server_url"].rstrip("/") + path
+    body = json.dumps(data).encode("utf-8") if data is not None else None
+
+    req = urllib.request.Request(url, data=body, method=method)
+    req.add_header("User-Agent", f"AgentPantau/{AGENT_VERSION}")
+    req.add_header("Content-Type", "application/json")
+    req.add_header("X-Api-Key", cfg["api_key"])
+
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            code = resp.status
+            try:
+                resp_data = json.loads(resp.read().decode() or "{}")
+            except Exception:
+                resp_data = {}
+            return code, resp_data
+    except urllib.error.HTTPError as e:
+        try:
+            resp_data = json.loads(e.read().decode("utf-8", errors="replace") or "{}")
+        except Exception:
+            resp_data = {}
+        return e.code, resp_data
+    except (urllib.error.URLError, OSError, http.client.HTTPException):
+        return 0, {}
+    except Exception:
+        return 0, {}
+
+
+def send_report(cfg: dict, services: list, system: dict,
+                accounts: list | None = None, units: list | None = None,
+                apt: dict | None = None, packages_changed: bool = False) -> bool:
+    if len(services) > 100:
+        services = services[:100]
+    payload = {
+        "hostname": get_hostname(),
+        "ip_address": get_local_ip(),
+        "services": services,
+        "system": system,
+        "kernel": _kernel_release(),
+        "os_label": _os_pretty(),
+        "arch": platform.machine(),
+        "agent_version": AGENT_VERSION,
+    }
+    if accounts is not None:
+        payload["accounts"] = accounts
+    if units is not None:
+        payload["units"] = units
+    if apt is not None:
+        payload["apt"] = apt
+    if packages_changed:
+        payload["packages_changed"] = True
+    payload["security"] = collect_security()
+    payload["failed_excerpts"] = collect_failed_units_excerpts()
+    payload["cron_jobs"] = collect_cron_jobs()
+    payload["firewall"] = collect_firewall()
+    payload["listening_ports"] = collect_listening_ports()
+    payload["ssl_certs"] = collect_ssl_certs()
+    payload["fim"] = collect_fim()
+    payload["system_logs"] = collect_system_logs()
+    payload["available_logs"] = collect_available_logs()
+    payload["kernel_events"] = collect_kernel_events(syslogs=payload["system_logs"])
+    payload["hardware_specs"] = collect_hardware_specs()
+    payload["groups"] = collect_groups()
+
+    for attempt in range(1, 4):
+        code, _ = http_json_request(cfg, "/api/report", "POST", payload)
+        if code == 200:
+            return True
+        if attempt == 3:
+            print(f"[ERROR] Gagal kirim laporan (HTTP {code})")
+            break
+        time.sleep(2 * attempt + random.uniform(0, 1.5))
+    return False
+
+
+# ---------------------------------------------------------------------------
+# Command execution (restart/start/stop)
+# ---------------------------------------------------------------------------
+def check_pending_commands(cfg: dict) -> list[dict]:
+    """Polling antrian command dari Dashboard."""
+    code, data = http_json_request(cfg, "/api/commands", "GET")
+    if code == 200 and data:
+        return data.get("commands", [])
+    return []
+
+
+def execute_command(cfg: dict, command: dict) -> dict:
+    """
+    Eksekusi command di server.
+    - restart/start/stop : service via systemctl (root) / wrapper pantau-restart.
+    - block_ip           : blokir IP sumber serangan via iptables (wrapper pantau-firewall).
+    - restart_agent      : restart agen sendiri secara tertunda (respon terkirim dulu).
+    - reboot_host/poweroff_host : reboot / poweroff OS via wrapper pantau-host.
+                                 Eksekusi TERTUNDA ~4 dtk agar ack hasil sempat terkirim.
+    """
+    action = command.get("action", "restart")
+    cmd_id = command.get("id")
+    print(f"[CMD] Menjalankan '{action}' (id={cmd_id})")
+
+    # Tandai executing
+    http_json_request(cfg, f"/api/commands/{cmd_id}/status", "POST", {"status": "executing"})
+
+    if action == "block_ip":
+        result = _exec_block_ip(command)
+    elif action == "unblock_ip":
+        result = _exec_unblock_ip(command)
+    elif action in ("firewall_enable", "firewall_disable", "firewall_reload"):
+        result = _exec_firewall_toggle(action)
+    elif action == "firewall_port_rule":
+        result = _exec_firewall_port_rule(command)
+    elif action == "kill_process":
+        result = _exec_kill_process(command)
+    elif action in ("user_create", "user_lock", "user_unlock", "user_delete", "session_terminate", "terminate_session"):
+        result = _exec_user_action(action, command)
+    elif action in ("cron_add", "cron_toggle", "cron_delete", "cron_run_now"):
+        result = _exec_cron_action(action, command)
+    elif action in ("ssl_path_add", "ssl_path_remove"):
+        result = _exec_ssl_action(action, command)
+    elif action in ("fim_path_add", "fim_path_remove", "fim_scan", "fim_rebaseline"):
+        result = _exec_fim_action(action, command)
+    elif action == "restart_agent":
+        result = _exec_restart_agent()
+    elif action == "update_agent":
+        result = _exec_update_agent(cfg, command)
+    elif action in ("reboot_host", "poweroff_host"):
+        result = _exec_host_control(action)
+    elif action not in ("restart", "start", "stop"):
+        result = {
+            "ok": False,
+            "output": f"Aksi tidak dikenal oleh agen ini ('{action}') "
+                      "— indikasi agen versi lama. Update agen: jalankan ulang install.sh.",
+        }
+    else:
+        result = _exec_service_action(action, command)
+
+    print(f"[CMD] Hasil: {result['output']}")
+    return result
+
+
+def _validate_ipv4(ip: str) -> bool:
+    """IPv4 yang valid dan aman diblokir (bukan loopback/link-local/multicast/unspecified)."""
+    try:
+        addr = ipaddress.IPv4Address(ip.strip())
+    except ValueError:
+        return False
+    return not (addr.is_loopback or addr.is_link_local
+                or addr.is_multicast or addr.is_unspecified or addr.is_reserved)
+
+
+PANTAU_FIREWALL_SCRIPT_BODY = r"""#!/usr/bin/env bash
+#
+# pantau-firewall - Mitigasi terbatas (blokir IP) untuk Agen Pantau.
+#
+set -u
+
+ACTION="${1:-}"
+shift 2>/dev/null || true
+
+fail() { echo "$*" >&2; exit 1; }
+
+MAX_IP="${MAX_IP:-10}"
+IPT="/usr/sbin/iptables"
+
+case "$ACTION" in
+    block|unblock) ;;
+    enable)
+        if command -v ufw >/dev/null 2>&1; then
+            ufw allow 22/tcp >/dev/null 2>&1 || true
+            ufw allow ssh >/dev/null 2>&1 || true
+            ufw allow 8400/tcp >/dev/null 2>&1 || true
+            ufw allow 80/tcp >/dev/null 2>&1 || true
+            ufw allow 443/tcp >/dev/null 2>&1 || true
+            out="$(ufw --force enable 2>&1)" || fail "UFW enable gagal: $out"
+            echo "OK: Firewall UFW berhasil diaktifkan (port SSH, Dashboard 8400, dan Web diizinkan)"
+            exit 0
+        fi
+        fail "ufw tidak terpasang di sistem ini"
+        ;;
+    disable)
+        if command -v ufw >/dev/null 2>&1; then
+            out="$(ufw disable 2>&1)" || fail "UFW disable gagal: $out"
+            echo "OK: Firewall UFW berhasil dinonaktifkan"
+            exit 0
+        fi
+        fail "ufw tidak terpasang di sistem ini"
+        ;;
+    reload)
+        if command -v ufw >/dev/null 2>&1; then
+            out="$(ufw reload 2>&1)" || fail "UFW reload gagal: $out"
+            echo "OK: Firewall UFW berhasil dimuat ulang (reloaded)"
+            exit 0
+        fi
+        fail "ufw tidak terpasang di sistem ini"
+        ;;
+    deny-port)
+        PORT_SPEC="${1:-}"
+        [ -n "$PORT_SPEC" ] || fail "Spesifikasi port wajib diisi (misal: 8080/tcp atau 3000)"
+        PORT_NUM="${PORT_SPEC%%/*}"
+        PROTO="${PORT_SPEC##*/}"
+        [ "$PROTO" = "$PORT_NUM" ] && PROTO="tcp"
+
+        case "$PROTO" in
+            tcp|udp) ;;
+            *) fail "Protokol tidak valid: '$PROTO' (hanya tcp atau udp)" ;;
+        esac
+
+        if [ "$PORT_NUM" = "22" ] || [ "$PORT_NUM" = "8400" ]; then
+            fail "Port $PORT_NUM (SSH / Pantau Dashboard) dilindungi dan dilarang diblokir!"
+        fi
+        if ! [[ "$PORT_NUM" =~ ^[0-9]+$ ]] || [ "$PORT_NUM" -lt 1 ] || [ "$PORT_NUM" -gt 65535 ]; then
+            fail "Nomor port tidak valid: '$PORT_NUM'"
+        fi
+
+        if command -v ufw >/dev/null 2>&1; then
+            out="$(ufw deny "$PORT_NUM/$PROTO" 2>&1)" || fail "UFW deny gagal: $out"
+            echo "OK: Port $PORT_NUM/$PROTO berhasil ditutup/diblokir pada UFW"
+            exit 0
+        elif [ -x "$IPT" ]; then
+            "$IPT" -I INPUT 1 -p "$PROTO" --dport "$PORT_NUM" -j DROP || fail "iptables drop port gagal"
+            echo "OK: Port $PORT_NUM/$PROTO berhasil ditutup/diblokir pada iptables"
+            exit 0
+        fi
+        fail "Tidak ada firewall aktif (ufw / iptables) di sistem"
+        ;;
+    allow-port)
+        PORT_SPEC="${1:-}"
+        [ -n "$PORT_SPEC" ] || fail "Spesifikasi port wajib diisi (misal: 8080/tcp)"
+        PORT_NUM="${PORT_SPEC%%/*}"
+        PROTO="${PORT_SPEC##*/}"
+        [ "$PROTO" = "$PORT_NUM" ] && PROTO="tcp"
+
+        if ! [[ "$PORT_NUM" =~ ^[0-9]+$ ]] || [ "$PORT_NUM" -lt 1 ] || [ "$PORT_NUM" -gt 65535 ]; then
+            fail "Nomor port tidak valid: '$PORT_NUM'"
+        fi
+        case "$PROTO" in
+            tcp|udp) ;;
+            *) fail "Protokol tidak valid: '$PROTO' (hanya tcp atau udp)" ;;
+        esac
+
+        if command -v ufw >/dev/null 2>&1; then
+            out="$(ufw delete deny "$PORT_NUM/$PROTO" 2>&1)" || ufw allow "$PORT_NUM/$PROTO" 2>&1 || true
+            echo "OK: Aturan blokir untuk port $PORT_NUM/$PROTO berhasil dibuka pada UFW"
+            exit 0
+        elif [ -x "$IPT" ]; then
+            "$IPT" -D INPUT -p "$PROTO" --dport "$PORT_NUM" -j DROP 2>/dev/null || true
+            echo "OK: Aturan blokir untuk port $PORT_NUM/$PROTO berhasil dibuka pada iptables"
+            exit 0
+        fi
+        fail "Tidak ada firewall aktif (ufw / iptables) di sistem"
+        ;;
+    status)
+        if command -v ufw >/dev/null 2>&1; then
+            ufw status verbose 2>&1 || true
+        fi
+        echo "--- IPTABLES ---"
+        if [ -x "$IPT" ]; then
+            "$IPT" -L INPUT -n -v --line-numbers 2>&1 || true
+        fi
+        exit 0
+        ;;
+    *) fail "Aksi tidak dikenal: '${ACTION:-}' (harus 'block', 'unblock', 'enable', 'disable', 'reload', 'deny-port', 'allow-port', atau 'status')" ;;
+esac
+
+[ -x "$IPT" ] || fail "iptables tidak terpasang (install iptables)"
+
+[ "$#" -ge 1 ] || fail "Tidak ada IP diberikan"
+[ "$#" -le "$MAX_IP" ] || fail "Terlalu banyak IP (maks $MAX_IP)"
+
+IPC=0
+for ip in "$@"; do
+    case "$ip" in
+        *[!0-9.]*) fail "IP tidak valid: '$ip'" ;;
+    esac
+    IFS=. read -r o1 o2 o3 o4 rest <<EOF
+$ip
+EOF
+    for o in "$o1" "$o2" "$o3" "$o4"; do
+        [ -n "$o" ] || fail "IP tidak valid: '$ip'"
+        [ "$o" -ge 0 ] && [ "$o" -le 255 ] 2>/dev/null || fail "IP tidak valid: '$ip'"
+    done
+    [ -z "$rest" ] || fail "IP tidak valid: '$ip'"
+
+    [ "$o1" -ge 1 ] && [ "$o1" -le 223 ] || fail "IP tidak valid atau di luar jangkauan unicast: '$ip'"
+    [ "$o1" -eq 127 ] && fail "IP loopback (127.0.0.0/8) tidak boleh diblokir: '$ip'"
+    [ "$o1" -eq 169 ] && [ "$o2" -eq 254 ] && fail "IP link-local (169.254.0.0/16) tidak boleh diblokir: '$ip'"
+    if [ "$ACTION" = "block" ]; then
+        if command -v ufw >/dev/null 2>&1; then
+            ufw insert 1 deny from "$ip" to any >/dev/null 2>&1 || true
+        fi
+        out="$("$IPT" -I INPUT 1 -s "$ip" -j DROP 2>&1)" || fail "iptables gagal utk $ip: $out"
+        echo "OK: INPUT DROP utk $ip"
+    else
+        if command -v ufw >/dev/null 2>&1; then
+            ufw delete deny from "$ip" to any >/dev/null 2>&1 || true
+        fi
+        out="$("$IPT" -D INPUT -s "$ip" -j DROP 2>&1)" || fail "iptables hapus gagal utk $ip (mungkin aturan tidak ada): $out"
+        echo "OK: Hapus blokir INPUT DROP utk $ip"
+    fi
+    IPC=$((IPC + 1))
+done
+
+if [ "$ACTION" = "block" ]; then
+    echo "Total $IPC IP diblokir. CATATAN: aturan volatile (hilang saat reboot); untuk permanen gunakan iptables-persistent."
+else
+    echo "Total $IPC IP dilepas blokirnya."
+fi
+exit 0
+"""
+
+
+def ensure_pantau_firewall_updated(force: bool = False) -> bool:
+    """Memastikan wrapper /usr/local/sbin/pantau-firewall mendukung aksi 'status' dan fitur terbaru.
+    Jika berkas belum ada, versi usang, atau force=True, otomatis perbarui via root langsung atau sudo pantau-file.
+    """
+    try:
+        cur_content = ""
+        if not force and os.path.isfile(PANTAU_FIREWALL):
+            try:
+                with open(PANTAU_FIREWALL, "r", encoding="utf-8", errors="replace") as f:
+                    cur_content = f.read()
+            except Exception:
+                pass
+            if "status)" in cur_content and "RFC1918" not in cur_content:
+                return True
+
+        content_to_write = PANTAU_FIREWALL_SCRIPT_BODY.strip() + "\n"
+        if IS_ROOT:
+            with open(PANTAU_FIREWALL, "w", encoding="utf-8") as f:
+                f.write(content_to_write)
+            os.chmod(PANTAU_FIREWALL, 0o755)
+            print("[FIREWALL] Wrapper /usr/local/sbin/pantau-firewall berhasil diperbarui (root)")
+            return True
+
+        # Jika user 'pantau', gunakan sudo pantau-file jika tersedia
+        pantau_file = "/usr/local/sbin/pantau-file"
+        if os.path.isfile(pantau_file):
+            payload_write = json.dumps({
+                "action": "write",
+                "params": {"path": PANTAU_FIREWALL, "content": content_to_write, "make_backup": False}
+            })
+            pw = subprocess.run(["/usr/bin/sudo", "-n", pantau_file], input=payload_write, text=True, capture_output=True, timeout=10)
+            if pw.returncode == 0:
+                payload_chmod = json.dumps({
+                    "action": "chmod",
+                    "params": {"path": PANTAU_FIREWALL, "mode": "0755"}
+                })
+                subprocess.run(["/usr/bin/sudo", "-n", pantau_file], input=payload_chmod, text=True, capture_output=True, timeout=10)
+                print("[FIREWALL] Wrapper /usr/local/sbin/pantau-firewall berhasil diperbarui via pantau-file")
+                return True
+    except Exception as e:
+        print(f"[FIREWALL] Peringatan saat memastikan pantau-firewall: {e}")
+    return False
+
+
+def _exec_block_ip(command: dict) -> dict:
+    """Blokir IP sumber serangan / pengganggu: iptables -I INPUT 1 -s <ip> -j DROP."""
+    ensure_pantau_firewall_updated()
+    params = command.get("params") or {}
+    ips = [str(i).strip() for i in (params.get("ips") or [])][:10]
+    if not ips:
+        return {"ok": False, "output": "Tidak ada IP untuk diblokir."}
+    outs: list = []
+    ok_all = True
+    any_success = False
+    my_ip = get_local_ip()
+    for ip in ips:
+        if not _validate_ipv4(ip):
+            outs.append(f"{ip}: Format IP tidak valid atau terlarang (loopback/link-local/multicast)")
+            ok_all = False
+            continue
+        if ip == my_ip:
+            outs.append(f"{ip}: Ditolak (tidak dapat memblokir IP server itu sendiri)")
+            ok_all = False
+            continue
+        if IS_ROOT:
+            res = _run_native(["iptables", "-I", "INPUT", "1", "-s", ip, "-j", "DROP"],
+                              f"iptables -I INPUT 1 -s {ip} -j DROP")
+            if shutil.which("ufw"):
+                _run_cmd(["ufw", "insert", "1", "deny", "from", ip, "to", "any"], timeout=5)
+        else:
+            res = _run_native(["/usr/bin/sudo", "-n", PANTAU_FIREWALL, "block", ip],
+                              f"sudo -n {PANTAU_FIREWALL} block {ip}")
+        if not res["ok"]:
+            ok_all = False
+        else:
+            any_success = True
+        outs.append(f"{ip}: {res['output']}")
+    note = " | aturan diterapkan (iptables volatile / permanen jika ufw/iptables-persistent aktif)" if any_success else ""
+    _fw_cache["at"] = 0.0
+    _fw_cache["data"] = None
+    fw_snapshot = collect_firewall()
+    return {"ok": ok_all, "output": ("; ".join(outs) + note)[:2000], "firewall": fw_snapshot}
+
+
+def _exec_unblock_ip(command: dict) -> dict:
+    """Lepas blokir IP: iptables -D INPUT -s <ip> -j DROP."""
+    ensure_pantau_firewall_updated()
+    params = command.get("params") or {}
+    ips = [str(i).strip() for i in (params.get("ips") or [])][:10]
+    if not ips:
+        return {"ok": False, "output": "Tidak ada IP untuk dilepas blokirnya."}
+    outs: list = []
+    ok_all = True
+    for ip in ips:
+        if not _validate_ipv4(ip):
+            outs.append(f"{ip}: Format IP tidak valid")
+            ok_all = False
+            continue
+        if IS_ROOT:
+            res = _run_native(["iptables", "-D", "INPUT", "-s", ip, "-j", "DROP"],
+                              f"iptables -D INPUT -s {ip} -j DROP")
+            if shutil.which("ufw"):
+                _run_cmd(["ufw", "delete", "deny", "from", ip, "to", "any"], timeout=5)
+        else:
+            res = _run_native(["/usr/bin/sudo", "-n", PANTAU_FIREWALL, "unblock", ip],
+                              f"sudo -n {PANTAU_FIREWALL} unblock {ip}")
+        if not res["ok"]:
+            ok_all = False
+        outs.append(f"{ip}: {res['output']}")
+    _fw_cache["at"] = 0.0
+    _fw_cache["data"] = None
+    fw_snapshot = collect_firewall()
+    return {"ok": ok_all, "output": ("; ".join(outs))[:2000], "firewall": fw_snapshot}
+
+
+def _exec_firewall_toggle(action: str) -> dict:
+    """Aktifkan, nonaktifkan, atau reload firewall UFW via wrapper pantau-firewall."""
+    ensure_pantau_firewall_updated()
+    sub_map = {
+        "firewall_enable": "enable",
+        "firewall_disable": "disable",
+        "firewall_reload": "reload",
+    }
+    sub = sub_map.get(action)
+    if not sub:
+        return {"ok": False, "output": f"Aksi firewall tidak valid: {action}"}
+    if IS_ROOT:
+        res = _run_native([PANTAU_FIREWALL, sub], f"{PANTAU_FIREWALL} {sub}")
+    else:
+        res = _run_native(["/usr/bin/sudo", "-n", PANTAU_FIREWALL, sub],
+                          f"sudo -n {PANTAU_FIREWALL} {sub}")
+    # Bersihkan cache firewall agar deteksi status langsung diperbarui pada siklus berikutnya
+    _fw_cache["at"] = 0.0
+    _fw_cache["data"] = None
+    fw_snapshot = collect_firewall()
+    return {"ok": res["ok"], "output": res["output"][:2000], "firewall": fw_snapshot}
+
+
+def _exec_kill_process(command: dict) -> dict:
+    """Hentikan proses tertentu via wrapper pantau-restart kill <pid> <signal>."""
+    params = command.get("params") or {}
+    pid = str(params.get("pid", "")).strip()
+    signal_name = str(params.get("signal", "TERM")).strip().upper()
+    if signal_name not in ("TERM", "15", "KILL", "9", "STOP", "19", "CONT", "18"):
+        signal_name = "TERM"
+
+    if not pid.isdigit() or int(pid) <= 1:
+        return {"ok": False, "output": f"PID tidak valid atau dilindungi: {pid}"}
+
+    # Proteksi tambahan sisi Python: jangan izinkan bunuh PID agen sendiri
+    if int(pid) == os.getpid():
+        return {"ok": False, "output": "Tidak dapat menghentikan proses agen monitor itu sendiri!"}
+
+    cmd = [PANTAU_RESTART, "kill", pid, signal_name]
+    label = f"{PANTAU_RESTART} kill {pid} {signal_name}"
+    if not IS_ROOT:
+        cmd = ["/usr/bin/sudo", "-n", *cmd]
+        label = f"sudo -n {label}"
+
+    res = _run_native(cmd, label)
+    # Bersihkan cache proses agar pemindaian berikutnya langsung memuat daftar segar
+    _top_procs_cache["at"] = 0.0
+    return {"ok": res.get("ok", False), "output": res.get("output", "Gagal mengirim sinyal ke proses")[:2000]}
+
+
+PANTAU_USER_SCRIPT_BODY = r"""#!/usr/bin/env bash
+#
+# pantau-user - Wrapper terbatas pengelolaan akun pengguna sistem Linux
+# untuk Agen Pantau.
+#
+# Jalur sudo NOPASSWD berguardrail ketat.
+#
+set -euo pipefail
+
+fail() { echo "ERROR: $*" >&2; exit 1; }
+
+ACTION="${1:-}"
+shift 2>/dev/null || true
+
+# Daftar akun terproteksi yang tidak boleh disentuh
+is_protected_user() {
+    local u="$1"
+    case "$u" in
+        root|pantau|daemon|bin|sys|sync|games|man|lp|mail|news|uucp|proxy|www-data|backup|list|irc|gnats|nobody|systemd*|_apt|messagebus|sshd)
+            return 0
+            ;;
+    esac
+    # Cek UID jika user ada (seluruh akun sistem UID < 1000 termasuk UID 0 dilindungi)
+    if id -u "$u" >/dev/null 2>&1; then
+        local uid
+        uid="$(id -u "$u")"
+        if [ "$uid" -lt 1000 ]; then
+            return 0
+        fi
+    fi
+    return 1
+}
+
+validate_username() {
+    local u="$1"
+    if [[ ! "$u" =~ ^[a-z_][a-z0-9_-]{1,31}$ ]]; then
+        fail "Nama pengguna tidak valid: '$u' (harus diawali huruf kecil/underscore, maks 32 karakter)"
+    fi
+}
+
+case "$ACTION" in
+    create)
+        USERNAME="${1:-}"
+        SHELL_PATH="${2:-/bin/bash}"
+        IS_SUDO="${3:-0}"
+        COMMENT="${4:-Dibuat via Pantau Server}"
+        PASSWORD="${5:-}"
+
+        [ -n "$USERNAME" ] || fail "Username wajib diisi"
+        validate_username "$USERNAME"
+
+        if id "$USERNAME" >/dev/null 2>&1; then
+            fail "Pengguna '$USERNAME' sudah ada di sistem"
+        fi
+
+        # Validasi shell
+        if [ ! -x "$SHELL_PATH" ] && [ "$SHELL_PATH" != "/usr/sbin/nologin" ] && [ "$SHELL_PATH" != "/bin/false" ]; then
+            SHELL_PATH="/bin/bash"
+        fi
+
+        # Sanitasi komentar GECOS: hapus colon dan newline agar tidak merusak format /etc/passwd
+        COMMENT="${COMMENT//:/ }"
+        COMMENT="${COMMENT//$'\n'/ }"
+        COMMENT="${COMMENT//$'\r'/ }"
+
+        if getent group "$USERNAME" >/dev/null 2>&1; then
+            useradd -m -s "$SHELL_PATH" -g "$USERNAME" -c "$COMMENT" "$USERNAME" 2>/dev/null || useradd -m -s "$SHELL_PATH" -c "$COMMENT" "$USERNAME" || fail "Gagal membuat pengguna '$USERNAME'"
+        else
+            useradd -m -s "$SHELL_PATH" -c "$COMMENT" "$USERNAME" || fail "Gagal membuat pengguna '$USERNAME'"
+        fi
+
+        if [ -n "$PASSWORD" ]; then
+            if [[ "$PASSWORD" == *$'\n'* ]] || [[ "$PASSWORD" == *$'\r'* ]]; then
+                fail "Karakter newline pada password tidak diizinkan"
+            fi
+            echo "${USERNAME}:${PASSWORD}" | chpasswd 2>/dev/null || fail "Gagal mengatur password awal pengguna '$USERNAME'"
+        else
+            # Best practice POSIX/Linux untuk akun SSH key / tanpa password lokal:
+            # Gunakan token unroutable '*' agar akun tidak terkunci disabled ('!') dan dapat di-unlock kapan saja
+            usermod -p '*' "$USERNAME" 2>/dev/null || true
+        fi
+
+        if [ "$IS_SUDO" = "1" ] || [ "$IS_SUDO" = "true" ]; then
+            usermod -aG sudo,adm "$USERNAME" 2>/dev/null || usermod -aG sudo "$USERNAME" 2>/dev/null || usermod -aG wheel "$USERNAME" 2>/dev/null || true
+        fi
+
+        echo "OK: Pengguna '$USERNAME' berhasil dibuat (Shell: $SHELL_PATH, Sudo: $IS_SUDO)"
+        ;;
+
+    add-group)
+        USERNAME="${1:-}"
+        NEW_GROUPS="${2:-}"
+        [ -n "$USERNAME" ] || fail "Username wajib diisi"
+        [ -n "$NEW_GROUPS" ] || fail "Grup tujuan wajib diisi"
+        validate_username "$USERNAME"
+        IFS=',' read -ra ADDM_GRPS <<< "$NEW_GROUPS"
+        for g in "${ADDM_GRPS[@]}"; do
+            g="$(echo "$g" | tr -d ' ')"
+            case "$g" in
+                sudo|adm|wheel)
+                    if getent group "$g" >/dev/null 2>&1; then
+                        usermod -aG "$g" "$USERNAME" 2>/dev/null || true
+                    fi
+                    ;;
+                *)
+                    fail "Grup '$g' tidak diizinkan untuk eskalasi otomatis"
+                    ;;
+            esac
+        done
+        echo "OK: Grup '$NEW_GROUPS' berhasil ditambahkan ke '$USERNAME'"
+        ;;
+
+    lock)
+        USERNAME="${1:-}"
+        [ -n "$USERNAME" ] || fail "Username wajib diisi"
+        validate_username "$USERNAME"
+
+        if is_protected_user "$USERNAME"; then
+            fail "Pengguna '$USERNAME' adalah akun sistem penting dan dilarang dikunci!"
+        fi
+
+        passwd -l "$USERNAME" >/dev/null 2>&1 || usermod -L "$USERNAME" >/dev/null 2>&1 || fail "Gagal mengunci akun '$USERNAME'"
+        echo "OK: Akun '$USERNAME' berhasil dikunci"
+        ;;
+
+    unlock)
+        USERNAME="${1:-}"
+        [ -n "$USERNAME" ] || fail "Username wajib diisi"
+        validate_username "$USERNAME"
+
+        if is_protected_user "$USERNAME"; then
+            fail "Pengguna '$USERNAME' adalah akun sistem penting!"
+        fi
+
+        # Deteksi status password di /etc/shadow
+        shadow_pwd="$(grep "^${USERNAME}:" /etc/shadow 2>/dev/null | cut -d: -f2 || true)"
+        if [ "$shadow_pwd" = "!" ] || [ "$shadow_pwd" = "!*" ] || [ "$shadow_pwd" = "!!" ] || [ -z "$shadow_pwd" ]; then
+            usermod -p '*' "$USERNAME" 2>/dev/null || fail "Gagal membuka kunci akun '$USERNAME'"
+            echo "OK: Akun '$USERNAME' berhasil dibuka kuncinya"
+        else
+            if passwd -u "$USERNAME" >/dev/null 2>&1 || usermod -U "$USERNAME" >/dev/null 2>&1; then
+                echo "OK: Akun '$USERNAME' berhasil dibuka kuncinya"
+            else
+                usermod -p '*' "$USERNAME" 2>/dev/null || fail "Gagal membuka kunci akun '$USERNAME'"
+                echo "OK: Akun '$USERNAME' berhasil dibuka kuncinya"
+            fi
+        fi
+        ;;
+
+    delete)
+        USERNAME="${1:-}"
+        REMOVE_HOME="${2:-0}"
+        [ -n "$USERNAME" ] || fail "Username wajib diisi"
+        validate_username "$USERNAME"
+
+        if is_protected_user "$USERNAME"; then
+            fail "Pengguna '$USERNAME' adalah akun sistem terlindungi dan dilarang dihapus!"
+        fi
+
+        # Hentikan proses yang masih dijalankan user sebelum dihapus
+        pkill -u "$USERNAME" 2>/dev/null || true
+        sleep 0.5
+
+        if [ "$REMOVE_HOME" = "1" ] || [ "$REMOVE_HOME" = "true" ]; then
+            userdel -r "$USERNAME" 2>/dev/null || userdel "$USERNAME" || fail "Gagal menghapus pengguna '$USERNAME'"
+        else
+            userdel "$USERNAME" || fail "Gagal menghapus pengguna '$USERNAME'"
+        fi
+
+        echo "OK: Pengguna '$USERNAME' berhasil dihapus"
+        ;;
+
+    list-locked)
+        passwd -Sa 2>/dev/null | awk '$2=="L" || $2=="LK" {print $1}' || true
+        ;;
+
+    terminate-session)
+        TTY="${1:-}"
+        [ -n "$TTY" ] || fail "Parameter TTY wajib diisi (misal: pts/0, pts/1, tty1)"
+        TTY="${TTY#/dev/}"
+        if [[ ! "$TTY" =~ ^(pts/[0-9]+|tty[0-9]+)$ ]]; then
+            fail "Format terminal TTY tidak valid: '$TTY' (hanya pts/N atau ttyN yang diizinkan)"
+        fi
+
+        # 1. Hentikan seluruh proses yang terikat dengan terminal tersebut
+        pkill -9 -t "$TTY" 2>/dev/null || true
+        # 2. Paksa putus descriptor device jika masih menempel
+        if [ -e "/dev/$TTY" ]; then
+            fuser -k -9 "/dev/$TTY" 2>/dev/null || true
+        fi
+        echo "OK: Sesi terminal '$TTY' berhasil diputus paksa"
+        ;;
+
+    *)
+        fail "Aksi tidak dikenal: '$ACTION' (harus create, add-group, lock, unlock, delete, list-locked, terminate-session)"
+        ;;
+esac
+"""
+
+
+def ensure_pantau_user_updated(force: bool = False) -> bool:
+    """Memastikan wrapper /usr/local/sbin/pantau-user mendukung fitur terbaru (misal: terminate-session, add-group).
+    Jika berkas belum ada, versi usang, atau force=True, otomatis perbarui via root langsung atau sudo pantau-file.
+    """
+    try:
+        cur_content = ""
+        if not force and os.path.isfile(PANTAU_USER_CMD):
+            try:
+                with open(PANTAU_USER_CMD, "r", encoding="utf-8", errors="replace") as f:
+                    cur_content = f.read()
+            except Exception:
+                pass
+            if "terminate-session" in cur_content and "add-group" in cur_content:
+                return True
+
+        content_to_write = PANTAU_USER_SCRIPT_BODY.strip() + "\n"
+        if IS_ROOT:
+            with open(PANTAU_USER_CMD, "w", encoding="utf-8") as f:
+                f.write(content_to_write)
+            os.chmod(PANTAU_USER_CMD, 0o750)
+            print("[USER] Wrapper /usr/local/sbin/pantau-user berhasil diperbarui (root)")
+            return True
+
+        # Jika user 'pantau', gunakan sudo pantau-file jika tersedia
+        pantau_file = "/usr/local/sbin/pantau-file"
+        if os.path.isfile(pantau_file):
+            payload_write = json.dumps({
+                "action": "write",
+                "params": {"path": PANTAU_USER_CMD, "content": content_to_write, "make_backup": False}
+            })
+            pw = subprocess.run(["/usr/bin/sudo", "-n", pantau_file], input=payload_write, text=True, capture_output=True, timeout=10)
+            try:
+                out_data = json.loads(pw.stdout or "{}")
+            except Exception:
+                out_data = {}
+            if pw.returncode == 0 and out_data.get("ok"):
+                payload_chmod = json.dumps({
+                    "action": "chmod",
+                    "params": {"path": PANTAU_USER_CMD, "mode": "0750"}
+                })
+                subprocess.run(["/usr/bin/sudo", "-n", pantau_file], input=payload_chmod, text=True, capture_output=True, timeout=10)
+                print("[USER] Wrapper /usr/local/sbin/pantau-user berhasil diperbarui via pantau-file")
+                return True
+    except Exception as e:
+        print(f"[USER WARN] Gagal memperbarui {PANTAU_USER_CMD}: {e}")
+    return False
+
+
+def _exec_user_action(action: str, command: dict) -> dict:
+    """Kelola akun pengguna sistem & pemutusan sesi terminal via wrapper pantau-user."""
+    ensure_pantau_user_updated()
+    params = command.get("params") or {}
+    if action in ("session_terminate", "terminate_session"):
+        tty = str(params.get("tty", "")).strip().lstrip("/dev/")
+        if not tty:
+            return {"ok": False, "output": "Parameter TTY terminal (misal: pts/0) wajib diisi."}
+        if not re.match(r"^(pts/\d+|tty\d+)$", tty):
+            return {"ok": False, "output": f"Format terminal TTY '{tty}' tidak valid (hanya pts/N atau ttyN)."}
+        cmd = [PANTAU_USER_CMD, "terminate-session", tty]
+        label = f"{PANTAU_USER_CMD} terminate-session {tty}"
+        if not IS_ROOT:
+            cmd = ["/usr/bin/sudo", "-n", *cmd]
+            label = f"sudo -n {label}"
+        res = _run_native(cmd, label)
+        # Jika wrapper lama di disk menolak aksi karena belum terbarui, paksa pembaruan mandiri lalu coba lagi sekali
+        if not res.get("ok") and "Aksi tidak dikenal" in res.get("output", ""):
+            print("[USER] Terdeteksi pantau-user versi lama, memperbarui paksa wrapper dan mengulang...")
+            if ensure_pantau_user_updated(force=True):
+                res = _run_native(cmd, label)
+        return {"ok": res.get("ok", False), "output": res.get("output", "")[:2000]}
+
+    username = str(params.get("username", "")).strip().lower()
+    if not username:
+        return {"ok": False, "output": "Nama pengguna (username) wajib diisi."}
+
+    cmd = [PANTAU_USER_CMD]
+    if action == "user_create":
+        shell = str(params.get("shell", "/bin/bash")).strip()
+        is_sudo = "1" if params.get("is_sudo") in (1, True, "1", "true") else "0"
+        comment = str(params.get("comment", "Dibuat via Pantau Server")).strip()
+        password = str(params.get("password", "")).strip()
+        cmd.extend(["create", username, shell, is_sudo, comment, password])
+    elif action == "user_lock":
+        cmd.extend(["lock", username])
+    elif action == "user_unlock":
+        cmd.extend(["unlock", username])
+    elif action == "user_delete":
+        remove_home = "1" if params.get("remove_home") in (1, True, "1", "true") else "0"
+        cmd.extend(["delete", username, remove_home])
+    else:
+        return {"ok": False, "output": f"Aksi pengguna tidak valid: {action}"}
+
+    display_cmd = list(cmd)
+    if action == "user_create" and len(display_cmd) >= 7 and display_cmd[6]:
+        display_cmd[6] = "******"
+    label = " ".join(display_cmd)
+    if not IS_ROOT:
+        cmd = ["/usr/bin/sudo", "-n", *cmd]
+        label = f"sudo -n {label}"
+
+    res = _run_native(cmd, label)
+    return {"ok": res.get("ok", False), "output": res.get("output", "")[:2000]}
+
+
+def _exec_cron_action(action: str, command: dict) -> dict:
+    """Kelola tugas terjadwal (cron) via wrapper pantau-cron."""
+    params = command.get("params") or {}
+    cmd = [PANTAU_CRON_CMD]
+
+    if action == "cron_add":
+        ident = str(params.get("ident", "")).strip()
+        minute = str(params.get("minute", "*")).strip()
+        hour = str(params.get("hour", "*")).strip()
+        dom = str(params.get("dom", "*")).strip()
+        month = str(params.get("month", "*")).strip()
+        dow = str(params.get("dow", "*")).strip()
+        target_user = str(params.get("user", "root")).strip()
+        cron_cmd = str(params.get("command", "")).strip()
+        if not ident or not cron_cmd:
+            return {"ok": False, "output": "Identifikasi tugas dan perintah cron wajib diisi."}
+        cmd.extend(["add", ident, minute, hour, dom, month, dow, target_user, cron_cmd])
+    elif action == "cron_toggle":
+        ident = str(params.get("ident", "")).strip()
+        mode = str(params.get("mode", "enable")).strip().lower()
+        if not ident:
+            return {"ok": False, "output": "Identifikasi tugas cron wajib diisi."}
+        cmd.extend(["toggle", ident, mode])
+    elif action == "cron_delete":
+        ident = str(params.get("ident", "")).strip()
+        if not ident:
+            return {"ok": False, "output": "Identifikasi tugas cron wajib diisi."}
+        cmd.extend(["delete", ident])
+    elif action == "cron_run_now":
+        target_user = str(params.get("user", "root")).strip()
+        cron_cmd = str(params.get("command", "")).strip()
+        if not cron_cmd:
+            return {"ok": False, "output": "Perintah cron wajib diisi."}
+        cmd.extend(["run", target_user, cron_cmd])
+    else:
+        return {"ok": False, "output": f"Aksi cron tidak valid: {action}"}
+
+    label = " ".join(cmd)
+    if not IS_ROOT:
+        cmd = ["/usr/bin/sudo", "-n", *cmd]
+        label = f"sudo -n {label}"
+
+    res = _run_native(cmd, label)
+    _cron_cache["at"] = 0.0
+    return {"ok": res.get("ok", False), "output": res.get("output", "")[:2000]}
+
+
+def _exec_firewall_port_rule(command: dict) -> dict:
+    """Atur aturan buka/tutup port firewall via wrapper pantau-firewall."""
+    params = command.get("params") or {}
+    port_spec = str(params.get("port", "")).strip()
+    rule_type = str(params.get("rule", "deny")).strip().lower()
+    if not port_spec:
+        return {"ok": False, "output": "Spesifikasi port wajib diisi."}
+
+    sub = "deny-port" if rule_type in ("deny", "block", "deny-port") else "allow-port"
+    cmd = [PANTAU_FIREWALL, sub, port_spec]
+    label = f"{PANTAU_FIREWALL} {sub} {port_spec}"
+    if not IS_ROOT:
+        cmd = ["/usr/bin/sudo", "-n", *cmd]
+        label = f"sudo -n {label}"
+
+    res = _run_native(cmd, label)
+    _fw_cache["at"] = 0.0
+    _fw_cache["data"] = None
+    fw_snapshot = collect_firewall()
+    return {"ok": res.get("ok", False), "output": res.get("output", "")[:2000], "firewall": fw_snapshot}
+
+
+def _exec_ssl_action(action: str, command: dict) -> dict:
+    """Kelola path berkas sertifikat SSL kustom via wrapper pantau-ssl."""
+    params = command.get("params") or {}
+    cert_path = str(params.get("path", "")).strip()
+    if not cert_path:
+        return {"ok": False, "output": "Path berkas sertifikat SSL wajib diisi."}
+
+    sub = "add-path" if action == "ssl_path_add" else "remove-path"
+    cmd = [PANTAU_SSL_CMD, sub, cert_path]
+    label = f"{PANTAU_SSL_CMD} {sub} {cert_path}"
+    if not IS_ROOT:
+        cmd = ["/usr/bin/sudo", "-n", *cmd]
+        label = f"sudo -n {label}"
+
+    res = _run_native(cmd, label)
+    _ssl_cache["at"] = 0.0
+    return {"ok": res.get("ok", False), "output": res.get("output", "")[:2000]}
+
+
+def _exec_fim_action(action: str, command: dict) -> dict:
+    """Eksekusi kontrol File Integrity Monitoring (FIM)."""
+    params = command.get("params") or {}
+    target_path = str(params.get("path", "")).strip()
+
+    if action == "fim_path_add":
+        if not target_path:
+            return {"ok": False, "output": "Jalur file/direktori wajib diisi."}
+        scope = str(params.get("scope", "single_file"))
+        custom_paths = _load_fim_custom_paths()
+        exists = any(p["path"] == target_path for p in custom_paths)
+        if not exists:
+            custom_paths.append({"path": target_path, "scope": scope, "category": "custom"})
+            _save_fim_custom_paths(custom_paths)
+        _fim_cache["at"] = 0.0
+        collect_fim(force=True)
+        return {"ok": True, "output": f"Path '{target_path}' berhasil ditambahkan ke pemantauan FIM."}
+
+    elif action == "fim_path_remove":
+        if not target_path:
+            return {"ok": False, "output": "Path file/direktori wajib diisi."}
+        custom_paths = _load_fim_custom_paths()
+        new_paths = [p for p in custom_paths if p["path"] != target_path]
+        _save_fim_custom_paths(new_paths)
+        _remove_fim_baseline(target_path)
+        _fim_cache["at"] = 0.0
+        collect_fim(force=True)
+        return {"ok": True, "output": f"Path '{target_path}' berhasil dihapus dari pemantauan FIM."}
+
+    elif action == "fim_scan":
+        _fim_cache["at"] = 0.0
+        data = collect_fim(force=True)
+        return {"ok": True, "output": f"Pemindaian integritas selesai. {len(data.get('paths', []))} path diperiksa."}
+
+    elif action == "fim_rebaseline":
+        _fim_cache["at"] = 0.0
+        _rebaseline_fim_path(target_path)
+        collect_fim(force=True)
+        target_disp = target_path if target_path else "seluruh path"
+        return {"ok": True, "output": f"Acuan baseline untuk {target_disp} berhasil diperbarui."}
+
+    return {"ok": False, "output": f"Aksi FIM tidak dikenal: {action}"}
+
+
+def _exec_host_control(action: str) -> dict:
+    """Reboot/poweroff OS — ditunda ~4 dtk agar respon ack sempat terkirim ke Dashboard.
+
+    SEBELUM menjadwalkan, lakukan preflight 'check' via wrapper pantau-host:
+    - kalau wrapper/sudoers belum terpasang, sudo -n gagal -> lapor kegagalan NYATA
+      (jangan asal "akan dimatikan") supaya admin tahu harus update agen.
+    - kalau systemd tidak terpasang (container/WSL), lapor jelas.
+    Baru proses nyata dijadwalkan (pola sama seperti restart_agent) via wrapper.
+    """
+    sub_action = "reboot" if action == "reboot_host" else "poweroff"
+
+    def _run_wrapper(*args: str) -> tuple[bool, str]:
+        if IS_ROOT:
+            p = subprocess.run([PANTAU_HOST_CMD, *args],
+                               capture_output=True, text=True, timeout=30)
+        else:
+            p = subprocess.run(["/usr/bin/sudo", "-n", PANTAU_HOST_CMD, *args],
+                               capture_output=True, text=True, timeout=30)
+        out = (p.stdout or "").strip() or p.stderr.strip() or ""
+        return p.returncode == 0, out[:1200]
+
+    # Preflight check (tanpa efek samping)
+    ok_check, msg_check = _run_wrapper("check")
+    if not ok_check:
+        return {"ok": False,
+                "output": f"Perintah {sub_action} DIBATALKAN: wrapper pantau-host belum "
+                          f"terpasang/diizinkan di server ini. {msg_check} "
+                          "-- jalankan ulang package install.sh (agen v3.6+)."}
+    if "systemd TIDAK berjalan" in msg_check or "TIDAK berjalan" in msg_check:
+        # Deteksi false positive dari wrapper pantau-host versi lama pada sistem dengan status degraded.
+        # Jika /run/systemd/system ada, systemd aktif dan siap menerima reboot/poweroff (termasuk pada Proxmox LXC).
+        if os.path.isdir("/run/systemd/system"):
+            try:
+                new_host_script = (
+                    "#!/usr/bin/env bash\n"
+                    "set -u\n"
+                    'ACTION="${1:-}"\n'
+                    'LOG="/var/log/pantau-host.log"\n'
+                    "fail() { echo \"$*\" >&2; echo \"FAIL $(date -Is) [${ACTION}] $*\" >> \"$LOG\" 2>/dev/null; exit 1; }\n"
+                    'case "$ACTION" in\n'
+                    '    reboot)   CMD="/usr/bin/systemctl -i reboot || /usr/bin/systemctl --force reboot || /sbin/reboot -f || /sbin/shutdown -r now || /sbin/init 6" ;;\n'
+                    '    poweroff) CMD="/usr/bin/systemctl -i poweroff || /usr/bin/systemctl --force poweroff || /sbin/poweroff -f || /sbin/shutdown -h now || /sbin/init 0" ;;\n'
+                    '    check)    CMD="" ;;\n'
+                    '    *)        fail "Aksi tidak dikenal: \'${ACTION}\'" ;;\n'
+                    "esac\n"
+                    "[ -x /usr/bin/systemctl ] || fail \"/usr/bin/systemctl tidak ditemukan\"\n"
+                    'mkdir -p "$(dirname "$LOG")" 2>/dev/null || true\n'
+                    'if [ -z "$CMD" ]; then\n'
+                    '    echo "INFO $(date -Is) [check] dipanggil oleh: ${SUDO_USER:-<langsung>}" >> "$LOG" 2>/dev/null\n'
+                    "    if [ -d /run/systemd/system ]; then\n"
+                    "        state=\"$(/usr/bin/systemctl is-system-running 2>/dev/null || echo 'active')\"\n"
+                    "        echo \"systemd OK ($state) — siap terima reboot|poweroff.\"\n"
+                    "        exit 0\n"
+                    "    fi\n"
+                    "    echo \"systemd TIDAK berjalan sebagai host (mis. container/WSL) — reboot/poweroff TIDAK akan mematikan mesin ini.\"\n"
+                    "    exit 0\n"
+                    "fi\n"
+                    'echo "INFO $(date -Is) [${ACTION}] mengeksekusi: $CMD" >> "$LOG" 2>/dev/null\n'
+                    '/bin/sh -c "$CMD"\n'
+                    "rc=$?\n"
+                    '[ $rc -ne 0 ] && fail "gagal (rc=$rc): $CMD"\n'
+                    'echo "OK: $ACTION dieksekusi."\n'
+                )
+                run_file_op("write", {"path": PANTAU_HOST_CMD, "content": new_host_script})
+                run_file_op("chmod", {"path": PANTAU_HOST_CMD, "mode": "0755"})
+            except Exception:
+                pass
+        else:
+            return {"ok": False,
+                    "output": f"Perintah {sub_action} DIBATALKAN: {msg_check}"}
+
+    label = f"{PANTAU_HOST_CMD} {sub_action}"
+    if not IS_ROOT:
+        label = f"/usr/bin/sudo -n {label}"
+    try:
+        # PENTING: tanpa redirect shell ('>> log') di sini — redirect dijalankan
+        # SELAKU user pantau (sebelum sudo) dan gagal karena log milik root,
+        # sehingga poweroff tak pernah dieksekusi. Wrapper yang menulis log
+        # (lewat sudo, sebagai root) setelah memvalidasi argumen.
+        subprocess.Popen(
+            ["/bin/sh", "-c", f"sleep 4; {label}"],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            start_new_session=True, close_fds=True,
+        )
+        verb = "di-reboot" if sub_action == "reboot" else "di-matikan (poweroff)"
+        return {"ok": True,
+                "output": f"Perintah diterima: server akan {verb} dalam ±4 detik. "
+                          "Dashboard akan terputus dari server ini."}
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "output": f"Gagal menjadwalkan {sub_action}: {e}"}
+
+
+def _exec_restart_agent() -> dict:
+    """Jadwalkan restart agen ~4 dtk setelah respon terkirim (proses lama ia yang kill diri sendiri).
+
+    Tanpa sudo: systemd unit agent_pantau memakai Restart=always, jadi agen
+    cukup TERMINATE dirinya sendiri secara tertunda; systemd yang menghidupkan ulang.
+    """
+    try:
+        subprocess.Popen(
+            ["/bin/sh", "-c", f"sleep 4; kill -TERM {os.getpid()}"],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            start_new_session=True, close_fds=True,
+        )
+        return {"ok": True, "output": "Restart agen (agent_pantau) dijadwalkan otomatis (systemd akan menghidupkan ulang)."}
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "output": f"Gagal menjadwalkan restart agen: {e}"}
+
+
+def _exec_update_agent(cfg: dict, command: dict) -> dict:
+    """Unduh dan pasang pembaruan agent_pantau.py secara otomatis dan aman (Enterprise OTA Update).
+
+    Alur Keamanan & Kriptografi:
+    1. Baca instruksi OTA (target URL & hash SHA-256 yang diharapkan dari dashboard).
+    2. Unduh berkas biner/skrip agen baru ke memori/berkas sementara.
+    3. Validasi kriptografi SHA-256: hitung hashlib.sha256(unduhan). Jika berbeda dari expected,
+       TOLAK SEKETIKA (mencegah manipulasi/peretasan/berkas korup).
+    4. Validasi sintaks Python dengan py_compile.compile. Jika sintaks korup, batalkan.
+    5. Ganti berkas target (/opt/pantau/agent/agent_pantau.py) secara atomik (mode 0755).
+    6. Jadwalkan restart otomatis (_exec_restart_agent) via systemd watchdog.
+    """
+    params = command.get("params") or {}
+    expected_sha256 = str(params.get("sha256") or "").strip().lower()
+    target_url = str(params.get("url") or "").strip()
+    target_version = str(params.get("version") or "").strip()
+
+    server_url = str(cfg.get("server_url", "")).rstrip("/")
+    api_key = str(cfg.get("api_key", ""))
+    urls = []
+    if target_url:
+        urls.append(target_url)
+    if server_url:
+        urls.append(f"{server_url}/api/agent/latest-code")
+    urls.append("https://raw.githubusercontent.com/azhuka/pantau-server/master/package/opt/pantau/agent/agent_pantau.py")
+
+    # Hilangkan duplikasi URL
+    seen_urls = set()
+    unique_urls = []
+    for u in urls:
+        if u and u not in seen_urls:
+            seen_urls.add(u)
+            unique_urls.append(u)
+
+    code_bytes = None
+    fetch_err = []
+    for url in unique_urls:
+        try:
+            req = urllib.request.Request(
+                url,
+                headers={
+                    "User-Agent": f"AgentPantau/{AGENT_VERSION}",
+                    "X-Api-Key": api_key,
+                }
+            )
+            with urllib.request.urlopen(req, timeout=20) as resp:
+                if resp.status == 200:
+                    data = resp.read()
+                    if len(data) > 10000 and b"AGENT_VERSION" in data:
+                        code_bytes = data
+                        print(f"[OTA] Berhasil mengunduh berkas agen dari {url} ({len(data)} bytes)")
+                        break
+                    else:
+                        fetch_err.append(f"{url}: ukuran/isi tidak valid ({len(data)} bytes)")
+                else:
+                    fetch_err.append(f"{url}: HTTP {resp.status}")
+        except Exception as e:
+            fetch_err.append(f"{url}: {e}")
+
+    if not code_bytes:
+        return {
+            "ok": False,
+            "output": f"Gagal mengunduh berkas agen terbaru: {'; '.join(fetch_err)}"
+        }
+
+    # Verifikasi Kriptografis SHA-256 wajib dan mutlak
+    if not expected_sha256 or len(expected_sha256) != 64 or not re.fullmatch(r"[0-9a-f]{64}", expected_sha256.lower()):
+        return {
+            "ok": False,
+            "output": "Pembaruan ditolak: Hash SHA-256 target wajib disertakan oleh dashboard (64 karakter hex)."
+        }
+
+    actual_sha256 = hashlib.sha256(code_bytes).hexdigest().lower()
+    if actual_sha256 != expected_sha256.lower():
+        msg = (
+            f"Verifikasi integritas SHA-256 GAGAL! Hash unduhan ({actual_sha256}) "
+            f"tidak cocok dengan instruksi dashboard ({expected_sha256}). "
+            "Pembaruan dibatalkan demi mencegah eksekusi berkas tidak terverifikasi."
+        )
+        print(f"[SECURITY ALERT] {msg}")
+        return {"ok": False, "output": msg}
+    print(f"[OTA] Integritas SHA-256 terverifikasi: {actual_sha256}")
+
+    import tempfile
+    tmp_fd, tmp_path = tempfile.mkstemp(prefix="pantau_ota_", suffix=".py")
+    try:
+        with os.fdopen(tmp_fd, "wb") as f:
+            f.write(code_bytes)
+            f.flush()
+            os.fsync(f.fileno())
+
+        # Validasi 1: Uji kompilasi sintaks Python in-memory
+        try:
+            compile(code_bytes, tmp_path, "exec")
+        except Exception as se:
+            return {
+                "ok": False,
+                "output": f"Pembaruan ditolak: Validasi sintaks Python gagal: {se}"
+            }
+
+        # Validasi 2: Pre-flight isolated runtime execution check
+        # Jalankan subproses terisolasi untuk memastikan modul dapat dimuat interpreter
+        # tanpa NameError, ImportError, atau SyntaxError, dan keluar seketika dengan code 0.
+        try:
+            test_proc = subprocess.run(
+                [sys.executable, tmp_path, "--test-runtime"],
+                capture_output=True,
+                text=True,
+                timeout=15,
+            )
+            if test_proc.returncode != 0:
+                err_detail = (test_proc.stderr or test_proc.stdout or f"exit code {test_proc.returncode}").strip()
+                print(f"[OTA REJECTED] Pre-flight runtime check gagal (exit {test_proc.returncode}): {err_detail}")
+                return {
+                    "ok": False,
+                    "output": (
+                        f"Pembaruan ditolak: Pre-flight runtime check gagal (exit code {test_proc.returncode}). "
+                        f"Berkas target aman dan tidak disentuh. Detail: {err_detail[:400]}"
+                    )
+                }
+            print(f"[OTA] Pre-flight runtime check sukses: {test_proc.stdout.strip()}")
+        except subprocess.TimeoutExpired:
+            print("[OTA REJECTED] Pre-flight runtime check timeout (>15 detik)")
+            return {
+                "ok": False,
+                "output": "Pembaruan ditolak: Pre-flight runtime check timeout (>15 detik). Berkas target tidak disentuh."
+            }
+        except Exception as e:
+            print(f"[OTA REJECTED] Eksekusi pre-flight runtime check gagal: {e}")
+            return {
+                "ok": False,
+                "output": f"Pembaruan ditolak: Eksekusi pre-flight runtime check gagal ({e}). Berkas target tidak disentuh."
+            }
+
+        try:
+            code_str = code_bytes.decode("utf-8", errors="replace")
+            ver_match = re.search(r'AGENT_VERSION\s*=\s*["\']([^"\']+)["\']', code_str)
+            new_version = ver_match.group(1) if ver_match else (target_version or "baru")
+        except Exception:
+            code_str = code_bytes.decode("utf-8", errors="replace")
+            new_version = target_version or "baru"
+
+        target_path = "/opt/pantau/agent/agent_pantau.py"
+        script_path = os.path.abspath(__file__)
+        if not os.path.exists(target_path) and os.path.exists(script_path):
+            target_path = script_path
+
+        target_dir = os.path.dirname(target_path)
+        backup_path = f"{target_path}.bak"
+
+        # -----------------------------------------------------------------
+        # Atomic Backup: Amankan berkas aktif yang saat ini berjalan ke .bak
+        # -----------------------------------------------------------------
+        if os.path.exists(target_path):
+            backup_ok = False
+            backup_err = ""
+            if IS_ROOT or (os.path.exists(target_dir) and os.access(target_dir, os.W_OK)):
+                try:
+                    tmp_bak = f"{backup_path}.tmp.{os.getpid()}"
+                    with open(target_path, "rb") as rf, open(tmp_bak, "wb") as wf:
+                        wf.write(rf.read())
+                        wf.flush()
+                        os.fsync(wf.fileno())
+                    os.chmod(tmp_bak, 0o755)
+                    os.replace(tmp_bak, backup_path)
+                    backup_ok = True
+                    print(f"[OTA] Cadangan berkas aktif dibuat di {backup_path}")
+                except Exception as be:
+                    backup_err = str(be)
+                    print(f"[OTA] Gagal membuat cadangan langsung: {be}")
+
+            if not backup_ok:
+                try:
+                    with open(target_path, "r", encoding="utf-8", errors="replace") as cur_f:
+                        cur_content = cur_f.read()
+                    res_bak = run_file_op("write", {"path": backup_path, "content": cur_content})
+                    if res_bak.get("ok"):
+                        run_file_op("chmod", {"path": backup_path, "mode": "0755"})
+                        backup_ok = True
+                        print(f"[OTA] Cadangan berkas aktif dibuat via pantau-file di {backup_path}")
+                    else:
+                        backup_err = res_bak.get("error", "pantau-file error")
+                        print(f"[OTA] Peringatan pantau-file backup: {backup_err}")
+                except Exception as be:
+                    backup_err = str(be)
+                    print(f"[OTA] Peringatan pembuatan cadangan: {be}")
+
+            # Validasi kesehatan file cadangan yang baru saja dibuat
+            if backup_ok and os.path.exists(backup_path):
+                try:
+                    chk_bak = subprocess.run(
+                        [sys.executable, backup_path, "--test-runtime"],
+                        capture_output=True,
+                        text=True,
+                        timeout=10,
+                    )
+                    if chk_bak.returncode != 0:
+                        backup_ok = False
+                        backup_err = f"Uji integritas berkas cadangan gagal (exit code {chk_bak.returncode})"
+                except Exception as che:
+                    backup_ok = False
+                    backup_err = f"Uji integritas berkas cadangan gagal: {che}"
+
+            if not backup_ok:
+                return {
+                    "ok": False,
+                    "output": (
+                        f"Pembaruan ditolak: Gagal membuat cadangan berkas aktif ({backup_err}). "
+                        "Berkas target aman dan tidak disentuh demi perlindungan anti-bricking."
+                    )
+                }
+
+        written = False
+        if IS_ROOT or (os.path.exists(target_dir) and os.access(target_dir, os.W_OK)):
+            try:
+                tmp_target = f"{target_path}.tmp.{os.getpid()}"
+                with open(tmp_target, "wb") as wf:
+                    wf.write(code_bytes)
+                    wf.flush()
+                    os.fsync(wf.fileno())
+                os.chmod(tmp_target, 0o755)
+                os.replace(tmp_target, target_path)
+                written = True
+            except OSError as e:
+                print(f"[OTA] Tulis langsung gagal ({e}), beralih ke wrapper pantau-file...")
+
+        if not written:
+            res_write = run_file_op("write", {"path": target_path, "content": code_str})
+            if not res_write.get("ok"):
+                return {
+                    "ok": False,
+                    "output": f"Gagal menulis berkas agen ke {target_path}: {res_write.get('error', 'unknown error')}"
+                }
+            run_file_op("chmod", {"path": target_path, "mode": "0755"})
+            written = True
+
+        # -----------------------------------------------------------------
+        # Verifikasi Pasca-Tulis & Auto-Rollback:
+        # -----------------------------------------------------------------
+        post_check_ok = False
+        post_err_detail = ""
+        try:
+            post_check = subprocess.run(
+                [sys.executable, target_path, "--test-runtime"],
+                capture_output=True,
+                text=True,
+                timeout=15,
+            )
+            if post_check.returncode == 0:
+                post_check_ok = True
+            else:
+                post_err_detail = (post_check.stderr or post_check.stdout or f"exit code {post_check.returncode}").strip()
+        except subprocess.TimeoutExpired:
+            post_err_detail = "Pre-flight runtime check pasca-tulis timeout (>15 detik)"
+        except Exception as pce:
+            post_err_detail = f"Eksekusi uji pasca-tulis gagal: {pce}"
+
+        if not post_check_ok:
+            print(f"[OTA ERROR] Verifikasi pasca-tulis gagal ({post_err_detail}). Memulai auto-rollback...")
+            rollback_done = False
+            candidate_backups = [backup_path]
+            if os.path.exists(target_dir):
+                try:
+                    ts_baks = sorted(glob.glob(f"{target_path}.bak.*"), reverse=True)
+                    candidate_backups.extend(ts_baks)
+                except Exception:
+                    pass
+
+            for cand_bak in candidate_backups:
+                if not os.path.exists(cand_bak):
+                    continue
+                try:
+                    chk = subprocess.run(
+                        [sys.executable, cand_bak, "--test-runtime"],
+                        capture_output=True,
+                        text=True,
+                        timeout=10,
+                    )
+                    if chk.returncode != 0:
+                        continue
+                except Exception:
+                    continue
+
+                if IS_ROOT or (os.path.exists(target_dir) and os.access(target_dir, os.W_OK)):
+                    try:
+                        tmp_rb = f"{target_path}.rollback.{os.getpid()}"
+                        with open(cand_bak, "rb") as rf, open(tmp_rb, "wb") as wf:
+                            wf.write(rf.read())
+                            wf.flush()
+                            os.fsync(wf.fileno())
+                        os.chmod(tmp_rb, 0o755)
+                        os.replace(tmp_rb, target_path)
+                        rollback_done = True
+                        print(f"[OTA] Berhasil rollback target ke cadangan sehat {cand_bak}")
+                        break
+                    except Exception as rbe:
+                        print(f"[OTA] Gagal rollback langsung ke {cand_bak}: {rbe}")
+
+                if not rollback_done:
+                    try:
+                        with open(cand_bak, "r", encoding="utf-8", errors="replace") as bf:
+                            bak_content = bf.read()
+                        res_rb = run_file_op("write", {"path": target_path, "content": bak_content})
+                        if res_rb.get("ok"):
+                            run_file_op("chmod", {"path": target_path, "mode": "0755"})
+                            rollback_done = True
+                            print(f"[OTA] Berhasil rollback via pantau-file ke {cand_bak}")
+                            break
+                    except Exception as rbe:
+                        print(f"[OTA] Gagal rollback pantau-file: {rbe}")
+
+            return {
+                "ok": False,
+                "output": (
+                    f"Pembaruan gagal saat verifikasi integritas target ({post_err_detail[:200]}). "
+                    f"{'Rollback instan ke cadangan sehat berhasil.' if rollback_done else 'Rollback darurat gagal.'}"
+                )
+            }
+
+        # Sanitasi dan perbarui unit service systemd jika masih memakai direktif sandbox usang
+        # atau belum memiliki ExecStartPre auto-recovery multi-layer.
+        clean_service_unit = (
+            "[Unit]\n"
+            "Description=Pantau Monitoring Agent (agent_pantau)\n"
+            "Wants=network-online.target\n"
+            "After=network-online.target\n"
+            "StartLimitIntervalSec=0\n\n"
+            "[Service]\n"
+            "Type=simple\n"
+            "User=pantau\n"
+            "Group=pantau\n"
+            "ExecStartPre=+-/bin/sh -c 'if [ ! -f /opt/pantau/agent/agent_pantau.py ] || ! /usr/bin/python3 /opt/pantau/agent/agent_pantau.py --test-runtime >/dev/null 2>&1; then found_bak=\"\"; for b in /opt/pantau/agent/agent_pantau.py.bak $(ls -t /opt/pantau/agent/agent_pantau.py.bak.* 2>/dev/null); do if [ -f \"$b\" ] && /usr/bin/python3 \"$b\" --test-runtime >/dev/null 2>&1; then found_bak=\"$b\"; break; fi; done; if [ -n \"$found_bak\" ]; then logger -t agent_pantau \"Auto-rollback: file utama rusak/hilang, memulihkan dari cadangan $found_bak\"; cp -f \"$found_bak\" /opt/pantau/agent/agent_pantau.py && chmod 755 /opt/pantau/agent/agent_pantau.py; fi; fi'\n"
+            "ExecStart=/opt/pantau/agent/agent_pantau.py\n"
+            "Restart=always\n"
+            "RestartSec=5\n"
+            "Nice=5\n"
+            "StandardOutput=journal\n"
+            "StandardError=journal\n\n"
+            "# CATATAN ARSITEKTUR KEAMANAN:\n"
+            "# Isolasi mount namespace (PrivateTmp, ProtectSystem, ProtectKernel*, dll.) sengaja tidak digunakan.\n"
+            "# Sesuai standar Linux & systemd, direktif tersebut secara otomatis memaksa kernel menyematkan flag\n"
+            "# PR_SET_NO_NEW_PRIVS pada Linux Container (LXC/Proxmox CT unprivileged), yang akan memblokir eskalasi\n"
+            "# sudo oleh biner wrapper. Keamanan agen sepenuhnya dijamin oleh isolasi user 'pantau' (tanpa shell login)\n"
+            "# dan pembatasan ketat whitelist perintah pada /etc/sudoers.d/pantau-agent.\n\n"
+            "[Install]\n"
+            "WantedBy=multi-user.target\n"
+        )
+        svc_path = "/etc/systemd/system/agent_pantau.service"
+        needs_reload = False
+        try:
+            if os.path.exists(svc_path):
+                curr_svc = ""
+                try:
+                    with open(svc_path, "r", encoding="utf-8", errors="replace") as sf:
+                        curr_svc = sf.read()
+                except Exception:
+                    pass
+                sandbox_keywords = (
+                    "ProtectKernelModules", "PrivateTmp", "ProtectKernelTunables",
+                    "ProtectControlGroups", "ProtectClock", "\nEOF"
+                )
+                if any(k in curr_svc for k in sandbox_keywords) or "found_bak" not in curr_svc:
+                    print("[OTA] Konfigurasi isolasi namespace usang atau ExecStartPre multi-layer belum terpasang, memperbarui...")
+                    if IS_ROOT:
+                        with open(svc_path, "w", encoding="utf-8") as sf:
+                            sf.write(clean_service_unit)
+                        os.chmod(svc_path, 0o644)
+                        needs_reload = True
+                    else:
+                        rw = run_file_op("write", {"path": svc_path, "content": clean_service_unit, "make_backup": False})
+                        if rw.get("ok"):
+                            run_file_op("chmod", {"path": svc_path, "mode": "0644"})
+                            needs_reload = True
+                _cleanup_systemd_bak()
+        except Exception as e:
+            print(f"[OTA] Peringatan saat sanitasi service unit: {e}")
+
+        if needs_reload:
+            try:
+                if IS_ROOT:
+                    subprocess.run(["systemctl", "daemon-reload"], timeout=10)
+                elif os.path.exists(PANTAU_CRON_CMD):
+                    subprocess.run(["/usr/bin/sudo", "-n", PANTAU_CRON_CMD, "run", "root", "systemctl daemon-reload"], timeout=10)
+                elif os.path.exists(PANTAU_SHELL_CMD):
+                    subprocess.run(["/usr/bin/sudo", "-n", PANTAU_SHELL_CMD], input="sudo systemctl daemon-reload\nexit\n", text=True, timeout=10)
+                print("[OTA] systemctl daemon-reload berhasil dieksekusi.")
+            except Exception as e:
+                print(f"[OTA] Gagal reload systemd daemon: {e}")
+
+        try:
+            ensure_pantau_file_updated(force=True)
+            ensure_pantau_user_updated(force=True)
+            ensure_pantau_apt_updated()
+            ensure_pantau_firewall_updated(force=True)
+            ensure_pantau_operator_account()
+            ensure_pantau_shell_updated(force=True)
+        except Exception as we:
+            print(f"[OTA] Peringatan saat pembaruan wrapper mandiri: {we}")
+
+        # Auto-rebaseline /etc/systemd/system sebelum restart agar pembaruan OTA tidak memicu alarm FIM
+        try:
+            _rebaseline_fim_path("/etc/systemd/system")
+            _fim_cache["at"] = 0.0
+        except Exception as fe:
+            print(f"[OTA] Peringatan saat auto-rebaseline FIM: {fe}")
+
+        _exec_restart_agent()
+
+        return {
+            "ok": True,
+            "output": f"Push OTA sukses ke v{new_version} (SHA-256: {actual_sha256[:12]}… terverifikasi). Restart otomatis dijadwalkan."
+        }
+    finally:
+        if os.path.exists(tmp_path):
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+
+
+def _exec_service_action(action: str, command: dict) -> dict:
+    process_name = command.get("process_name", "")
+    service_name = command.get("service_name", "")
+
+    if action not in ALLOWED_SYSTEMCTL_ACTIONS:
+        return {"ok": False, "output": f"Aksi tidak diizinkan: {action}"}
+
+    candidates = []
+    for name in (process_name, service_name):
+        if name and VALID_PROCESS_NAME_RE.match(name) and name not in candidates:
+            candidates.append(name)
+        if name and "_" in name:
+            hyphen_name = name.replace("_", "-")
+            if VALID_PROCESS_NAME_RE.match(hyphen_name) and hyphen_name not in candidates:
+                candidates.append(hyphen_name)
+
+    if not candidates:
+        return {"ok": False, "output": "Nama proses/service kosong atau tidak valid"}
+
+    last_res = None
+    for cand in candidates:
+        cmd = [PANTAU_RESTART, action, cand]
+        label = f"{PANTAU_RESTART} {action} {cand}"
+        if not IS_ROOT:
+            cmd = ["/usr/bin/sudo", "-n", *cmd]
+            label = f"sudo -n {label}"
+        last_res = _run_native(cmd, label)
+        if last_res.get("ok"):
+            return last_res
+
+    return last_res or {"ok": False, "output": f"Gagal mengeksekusi {action} pada {candidates}"}
+
+
+
+def _run_native(cmd: list[str], label: str) -> dict:
+    """Jalankan command dan kembalikan {'ok': bool, 'output': str}."""
+    try:
+        proc = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=30,
+        )
+        ok = proc.returncode == 0
+        stdout_clean = (proc.stdout or "").strip()
+        stderr_clean = (proc.stderr or "").strip()
+        if not ok and stderr_clean:
+            output = f"{stderr_clean}\n{stdout_clean}".strip() if stdout_clean else stderr_clean
+        else:
+            output = stdout_clean or stderr_clean
+        return {
+            "ok": ok,
+            "output": output or f"{label} rc={proc.returncode}",
+        }
+    except subprocess.TimeoutExpired:
+        return {"ok": False, "output": f"Timeout eksekusi: {label}"}
+    except FileNotFoundError as e:
+        return {"ok": False, "output": f"Perintah tidak tersedia: {e}"}
+    except Exception as e:
+        return {"ok": False, "output": f"Gagal mengeksekusi {label}: {e}"}
+
+
+def report_command_result(cfg: dict, command_id: int, result: dict):
+    """Lapor hasil eksekusi command ke Dashboard."""
+    status = "success" if result["ok"] else "failed"
+    payload = {"status": status, "result": result["output"][:2000]}
+    if isinstance(result.get("firewall"), dict):
+        payload["firewall"] = result["firewall"]
+    http_json_request(
+        cfg, f"/api/commands/{command_id}/result", "POST",
+        payload,
+    )
+
+
+def poll_and_execute_commands(cfg: dict) -> bool:
+    """Cek command pending lalu eksekusi satu per satu. Return True bila ada aksi yang dieksekusi."""
+    commands = check_pending_commands(cfg)
+    executed = False
+    for cmd in commands:
+        result = execute_command(cfg, cmd)
+        report_command_result(cfg, cmd["id"], result)
+        executed = True
+    return executed
+
+
+def _command_worker_loop(cfg: dict) -> None:
+    """Worker background untuk merespons dan mengeksekusi perintah kontrol layanan seketika (1.0 dtk)."""
+    while True:
+        try:
+            had_cmd = poll_and_execute_commands(cfg)
+            if had_cmd:
+                try:
+                    # Beri jeda sangat singkat (300ms) agar systemd merampungkan transisi status,
+                    # lalu segera kirim laporan telemetri terbaru ke server tanpa menunggu interval siklus utama
+                    time.sleep(0.3)
+                    run_once(cfg)
+                except Exception as e:
+                    print(f"[WARN] Gagal kirim laporan instan pasca-command: {e}")
+        except Exception:
+            pass
+        time.sleep(1.0)
+
+
+# ---------------------------------------------------------------------------
+# System info
+# ---------------------------------------------------------------------------
+def get_hostname() -> str:
+    return socket.gethostname()
+
+
+def get_local_ip() -> str:
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return "127.0.0.1"
+
+
+def _kernel_release() -> str:
+    try:
+        return os.uname().release
+    except Exception:
+        return ""
+
+
+def _os_pretty() -> str:
+    """Nama distribusi + versi (mis. 'Ubuntu 22.04.3 LTS'), dari /etc/os-release."""
+    try:
+        fields = {}
+        with open("/etc/os-release", "r", encoding="utf-8", errors="replace") as f:
+            for line in f:
+                line = line.strip()
+                if "=" in line and not line.startswith("#"):
+                    k, _, v = line.partition("=")
+                    fields[k] = v.strip().strip('"')
+        pretty = fields.get("PRETTY_NAME")
+        if pretty:
+            return pretty
+        name = fields.get("NAME", "")
+        ver = fields.get("VERSION_ID", "") or fields.get("VERSION", "")
+        return (name + " " + ver).strip()
+    except OSError:
+        return ""
+
+
+# ---------------------------------------------------------------------------
+# Performance hardware / jaringan / akun / unit layanan / log layanan
+# ---------------------------------------------------------------------------
+_prev_cpu: tuple[float, float] | None = None
+_net_prev: dict[str, tuple[int, int]] = {}
+_net_prev_t: float = 0.0
+_disk_prev: dict[str, dict] = {}
+_disk_prev_t: float = 0.0
+DISK_TYPES = ("ext4", "ext3", "ext2", "xfs", "btrfs", "zfs", "vfat", "ntfs", "f2fs", "overlay")
+
+
+def _cpu_percent() -> float:
+    """Utilisasi CPU dari delta dua pembacaan /proc/stat."""
+    global _prev_cpu
+
+    def read_stat():
+        try:
+            with open("/proc/stat") as f:
+                parts = f.readline().split()
+        except OSError:
+            return None
+        if len(parts) < 5 or not parts[0].startswith("cpu"):
+            return None
+        nums = [int(x) for x in parts[1:]]
+        idle = nums[3] + (nums[4] if len(nums) > 4 else 0)
+        return idle, sum(nums)
+
+    now = time.monotonic()
+    cur = read_stat()
+    if cur is None:
+        return 0.0
+    if _prev_cpu is None:
+        _prev_cpu = cur
+        return 0.0
+    idle_d = cur[0] - _prev_cpu[0]
+    total_d = cur[1] - _prev_cpu[1]
+    _prev_cpu = cur
+    if total_d <= 0:
+        return 0.0
+    return max(0.0, min(100.0, (1.0 - idle_d / total_d) * 100.0))
+
+
+def _read_meminfo() -> dict:
+    mem = {}
+    try:
+        with open("/proc/meminfo") as f:
+            for line in f:
+                parts = line.split(":")
+                if len(parts) == 2:
+                    key = parts[0]
+                    val = "".join(c for c in parts[1] if c.isdigit())
+                    if val:
+                        mem[key] = int(val) * 1024  # kB -> bytes
+    except OSError:
+        pass
+    return mem
+
+
+def _find_storage_bin(name: str) -> str | None:
+    p = shutil.which(name)
+    if p and os.path.isfile(p):
+        return p
+    for candidate in (f"/usr/sbin/{name}", f"/usr/bin/{name}", f"/sbin/{name}", f"/bin/{name}", f"/usr/local/sbin/{name}"):
+        if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+            return candidate
+    return None
+
+
+def collect_disk_smart_health(disk_name: str, disk_model: str = "", platform_type: str = "") -> dict:
+    """Kumpulkan status kesehatan S.M.A.R.T. / NVMe, suhu, dan sisa umur drive."""
+    res = {
+        "is_virtual": False,
+        "health": "healthy",
+        "status_label": "PASSED",
+        "temp_c": None,
+        "wearout_pct": None,
+        "wearout_remaining": None,
+        "reallocated_sectors": None,
+        "power_on_hours": None,
+        "device_type": "disk",
+        "serial": "",
+        "firmware": "",
+        "detail": "Normal",
+    }
+
+    # 1. Cek disk virtual (LXC rootfs, QEMU, VirtIO, VMWare, dsb.)
+    name_clean = disk_name.lower().strip()
+    model_clean = (disk_model or "").upper()
+    is_virt = False
+
+    if name_clean == "rootfs" or platform_type in ("lxc", "docker", "podman", "container"):
+        is_virt = True
+    elif any(vk in model_clean for vk in ("QEMU", "VBOX", "VMWARE", "VIRTIO", "XEN", "KVM", "BOCHS", "BHYVE", "CONTAINER", "VIRTUAL")):
+        is_virt = True
+    elif platform_type == "vm" and model_clean in ("HARDDISK", "DISK", "VIRTUAL DISK", ""):
+        is_virt = True
+    else:
+        sys_path = f"/sys/block/{disk_name}"
+        if os.path.islink(sys_path):
+            try:
+                target = os.readlink(sys_path)
+                if "virtio" in target or "/virtual/" in target:
+                    is_virt = True
+            except Exception:
+                pass
+
+    if is_virt:
+        res["is_virtual"] = True
+        res["health"] = "healthy"
+        res["status_label"] = "Virtual (Host)"
+        res["device_type"] = "virtual"
+        res["detail"] = "Virtual (Host Managed)"
+        return res
+
+    dev_path = f"/dev/{disk_name}" if not disk_name.startswith("/dev/") else disk_name
+    raw_json = None
+
+    # 2. Cek perangkat NVMe via nvme-cli
+    nvme_bin = _find_storage_bin("nvme")
+    if "nvme" in disk_name and nvme_bin:
+        for cmd_prefix in ([["sudo", "-n", nvme_bin], [nvme_bin]] if os.geteuid() != 0 else [[nvme_bin]]):
+            try:
+                p = subprocess.run(
+                    cmd_prefix + ["smart-log", dev_path, "-o", "json"],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.DEVNULL,
+                    text=True,
+                    timeout=3,
+                )
+                if p.returncode == 0 and p.stdout.strip().startswith("{"):
+                    raw_nvme = json.loads(p.stdout)
+                    res["device_type"] = "nvme"
+                    crit_warn = raw_nvme.get("critical_warning", 0)
+                    pct_used = raw_nvme.get("percent_used")
+                    avail_sp = raw_nvme.get("avail_spare")
+                    sp_thresh = raw_nvme.get("spare_thresh", 10)
+                    media_errs = raw_nvme.get("media_errors", 0)
+                    temp_k = raw_nvme.get("temperature")
+                    if temp_k and temp_k > 200:
+                        res["temp_c"] = temp_k - 273
+                    poh = raw_nvme.get("power_on_hours")
+                    if poh is not None:
+                        res["power_on_hours"] = poh
+
+                    if pct_used is not None:
+                        res["wearout_pct"] = int(pct_used)
+                        res["wearout_remaining"] = max(0, 100 - int(pct_used))
+
+                    # Evaluasi kesehatan NVMe
+                    if crit_warn != 0 or (media_errs and media_errs > 10):
+                        res["health"] = "critical"
+                        res["status_label"] = "CRITICAL"
+                        res["detail"] = f"NVMe Critical Warning: {crit_warn}, Media Errors: {media_errs}"
+                    elif (res["temp_c"] and res["temp_c"] >= 65) or (pct_used is not None and pct_used >= 90) or (avail_sp is not None and avail_sp <= sp_thresh):
+                        res["health"] = "warning"
+                        res["status_label"] = "WARNING"
+                        if res["temp_c"] and res["temp_c"] >= 65:
+                            res["detail"] = f"Suhu tinggi: {res['temp_c']}°C"
+                        elif pct_used is not None and pct_used >= 90:
+                            res["detail"] = f"Sisa umur tipis: {res['wearout_remaining']}%"
+                        else:
+                            res["detail"] = f"Spare blocks menipis: {avail_sp}%"
+                    else:
+                        res["health"] = "healthy"
+                        res["status_label"] = "PASSED"
+                        res["detail"] = "Normal (NVMe)"
+                    return res
+            except Exception:
+                pass
+
+    # 3. Query via smartctl (-i -H -A -j)
+    smartctl_bin = _find_storage_bin("smartctl")
+    if smartctl_bin:
+        for cmd_prefix in ([["sudo", "-n", smartctl_bin], [smartctl_bin]] if os.geteuid() != 0 else [[smartctl_bin]]):
+            try:
+                p = subprocess.run(
+                    cmd_prefix + ["-i", "-H", "-A", "-j", dev_path],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.DEVNULL,
+                    text=True,
+                    timeout=4,
+                )
+                if p.stdout.strip().startswith("{"):
+                    raw_json = json.loads(p.stdout)
+                    break
+            except Exception:
+                pass
+
+    if raw_json:
+        # Cek apakah smartctl mengindikasikan drive lacks SMART capability
+        smart_sup = raw_json.get("smart_support") or {}
+        if smart_sup.get("available") is False:
+            res["is_virtual"] = True
+            res["health"] = "healthy"
+            res["status_label"] = "Virtual (Host)"
+            res["device_type"] = "virtual"
+            res["detail"] = "Virtual (Host Managed)"
+            return res
+
+        res["serial"] = raw_json.get("serial_number") or ""
+        res["firmware"] = raw_json.get("firmware_version") or raw_json.get("scsi_revision") or ""
+        res["device_type"] = raw_json.get("device", {}).get("type") or raw_json.get("device_type") or "disk"
+
+        # NVMe info via smartctl
+        nvme_info = raw_json.get("nvme_smart_health_information_log")
+        if nvme_info:
+            res["device_type"] = "nvme"
+            crit_warn = nvme_info.get("critical_warning", 0)
+            pct_used = nvme_info.get("percentage_used")
+            avail_sp = nvme_info.get("available_spare")
+            sp_thresh = nvme_info.get("available_spare_threshold", 10)
+            media_errs = nvme_info.get("media_errors", 0)
+            temp = nvme_info.get("temperature")
+            if temp and 0 < temp < 150:
+                res["temp_c"] = temp
+            if pct_used is not None:
+                res["wearout_pct"] = int(pct_used)
+                res["wearout_remaining"] = max(0, 100 - int(pct_used))
+
+            if crit_warn != 0 or (media_errs and media_errs > 10):
+                res["health"] = "critical"
+                res["status_label"] = "CRITICAL"
+                res["detail"] = f"NVMe Critical Warning: {crit_warn}, Media Errors: {media_errs}"
+            elif (res["temp_c"] and res["temp_c"] >= 65) or (pct_used is not None and pct_used >= 90) or (avail_sp is not None and avail_sp <= sp_thresh):
+                res["health"] = "warning"
+                res["status_label"] = "WARNING"
+                if res["temp_c"] and res["temp_c"] >= 65:
+                    res["detail"] = f"Suhu tinggi: {res['temp_c']}°C"
+                elif pct_used is not None and pct_used >= 90:
+                    res["detail"] = f"Sisa umur tipis: {res['wearout_remaining']}%"
+                else:
+                    res["detail"] = f"Spare blocks menipis: {avail_sp}%"
+            else:
+                res["health"] = "healthy"
+                res["status_label"] = "PASSED"
+                res["detail"] = "Normal (NVMe)"
+            return res
+
+        # ATA / SCSI / SATA SMART info
+        temp_data = raw_json.get("temperature") or {}
+        cur_temp = temp_data.get("current")
+        if cur_temp and 0 < cur_temp < 150:
+            res["temp_c"] = cur_temp
+
+        poh = raw_json.get("power_on_time", {}).get("hours")
+        if poh is not None:
+            res["power_on_hours"] = poh
+
+        # Parse ATA Attributes Table
+        ata_attrs = raw_json.get("ata_smart_attributes", {}).get("table", [])
+        reallocated = 0
+        pending = 0
+        ssd_life_val = None
+
+        for attr in ata_attrs:
+            aid = attr.get("id")
+            name_attr = attr.get("name", "").lower()
+            raw_v = attr.get("raw", {}).get("value", 0)
+            val = attr.get("value", 100)
+
+            if aid == 5 or "reallocated" in name_attr:
+                reallocated = raw_v
+                res["reallocated_sectors"] = reallocated
+            elif aid in (197, 198) or "pending" in name_attr or "uncorrectable" in name_attr:
+                pending = max(pending, raw_v)
+            elif aid in (194, 190) or "temp" in name_attr:
+                if not res["temp_c"] and 0 < raw_v < 150:
+                    res["temp_c"] = raw_v
+            elif aid in (177, 231, 232, 233, 169, 202) or "life" in name_attr or "wear" in name_attr:
+                if ssd_life_val is None:
+                    ssd_life_val = val
+
+        if ssd_life_val is not None:
+            res["wearout_remaining"] = ssd_life_val
+            res["wearout_pct"] = max(0, 100 - ssd_life_val)
+
+        smart_status = raw_json.get("smart_status") or {}
+        passed = smart_status.get("passed")
+
+        if passed is False:
+            res["health"] = "critical"
+            res["status_label"] = "CRITICAL"
+            res["detail"] = "S.M.A.R.T. Melaporkan Kerusakan Hardware"
+        elif (res["temp_c"] and res["temp_c"] >= 65) or reallocated > 10 or pending > 0 or (res["wearout_remaining"] is not None and res["wearout_remaining"] <= 10):
+            res["health"] = "warning"
+            res["status_label"] = "WARNING"
+            reasons = []
+            if res["temp_c"] and res["temp_c"] >= 65:
+                reasons.append(f"Suhu {res['temp_c']}°C")
+            if reallocated > 10:
+                reasons.append(f"{reallocated} Sektor Rusak")
+            if pending > 0:
+                reasons.append(f"{pending} Pending Sektor")
+            if res["wearout_remaining"] is not None and res["wearout_remaining"] <= 10:
+                reasons.append(f"Sisa Umur {res['wearout_remaining']}%")
+            res["detail"] = ", ".join(reasons) or "Degraded"
+        elif passed is True:
+            res["health"] = "healthy"
+            res["status_label"] = "PASSED"
+            res["detail"] = "Normal"
+        else:
+            res["health"] = "healthy"
+            res["status_label"] = "PASSED"
+            res["detail"] = "Normal"
+        return res
+
+    # 4. Fallback jika smartctl tidak tersedia / gagal eksekusi
+    # Cek sensor suhu via sysfs /sys/class/hwmon
+    try:
+        hwmon_path = f"/sys/block/{disk_name}/device/hwmon"
+        if os.path.exists(hwmon_path):
+            for hdir in os.listdir(hwmon_path):
+                tfile = os.path.join(hwmon_path, hdir, "temp1_input")
+                if os.path.exists(tfile):
+                    with open(tfile, "r") as f:
+                        mc = int(f.read().strip())
+                        if mc > 0:
+                            res["temp_c"] = round(mc / 1000)
+                            break
+    except Exception:
+        pass
+
+    res["health"] = "unknown"
+    res["status_label"] = "N/A"
+    res["detail"] = "SMART tidak tersedia"
+    return res
+
+
+_hw_specs_cache = {"at": 0.0, "data": {}}
+
+def collect_hardware_specs() -> dict:
+    """Kumpulkan spesifikasi mendalam perangkat keras & platform sistem klien."""
+    global _hw_specs_cache
+    now = time.monotonic()
+    if (now - _hw_specs_cache["at"]) < 45.0 and _hw_specs_cache["data"]:
+        return _hw_specs_cache["data"]
+
+    specs = {
+        "cpu": {
+            "model": "Unknown CPU",
+            "cores": os.cpu_count() or 1,
+            "arch": platform.machine() or "x86_64",
+            "mhz": "",
+            "cache": "",
+        },
+        "platform": {
+            "virt": "Bare Metal / Physical",
+            "vendor": "",
+            "product": "",
+            "bios_version": "",
+            "bios_date": "",
+        },
+        "memory": {
+            "ram_total": 0,
+            "swap_total": 0,
+        },
+        "disks": [],
+        "network": {
+            "gateway": "",
+            "dns": [],
+            "interfaces": [],
+        },
+        "os": {
+            "os_name": _os_pretty(),
+            "kernel": _kernel_release(),
+            "hostname": get_hostname(),
+            "boot_time": "",
+        }
+    }
+
+    # 1. CPU Detail dari /proc/cpuinfo
+    try:
+        if os.path.exists("/proc/cpuinfo"):
+            with open("/proc/cpuinfo", "r", encoding="utf-8", errors="replace") as f:
+                for line in f:
+                    if ":" in line:
+                        k, v = [x.strip() for x in line.split(":", 1)]
+                        if k in ("model name", "Hardware", "Processor") and specs["cpu"]["model"] == "Unknown CPU":
+                            specs["cpu"]["model"] = v
+                        elif k == "cpu MHz" and not specs["cpu"]["mhz"]:
+                            specs["cpu"]["mhz"] = v
+                        elif k == "cache size" and not specs["cpu"]["cache"]:
+                            specs["cpu"]["cache"] = v
+    except Exception:
+        pass
+
+    # 2. Total RAM & Swap dari meminfo
+    mem = _read_meminfo()
+    specs["memory"]["ram_total"] = mem.get("MemTotal", 0)
+    specs["memory"]["swap_total"] = mem.get("SwapTotal", 0)
+
+    # 3. Platform & DMI data
+    dmi_map = {
+        "vendor": "/sys/class/dmi/id/sys_vendor",
+        "product": "/sys/class/dmi/id/product_name",
+        "bios_version": "/sys/class/dmi/id/bios_version",
+        "bios_date": "/sys/class/dmi/id/bios_date",
+    }
+    for k, p in dmi_map.items():
+        try:
+            if os.path.exists(p):
+                with open(p, "r", encoding="utf-8", errors="replace") as f:
+                    specs["platform"][k] = f.read().strip()
+        except Exception:
+            pass
+
+    # Deteksi Hypervisor / Virtualisasi / Kontainer secara komprehensif (Multi-Layer Heuristic)
+    detected_virt = ""
+
+    # 1. systemd-detect-virt (coba direct, lalu via sudo bila non-root)
+    for cmd in (["systemd-detect-virt"], ["/usr/bin/sudo", "-n", "systemd-detect-virt"]):
+        try:
+            res = subprocess.run(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                text=True,
+                timeout=2,
+            )
+            if res.returncode == 0:
+                out = res.stdout.strip()
+                if out and out.lower() != "none":
+                    detected_virt = out.upper()
+                    break
+        except Exception:
+            pass
+
+    # 2. File /run/systemd/container (dibuat systemd PID 1 jika booted dalam container)
+    if not detected_virt:
+        try:
+            if os.path.exists("/run/systemd/container"):
+                with open("/run/systemd/container", "r", encoding="utf-8", errors="replace") as f:
+                    c = f.read().strip()
+                    if c and c.lower() != "none":
+                        detected_virt = c.upper()
+        except Exception:
+            pass
+
+    # 3. Mount inspection (/proc/mounts & /proc/self/mountinfo) - Proxmox LXCFS
+    if not detected_virt:
+        for mpath in ("/proc/mounts", "/proc/self/mountinfo"):
+            try:
+                if os.path.exists(mpath):
+                    with open(mpath, "r", encoding="utf-8", errors="replace") as f:
+                        m_content = f.read()
+                        if "lxcfs" in m_content or "fuse.lxcfs" in m_content:
+                            detected_virt = "LXC"
+                            break
+            except Exception:
+                pass
+
+    # 4. cgroup inspection (/proc/1/cgroup & /proc/self/cgroup - world-readable)
+    if not detected_virt:
+        for cg_path in ("/proc/1/cgroup", "/proc/self/cgroup"):
+            try:
+                if os.path.exists(cg_path):
+                    with open(cg_path, "r", encoding="utf-8", errors="replace") as f:
+                        cg_content = f.read()
+                        if any(k in cg_content for k in ("/lxc/", "/lxc.payload", "/lxc.monitor", "machine-lxc", "lxc/")):
+                            detected_virt = "LXC"
+                            break
+                        elif "/docker/" in cg_content or "/docker.service" in cg_content:
+                            detected_virt = "DOCKER"
+                            break
+                        elif "/containerd/" in cg_content:
+                            detected_virt = "CONTAINER"
+                            break
+            except Exception:
+                pass
+
+    # 5. AppArmor profile inspection (/proc/self/attr/current)
+    if not detected_virt:
+        for aa_path in ("/proc/self/attr/current", "/proc/self/attr/apparmor/current"):
+            try:
+                if os.path.exists(aa_path):
+                    with open(aa_path, "r", encoding="utf-8", errors="replace") as f:
+                        aa_content = f.read().strip()
+                        if "lxc" in aa_content:
+                            detected_virt = "LXC"
+                            break
+                        elif "docker" in aa_content:
+                            detected_virt = "DOCKER"
+                            break
+            except Exception:
+                pass
+
+    # 6. /proc/1/environ (bila user root atau world-readable)
+    if not detected_virt:
+        try:
+            if os.path.exists("/proc/1/environ"):
+                with open("/proc/1/environ", "rb") as f:
+                    env_raw = f.read()
+                    if b"container=lxc" in env_raw:
+                        detected_virt = "LXC"
+                    elif b"container=docker" in env_raw or os.path.exists("/.dockerenv"):
+                        detected_virt = "DOCKER"
+                    elif b"container=podman" in env_raw:
+                        detected_virt = "PODMAN"
+        except Exception:
+            pass
+
+    # 7. Device markers & flag files
+    if not detected_virt:
+        if os.path.exists("/dev/lxcfs") or os.path.exists("/dev/.lxc"):
+            detected_virt = "LXC"
+        elif os.path.exists("/.dockerenv"):
+            detected_virt = "DOCKER"
+
+    if detected_virt:
+        specs["platform"]["virt"] = detected_virt
+
+    # Klasifikasi Tipe Platform & Label
+    virt_upper = specs["platform"]["virt"].upper()
+    if virt_upper in ("LXC", "LXC-LIBVIRT", "DOCKER", "PODMAN", "CONTAINER", "WSL", "SYSTEMD-NSPAWN"):
+        specs["platform"]["platform_type"] = "lxc"
+        specs["platform"]["platform_label"] = "LXC Container" if virt_upper in ("LXC", "LXC-LIBVIRT") else f"Container ({virt_upper})"
+    elif virt_upper in ("KVM", "QEMU", "VMWARE", "XEN", "VIRTUALBOX", "ORACLE", "HYPERV", "BOCHS", "BHYVE"):
+        specs["platform"]["platform_type"] = "vm"
+        specs["platform"]["platform_label"] = f"VM ({virt_upper})"
+    elif virt_upper not in ("", "BARE METAL / PHYSICAL", "NONE", "UNKNOWN"):
+        specs["platform"]["platform_type"] = "vm"
+        specs["platform"]["platform_label"] = f"VM ({virt_upper})"
+    else:
+        specs["platform"]["virt"] = "Bare Metal / Physical"
+        specs["platform"]["platform_type"] = "baremetal"
+        specs["platform"]["platform_label"] = "Baremetal"
+
+    # 4. Storage Block Devices
+    # Pada kontainer LXC, block devices di host (mis. HPE DL380 sda 7.6T) tidak dimiliki oleh kontainer.
+    # Laporkan kuota/alokasi partisi container (rootfs) via statvfs('/'), bukan disk fisik host.
+    is_container_ct = specs["platform"].get("platform_type") == "lxc" or virt_upper in ("LXC", "LXC-LIBVIRT", "DOCKER", "PODMAN")
+    if is_container_ct:
+        try:
+            st = os.statvfs("/")
+            tot_bytes = st.f_frsize * st.f_blocks
+            if tot_bytes > 0:
+                gb = tot_bytes / (1024 ** 3)
+                sz_str = f"{round(gb / 1024, 1)}T" if gb >= 1024 else f"{round(gb, 1)}G"
+                specs["disks"].append({
+                    "name": "rootfs",
+                    "size": sz_str,
+                    "type": "Virtual (LXC)",
+                    "model": "Container Allocation",
+                    "smart": collect_disk_smart_health("rootfs", "Container Allocation", "lxc"),
+                })
+        except Exception:
+            pass
+    else:
+        try:
+            res = subprocess.run(
+                ["lsblk", "-d", "-n", "-o", "NAME,SIZE,TYPE,ROTA,TRAN,MODEL"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                text=True,
+                timeout=3,
+            )
+            if res.returncode == 0:
+                for line in res.stdout.splitlines():
+                    parts = line.split()
+                    if len(parts) >= 3 and parts[2] == "disk":
+                        name = parts[0]
+                        size = parts[1]
+                        rota = parts[3] if len(parts) > 3 else "1"
+                        dtype = "SSD" if rota == "0" else "HDD"
+                        model = " ".join(parts[5:]) if len(parts) > 5 else ""
+                        specs["disks"].append({
+                            "name": name,
+                            "size": size,
+                            "type": dtype,
+                            "model": model,
+                            "smart": collect_disk_smart_health(name, model, specs["platform"].get("platform_type", "")),
+                        })
+        except Exception:
+            pass
+
+    # Fallback disk jika specs["disks"] masih kosong
+    if not specs["disks"]:
+        try:
+            st = os.statvfs("/")
+            tot_bytes = st.f_frsize * st.f_blocks
+            if tot_bytes > 0:
+                gb = tot_bytes / (1024 ** 3)
+                sz_str = f"{round(gb / 1024, 1)}T" if gb >= 1024 else f"{round(gb, 1)}G"
+                specs["disks"].append({
+                    "name": "rootfs",
+                    "size": sz_str,
+                    "type": "Virtual (LXC)" if is_container_ct else "Disk",
+                    "model": "Root Partition",
+                    "smart": collect_disk_smart_health("rootfs", "Root Partition", specs["platform"].get("platform_type", "")),
+                })
+        except Exception:
+            pass
+
+    # 5. Network (Default Gateway, DNS, & Interfaces)
+    try:
+        if os.path.exists("/proc/net/route"):
+            with open("/proc/net/route", "r", encoding="utf-8", errors="replace") as f:
+                for line in f:
+                    fields = line.strip().split()
+                    if len(fields) >= 3 and fields[1] == "00000000":
+                        specs["network"]["gateway"] = socket.inet_ntoa(struct.pack("<L", int(fields[2], 16)))
+                        break
+    except Exception:
+        pass
+
+    try:
+        if os.path.exists("/etc/resolv.conf"):
+            with open("/etc/resolv.conf", "r", encoding="utf-8", errors="replace") as f:
+                for line in f:
+                    if line.startswith("nameserver"):
+                        parts = line.split()
+                        if len(parts) > 1 and parts[1] not in specs["network"]["dns"]:
+                            specs["network"]["dns"].append(parts[1])
+    except Exception:
+        pass
+
+    try:
+        net_dir = "/sys/class/net"
+        if os.path.exists(net_dir):
+            for iface in sorted(os.listdir(net_dir)):
+                if iface == "lo" or iface == "bonding_masters":
+                    continue
+                mac_path = os.path.join(net_dir, iface, "address")
+                speed_path = os.path.join(net_dir, iface, "speed")
+                mac = ""
+                speed = ""
+                try:
+                    if os.path.exists(mac_path):
+                        with open(mac_path, "r", encoding="utf-8", errors="replace") as f:
+                            mac = f.read().strip()
+                except Exception:
+                    pass
+                try:
+                    if os.path.exists(speed_path):
+                        with open(speed_path, "r", encoding="utf-8", errors="replace") as f:
+                            sp = f.read().strip()
+                            if sp and int(sp) > 0:
+                                speed = f"{sp} Mbps"
+                except Exception:
+                    pass
+                if not speed:
+                    speed = "Auto / Virtual"
+                specs["network"]["interfaces"].append({
+                    "name": iface,
+                    "mac": mac,
+                    "speed": speed,
+                })
+    except Exception:
+        pass
+
+    # 6. Waktu Boot (Boot Time)
+    try:
+        if os.path.exists("/proc/uptime"):
+            with open("/proc/uptime", "r", encoding="utf-8", errors="replace") as f:
+                up_secs = float(f.read().split()[0])
+                import datetime as _dt
+                btime = _dt.datetime.now() - _dt.timedelta(seconds=up_secs)
+                specs["os"]["boot_time"] = btime.strftime("%Y-%m-%d %H:%M:%S")
+    except Exception:
+        pass
+
+    _hw_specs_cache["at"] = now
+    _hw_specs_cache["data"] = specs
+    return specs
+
+
+def collect_disks() -> list[dict]:
+    global _disk_prev, _disk_prev_t
+    out = []
+    now = time.monotonic()
+    dt = (now - _disk_prev_t) if _disk_prev_t else 0.0
+
+    # 1. Baca disk I/O delta dari /proc/diskstats
+    io_rates: dict[str, dict] = {}
+    curr_io: dict[str, dict] = {}
+    try:
+        with open("/proc/diskstats") as f:
+            for line in f:
+                parts = line.split()
+                if len(parts) >= 14:
+                    dev = parts[2]
+                    if dev.startswith(("loop", "ram", "sr")):
+                        continue
+                    reads = int(parts[3])
+                    sec_read = int(parts[5])
+                    writes = int(parts[7])
+                    sec_write = int(parts[9])
+                    io_active = int(parts[11])
+                    io_ms = int(parts[12])
+
+                    curr_io[dev] = {
+                        "reads": reads, "sec_read": sec_read,
+                        "writes": writes, "sec_write": sec_write,
+                        "io_ms": io_ms,
+                    }
+                    r_kb_s = 0.0
+                    w_kb_s = 0.0
+                    r_iops = 0.0
+                    w_iops = 0.0
+                    util_pct = 0.0
+                    if dev in _disk_prev and dt > 0:
+                        prev = _disk_prev[dev]
+                        r_kb_s = max(0.0, ((sec_read - prev["sec_read"]) * 512 / 1024.0) / dt)
+                        w_kb_s = max(0.0, ((sec_write - prev["sec_write"]) * 512 / 1024.0) / dt)
+                        r_iops = max(0.0, (reads - prev["reads"]) / dt)
+                        w_iops = max(0.0, (writes - prev["writes"]) / dt)
+                        util_pct = min(100.0, max(0.0, ((io_ms - prev["io_ms"]) / (dt * 1000.0)) * 100.0))
+
+                    io_rates[dev] = {
+                        "read_kb_s": round(r_kb_s, 1),
+                        "write_kb_s": round(w_kb_s, 1),
+                        "read_iops": round(r_iops, 1),
+                        "write_iops": round(w_iops, 1),
+                        "util_pct": round(util_pct, 1),
+                    }
+    except OSError:
+        pass
+    _disk_prev = curr_io
+    _disk_prev_t = now
+
+    # 2. Peta mount point ke device block
+    mount_dev_map = {}
+    try:
+        with open("/proc/mounts") as f:
+            lines = f.read().splitlines()
+    except OSError:
+        return out
+
+    for line in lines:
+        parts = line.split()
+        if len(parts) >= 3:
+            dev_path, mount_pt, fstype = parts[0], parts[1], parts[2]
+            if fstype in DISK_TYPES and dev_path.startswith("/dev/"):
+                try:
+                    dev_name = os.path.basename(os.path.realpath(dev_path))
+                    mount_dev_map[mount_pt] = dev_name
+                except Exception:
+                    pass
+
+    for line in lines:
+        parts = line.split()
+        if len(parts) < 3:
+            continue
+        mount, fstype = parts[1], parts[2]
+        opts = parts[3].split(",") if len(parts) >= 4 else []
+        if fstype not in DISK_TYPES or len(out) >= 20:
+            continue
+        try:
+            st = os.statvfs(mount)
+        except OSError:
+            continue
+        is_ro = ("ro" in opts) or bool(getattr(st, "f_flag", 0) & getattr(os, "ST_RDONLY", 1))
+        total = st.f_frsize * st.f_blocks
+        used = total - st.f_frsize * st.f_bavail
+        pct = round(used * 100.0 / total, 1) if total else 0.0
+
+        # Cari device matching untuk I/O
+        dev_name = mount_dev_map.get(mount)
+        rates = io_rates.get(dev_name) if dev_name else None
+        if not rates and dev_name:
+            # Cek jika ada induk partisi (misal sda3 -> sda)
+            for k, v in io_rates.items():
+                if dev_name.startswith(k) or k.startswith(dev_name):
+                    rates = v
+                    break
+
+        item = {
+            "mount": mount, "type": fstype,
+            "total": total, "used": used, "pct": pct,
+            "is_ro": is_ro,
+        }
+        if rates:
+            item["read_kb_s"] = rates["read_kb_s"]
+            item["write_kb_s"] = rates["write_kb_s"]
+            item["read_iops"] = rates["read_iops"]
+            item["write_iops"] = rates["write_iops"]
+            item["io_util"] = rates["util_pct"]
+
+        out.append(item)
+    return out
+
+
+def collect_net() -> list[dict]:
+    global _net_prev, _net_prev_t
+    ifaces = []
+    try:
+        with open("/proc/net/dev") as f:
+            lines = f.read().splitlines()[2:]
+    except OSError:
+        return ifaces
+
+    # Kumpulkan IP per interface dari /proc/net/fib_trie (IPv4)
+    _ip_map: dict[str, list[str]] = {}
+    try:
+        import socket
+        import struct
+        import fcntl
+        SIOCGIFCONF = 0x8912
+        SIOCGIFADDR = 0x8915
+        with open("/proc/net/fib_trie") as ft:
+            cur_iface = None
+            for ln in ft:
+                ln = ln.strip()
+                if ln.startswith("Ifa:"):
+                    # Format: Ifa: <iface>
+                    cur_iface = ln.split()[-1] if len(ln.split()) > 1 else None
+                elif cur_iface and ln.startswith("LOCAL"):
+                    ip = ln.split()[-1]
+                    try:
+                        import ipaddress as _ia
+                        a = _ia.ip_address(ip)
+                        if not (a.is_loopback or a.is_link_local or a.is_multicast or a.is_unspecified):
+                            _ip_map.setdefault(cur_iface, [])
+                            if ip not in _ip_map[cur_iface]:
+                                _ip_map[cur_iface].append(ip)
+                    except ValueError:
+                        pass
+    except Exception:
+        pass
+
+    now = time.monotonic()
+    dt = (now - _net_prev_t) if _net_prev_t else 0.0
+    for line in lines:
+        parts = line.replace(":", " ", 1).split()
+        if len(parts) < 10:
+            continue
+        name = parts[0]
+        rx, tx = int(parts[1]), int(parts[9])
+        rx_rate = tx_rate = 0
+        prev = _net_prev.get(name)
+        if prev is not None and dt > 0:
+            rx_rate = max(0, (rx - prev[0])) / dt
+            tx_rate = max(0, (tx - prev[1])) / dt
+        is_up = 0
+        try:
+            with open(f"/sys/class/net/{name}/operstate") as f:
+                is_up = 1 if f.read().strip() == "up" else 0
+        except OSError:
+            pass
+        mac = ""
+        try:
+            with open(f"/sys/class/net/{name}/address") as f:
+                mac = f.read().strip()
+        except OSError:
+            pass
+        speed = ""
+        try:
+            with open(f"/sys/class/net/{name}/speed") as f:
+                sp_val = f.read().strip()
+                if sp_val.isdigit() and int(sp_val) > 0:
+                    speed = f"{sp_val} Mbps"
+        except OSError:
+            pass
+        if not speed:
+            speed = "Auto / Virtual"
+        ifaces.append({
+            "iface": name, "rx": rx, "tx": tx,
+            "rx_rate": int(rx_rate), "tx_rate": int(tx_rate), "is_up": is_up,
+            "ip_addrs": _ip_map.get(name, [])[:4],
+            "mac": mac,
+            "speed": speed,
+        })
+        _net_prev[name] = (rx, tx)
+    _net_prev_t = now
+    return [i for i in ifaces if not i["iface"].startswith("lo")][:16]
+
+
+
+def collect_top_processes(limit: int = 100) -> dict:
+    """Kumpulkan snapshot proses teratas berdasarkan %CPU dan %MEM beserta status (state)."""
+    top_cpu = []
+    top_mem = []
+    res_cpu = _run_cmd(["ps", "-eo", "pid,user,comm,state,%cpu,%mem", "--sort=-%cpu"], timeout=5)
+    if res_cpu and res_cpu.returncode == 0:
+        lines = res_cpu.stdout.strip().splitlines()
+        for line in lines[1:limit + 1]:
+            parts = line.split(None, 5)
+            if len(parts) >= 6:
+                try:
+                    top_cpu.append({
+                        "pid": int(parts[0]),
+                        "user": parts[1],
+                        "comm": parts[2],
+                        "state": parts[3],
+                        "cpu": float(parts[4]),
+                        "mem": float(parts[5]),
+                    })
+                except (ValueError, IndexError):
+                    pass
+
+    res_mem = _run_cmd(["ps", "-eo", "pid,user,comm,state,%cpu,%mem", "--sort=-%mem"], timeout=5)
+    if res_mem and res_mem.returncode == 0:
+        lines = res_mem.stdout.strip().splitlines()
+        for line in lines[1:limit + 1]:
+            parts = line.split(None, 5)
+            if len(parts) >= 6:
+                try:
+                    top_mem.append({
+                        "pid": int(parts[0]),
+                        "user": parts[1],
+                        "comm": parts[2],
+                        "state": parts[3],
+                        "cpu": float(parts[4]),
+                        "mem": float(parts[5]),
+                    })
+                except (ValueError, IndexError):
+                    pass
+
+    return {"cpu": top_cpu, "mem": top_mem}
+
+
+def collect_system() -> dict:
+    mem = _read_meminfo()
+    mem_total = mem.get("MemTotal", 0)
+    mem_avail = mem.get("MemAvailable", mem_total)
+    mem_used = mem_total - mem_avail
+    swap_total = mem.get("SwapTotal", 0)
+    swap_used = swap_total - mem.get("SwapFree", swap_total)
+
+    loads = [0.0, 0.0, 0.0]
+    uptime = None
+    try:
+        with open("/proc/loadavg") as f:
+            parts = f.read().split()
+        for i, v in enumerate(parts[:3]):
+            try:
+                loads[i] = float(v)
+            except ValueError:
+                pass
+    except OSError:
+        pass
+    try:
+        with open("/proc/uptime") as f:
+            uptime = int(float(f.read().split()[0]))
+    except (OSError, ValueError, IndexError):
+        pass
+
+    procs = 0
+    try:
+        procs = sum(1 for e in os.listdir("/proc") if e.isdigit())
+    except OSError:
+        pass
+
+    return {
+        "cpu": _cpu_percent(),
+        "load1": loads[0], "load5": loads[1], "load15": loads[2],
+        "mem_total": mem_total, "mem_used": mem_used, "mem_avail": mem_avail,
+        "swap_total": swap_total, "swap_used": swap_used,
+        "procs": procs, "uptime": uptime,
+        "disks": collect_disks(),
+        "net": collect_net(),
+        "top_procs": collect_top_processes(100),
+    }
+
+
+def _parse_lastlog() -> dict[str, str]:
+    result = {}
+    res = _run_cmd(["lastlog"], timeout=10)
+    if res is None:
+        return result
+    for line in res.stdout.splitlines()[1:]:
+        parts = line.split(None, 1)
+        if parts:
+            result[parts[0]] = parts[1] if len(parts) > 1 else ""
+    return result
+
+
+_who_re = re.compile(r"^(\S+)\s+(\S+)\s+(.+?)(?:\s+(\.|\d+:\d+|old))?\s*(?:(\d+))?\s*(?:\((.*?)\))?$")
+_ACTIVE_WEB_TERMINALS: dict[str, dict] = {}
+_LAST_SEEN_USER_LOGIN: dict[str, str] = {}
+
+
+def _parse_who() -> list[dict]:
+    sessions = []
+    res = _run_cmd(["who", "-u"], timeout=5)
+    if res is None:
+        res = _run_cmd(["who"], timeout=5)
+    if res is not None:
+        for line in res.stdout.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            m = _who_re.match(line)
+            if m:
+                u, tty, t, idle, pid, src = m.groups()
+                sessions.append({
+                    "user": u,
+                    "tty": tty,
+                    "time": re.sub(r"\s+", " ", t).strip(),
+                    "idle": idle or "",
+                    "pid": pid or "",
+                    "from": (src or "").strip(),
+                })
+
+    # Pindai sesi interaktif PTY aktif (Web Terminal, tmux, konsol lokal)
+    # yang tidak tercatat dalam basis data login formal utmp
+    try:
+        seen_ttys = {s.get("tty") for s in sessions if s.get("tty")}
+
+        # 1. Sesi Web Terminal yang sedang dijalankan agen secara realtime
+        for sess_info in list(_ACTIVE_WEB_TERMINALS.values()):
+            tty_name = sess_info.get("tty", "").replace("/dev/", "")
+            if tty_name and tty_name not in seen_ttys:
+                seen_ttys.add(tty_name)
+                sessions.append({
+                    "user": sess_info.get("user", "operator"),
+                    "tty": tty_name,
+                    "time": sess_info.get("time", ""),
+                    "idle": ".",
+                    "pid": str(sess_info.get("pid", "")),
+                    "from": "Web Terminal",
+                })
+
+        # 2. Pindai seluruh proses PTY di sistem
+        ps_res = _run_cmd(["ps", "-eo", "user,tty,pid,stat,comm,lstart,args", "--no-headers"], timeout=4)
+        if ps_res and ps_res.stdout:
+            pts_candidates: dict[str, list[dict]] = {}
+            for pline in ps_res.stdout.splitlines():
+                parts = pline.split()
+                if len(parts) >= 10:
+                    p_user, p_tty, p_pid, p_stat, p_comm = parts[:5]
+                    if not p_tty.startswith("pts/") or p_tty in seen_ttys or p_user == "pantau":
+                        continue
+                    p_args = " ".join(parts[10:])
+                    is_shell_proc = p_comm in ("bash", "sh", "zsh", "fish") or p_comm.startswith("tmux")
+                    if not is_shell_proc:
+                        continue
+                    raw_lstart = " ".join(parts[5:10])
+                    t_str = ""
+                    try:
+                        dt = datetime.strptime(raw_lstart, "%a %b %d %H:%M:%S %Y")
+                        t_str = dt.strftime("%Y-%m-%d %H:%M:%S")
+                    except Exception:
+                        t_str = raw_lstart
+
+                    src_desc = "Web Terminal" if ("pantau-shell" in p_args or p_user == "operator") else "(lokal)"
+                    pts_candidates.setdefault(p_tty, []).append({
+                        "user": p_user,
+                        "tty": p_tty,
+                        "time": t_str,
+                        "idle": ".",
+                        "pid": p_pid,
+                        "from": src_desc,
+                        "args": p_args,
+                        "is_operator": (p_user == "operator"),
+                        "is_root": (p_user == "root"),
+                    })
+
+            for p_tty, c_list in pts_candidates.items():
+                if p_tty in seen_ttys:
+                    continue
+                # Urutkan prioritas:
+                # 0: operator (Web Terminal)
+                # 1: user reguler non-root
+                # 2: root langsung
+                # 3: wrapper root (misal: pantau-shell atau sudo wrapper)
+                c_list.sort(key=lambda x: (
+                    0 if x["is_operator"]
+                    else (1 if not x["is_root"]
+                    else (3 if "pantau-shell" in x["args"] else 2))
+                ))
+                chosen = c_list[0]
+                seen_ttys.add(p_tty)
+                sessions.append({
+                    "user": chosen["user"],
+                    "tty": chosen["tty"],
+                    "time": chosen["time"],
+                    "idle": chosen["idle"],
+                    "pid": chosen["pid"],
+                    "from": chosen["from"],
+                })
+    except Exception:
+        pass
+
+    return sessions
+
+
+def _get_locked_users() -> set[str]:
+    try:
+        cmd = [PANTAU_USER_CMD, "list-locked"] if IS_ROOT else ["/usr/bin/sudo", "-n", PANTAU_USER_CMD, "list-locked"]
+        res = _run_cmd(cmd, timeout=3)
+        if res and res.returncode == 0:
+            return set(res.stdout.split())
+    except Exception:
+        pass
+    return set()
+
+
+def collect_groups() -> list[dict]:
+    """Mengumpulkan inventaris seluruh grup sistem Linux (/etc/group)."""
+    groups_list = []
+    try:
+        gr_entries = list(grp.getgrall())
+    except Exception:
+        gr_entries = []
+
+    primary_group_mems: dict[int, set[str]] = {}
+    try:
+        for pw in pwd.getpwall():
+            primary_group_mems.setdefault(pw.pw_gid, set()).add(pw.pw_name)
+    except Exception:
+        pass
+
+    privileged_names = frozenset({
+        "root", "sudo", "wheel", "admin", "docker", "adm", "shadow", "disk", "lxd", "kvm"
+    })
+
+    for gr in gr_entries:
+        p_name = gr.gr_name
+        gid = gr.gr_gid
+        is_priv = p_name in privileged_names
+        is_sys = (gid < 1000 and gid != 0)
+
+        all_members = set(gr.gr_mem)
+        if gid in primary_group_mems:
+            all_members.update(primary_group_mems[gid])
+        sorted_mems = sorted(list(all_members))
+
+        groups_list.append({
+            "group": p_name,
+            "gid": gid,
+            "is_system": is_sys,
+            "is_privileged": is_priv,
+            "members": sorted_mems[:50],
+            "member_count": len(sorted_mems),
+        })
+
+    def _group_sort_key(g):
+        priv_rank = 0 if g["is_privileged"] else 1
+        type_rank = 0 if not g["is_system"] else 1
+        return (priv_rank, type_rank, g["gid"])
+
+    groups_list.sort(key=_group_sort_key)
+    return groups_list[:250]
+
+
+def collect_accounts() -> list[dict]:
+    """Mengumpulkan inventaris seluruh akun pengguna Linux (/etc/passwd, lastlog, who)."""
+    lastlog = _parse_lastlog()
+    who = _parse_who()
+    locked_set = _get_locked_users()
+    sessions_by_user: dict[str, list[dict]] = {}
+    for s in who:
+        if s.get("user") == "pantau":
+            continue
+        sessions_by_user.setdefault(s["user"], []).append(s)
+
+    gid_to_name: dict[int, str] = {}
+    user_to_supp_groups: dict[str, list[str]] = {}
+    try:
+        for gr in grp.getgrall():
+            gid_to_name[gr.gr_gid] = gr.gr_name
+            for m in gr.gr_mem:
+                user_to_supp_groups.setdefault(m, []).append(gr.gr_name)
+    except Exception:
+        pass
+
+    protected_set = frozenset({
+        "root", "pantau", "daemon", "bin", "sys", "sync", "games", "man", "lp", "mail",
+        "news", "uucp", "proxy", "www-data", "backup", "list", "irc", "gnats", "nobody",
+        "_apt", "messagebus", "sshd"
+    })
+    privileged_groups = frozenset({"sudo", "wheel", "root", "admin"})
+
+    accounts = []
+    try:
+        entries = list(pwd.getpwall())
+    except Exception:
+        entries = []
+
+    # Petakan proses aktif riil sistem per pengguna secara dinamis (/proc & ps)
+    procs_by_user: dict[str, list[dict]] = {}
+    try:
+        ps_res = _run_cmd(["ps", "-eo", "user:32,pid,stat,%cpu,%mem,comm,args", "--no-headers"], timeout=4)
+        if ps_res and ps_res.stdout:
+            for pline in ps_res.stdout.splitlines():
+                parts = pline.split(None, 6)
+                if len(parts) >= 6:
+                    p_u = parts[0]
+                    if p_u == "pantau":
+                        continue
+                    try:
+                        p_pid = int(parts[1])
+                        p_stat = parts[2]
+                        p_cpu = float(parts[3])
+                        p_mem = float(parts[4])
+                        p_comm = parts[5]
+                        p_args = parts[6] if len(parts) > 6 else p_comm
+                        procs_by_user.setdefault(p_u, []).append({
+                            "pid": p_pid,
+                            "stat": p_stat,
+                            "cpu": p_cpu,
+                            "mem": p_mem,
+                            "comm": p_comm,
+                            "args": p_args.strip(),
+                        })
+                    except (ValueError, IndexError):
+                        continue
+    except Exception:
+        pass
+
+    for pw in entries:
+        sessions = sessions_by_user.get(pw.pw_name, [])
+        primary_grp_name = gid_to_name.get(pw.pw_gid, str(pw.pw_gid))
+        supp_groups = sorted(user_to_supp_groups.get(pw.pw_name, []))
+
+        is_system = (pw.pw_uid < 1000 and pw.pw_uid != 0)
+        is_sudo = (pw.pw_uid == 0) or (primary_grp_name in privileged_groups) or bool(set(supp_groups) & privileged_groups)
+        is_protected = is_system or (pw.pw_name in protected_set)
+        is_locked = pw.pw_name in locked_set
+
+        user_procs = procs_by_user.get(pw.pw_name, [])
+        procs_count = len(user_procs)
+        primary_proc = ""
+        if user_procs:
+            sorted_p = sorted(user_procs, key=lambda p: (p["cpu"], p["mem"]), reverse=True)
+            primary_proc = sorted_p[0]["comm"]
+
+        last_login_val = lastlog.get(pw.pw_name, "")
+        if not last_login_val or "Never logged in" in last_login_val:
+            if sessions:
+                s_first = sessions[0]
+                s_time = s_first.get("time", "")
+                s_from = s_first.get("from") or "Web Terminal"
+                if s_time:
+                    last_login_val = f"{s_time} ({s_from})"
+                    _LAST_SEEN_USER_LOGIN[pw.pw_name] = last_login_val
+            elif pw.pw_name in _LAST_SEEN_USER_LOGIN:
+                last_login_val = _LAST_SEEN_USER_LOGIN[pw.pw_name]
+            elif pw.pw_name == "operator" or pw.pw_uid >= 1000:
+                op_home = pw.pw_dir or f"/home/{pw.pw_name}"
+                hist_file = os.path.join(op_home, ".bash_history")
+                try:
+                    if os.path.isfile(hist_file) and os.path.getsize(hist_file) > 0:
+                        mtime = os.path.getmtime(hist_file)
+                        dt_str = datetime.fromtimestamp(mtime).strftime("%Y-%m-%d %H:%M:%S")
+                        last_login_val = f"{dt_str} (Web Terminal)"
+                        _LAST_SEEN_USER_LOGIN[pw.pw_name] = last_login_val
+                except Exception:
+                    pass
+            elif is_system and procs_count > 0:
+                last_login_val = f"{procs_count} proses aktif ({primary_proc})"
+        elif last_login_val and "Never logged in" not in last_login_val:
+            _LAST_SEEN_USER_LOGIN[pw.pw_name] = last_login_val
+
+        accounts.append({
+            "user": pw.pw_name,
+            "uid": pw.pw_uid,
+            "gid": pw.pw_gid,
+            "group": primary_grp_name,
+            "groups": supp_groups[:20],
+            "home": pw.pw_dir or "",
+            "shell": pw.pw_shell or "",
+            "last_login": last_login_val,
+            "sessions": sessions[:5],
+            "procs_count": procs_count,
+            "primary_proc": primary_proc,
+            "procs": [
+                {
+                    "pid": p["pid"],
+                    "comm": p["comm"],
+                    "stat": p["stat"],
+                    "cpu": p["cpu"],
+                    "mem": p["mem"],
+                    "args": p["args"][:120],
+                }
+                for p in user_procs[:5]
+            ],
+            "is_system": is_system,
+            "is_sudo": is_sudo,
+            "is_protected": is_protected,
+            "is_locked": is_locked,
+        })
+
+    def _acc_sort_key(a):
+        active_rank = 0 if a["user"] in sessions_by_user else 1
+        type_rank = 0 if not a["is_system"] else 1
+        proc_rank = 0 if a.get("procs_count", 0) > 0 else 1
+        return (active_rank, type_rank, proc_rank, a["uid"])
+
+    accounts.sort(key=_acc_sort_key)
+
+    seen_users = {a["user"] for a in accounts}
+    for u, u_sessions in sessions_by_user.items():
+        if u not in seen_users:
+            accounts.append({
+                "user": u,
+                "uid": 9999,
+                "gid": 9999,
+                "group": "nogroup",
+                "groups": [],
+                "home": "",
+                "shell": "/bin/sh",
+                "last_login": "",
+                "sessions": u_sessions[:5],
+                "is_system": False,
+                "is_sudo": False,
+                "is_protected": False,
+                "is_locked": False,
+            })
+    return accounts[:250]
+
+
+def collect_failed_units_excerpts() -> dict[str, str]:
+    """Kumpulkan cuplikan log kegagalan layanan (Root Cause Excerpt) dari journalctl untuk unit yang failed."""
+    excerpts = {}
+    try:
+        res = _run_cmd(
+            ["systemctl", "--failed", "--type=service", "--no-pager", "--no-legend", "--plain"],
+            timeout=5,
+        )
+        if res and res.returncode == 0 and res.stdout:
+            lines = res.stdout.strip().splitlines()
+            for ln in lines:
+                parts = ln.split()
+                if not parts:
+                    continue
+                unit = parts[0]
+                if unit.startswith("●"):
+                    parts = parts[1:]
+                    if not parts:
+                        continue
+                    unit = parts[0]
+                if not unit.endswith(".service"):
+                    continue
+                unit_name = unit[:-8]
+                if len(excerpts) >= 5:
+                    break
+                j_res = _run_cmd(
+                    ["journalctl", "-u", unit, "-n", "12", "--no-pager", "--output=cat"],
+                    timeout=3,
+                )
+                if j_res and j_res.stdout and j_res.stdout.strip():
+                    excerpts[unit_name] = j_res.stdout.strip()[:2000]
+                else:
+                    st_res = _run_cmd(
+                        ["systemctl", "status", unit, "-n", "8", "--no-pager"],
+                        timeout=3,
+                    )
+                    if st_res and st_res.stdout:
+                        excerpts[unit_name] = st_res.stdout.strip()[:2000]
+    except Exception as e:
+        _log_debug(f"Gagal collect_failed_units_excerpts: {e}")
+    return excerpts
+
+
+def collect_units() -> list[str]:
+    res = _run_cmd(
+        ["systemctl", "list-units", "--type=service", "--state=running",
+         "--no-pager", "--no-legend"],
+        timeout=10,
+    )
+    units = []
+    if res is None:
+        return units
+    for line in res.stdout.splitlines():
+        parts = line.split()
+        if parts and parts[0].endswith(".service"):
+            units.append(parts[0][:-8])
+    return sorted(set(units))
+
+
+def collect_systemd_units(limit: int = 2000) -> list[dict]:
+    """Mengumpulkan inventaris seluruh unit service systemd (runtime state + boot enablement + telemetri PID & RAM)."""
+    boot_map = {}
+    p_files = _run_cmd(
+        ["/usr/bin/systemctl", "list-unit-files", "--type=service", "--no-pager", "--no-legend"],
+        timeout=10,
+    )
+    if p_files and p_files.stdout:
+        for line in p_files.stdout.splitlines():
+            parts = line.split()
+            if len(parts) >= 2:
+                u_name = parts[0].strip()
+                boot_state = parts[1].strip().lower()
+                boot_map[u_name] = boot_state
+                base = u_name[:-8] if u_name.endswith(".service") else u_name
+                boot_map[base] = boot_state
+
+    p_units = _run_cmd(
+        ["/usr/bin/systemctl", "list-units", "--type=service", "--all", "--no-pager", "--no-legend"],
+        timeout=15,
+    )
+    units = []
+    seen = set()
+    running_names = []
+
+    if p_units and p_units.stdout:
+        for line in p_units.stdout.splitlines()[:limit]:
+            line = line.strip().lstrip("●").strip()
+            if not line:
+                continue
+            parts = line.split(None, 4)
+            if len(parts) >= 4:
+                u_name = parts[0].strip()
+                load = parts[1].strip().lower()
+                active = parts[2].strip().lower()
+                sub = parts[3].strip().lower()
+                desc = parts[4].strip() if len(parts) > 4 else ""
+
+                if active == "active" and sub == "running":
+                    status = "running"
+                    running_names.append(u_name)
+                elif active == "active" and sub == "exited":
+                    status = "exited"
+                elif active == "failed" or sub == "failed":
+                    status = "failed"
+                elif active == "inactive":
+                    status = "inactive"
+                else:
+                    status = active or "unknown"
+
+                boot = (
+                    boot_map.get(u_name)
+                    or boot_map.get(u_name[:-8] if u_name.endswith(".service") else u_name)
+                    or "unknown"
+                )
+
+                units.append({
+                    "name": u_name,
+                    "load": load,
+                    "active": active,
+                    "sub": sub,
+                    "status": status,
+                    "boot": boot,
+                    "description": desc,
+                    "pid": None,
+                    "memory": None,
+                    "tasks": None,
+                })
+                seen.add(u_name)
+
+    # Unit yang ada di disk tapi belum dimuat di runtime
+    for u_name, boot_state in boot_map.items():
+        if not u_name.endswith(".service"):
+            continue
+        if u_name not in seen and "@" not in u_name and len(units) < limit:
+            units.append({
+                "name": u_name,
+                "load": "unloaded",
+                "active": "inactive",
+                "sub": "dead",
+                "status": "inactive",
+                "boot": boot_state,
+                "description": "",
+                "pid": None,
+                "memory": None,
+                "tasks": None,
+            })
+            seen.add(u_name)
+
+    # Kumpulkan telemetri PID, RAM, & Thread untuk unit yang aktif running
+    if running_names:
+        p_show = _run_cmd(
+            ["/usr/bin/systemctl", "show", "-p", "Id,MainPID,MemoryCurrent,TasksCurrent", *running_names[:200]],
+            timeout=10,
+        )
+        if p_show and p_show.stdout:
+            props = {}
+            for block in p_show.stdout.strip().split("\n\n"):
+                cur = {}
+                for line in block.splitlines():
+                    if "=" in line:
+                        k, v = line.split("=", 1)
+                        cur[k.strip()] = v.strip()
+                uid = cur.get("Id")
+                if uid:
+                    props[uid] = cur
+
+            for u in units:
+                pr = props.get(u["name"])
+                if pr:
+                    pid = pr.get("MainPID")
+                    if pid and pid.isdigit() and int(pid) > 0:
+                        u["pid"] = int(pid)
+                    mem = pr.get("MemoryCurrent")
+                    if mem and mem.isdigit() and int(mem) < 18446744073709551615:
+                        u["memory"] = int(mem)
+                    tasks = pr.get("TasksCurrent")
+                    if tasks and tasks.isdigit() and int(tasks) > 0:
+                        u["tasks"] = int(tasks)
+
+    return units
+
+
+def _last_apt_update_iso() -> str | None:
+    """Perkiraan kapan pembaruan metadata paket terakhir berjalan (apt, dnf/yum, pacman).
+    Bukan kebutuhan root; hanya membaca waktu modifikasi berkas metadata cache.
+    """
+    latest = 0.0
+    for base in (
+        "/var/lib/apt/lists", "/var/cache/apt",
+        "/var/cache/dnf", "/var/cache/yum", "/var/lib/dnf",
+        "/var/lib/pacman/sync"
+    ):
+        try:
+            names = os.listdir(base)
+        except OSError:
+            continue
+        for name in names:
+            try:
+                m = os.path.getmtime(os.path.join(base, name))
+            except OSError:
+                continue
+            if m > latest:
+                latest = m
+    if not latest:
+        return None
+    return datetime.fromtimestamp(latest).isoformat(timespec="seconds")
+
+
+def collect_apt() -> dict | None:
+    """Jumlah paket OS yang bisa di-upgrade (Debian/Ubuntu via apt, RHEL/CentOS/Rocky via dnf/yum, Arch via checkupdates).
+
+    Mengembalikan {"upgradable": N, "packages": [...], "last_update": "<ISO>"},
+    atau None bila tidak ada manajer paket yang didukung.
+    """
+    apt = {
+        "upgradable": 0,
+        "packages": [],
+        "last_update": _last_apt_update_iso(),
+    }
+
+    # 1. Debian / Ubuntu via apt / apt-get
+    bin_apt = "/usr/bin/apt" if os.path.exists("/usr/bin/apt") else (shutil.which("apt") or ("/usr/bin/apt-get" if os.path.exists("/usr/bin/apt-get") else shutil.which("apt-get")))
+    if bin_apt:
+        res = _run_cmd([bin_apt, "list", "--upgradable", "-qq"], timeout=20)
+        if res and res.stdout:
+            for line in res.stdout.splitlines():
+                line = line.strip()
+                if not line or "/" not in line or line.lower().startswith("listing"):
+                    continue
+                if "upgradable" in line.lower() or "upgradeable" in line.lower():
+                    parts = line.split()
+                    name = parts[0].split("/")[0] if parts else ""
+                    if name:
+                        apt["upgradable"] += 1
+                        apt["packages"].append({
+                            "name": name,
+                            "version": parts[1] if len(parts) > 1 else "",
+                        })
+        return apt
+
+    # 2. RHEL / Rocky / Alma / CentOS / Fedora via dnf / yum
+    bin_rpm_pm = None
+    for pm in ("dnf", "yum"):
+        p = f"/usr/bin/{pm}" if os.path.exists(f"/usr/bin/{pm}") else shutil.which(pm)
+        if p and os.path.isfile(p):
+            bin_rpm_pm = p
+            break
+    if bin_rpm_pm:
+        res = _run_cmd([bin_rpm_pm, "check-update", "-q"], timeout=25)
+        if res and res.returncode in (0, 100) and res.stdout:
+            for line in res.stdout.splitlines():
+                line = line.strip()
+                if not line or line.startswith("Last metadata") or line.startswith("Obsoleting") or "Security:" in line:
+                    continue
+                parts = line.split()
+                if len(parts) >= 2 and "." in parts[0]:
+                    name = parts[0].split(".")[0]
+                    ver = parts[1]
+                    apt["upgradable"] += 1
+                    apt["packages"].append({
+                        "name": name,
+                        "version": ver,
+                    })
+        return apt
+
+    # 3. Arch Linux via checkupdates
+    bin_arch_chk = "/usr/bin/checkupdates" if os.path.exists("/usr/bin/checkupdates") else shutil.which("checkupdates")
+    if bin_arch_chk:
+        res = _run_cmd([bin_arch_chk], timeout=20)
+        if res and res.stdout:
+            for line in res.stdout.splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                parts = line.split()
+                if parts:
+                    name = parts[0]
+                    ver = parts[3] if len(parts) >= 4 and parts[2] == "->" else (parts[1] if len(parts) > 1 else "")
+                    apt["upgradable"] += 1
+                    apt["packages"].append({
+                        "name": name,
+                        "version": ver,
+                    })
+        return apt
+
+    return None
+
+
+PANTAU_APT_SCRIPT_BODY = """#!/bin/sh
+# pantau-apt — Cangkang sempit utk tombol Update/Upgrade paket OS.
+# Mendukung Debian/Ubuntu (apt-get), RHEL/Rocky/Alma/CentOS/Fedora (dnf/yum), dan Arch (pacman).
+# Dipanggil agen 'pantau' via sudo NOPASSWD (lihat /etc/sudoers.d/pantau-agent).
+set -e
+
+# Deteksi manajer paket sistem
+if command -v apt-get >/dev/null 2>&1; then
+    PKG_MGR="apt"
+elif command -v dnf >/dev/null 2>&1; then
+    PKG_MGR="dnf"
+elif command -v yum >/dev/null 2>&1; then
+    PKG_MGR="yum"
+elif command -v pacman >/dev/null 2>&1; then
+    PKG_MGR="pacman"
+else
+    echo "pantau-apt: manajer packages yang didukung (apt-get, dnf, yum, pacman) tidak ditemukan di sistem ini." >&2
+    exit 1
+fi
+
+if [ "$PKG_MGR" = "apt" ]; then
+    DPKG_KEEP_LOCAL="-o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold"
+    DPKG_COMMON="-o Dpkg::Use-Pty=0 -o Dpkg::Lock::Timeout=600 -o APT::Get::Always-Include-Phased-Updates=true"
+
+    if [ -e /var/lib/dpkg/lock-frontend ] && fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; then
+        echo "pantau-apt: proses apt/dpkg lain sedang berjalan (lock /var/lib/dpkg/lock-frontend dipegang)." >&2
+        echo "           Tunggu proses itu selesai, lalu ulangi. Tidak ada yang dirusak." >&2
+        exit 3
+    fi
+
+    # Pastikan needrestart tidak me-restart agent_pantau.service di tengah upgrade
+    if [ -d /etc/needrestart/conf.d ] && [ ! -f /etc/needrestart/conf.d/99pantau-override.conf ]; then
+        printf '$nrconf{override_rc}{qr(^agent_pantau)} = 0;\n$nrconf{override_rc}{qr(^pantau)} = 0;\n' > /etc/needrestart/conf.d/99pantau-override.conf 2>/dev/null || true
+    fi
+
+    case "${1:-}" in
+        update)
+            export DEBIAN_FRONTEND=noninteractive
+            export NEEDRESTART_MODE=l
+            export APT_LISTCHANGES_FRONTEND=none
+            exec /usr/bin/script -qfec "/usr/bin/apt-get update -o Dpkg::Lock::Timeout=600" /dev/null
+            ;;
+        upgrade)
+            export DEBIAN_FRONTEND=noninteractive
+            export NEEDRESTART_MODE=a
+            export APT_LISTCHANGES_FRONTEND=none
+            exec /usr/bin/script -qfec "/usr/bin/apt-get --with-new-pkgs -y -o Dpkg::Lock::Timeout=600 $DPKG_KEEP_LOCAL $DPKG_COMMON upgrade" /dev/null
+            ;;
+        upgrade-interact)
+            unset DEBIAN_FRONTEND DEBCONF_NONINTERACTIVE_SEEN
+            export NEEDRESTART_MODE=a
+            export APT_LISTCHANGES_FRONTEND=none
+            exec /usr/bin/script -qfec "/usr/bin/apt-get --with-new-pkgs -y -o Dpkg::Lock::Timeout=600 -o Dpkg::Use-Pty=1 -o APT::Get::Always-Include-Phased-Updates=true upgrade" /dev/null
+            ;;
+        dist-upgrade)
+            unset DEBIAN_FRONTEND DEBCONF_NONINTERACTIVE_SEEN
+            export NEEDRESTART_MODE=a
+            export APT_LISTCHANGES_FRONTEND=none
+            exec /usr/bin/script -qfec "/usr/bin/apt-get -y -o Dpkg::Lock::Timeout=600 -o Dpkg::Use-Pty=1 -o APT::Get::Always-Include-Phased-Updates=true dist-upgrade" /dev/null
+            ;;
+        fix)
+            unset DEBIAN_FRONTEND DEBCONF_NONINTERACTIVE_SEEN
+            export NEEDRESTART_MODE=a
+            export APT_LISTCHANGES_FRONTEND=none
+            /usr/bin/script -qfec "/usr/bin/dpkg --configure -a" /dev/null || true
+            exec /usr/bin/script -qfec "/usr/bin/apt-get -y -f -o Dpkg::Lock::Timeout=600 -o Dpkg::Use-Pty=1 -o APT::Get::Always-Include-Phased-Updates=true install" /dev/null
+            ;;
+        clean)
+            exec /usr/bin/apt-get clean
+            ;;
+        upgrade-pkg)
+            pkg="${2:-}"
+            if [ -z "$pkg" ]; then
+                echo "pantau-apt: nama package target tidak boleh kosong" >&2
+                exit 2
+            fi
+            case "$pkg" in
+                *[!a-z0-9+.-]* | "" | -* | .* | +* )
+                    echo "pantau-apt: nama package tidak valid: '$pkg'" >&2
+                    exit 2
+                    ;;
+            esac
+            export DEBIAN_FRONTEND=noninteractive
+            export NEEDRESTART_MODE=a
+            export APT_LISTCHANGES_FRONTEND=none
+            exec /usr/bin/script -qfec "/usr/bin/apt-get --only-upgrade -y -o Dpkg::Lock::Timeout=600 $DPKG_KEEP_LOCAL $DPKG_COMMON install '$pkg'" /dev/null
+            ;;
+        *)
+            echo "pantau-apt: argumen tidak dikenal: '${1:-}'" >&2
+            echo "            (hanya: update | upgrade | upgrade-interact | dist-upgrade | fix | clean | upgrade-pkg)" >&2
+            exit 2
+            ;;
+    esac
+
+elif [ "$PKG_MGR" = "dnf" ] || [ "$PKG_MGR" = "yum" ]; then
+    PM="$(command -v dnf 2>/dev/null || command -v yum)"
+    case "${1:-}" in
+        update)
+            exec /usr/bin/script -qfec "$PM check-update || true" /dev/null
+            ;;
+        upgrade)
+            exec /usr/bin/script -qfec "$PM -y upgrade" /dev/null
+            ;;
+        upgrade-interact|dist-upgrade)
+            exec /usr/bin/script -qfec "$PM upgrade" /dev/null
+            ;;
+        fix)
+            exec /usr/bin/script -qfec "$PM check; $PM -y distro-sync || true" /dev/null
+            ;;
+        clean)
+            exec $PM clean all
+            ;;
+        upgrade-pkg)
+            pkg="${2:-}"
+            if [ -z "$pkg" ]; then
+                echo "pantau-apt: nama package target tidak boleh kosong" >&2
+                exit 2
+            fi
+            case "$pkg" in
+                *[!a-zA-Z0-9+._-]* | "" | -* )
+                    echo "pantau-apt: nama package tidak valid: '$pkg'" >&2
+                    exit 2
+                    ;;
+            esac
+            exec /usr/bin/script -qfec "$PM -y upgrade '$pkg'" /dev/null
+            ;;
+        *)
+            echo "pantau-apt: argumen tidak dikenal: '${1:-}'" >&2
+            exit 2
+            ;;
+    esac
+
+elif [ "$PKG_MGR" = "pacman" ]; then
+    if [ -e /var/lib/pacman/db.lck ]; then
+        echo "pantau-apt: berkas kunci /var/lib/pacman/db.lck aktif." >&2
+        exit 3
+    fi
+    case "${1:-}" in
+        update)
+            exec /usr/bin/script -qfec "/usr/bin/pacman -Sy" /dev/null
+            ;;
+        upgrade)
+            exec /usr/bin/script -qfec "/usr/bin/pacman -Syu --noconfirm" /dev/null
+            ;;
+        upgrade-interact|dist-upgrade)
+            exec /usr/bin/script -qfec "/usr/bin/pacman -Syu" /dev/null
+            ;;
+        fix)
+            exec /usr/bin/script -qfec "/usr/bin/pacman -D --check || true" /dev/null
+            ;;
+        clean)
+            exec /usr/bin/pacman -Sc --noconfirm
+            ;;
+        upgrade-pkg)
+            pkg="${2:-}"
+            if [ -z "$pkg" ]; then
+                echo "pantau-apt: nama package target tidak boleh kosong" >&2
+                exit 2
+            fi
+            case "$pkg" in
+                *[!a-zA-Z0-9+._-]* | "" | -* )
+                    echo "pantau-apt: nama package tidak valid: '$pkg'" >&2
+                    exit 2
+                    ;;
+            esac
+            exec /usr/bin/script -qfec "/usr/bin/pacman -S --noconfirm '$pkg'" /dev/null
+            ;;
+        *)
+            echo "pantau-apt: argumen tidak dikenal: '${1:-}'" >&2
+            exit 2
+            ;;
+    esac
+fi
+"""
+
+
+def ensure_pantau_apt_updated() -> bool:
+    """Memastikan wrapper /usr/local/sbin/pantau-apt mendukung upgrade-pkg, clean, dan Always-Include-Phased-Updates.
+    Jika masih versi lama, otomatis perbarui via root langsung atau sudo pantau-file.
+    """
+    try:
+        # Konfigurasi APT tingkat sistem agar semua operasi apt mengikutsertakan Phased Updates
+        apt_conf_dir = "/etc/apt/apt.conf.d"
+        apt_conf_file = os.path.join(apt_conf_dir, "99pantau-phased-updates")
+        if os.path.isdir(apt_conf_dir) and not os.path.isfile(apt_conf_file):
+            phased_content = 'APT::Get::Always-Include-Phased-Updates "true";\n'
+            if IS_ROOT:
+                try:
+                    with open(apt_conf_file, "w", encoding="utf-8") as f:
+                        f.write(phased_content)
+                except Exception:
+                    pass
+            else:
+                pantau_file = "/usr/local/sbin/pantau-file"
+                if os.path.isfile(pantau_file):
+                    try:
+                        payload = json.dumps({
+                            "action": "write",
+                            "params": {"path": apt_conf_file, "content": phased_content, "make_backup": False}
+                        })
+                        subprocess.run(["/usr/bin/sudo", "-n", pantau_file], input=payload, text=True, capture_output=True, timeout=5)
+                    except Exception:
+                        pass
+
+        # Konfigurasi needrestart override agar agent_pantau tidak di-restart otomatis oleh APT
+        nr_conf_dir = "/etc/needrestart/conf.d"
+        nr_conf_file = os.path.join(nr_conf_dir, "99pantau-override.conf")
+        if os.path.isdir(nr_conf_dir) and not os.path.isfile(nr_conf_file):
+            nr_content = (
+                "# Pantau Agent: Jangan restart agent_pantau saat needrestart dijalankan otomatis oleh APT\n"
+                "# Mencegah pemutusan proses upgrade aktif oleh SIGTERM (rc=-15).\n"
+                "$nrconf{override_rc}{qr(^agent_pantau)} = 0;\n"
+                "$nrconf{override_rc}{qr(^pantau)} = 0;\n"
+            )
+            if IS_ROOT:
+                try:
+                    with open(nr_conf_file, "w", encoding="utf-8") as f:
+                        f.write(nr_content)
+                except Exception:
+                    pass
+            else:
+                pantau_file = "/usr/local/sbin/pantau-file"
+                if os.path.isfile(pantau_file):
+                    try:
+                        payload = json.dumps({
+                            "action": "write",
+                            "params": {"path": nr_conf_file, "content": nr_content, "make_backup": False}
+                        })
+                        subprocess.run(["/usr/bin/sudo", "-n", pantau_file], input=payload, text=True, capture_output=True, timeout=5)
+                    except Exception:
+                        pass
+
+        cur_content = ""
+        if os.path.isfile(PANTAU_APT_CMD):
+            try:
+                with open(PANTAU_APT_CMD, "r", encoding="utf-8", errors="replace") as f:
+                    cur_content = f.read()
+            except Exception:
+                pass
+        if "PKG_MGR" in cur_content and "Always-Include-Phased-Updates" in cur_content and "upgrade-pkg" in cur_content and "clean" in cur_content and "-qfec" in cur_content and "99pantau-override" in cur_content:
+            return True
+
+        if IS_ROOT:
+            with open(PANTAU_APT_CMD, "w", encoding="utf-8") as f:
+                f.write(PANTAU_APT_SCRIPT_BODY)
+            os.chmod(PANTAU_APT_CMD, 0o755)
+            print("[APT] Wrapper /usr/local/sbin/pantau-apt berhasil diperbarui (root)")
+            return True
+
+        # Jika user 'pantau', gunakan sudo pantau-file jika tersedia
+        pantau_file = "/usr/local/sbin/pantau-file"
+        if os.path.isfile(pantau_file):
+            payload_write = json.dumps({
+                "action": "write",
+                "params": {"path": PANTAU_APT_CMD, "content": PANTAU_APT_SCRIPT_BODY, "make_backup": False}
+            })
+            pw = subprocess.run(["/usr/bin/sudo", "-n", pantau_file], input=payload_write, text=True, capture_output=True, timeout=10)
+            try:
+                out_data = json.loads(pw.stdout or "{}")
+            except Exception:
+                out_data = {}
+            if pw.returncode == 0 and out_data.get("ok"):
+                payload_chmod = json.dumps({
+                    "action": "chmod",
+                    "params": {"path": PANTAU_APT_CMD, "mode": "0755"}
+                })
+                subprocess.run(["/usr/bin/sudo", "-n", pantau_file], input=payload_chmod, text=True, capture_output=True, timeout=10)
+                print("[APT] Wrapper /usr/local/sbin/pantau-apt berhasil diperbarui via pantau-file")
+                return True
+    except Exception as e:
+        print(f"[APT WARN] Gagal memperbarui {PANTAU_APT_CMD}: {e}")
+    return False
+
+
+def _apt_cmd(kind: str, detail: str = ""):
+    """Command apt (lewat wrapper sempit) + timeout per jenis aksi."""
+    ensure_pantau_apt_updated()
+    prefix = [] if IS_ROOT else ["/usr/bin/sudo", "-n"]
+    if kind == "APT_UPDATE":
+        return prefix + [PANTAU_APT_CMD, "update"], 300
+    if kind == "APT_UPGRADE":
+        return prefix + [PANTAU_APT_CMD, "upgrade"], 900
+    if kind == "APT_UPGRADE_INTERACT":
+        # Interaktif menunggu admin mengetik; timeout lebih longgar, dan HANYA
+        # diakhiri bila proses benar-benar tidak bergerak (mis. admin lupa).
+        return prefix + [PANTAU_APT_CMD, "upgrade-interact"], 3600
+    if kind == "APT_DIST_UPGRADE":
+        return prefix + [PANTAU_APT_CMD, "dist-upgrade"], 3600
+    if kind == "APT_FIX":
+        # Reparasi dpkg & pemulihan paket rusak
+        return prefix + [PANTAU_APT_CMD, "fix"], 1800
+    if kind == "PKG_UPGRADE":
+        pkg = (detail or "").strip()
+        if not re.fullmatch(r"[a-z0-9][a-z0-9+.-]+", pkg):
+            raise ValueError(f"nama package tidak valid untuk upgrade: '{pkg}'")
+        return prefix + [PANTAU_APT_CMD, "upgrade-pkg", pkg], 600
+    if kind == "PKG_CLEAN":
+        return prefix + [PANTAU_APT_CMD, "clean"], 120
+    raise ValueError(f"unit apt tidak dikenal: {kind}")
+
+
+def collect_installed_packages(limit: int = 5000) -> list[dict]:
+    """Mengumpulkan inventaris seluruh paket OS yang terpasang via dpkg-query,
+    rpm, atau pacman, beserta klasifikasi paket pengguna vs sistem dan
+    status layanan runtime systemd.
+    """
+    pkgs = []
+
+    # Deteksi binary manajer paket
+    bin_dpkg = "/usr/bin/dpkg-query" if os.path.exists("/usr/bin/dpkg-query") else shutil.which("dpkg-query")
+    bin_rpm = "/usr/bin/rpm" if os.path.exists("/usr/bin/rpm") else shutil.which("rpm")
+    bin_pacman = "/usr/bin/pacman" if os.path.exists("/usr/bin/pacman") else shutil.which("pacman")
+
+    if not bin_dpkg and not bin_rpm and not bin_pacman:
+        return pkgs
+
+    # 1. Ambil status layanan systemd terkini (berlaku universal di semua distro Linux dengan systemd)
+    svc_map = {}
+    bin_systemctl = "/usr/bin/systemctl" if os.path.exists("/usr/bin/systemctl") else (shutil.which("systemctl") or "systemctl")
+    res_svc = _run_cmd([
+        bin_systemctl, "list-units", "--type=service", "--all", "--no-pager", "--no-legend"
+    ], timeout=8)
+    if res_svc and res_svc.stdout:
+        for line in res_svc.stdout.splitlines():
+            parts = line.split(None, 4)
+            if len(parts) >= 4:
+                unit = parts[0].strip()
+                active = parts[2].strip()
+                sub = parts[3].strip()
+                base_name = unit.replace(".service", "")
+                if active == "active" and sub == "running":
+                    st = "running"
+                elif active == "active" and sub == "exited":
+                    st = "exited (active)"
+                elif active == "failed" or sub == "failed":
+                    st = "failed"
+                elif active == "inactive":
+                    st = "inactive"
+                else:
+                    st = "inactive"
+                svc_map[base_name] = st
+
+    # Alias / pemetaan umum nama paket ke nama unit systemd
+    alias_map = {
+        "openssh-server": "sshd" if (not bin_dpkg and bin_rpm) else "ssh",
+        "mariadb-server": "mariadb",
+        "mysql-server": "mysqld" if (not bin_dpkg and bin_rpm) else "mysql",
+        "httpd": "httpd",
+        "apache2": "apache2",
+        "nginx": "nginx",
+        "cron": "crond" if (not bin_dpkg and bin_rpm) else "cron",
+        "crontabs": "crond",
+        "systemd": "systemd-journald",
+        "firewalld": "firewalld",
+        "ufw": "ufw",
+        "named": "named",
+        "bind": "named",
+        "bind9": "named",
+        "docker": "docker",
+        "docker-ce": "docker",
+        "docker.io": "docker",
+        "redis": "redis",
+        "redis-server": "redis",
+    }
+
+    # Kasus 1: DPKG (Debian / Ubuntu / Proxmox)
+    if bin_dpkg:
+        manual_set = set()
+        bin_apt_mark = "/usr/bin/apt-mark" if os.path.exists("/usr/bin/apt-mark") else shutil.which("apt-mark")
+        if bin_apt_mark:
+            res_manual = _run_cmd([bin_apt_mark, "showmanual"], timeout=8)
+            if res_manual and res_manual.stdout:
+                for line in res_manual.stdout.splitlines():
+                    line = line.strip()
+                    if line:
+                        manual_set.add(line)
+                        if ":" in line:
+                            manual_set.add(line.split(":")[0])
+
+        res = _run_cmd([
+            bin_dpkg, "-W", "-f",
+            "${binary:Package}\t${Version}\t${Architecture}\t${Installed-Size}\t${Priority}\t${Section}\t${binary:Summary}\n"
+        ], timeout=15)
+        if not res or not res.stdout or "\t" not in res.stdout:
+            res = _run_cmd([
+                bin_dpkg, "-W",
+                "-f=${binary:Package}\t${Version}\t${Architecture}\t${Installed-Size}\t${Priority}\t${Section}\t${binary:Summary}\n"
+            ], timeout=15)
+
+        if res and res.stdout:
+            for line in res.stdout.splitlines()[:limit]:
+                parts = line.split("\t")
+                if len(parts) >= 2:
+                    name = parts[0].strip()
+                    ver = parts[1].strip()
+                    arch = parts[2].strip() if len(parts) > 2 else ""
+                    size_kb = 0
+                    if len(parts) > 3:
+                        try:
+                            size_kb = int(parts[3].strip())
+                        except ValueError:
+                            size_kb = 0
+                    prio = parts[4].strip().lower() if len(parts) > 4 else ""
+                    summary = parts[6].strip() if len(parts) > 6 else ""
+
+                    base_name = name.split(":")[0]
+                    is_user = False
+                    if (name in manual_set or base_name in manual_set) and prio not in ("required", "important"):
+                        is_user = True
+
+                    unit_candidate = alias_map.get(base_name) or alias_map.get(name) or base_name
+                    status = svc_map.get(unit_candidate)
+                    if not status:
+                        stripped = base_name.replace("-server", "").replace("server-", "")
+                        status = svc_map.get(stripped)
+                    if not status:
+                        status = "installed"
+
+                    pkgs.append({
+                        "name": name,
+                        "version": ver,
+                        "arch": arch,
+                        "size_kb": size_kb,
+                        "summary": summary,
+                        "is_user": is_user,
+                        "status": status,
+                    })
+        return pkgs
+
+    # Kasus 2: RPM (RHEL / CentOS / Rocky / AlmaLinux / Fedora / openSUSE)
+    if bin_rpm:
+        manual_set = set()
+        bin_dnf = "/usr/bin/dnf" if os.path.exists("/usr/bin/dnf") else shutil.which("dnf")
+        if bin_dnf:
+            res_user = _run_cmd([bin_dnf, "history", "userinstalled"], timeout=8)
+            if res_user and res_user.stdout:
+                for line in res_user.stdout.splitlines():
+                    line = line.strip()
+                    if line and not line.startswith("Packages") and not line.startswith("Updating"):
+                        token = line.split()[0]
+                        manual_set.add(token)
+                        manual_set.add(token.rsplit("-", 2)[0])
+
+        res = _run_cmd([
+            bin_rpm, "-qa", "--queryformat",
+            "%{NAME}\t%{VERSION}-%{RELEASE}\t%{ARCH}\t%{SIZE}\t%{SUMMARY}\n"
+        ], timeout=15)
+        if res and res.stdout:
+            for line in res.stdout.splitlines()[:limit]:
+                parts = line.split("\t")
+                if len(parts) >= 2:
+                    name = parts[0].strip()
+                    ver = parts[1].strip()
+                    arch = parts[2].strip() if len(parts) > 2 else ""
+                    size_kb = 0
+                    if len(parts) > 3:
+                        try:
+                            size_kb = int(parts[3].strip()) // 1024
+                        except ValueError:
+                            size_kb = 0
+                    summary = parts[4].strip() if len(parts) > 4 else ""
+
+                    is_user = name in manual_set or any(m == name for m in manual_set)
+
+                    unit_candidate = alias_map.get(name) or name
+                    status = svc_map.get(unit_candidate)
+                    if not status:
+                        stripped = name.replace("-server", "").replace("server-", "")
+                        status = svc_map.get(stripped)
+                    if not status:
+                        status = "installed"
+
+                    pkgs.append({
+                        "name": name,
+                        "version": ver,
+                        "arch": arch,
+                        "size_kb": size_kb,
+                        "summary": summary,
+                        "is_user": is_user,
+                        "status": status,
+                    })
+        return pkgs
+
+    # Kasus 3: Pacman (Arch Linux / Manjaro)
+    if bin_pacman:
+        manual_set = set()
+        res_exp = _run_cmd([bin_pacman, "-Qe"], timeout=8)
+        if res_exp and res_exp.stdout:
+            for line in res_exp.stdout.splitlines():
+                if line.strip():
+                    manual_set.add(line.split()[0].strip())
+
+        res = _run_cmd([bin_pacman, "-Q"], timeout=15)
+        if res and res.stdout:
+            for line in res.stdout.splitlines()[:limit]:
+                parts = line.split(None, 2)
+                if len(parts) >= 2:
+                    name = parts[0].strip()
+                    ver = parts[1].strip()
+                    is_user = name in manual_set
+                    unit_candidate = alias_map.get(name) or name
+                    status = svc_map.get(unit_candidate) or "installed"
+                    pkgs.append({
+                        "name": name,
+                        "version": ver,
+                        "arch": platform.machine() or "x86_64",
+                        "size_kb": 0,
+                        "summary": "",
+                        "is_user": is_user,
+                        "status": status,
+                    })
+        return pkgs
+
+    return pkgs
+
+
+def clear_package_cache(pkg: str = "") -> str:
+    """Membersihkan cache berkas paket unduhan untuk paket tertentu atau seluruh cache paket."""
+    cleaned = 0
+    bytes_freed = 0
+    pkg = (pkg or "").strip()
+    if pkg and re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9+._-]+", pkg):
+        for cache_dir in ("/var/cache/apt/archives", "/var/cache/dnf", "/var/cache/yum"):
+            if os.path.isdir(cache_dir):
+                for root, _, fnames in os.walk(cache_dir):
+                    for fname in fnames:
+                        if fname.startswith(f"{pkg}_") or fname.startswith(f"{pkg}-"):
+                            fpath = os.path.join(root, fname)
+                            try:
+                                sz = os.path.getsize(fpath)
+                                os.unlink(fpath)
+                                cleaned += 1
+                                bytes_freed += sz
+                            except OSError:
+                                pass
+        mb_freed = bytes_freed / (1024 * 1024)
+        return f"Cache untuk package '{pkg}' berhasil dibersihkan: {cleaned} berkas ({mb_freed:.2f} MB)."
+    prefix = [] if IS_ROOT else ["/usr/bin/sudo", "-n"]
+    res = _run_cmd(prefix + [PANTAU_APT_CMD, "clean"], timeout=30)
+    if res and res.returncode == 0:
+        return "Seluruh cache packages sistem operasi berhasil dibersihkan."
+    return "Cache packages sistem dibersihkan."
+
+
+def get_package_logs(pkg: str, lines: int = 100) -> str:
+    """Membaca riwayat aktivitas paket spesifik dari dpkg.log, dnf.log, yum.log, atau pacman.log."""
+    pkg = (pkg or "").strip()
+    if not pkg or not re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9+._-]+", pkg):
+        return "Nama package tidak valid."
+    matched_lines = []
+    log_candidates = (
+        "/var/log/dpkg.log.1", "/var/log/dpkg.log",
+        "/var/log/dnf.rpm.log", "/var/log/dnf.log", "/var/log/yum.log",
+        "/var/log/pacman.log"
+    )
+    for path in log_candidates:
+        if not os.path.exists(path):
+            continue
+        try:
+            with open(path, "r", encoding="utf-8", errors="replace") as f:
+                for line in f:
+                    if f" {pkg}:" in line or f" {pkg} " in line or f": {pkg}-" in line:
+                        matched_lines.append(line.strip())
+        except OSError as e:
+            matched_lines.append(f"[Gagal membaca {path}: {e}]")
+    if not matched_lines:
+        return f"Belum ada riwayat aktivitas log untuk package '{pkg}' pada berkas log sistem."
+    return "\n".join(matched_lines[-lines:])
+
+
+def _apt_sudo_denied_hint(err: str) -> str:
+    """Pesan bantuan bila wrapper/sudoers belum tersedia di host klien."""
+    low_err = (err or "").lower()
+    if "no new privileges" in low_err:
+        return (
+            "[apt tidak dapat dijalankan] Konfigurasi systemd agen pada host/container ini "
+            "mengaktifkan flag 'NoNewPrivileges' atau isolasi namespace (PrivateTmp/Protect*), "
+            "sehingga kernel menolak eskalasi sudo.\n"
+            "Perbaiki (sebagai root di host ini):\n"
+            "  sudo sed -i 's/^PrivateTmp=yes/PrivateTmp=no/' /etc/systemd/system/agent_pantau.service\n"
+            "  sudo sed -i 's/^ProtectKernelTunables=yes/ProtectKernelTunables=no/' /etc/systemd/system/agent_pantau.service\n"
+            "  sudo sed -i 's/^ProtectControlGroups=yes/ProtectControlGroups=no/' /etc/systemd/system/agent_pantau.service\n"
+            "  sudo sed -i 's/^ProtectClock=yes/ProtectClock=no/' /etc/systemd/system/agent_pantau.service\n"
+            "  echo 'NoNewPrivileges=no' | sudo tee -a /etc/systemd/system/agent_pantau.service\n"
+            "  sudo systemctl daemon-reload && sudo systemctl restart agent_pantau.service\n"
+            "Rincian teknis:\n" + (err or "")
+        )
+    return (
+        "[apt tidak dapat dijalankan] hak sudo agen 'pantau' untuk wrapper "
+        "pantau-apt belum tersedia di host ini.\n"
+        "Perbaiki (sebagai root di host ini):\n"
+        "  cd <folder-paket-pantau>/package && sudo bash install.sh\n"
+        "(memasang ulang sudoers + wrapper pantau-apt; aman/idempotent.)\n"
+        "Rincian teknis:\n" + (err or "")
+    )
+
+
+_ANSI_RE = re.compile(r"\x1b(?:\[[0-9;?]*[ -/]*[@-~]|\][^\x07]*(?:\x07|\x1b\\)|.)")
+_SGR_RE = re.compile(r"\x1b\[([0-9;]*)m")
+_TERM_KEEP_RE = re.compile(r"\x1b\[(?:[0-9;]*m|2J|3J|H|1;1H|[0-2]?K|[0-9]*P|[0-9]*[A-D])")
+
+
+def _keep_sgr(text: str) -> str:
+    """Buang semua escape sequence KECUALI SGR & clear screen, sisakan \\r \\b \\t \\n \\x0c.
+
+    Untuk stream apt & shell: dashboard merender ulang kodenya sendiri supaya output
+    di kotak terminal terlihat sama seperti di SSH (warna + gerak kursor + clear screen).
+    """
+    if not text:
+        return ""
+
+    def _repl(m: re.Match) -> str:
+        return m.group(0) if _TERM_KEEP_RE.fullmatch(m.group(0)) else ""
+
+    cleaned = _ANSI_RE.sub(_repl, text).replace("\x00", "")
+    kept: list[str] = []
+
+    def _stash(m: re.Match) -> str:
+        kept.append(m.group(0))
+        return f"\ue000{len(kept) - 1}\ue001"
+
+    cleaned = _TERM_KEEP_RE.sub(_stash, cleaned)
+    cleaned = "".join(c for c in cleaned
+                      if c >= " " or c in "\n\r\b\t\x0c\ue000\ue001")
+    for idx, code in enumerate(kept):
+        cleaned = cleaned.replace(f"\ue000{idx}\ue001", code)
+    return cleaned
+
+# Pola prompt interaktif yang masih mungkin muncul walau wrapper sudah
+# non-interaktif (mis. skrip post-install milik vendor). Offset [ ... ] adalah
+# jawaban default yang dipakai, jadi kita TIDAK menebak: kalau polanya tak
+# dikenal, proses dibiarkan dan admin diberi petunjuk cara memperbaikinya.
+_APT_PROMPT_RULES: list[tuple[re.Pattern, str]] = [
+    (re.compile(r"What would you like to do about it \?"), "N\n"),
+    (re.compile(r"^\s*(?:Y or I)\s*:\s*install the package maintainer's version", re.M), "N\n"),
+    (re.compile(r"\[default=N\]", re.I), "N\n"),
+    (re.compile(r"Press \[Enter\] to continue", re.I), "\n"),
+    (re.compile(r"Do you want to continue\? \[Y/n\]", re.I), "y\n"),
+]
+# Diam tanpa output > detik ini = anggap sedang menunggu input.
+_APT_PROMPT_IDLE_SECS = 45.0
+
+
+def _apt_prompt_answer(tail: str) -> tuple[str | None, str]:
+    """Deteksi prompt interaktif pada output terakhir.
+
+    Kembalikan (jawaban, penjelasan) bila polanya dikenali; (None, "") bila
+    tidak ada prompt atau polanya tak dikenal (biarkan, jangan menebak).
+    """
+    if not tail:
+        return None, ""
+    # Hanya baris terakhir yang relevan: prompt selalu di ujung output.
+    last = tail.rstrip().splitlines()[-1] if tail.rstrip() else ""
+    if not last.strip():
+        return None, ""
+    for pat, answer in _APT_PROMPT_RULES:
+        if pat.search(last):
+            return answer, ("prompt dpkg interaktif terdeteksi "
+                            f"(jawaban otomatis: {answer.strip() or 'Enter'})")
+    return None, ""
+
+
+def _looks_like_prompt(tail: str) -> bool:
+    """Heuristik: baris terakhir mirip prompt yang belum terjawab."""
+    if not tail:
+        return False
+    last = tail.rstrip().splitlines()[-1] if tail.rstrip() else ""
+    return last.rstrip().endswith(("?", "??", "):", "]:"))
+
+
+def _stdin_writer_thread(cfg: dict, rid: int, proc) -> None:
+    """Terus ambil jawaban admin dari dashboard lalu tulis ke stdin proses.
+
+    Berhenti saat proses selesai. Semua error ditelan supaya tidak mematikan
+    proses apt; admin cukup mengetik ulang bila gagal terkirim.
+    """
+    while True:
+        time.sleep(0.4)
+        if proc.poll() is not None:
+            return
+        try:
+            code, data = http_json_request(cfg, f"/api/logs/{rid}/input", "GET", timeout=8)
+        except Exception:  # noqa: BLE001 — loop diagnostik, jangan matikan apa pun
+            continue
+        if code != 200:
+            continue
+        text = data.get("data")
+        if not text:
+            continue
+        try:
+            proc.stdin.write(text.encode("utf-8", errors="replace"))
+            proc.stdin.flush()
+            # Tidak ada baris tambahan di output: pty sudah menggema karakter
+            # yang diketik, persis seperti di terminal. Hanya log agen.
+            print(f"[APT] jawaban terkirim ke proses: {text.strip()!r}")
+        except (OSError, ValueError):
+            return  # proses sudah mati / pipe tertutup
+
+
+def _clean_output_chunk(text: str) -> str:
+    """Bersihkan chunk output mentah: buang kode ANSI & NUL saja (KEEP \r)."""
+    if not text:
+        return ""
+    return _ANSI_RE.sub("", text).replace("\x1b", "").replace("\x00", "")
+
+
+def _sgr_on(prev: str, params: str) -> str:
+    """Gaya aktif setelah kode SGR baru (kode kosong / 0 = reset)."""
+    return "" if params in ("", "0") else params
+
+
+def _render_cells(cells: list[tuple[str, str]], upto: int, strip_trailing: bool = True) -> str:
+    """Rakit baris dari sel (gaya, karakter) sambil menyisipkan kode SGR.
+
+    SGR diteruskan ke dashboard agar kotak terminal di browser bisa mewarnai
+    teks persis seperti di SSH — jadi hasilnya tetap "seperti terminal".
+    """
+    parts: list[str] = []
+    run: str | None = None
+    for idx in range(upto):
+        style, ch = cells[idx]
+        if style != run:
+            if run is not None:            # hanya reset bila memang ada gaya
+                parts.append("\x1b[0m")
+            if style:
+                parts.append("\x1b[%sm" % style)
+            run = style
+        parts.append(ch)
+    if run:
+        parts.append("\x1b[0m")
+    res = "".join(parts)
+    return res.rstrip("\t ") if strip_trailing else res
+
+
+def termify(raw: str) -> str:
+    """Emulasi layar terminal utk output yang memakai \\r, \\b, erase line, dan clear screen.
+
+    Di terminal SSH, `\\r` memindahkan kursor ke awal baris, `\\b` memundurkan
+    kursor, `\\x1b[K` menghapus ke kanan, dan `\\x1b[2J` membersihkan layar.
+    Fungsi ini mereplikasi sel kursor dan buffer layar sehingga hasil yang
+    tampil di dashboard persis sama dengan layar SSH yang sesungguhnya.
+    """
+    if "Session terminated" in raw:
+        raw = re.sub(r"\n?Session terminated, killing shell\.\.\..*$", "", raw, flags=re.MULTILINE)
+    out: list[str] = []
+    cells: list[tuple[str, str]] = []
+    style = ""
+    p = 0
+    i, n = 0, len(raw)
+    while i < n:
+        c = raw[i]
+        if c == "\x1b":
+            # 1. Warna / SGR
+            m = _SGR_RE.match(raw, i)
+            if m:
+                style = _sgr_on(style, m.group(1))
+                i = m.end()
+                continue
+            # 2. Clear Screen: \x1b[2J, \x1b[3J, \x1b[H\x1b[2J
+            m_clear = re.match(r"\x1b\[(?:2J|3J|H\x1b\[2J)", raw[i:])
+            if m_clear:
+                out = []
+                cells = []
+                p = 0
+                i += m_clear.end()
+                continue
+            # 3. Cursor Home: \x1b[H, \x1b[1;1H
+            m_h = re.match(r"\x1b\[(?:H|1;1H)", raw[i:])
+            if m_h:
+                p = 0
+                i += m_h.end()
+                continue
+            # 4. Erase in Line: \x1b[K, \x1b[0K, \x1b[1K, \x1b[2K
+            m_k = re.match(r"\x1b\[([0-2]?)K", raw[i:])
+            if m_k:
+                k_mode = m_k.group(1) or "0"
+                if k_mode in ("0", ""):
+                    cells = cells[:p]
+                elif k_mode == "2":
+                    cells = []
+                    p = 0
+                elif k_mode == "1":
+                    for idx in range(min(p, len(cells))):
+                        cells[idx] = (style, " ")
+                i += m_k.end()
+                continue
+            # 5. Delete Character: \x1b[P, \x1b[1P, dll
+            m_p = re.match(r"\x1b\[(\d*)P", raw[i:])
+            if m_p:
+                cnt = int(m_p.group(1)) if m_p.group(1) else 1
+                del cells[p:p+cnt]
+                i += m_p.end()
+                continue
+            # 6. Cursor Movement: \x1b[C (forward), \x1b[D (backward)
+            m_cd = re.match(r"\x1b\[(\d*)([CD])", raw[i:])
+            if m_cd:
+                cnt = int(m_cd.group(1)) if m_cd.group(1) else 1
+                if m_cd.group(2) == "C":
+                    p = min(p + cnt, len(cells))
+                else:
+                    p = max(p - cnt, 0)
+                i += m_cd.end()
+                continue
+            i += 1  # escape lain: abaikan
+            continue
+        if c == "\x0c":  # Form Feed / Ctrl+L
+            out = []
+            cells = []
+            p = 0
+            i += 1
+            continue
+        if c == "\r":
+            p = 0
+            i += 1
+            continue
+        if c == "\n":
+            out.append(_render_cells(cells, len(cells), strip_trailing=True) + "\n")
+            cells = []
+            p = 0
+            i += 1
+            continue
+        if c == "\b":
+            p = max(p - 1, 0)
+            i += 1
+            continue
+        if c == "\t":
+            while True:
+                if p >= len(cells):
+                    cells.append((style, " "))
+                else:
+                    cells[p] = (style, " ")
+                p += 1
+                if p % 8 == 0:
+                    break
+            i += 1
+            continue
+        if ord(c) < 32:
+            i += 1
+            continue
+        if p >= len(cells):
+            while len(cells) < p:
+                cells.append((style, " "))
+            cells.append((style, c))
+        else:
+            cells[p] = (style, c)
+        p += 1
+        i += 1
+    return "".join(out) + _render_cells(cells, len(cells), strip_trailing=False)
+
+
+def _tail_parts(parts: list[str], budget: int) -> str:
+    """Gabungkan potongan paling akhir sampai mendekati `budget` karakter."""
+    out: list[str] = []
+    total = 0
+    for p in reversed(parts):
+        out.append(p)
+        total += len(p)
+        if total >= budget:
+            break
+    out.reverse()
+    return "".join(out)
+
+
+_APT_RUN_LOCK = threading.Lock()
+_APT_RUNNING = False
+
+
+def _run_apt_in_thread(cfg: dict, rid: int, kind: str, detail: str = ""):
+    """Rekan thread utk _run_apt_inner dengan jaminan TIDAK tumpang-tindih dua apt."""
+    global _APT_RUNNING
+    with _APT_RUN_LOCK:
+        if _APT_RUNNING:
+            print(f"[APT] {kind} (rid={rid}) DITOLAK: proses apt lain sedang berjalan")
+            http_json_request(cfg, f"/api/logs/{rid}/result", "POST",
+                              {"status": "failed",
+                               "result": "Dibatalkan: proses apt lain masih berjalan di server ini."})
+            return
+        _APT_RUNNING = True
+    try:
+        _run_apt_inner(cfg, rid, kind, detail)
+    finally:
+        with _APT_RUN_LOCK:
+            _APT_RUNNING = False
+
+
+def _run_apt_inner(cfg: dict, rid: int, kind: str, detail: str = ""):
+    """Jalankan apt update/upgrade DENGAN STREAMING live ke Dashboard.
+
+    Proses dijalankan lewat wrapper pantau-apt -> script (pty), jadi outputnya
+    PERSIS seperti terminal SSH (termasuk frame progress \r). Output dibaca
+    dalam potongan biner, dibersihkan, lalu dikirim ke /progress tiap ~1,2
+    detik agar admin melihat proses berjalan. Hasil final TIDAK dipotong
+    (kuota APT_AGENT_OUTPUT_MAX = 4MB, praktis selengkap SSH).
+    """
+    try:
+        cmd, timeout = _apt_cmd(kind, detail)
+    except ValueError as e:
+        print(f"[APT] {kind} (rid={rid}) -> invalid: {e}")
+        http_json_request(cfg, f"/api/logs/{rid}/result", "POST",
+                          {"status": "failed", "result": str(e)[:200]})
+        return
+
+    output_parts: list[str] = []
+    raw_len = 0
+    truncated = False
+    last_post = 0.0
+    started = time.monotonic()
+    last_activity = started
+    prompt_answers = 0
+    hint_shown = False
+    failed = False
+    errmsg = ""
+    interactive = (kind in ("APT_UPGRADE_INTERACT", "APT_DIST_UPGRADE", "APT_FIX"))
+
+    try:
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                stdin=subprocess.PIPE, start_new_session=True)
+    except OSError as e:
+        proc = None
+        failed, errmsg = True, f"[gagal menjalankan apt: {e}]"
+
+    if proc is not None and interactive:
+        # Mode interaktif: admin yang menjawab, agen TIDAK menebak. Thread ini
+        # hanya menyalin jawaban dari Dashboard ke stdin proses.
+        input_thread = threading.Thread(
+            target=_stdin_writer_thread, args=(cfg, rid, proc),
+            name=f"apt-input-{rid}", daemon=True)
+        input_thread.start()
+
+    if proc is not None:
+        while True:
+            now = time.monotonic()
+            if now - started > timeout:
+                try:
+                    # Bunuh SELURUH grup proses apt/dpkg (bukan hanya sh), biar
+                    # tidak ada anak proses yang tertinggal/orphan.
+                    os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+                except (OSError, ProcessLookupError, PermissionError):
+                    pass
+                failed, errmsg = True, f"timeout {int(timeout)} dtk, proses apt dihentikan paksa"
+                try:
+                    proc.wait(timeout=15)
+                except subprocess.TimeoutExpired:
+                    pass
+                break
+            try:
+                rdy = select.select([proc.stdout], [], [], 1.0)[0]
+            except (OSError, ValueError):
+                break
+            if rdy:
+                raw = proc.stdout.read1(4096)
+                if raw:
+                    # Stream apt: biarkan \r + warna SGR lewat agar dashboard
+                    # bisa merender terminal sungguhan (bukan teks polos).
+                    text = _keep_sgr(raw.decode("utf-8", errors="replace"))
+                    if text:
+                        output_parts.append(text)
+                        raw_len += len(text)
+                        last_activity = time.monotonic()
+                elif proc.poll() is not None:
+                    break
+            # --- Jaring pengaman: proses diam lama = mungkin menunggu jawaban ---
+            if raw_len and (now - last_activity) >= _APT_PROMPT_IDLE_SECS:
+                tail = termify(_tail_parts(output_parts, 2000))
+                answer, why = _apt_prompt_answer(tail)
+                note = ""
+                if interactive:
+                    # JANGAN menjawab dan jangan juga menulis apa pun: seperti
+                    # di terminal, proses diam sampai admin mengetik baris
+                    # berikutnya (kursor berkedip di UI yang menandakan).
+                    pass
+                elif answer and prompt_answers < 3:
+                    try:
+                        proc.stdin.write(answer.encode())
+                        proc.stdin.flush()
+                        prompt_answers += 1
+                        note = f"\n[pantau] {why}\n"
+                    except (OSError, ValueError):
+                        note = ""
+                elif not answer and not hint_shown and _looks_like_prompt(tail):
+                    hint_shown = True
+                    note = ("\n[pantau] Proses berhenti & menunggu jawaban pada prompt yang tidak "
+                            "dikenali, sehingga tidak bisa dilanjut otomatis.\n"
+                            "         Selesaikan manual di server ini:  sudo dpkg --configure -a\n"
+                            "         lalu ulangi Update OS dari Dashboard.\n")
+                if note:
+                    output_parts.append(note)
+                    raw_len += len(note)
+                    last_activity = time.monotonic()
+            if raw_len and (time.monotonic() - last_post >= 1.2):
+                tail = termify(_tail_parts(output_parts, APT_PROGRESS_TAIL_CHARS))
+                if tail:
+                    http_json_request(cfg, f"/api/logs/{rid}/progress", "POST",
+                                      {"chunk": tail, "replace": True})
+                    last_post = time.monotonic()
+            if raw_len > APT_AGENT_OUTPUT_MAX:
+                excess = raw_len - APT_AGENT_OUTPUT_MAX
+                while excess > 0 and output_parts:
+                    part = output_parts[0]
+                    if len(part) <= excess:
+                        excess -= len(part)
+                        output_parts.pop(0)
+                    else:
+                        output_parts[0] = part[excess:]
+                        excess = 0
+                raw_len = APT_AGENT_OUTPUT_MAX
+                truncated = True
+        if proc.returncode is None:
+            try:
+                proc.wait(timeout=15)
+            except subprocess.TimeoutExpired:
+                pass
+
+    full = termify("".join(output_parts))
+    if truncated and full:
+        note = "[catatan: output potongan awal dibuang agen karena melebihi kuota]\n\n"
+        full = note + full.strip("\n") + "\n"
+    elif full:
+        full = full.strip("\n")
+
+    live = full
+    if truncated or raw_len > APT_PROGRESS_TAIL_CHARS:
+        live = termify(_tail_parts(output_parts, APT_PROGRESS_TAIL_CHARS))
+    if live:
+        http_json_request(cfg, f"/api/logs/{rid}/progress", "POST",
+                          {"chunk": live, "replace": True})
+
+    # Hasil terminal (persis SSH): frame progress sudah "menimpa" via termify.
+
+    global last_apt, _last_pkg_signature
+    try:
+        apt = collect_apt()
+        last_apt = apt
+        _last_pkg_signature = _get_pkg_state_signature()
+    except Exception:
+        apt = None
+
+    partial = termify(_tail_parts(output_parts, 40000)).strip("\n")
+    low_full = (full or "").lower()
+    has_fetch_err = False
+    fetch_err_reason = ""
+    if kind == "APT_UPDATE":
+        if "w: some index files failed to download" in low_full or "w: failed to fetch" in low_full or "failed to fetch" in low_full:
+            has_fetch_err = True
+            if "temporary failure resolving" in low_full or "could not resolve" in low_full or "no servers could be reached" in low_full:
+                fetch_err_reason = "Gagal mengunduh indeks repositori: resolusi DNS bermasalah."
+            elif "connection refused" in low_full or "could not connect" in low_full:
+                fetch_err_reason = "Gagal mengunduh indeks repositori: koneksi jaringan ditolak / terputus."
+            else:
+                fetch_err_reason = "Sebagian atau seluruh indeks repositori gagal diunduh (periksa URL repositori/koneksi)."
+
+    if failed:
+        result_ok = False
+        err_desc = errmsg or "Eksekusi proses apt gagal"
+        msg = json.dumps({
+            "type": kind,
+            "output": (full or partial)[-APT_AGENT_OUTPUT_MAX:],
+            "apt": apt,
+            "error": err_desc,
+            "rc": 1,
+        })
+    elif proc is not None and proc.returncode != 0:
+        # Jika apt update selesai membaca daftar paket meski ada repositori yang gagal diunduh (rc=100)
+        if kind == "APT_UPDATE" and ("reading package lists" in low_full or has_fetch_err):
+            result_ok = True
+            msg = json.dumps({
+                "type": kind,
+                "output": full[-APT_AGENT_OUTPUT_MAX:],
+                "apt": apt,
+                "has_fetch_err": True,
+                "fetch_err_reason": fetch_err_reason or "Sebagian indeks repositori gagal diunduh.",
+                "warning": fetch_err_reason or "Sebagian indeks repositori gagal diunduh.",
+                "rc": proc.returncode,
+            })
+        elif proc is not None and proc.returncode in (-15, 143) and ("restarting services" in low_full or "scanning processes" in low_full or (apt and apt.get("upgradable") == 0)):
+            # Deteksi cerdas: paket telah selesai diinstal dan dikonfigurasi penuh,
+            # namun needrestart/systemd me-restart service di akhir proses (SIGTERM)
+            result_ok = True
+            msg = json.dumps({
+                "type": kind,
+                "output": full[-APT_AGENT_OUTPUT_MAX:],
+                "apt": apt,
+                "warning": "Pembaruan paket selesai sukses. Layanan sistem telah disegarkan oleh OS.",
+                "rc": 0,
+            })
+        else:
+            result_ok = False
+            if "no new privileges" in low_full or "permission denied" in low_full or "a password is required" in low_full or proc.returncode in (126, 127):
+                err_desc = _apt_sudo_denied_hint(full or f"rc={proc.returncode}")
+            else:
+                err_desc = f"Proses apt selesai dengan kode kegagalan (rc={proc.returncode})"
+            msg = json.dumps({
+                "type": kind,
+                "output": full[-APT_AGENT_OUTPUT_MAX:],
+                "apt": apt,
+                "error": err_desc,
+                "rc": proc.returncode,
+            })
+    else:
+        result_ok = True
+        msg = json.dumps({
+            "type": kind,
+            "output": full[-APT_AGENT_OUTPUT_MAX:],
+            "apt": apt,
+            "has_fetch_err": has_fetch_err,
+            "fetch_err_reason": fetch_err_reason,
+            "warning": fetch_err_reason if has_fetch_err else None,
+            "rc": proc.returncode if proc else 0,
+        })
+
+    result = {"status": "success" if result_ok else "failed", "result": msg}
+    print(f"[APT] {kind} (rid={rid}) -> {result['status']} (result {len(msg)} byte)")
+    http_json_request(cfg, f"/api/logs/{rid}/result", "POST", result)
+
+
+# ---------------------------------------------------------------------------
+# Terminal Bawaan: shell root interaktif (unit "SHELL")
+# ---------------------------------------------------------------------------
+_SHELL_LOCK = threading.Lock()
+_SHELL_RIDS: set[int] = set()
+
+
+def _shell_sudo_denied_hint(err: str) -> str:
+    """Petunjuk bila wrapper pantau-shell belum terpasang/berhak di host klien."""
+    low_err = (err or "").lower()
+    if "no new privileges" in low_err:
+        return (
+            "[terminal tidak dapat dibuka] Konfigurasi systemd agen pada host/container ini "
+            "mengaktifkan flag 'NoNewPrivileges' atau isolasi namespace, sehingga kernel menolak eskalasi sudo.\n"
+            "Perbaiki (sebagai root di host ini):\n"
+            "  sudo sed -i 's/^PrivateTmp=yes/PrivateTmp=no/' /etc/systemd/system/agent_pantau.service\n"
+            "  sudo sed -i 's/^ProtectKernelTunables=yes/ProtectKernelTunables=no/' /etc/systemd/system/agent_pantau.service\n"
+            "  sudo sed -i 's/^ProtectControlGroups=yes/ProtectControlGroups=no/' /etc/systemd/system/agent_pantau.service\n"
+            "  sudo sed -i 's/^ProtectClock=yes/ProtectClock=no/' /etc/systemd/system/agent_pantau.service\n"
+            "  echo 'NoNewPrivileges=no' | sudo tee -a /etc/systemd/system/agent_pantau.service\n"
+            "  sudo systemctl daemon-reload && sudo systemctl restart agent_pantau.service\n"
+            "Rincian teknis:\n" + (err or "")
+        )
+    return (
+        "[terminal tidak dapat dibuka] hak sudo agen 'pantau' untuk wrapper "
+        "pantau-shell belum tersedia di host ini.\n"
+        "Perbaiki (sebagai root di host ini):\n"
+        "  cd <folder-paket-pantau>/package && sudo bash install.sh\n"
+        "(memasang ulang sudoers + wrapper pantau-shell; aman/idempotent.)\n"
+        "Rincian teknis:\n" + (err or "")
+    )
+
+
+def _stdin_writer_thread_polled(cfg: dict, rid: int, proc, poll_secs: float) -> None:
+    """Terus ambil ketikan admin dari dashboard lalu tulis ke stdin proses.
+
+    Berhenti saat proses selesai. Semua error ditelan supaya tidak mematikan
+    shell; admin cukup mengetik ulang bila gagal terkirim.
+    """
+    while True:
+        time.sleep(poll_secs)
+        if proc.poll() is not None:
+            return
+        try:
+            code, data = http_json_request(cfg, f"/api/logs/{rid}/input", "GET", timeout=10)
+        except Exception:  # noqa: BLE001 - loop diagnostik, jangan matikan apa pun
+            continue
+        if code != 200 or not data.get("data"):
+            continue
+        text = data["data"]
+        try:
+            #bash di pty sudah menggema karakter yang diketik, jadi kita TIDAK
+            # menulis baris tambahan ke output - persis seperti terminal SSH.
+            proc.stdin.write(text.encode("utf-8", errors="replace"))
+            proc.stdin.flush()
+        except (OSError, ValueError):
+            return
+
+
+def _run_shell_inner(cfg: dict, rid: int) -> None:
+    """Jalankan shell interaktif non-root (operator) dengan streaming live ke Dashboard.
+
+    Berbeda dari alur apt, ini bukan proses sekali jalan: shell hidup sampai
+    admin mengetik "exit", dashboard menutup jendelanya, atau timeout 8 jam.
+    Semua ketikan admin diteruskan apa adanya ke stdin shell lewat pty.
+    """
+    ensure_pantau_operator_account()
+    ensure_pantau_shell_updated()
+    cmd = [PANTAU_SHELL_CMD] if IS_ROOT else ["/usr/bin/sudo", "-n", PANTAU_SHELL_CMD]
+    output_parts: list[str] = []
+    raw_len = 0
+    truncated = False
+    last_post = 0.0
+    started = time.monotonic()
+    last_activity = started
+    closed = False
+
+    try:
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                stdin=subprocess.PIPE, start_new_session=True)
+    except OSError as e:
+        http_json_request(cfg, f"/api/logs/{rid}/result", "POST",
+                          {"status": "failed",
+                           "result": f"[gagal membuka shell: {e}]"})
+        return
+
+    # Admin yang mengetik; agen tidak pernah menyuntik perintah ke shell.
+    threading.Thread(target=_stdin_writer_thread_polled,
+                     args=(cfg, rid, proc, SHELL_IDLE_POLL_SECS),
+                     name=f"shell-input-{rid}", daemon=True).start()
+
+    try:
+        while True:
+            now = time.monotonic()
+            if now - started > SHELL_TIMEOUT_SECS:
+                closed = True
+                try:
+                    os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
+                except (OSError, ProcessLookupError, PermissionError):
+                    pass
+                try:
+                    proc.wait(timeout=10)
+                except subprocess.TimeoutExpired:
+                    try:
+                        os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+                    except (OSError, ProcessLookupError, PermissionError):
+                        pass
+                break
+            try:
+                rdy = select.select([proc.stdout], [], [], 1.0)[0]
+            except (OSError, ValueError):
+                break
+            if rdy:
+                raw = proc.stdout.read1(8192)
+                if raw:
+                    # KEEP \r + warna SGR: pty shell menghasilkan keduanya, dan
+                    # dashboard harus bisa merender terminal sungguhan.
+                    text = _keep_sgr(raw.decode("utf-8", errors="replace"))
+                    if text:
+                        if "\x0c" in text or "\x1b[2J" in text or "\x1b[3J" in text:
+                            output_parts = [text]
+                            raw_len = len(text)
+                        else:
+                            output_parts.append(text)
+                            raw_len += len(text)
+                        last_activity = time.monotonic()
+                elif proc.poll() is not None:
+                    break
+            # Kirim output segera setelah berubah supaya ketikan admin terasa
+            # responsif (shell interaktif, bukan laporan berkala).
+            if raw_len and (now - last_post) >= SHELL_POST_MIN_SECS:
+                live = termify(_tail_parts(output_parts, SHELL_PROGRESS_TAIL_CHARS))
+                if live:
+                    http_json_request(cfg, f"/api/logs/{rid}/progress", "POST",
+                                      {"chunk": live, "replace": True})
+                    last_post = now
+            if raw_len > SHELL_OUTPUT_MAX:
+                excess = raw_len - SHELL_OUTPUT_MAX
+                while excess > 0 and output_parts:
+                    part = output_parts[0]
+                    if len(part) <= excess:
+                        excess -= len(part)
+                        output_parts.pop(0)
+                    else:
+                        output_parts[0] = part[excess:]
+                        excess = 0
+                raw_len = SHELL_OUTPUT_MAX
+                truncated = True
+        if proc.returncode is None:
+            try:
+                proc.wait(timeout=15)
+            except subprocess.TimeoutExpired:
+                pass
+    finally:
+        with _SHELL_LOCK:
+            _SHELL_RIDS.discard(rid)
+
+    full = termify("".join(output_parts))
+    if truncated and full:
+        full = ("[catatan: output awal dibuang agen karena melebihi kuota]\n\n"
+                + full.strip("\n") + "\n")
+    elif full:
+        full = full.strip("\n")
+
+    live = termify(_tail_parts(output_parts, SHELL_PROGRESS_TAIL_CHARS))
+    if live:
+        http_json_request(cfg, f"/api/logs/{rid}/progress", "POST",
+                          {"chunk": live, "replace": True})
+
+    is_ok = True
+    if closed:
+        msg = (full + "\n\n[catatan: sesi shell ditutup otomatis karena "
+                      "melewati batas waktu 8 jam]").strip("\n")
+    elif proc.returncode not in (0, None):
+        is_ok = False
+        msg = _shell_sudo_denied_hint(full or f"shell berhenti rc={proc.returncode}")
+    else:
+        msg = full or "[shell ditutup tanpa output]"
+
+    print(f"[SHELL] rid={rid} selesai rc={proc.returncode} ({len(msg)} byte)")
+    http_json_request(cfg, f"/api/logs/{rid}/result", "POST",
+                      {"status": "success" if is_ok else "failed", "result": msg})
+
+
+def _run_shell_in_thread(cfg: dict, rid: int) -> None:
+    """Pemicu thread shell; menolak dua sesi shell pada satu server."""
+    with _SHELL_LOCK:
+        if _SHELL_RIDS:
+            http_json_request(cfg, f"/api/logs/{rid}/result", "POST",
+                              {"status": "failed",
+                               "result": "Sesi shell lain masih terbuka di server ini."})
+            return
+        _SHELL_RIDS.add(rid)
+    try:
+        _run_shell_inner(cfg, rid)
+    finally:
+        with _SHELL_LOCK:
+            _SHELL_RIDS.discard(rid)
+
+
+def fetch_log_lines(unit: str, lines: int) -> str:
+    """Ambil baris log layanan secara dinamis dan agnostik."""
+    if not unit:
+        return "[Target log tidak ditentukan]"
+
+    # 1. Jika unit adalah path berkas fisik absolut langsung
+    if unit.startswith("/") and os.path.isfile(unit):
+        return _tail_file(unit, lines)
+
+    u_upper = unit.upper()
+
+    # 2. Log Keamanan & Sistem Universal
+    if u_upper == "AUTH":
+        cand = AUTH_FILE if os.path.isfile(AUTH_FILE) else ("/var/log/secure" if os.path.isfile("/var/log/secure") else "")
+        if cand:
+            return _tail_file(cand, lines)
+        res = _run_cmd(
+            ["journalctl", "-u", "ssh", "-u", "sshd", "-u", "sudo", "-u", "systemd-logind",
+             "-n", str(lines), "--no-pager", "-o", "short-iso"],
+            timeout=30,
+        )
+        return (res.stdout.rstrip() if res else "") or "[log autentikasi tidak ditemukan]"
+
+    if u_upper == "SYSLOG":
+        if os.path.isfile(SYSLOG_FILE):
+            return _tail_file(SYSLOG_FILE, lines)
+        res = _run_cmd(["journalctl", "-n", str(lines), "--no-pager", "-o", "short-iso"], timeout=30)
+        return (res.stdout.rstrip() if res else "") or f"[file {SYSLOG_FILE} tidak ditemukan]"
+
+    if u_upper in ("DPKG", "PKG_LOGS", "DPKG_LOG"):
+        for cand in ("/var/log/dpkg.log", "/var/log/apt/history.log", "/var/log/dnf.log", "/var/log/yum.log", "/var/log/pacman.log"):
+            if os.path.isfile(cand):
+                return _tail_file(cand, lines)
+        return "[Berkas riwayat paket sistem tidak ditemukan di server ini]"
+
+    if u_upper in ("SYSTEM_ERRORS", "JOURNAL_ERRORS"):
+        res = _run_cmd(["journalctl", "-p", "3", "-n", str(lines), "-r", "--no-pager", "-o", "short-iso"], timeout=20)
+        return (res.stdout.rstrip() if res else "") or "[tidak ada catatan galat kritis sistem]"
+
+    # 3. Pencarian Berkas Log dari Katalog Penemuan Dinamis
+    for log_item in collect_available_logs():
+        if log_item["id"].upper() == u_upper:
+            log_path = log_item.get("desc", "")
+            if log_path and os.path.isfile(log_path):
+                return _tail_file(log_path, lines)
+
+    # 4. Fallback Agnostik: Runtime Systemd Unit Journal
+    unit_clean = unit[:-8] if unit.endswith(".service") else unit
+    res = _run_cmd(
+        ["journalctl", "-u", unit_clean, "-u", f"{unit_clean}.service", "-n", str(lines), "--no-pager", "-o", "short-iso"],
+        timeout=30,
+    )
+    out = (res.stdout.rstrip() if res else "")
+    if out and out.strip() != "-- No entries --":
+        return out
+
+    # 4a. Fallback Proses Journalctl (_COMM) jika unit systemd menggunakan nama proses berbeda
+    res_comm = _run_cmd(
+        ["journalctl", f"_COMM={unit_clean}", "-n", str(lines), "--no-pager", "-o", "short-iso"],
+        timeout=30,
+    )
+    out_comm = (res_comm.stdout.rstrip() if res_comm else "")
+    if out_comm and out_comm.strip() != "-- No entries --":
+        return out_comm
+
+    # 4b. Fallback Variasi Nama Unit / Alias Layanan Umum
+    variants = []
+    if unit_clean.endswith("d") and len(unit_clean) > 2:
+        variants.append(unit_clean[:-1])
+    else:
+        variants.append(unit_clean + "d")
+    if unit_clean.lower() in ("mysql", "mysqld"):
+        variants.extend(["mariadb", "mariadbd"])
+    elif unit_clean.lower() in ("mariadb", "mariadbd"):
+        variants.extend(["mysql", "mysqld"])
+    elif unit_clean.lower() in ("apache", "apache2"):
+        variants.extend(["httpd", "apache2"])
+    elif unit_clean.lower() == "httpd":
+        variants.extend(["apache2", "apache"])
+
+    for v in variants:
+        res_v = _run_cmd(
+            ["journalctl", "-u", v, "-u", f"{v}.service", "-n", str(lines), "--no-pager", "-o", "short-iso"],
+            timeout=20,
+        )
+        out_v = (res_v.stdout.rstrip() if res_v else "")
+        if out_v and out_v.strip() != "-- No entries --":
+            return out_v
+
+    # 4c. Fallback Berkas Log di /var/log jika ada kecocokan nama direktori atau file
+    if os.path.isdir("/var/log"):
+        for cand_dir in (f"/var/log/{unit_clean}", "/var/log"):
+            if os.path.isdir(cand_dir):
+                for fname in (f"{unit_clean}.log", "error.log", "access.log"):
+                    cand_path = os.path.join(cand_dir, fname)
+                    if os.path.isfile(cand_path):
+                        return _tail_file(cand_path, lines)
+
+    if out:
+        return out
+    msg = (res.stderr or "").strip() if res else ""
+    return msg or f"[Log untuk {unit} tidak ditemukan di server ini]"
+
+
+IGNORED_SHELL_BASE_COMMANDS = {
+    "cd",
+    "ls", "ll", "la", "l", "dir", "vdir",
+    "pwd",
+    "clear", "cls", "reset",
+    "exit", "xit", "logout",
+    "history",
+    "true", "false",
+}
+
+
+def is_ignorable_shell_cmd(cmd: str) -> bool:
+    """Menentukan apakah baris perintah shell adalah perintah navigasi/noise non-esensial."""
+    if not cmd:
+        return True
+    s = cmd.strip()
+    if not s:
+        return True
+    if ">" in s:
+        return False
+    sub_cmds = re.split(r"&&|\|\||[;|]", s)
+    for sub in sub_cmds:
+        sub = sub.strip()
+        if not sub:
+            continue
+        tokens = sub.split()
+        idx = 0
+        while idx < len(tokens) and re.match(r"^[A-Za-z_][A-Za-z0-9_]*=.*", tokens[idx]):
+            idx += 1
+        if idx >= len(tokens):
+            continue
+        token = tokens[idx].strip().lstrip("\\")
+        base = os.path.basename(token)
+        if base not in IGNORED_SHELL_BASE_COMMANDS:
+            return False
+    return True
+
+
+def collect_user_logins(max_events: int = 100, target_user: str | None = None) -> list:
+    """Mengumpulkan riwayat login dan eksekusi sudo untuk audit NOC & aktivitas pengguna.
+
+    Mendukung penuh distribusi Linux modern tanpa rsyslog (Ubuntu 24.04 LTS Noble,
+    Debian 12, RHEL 9) maupun sistem tradisional berbasis /var/log/auth.log atau secure.
+    Secara tegas membedakan 'aktif' (masih login) vs 'selesai' (sudah logout/selesai).
+    """
+    try:
+        time.tzset()
+    except Exception:
+        pass
+    events: list[dict] = []
+    seen_sessions: set[tuple] = set()
+    seen_sudo: set[tuple] = set()
+    seen_auth: set[tuple] = set()
+
+    # 1. Prioritas Sesi Aktif Real-Time (who)
+    # Dipetakan per (user, tty) agar tidak pernah terjadi duplikasi sesi aktif
+    active_by_key: dict[tuple[str, str], dict] = {}
+    try:
+        active_sessions = _parse_who()
+        for s in active_sessions:
+            u = s.get("user", "")
+            if not u or u == "pantau":
+                continue
+            if target_user and u != target_user:
+                continue
+            src = s.get("from") or "(lokal)"
+            tty = s.get("tty", "ssh")
+            t_raw = s.get("time", "")
+            t = t_raw
+            if t_raw:
+                try:
+                    dt = datetime.strptime(t_raw, "%Y-%m-%d %H:%M")
+                    t = dt.strftime("%Y-%m-%d %H:%M:%S")
+                except Exception:
+                    try:
+                        cur_yr = datetime.now().year
+                        dt = datetime.strptime(f"{cur_yr} {t_raw}", "%Y %b %d %H:%M")
+                        t = dt.strftime("%Y-%m-%d %H:%M:%S")
+                    except Exception:
+                        pass
+            pid = s.get("pid", "")
+            idle = s.get("idle", "")
+            now_ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            active_by_key[(u, tty)] = {
+                "ts": now_ts,
+                "user": u,
+                "type": "aktif",
+                "from": src,
+                "tty": tty,
+                "pid": pid,
+                "idle": idle,
+                "login_time": t,
+                "pwd": "",
+                "method": f"{tty} (Sesi Aktif)",
+                "active": True,
+            }
+            # Catat entri pendamping Sesi Login untuk sesi aktif ini pada waktu login t
+            sess_login_key = (u, tty, t, "login")
+            if sess_login_key not in seen_sessions:
+                seen_sessions.add(sess_login_key)
+                events.append({
+                    "ts": t,
+                    "user": u,
+                    "type": "login",
+                    "from": src,
+                    "tty": tty,
+                    "login_time": t,
+                    "pwd": "",
+                    "method": f"{tty} (Login)",
+                    "active": False,
+                })
+        # Deteksi proses foreground aktif pada terminal sesi pengguna
+        try:
+            ps_cmd = ["ps", "-u", target_user, "-o", "tty,stat,args", "--no-headers"] if target_user else ["ps", "-eo", "user,tty,stat,args", "--no-headers"]
+            ps_res = _run_cmd(ps_cmd, timeout=3)
+            if ps_res and ps_res.stdout:
+                for pline in ps_res.stdout.splitlines():
+                    pparts = pline.split(None, 2 if target_user else 3)
+                    if target_user and len(pparts) == 3:
+                        ptty, pstat, pargs = pparts
+                        puser = target_user
+                    elif not target_user and len(pparts) == 4:
+                        puser, ptty, pstat, pargs = pparts
+                    else:
+                        continue
+                    pbase = pargs.split()[0].split("/")[-1].lstrip("-") if pargs else ""
+                    ignored_fg = (
+                        "bash", "sh", "zsh", "su", "sshd", "ps", "logger",
+                        "agetty", "getty", "login", "systemd", "init"
+                    )
+                    if (
+                        "+" in pstat
+                        and ptty != "?"
+                        and pbase not in ignored_fg
+                        and not any(pargs.startswith(x) for x in ("-bash", "bash", "sshd", "-sh", "sh", "zsh", "su", "-su", "ps ", "logger ", "agetty", "getty", "login"))
+                    ):
+                        clean_tty = ptty if ptty.startswith("pts/") else f"pts/{ptty}"
+                        for (u, t), act_dict in active_by_key.items():
+                            if u == puser and (t == ptty or t == clean_tty or clean_tty.endswith(t) or t.endswith(ptty)):
+                                act_dict["active_cmd"] = pargs
+                        if not is_ignorable_shell_cmd(pargs):
+                            now_ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                            fg_key = (puser, clean_tty, pargs, "shell_aktif")
+                            if fg_key not in seen_sudo:
+                                seen_sudo.add(fg_key)
+                                events.append({
+                                    "ts": now_ts,
+                                    "user": puser,
+                                    "type": "shell",
+                                    "from": "(lokal)",
+                                    "tty": clean_tty,
+                                    "pwd": "—",
+                                    "target_user": puser,
+                                    "alert": "Sedang Berjalan",
+                                    "method": pargs,
+                                    "active": True,
+                                })
+        except Exception:
+            pass
+    except Exception:
+        pass
+
+    # 2. Riwayat Sesi dari Database Akuntansi Login Linux (last -F)
+    try:
+        cmd_last = ["last", "-n", "80", "-F"]
+        if target_user:
+            cmd_last.append(target_user)
+        res_last = _run_cmd(cmd_last, timeout=5)
+        if res_last and res_last.stdout:
+            for line in res_last.stdout.splitlines():
+                parts = line.split()
+                if len(parts) >= 8 and parts[0] not in ("reboot", "wtmp"):
+                    u = parts[0]
+                    if u == "pantau":
+                        continue
+                    if target_user and u != target_user:
+                        continue
+                    tty = parts[1]
+                    src = parts[2]
+                    raw_time = " ".join(parts[3:8])
+                    status = " ".join(parts[8:])
+                    try:
+                        dt = datetime.strptime(raw_time, "%a %b %d %H:%M:%S %Y")
+                        ts_str = dt.strftime("%Y-%m-%d %H:%M:%S")
+                    except Exception:
+                        ts_str = raw_time
+                    is_active = "still logged in" in status
+                    from_clean = src if (src and src != ":0" and not src.startswith(":")) else "(lokal)"
+
+                    if is_active:
+                        # Konsolidasi: bila sesi ini ada di active_by_key (who), perkaya dengan login_time detik presisi
+                        if (u, tty) in active_by_key:
+                            active_by_key[(u, tty)]["login_time"] = ts_str
+                            for ev in events:
+                                if ev.get("type") == "login" and ev.get("user") == u and ev.get("tty") == tty and str(ev.get("login_time", ""))[:16] == ts_str[:16]:
+                                    ev["ts"] = ts_str
+                                    ev["login_time"] = ts_str
+                            if from_clean != "(lokal)" and active_by_key[(u, tty)]["from"] == "(lokal)":
+                                active_by_key[(u, tty)]["from"] = from_clean
+                        # Bila tidak terdaftar di who, merupakan entri wtmp usang/hang (abaikan agar tidak menduplikasi sesi aktif)
+                        continue
+
+                    logout_time = ""
+                    dur_str = ""
+                    m_dur = re.search(r"-\s+([A-Za-z]+\s+[A-Za-z]+\s+\d+\s+\d+:\d+:\d+\s+\d+)\s+\((.+?)\)", status)
+                    if m_dur:
+                        raw_end, dur_val = m_dur.groups()
+                        dur_str = dur_val
+                        try:
+                            end_dt = datetime.strptime(raw_end, "%a %b %d %H:%M:%S %Y")
+                            logout_time = end_dt.strftime("%Y-%m-%d %H:%M:%S")
+                        except Exception:
+                            logout_time = raw_end
+
+                    logout_ts = logout_time if logout_time else ts_str
+
+                    # 1. Sesi Selesai (Logout event) dengan timestamp logout_ts
+                    sess_key = (u, tty, logout_ts, "selesai")
+                    if sess_key not in seen_sessions:
+                        seen_sessions.add(sess_key)
+                        events.append({
+                            "ts": logout_ts,
+                            "user": u,
+                            "type": "selesai",
+                            "from": from_clean,
+                            "tty": tty,
+                            "duration": dur_str,
+                            "login_time": ts_str,
+                            "logout_time": logout_time,
+                            "pwd": "",
+                            "method": f"{tty} (Selesai)",
+                            "active": False,
+                        })
+
+                    # 2. Sesi Login (Login start event) dengan timestamp awal ts_str
+                    login_key = (u, tty, ts_str, "login")
+                    if login_key not in seen_sessions:
+                        seen_sessions.add(login_key)
+                        events.append({
+                            "ts": ts_str,
+                            "user": u,
+                            "type": "login",
+                            "from": from_clean,
+                            "tty": tty,
+                            "duration": dur_str,
+                            "login_time": ts_str,
+                            "logout_time": logout_time,
+                            "pwd": "",
+                            "method": f"{tty} (Login)",
+                            "active": False,
+                        })
+    except Exception:
+        pass
+
+    # Masukkan seluruh sesi aktif yang sudah terkonsolidasi murni (tanpa duplikasi)
+    for act_ev in active_by_key.values():
+        events.append(act_ev)
+
+    # 3. Kueri Khusus Sudo via Journalctl (Bebas dari polusi otomatis agen pantau)
+    sudo_handled_by_section_3 = False
+    if target_user:
+        try:
+            import pwd
+            target_uid = pwd.getpwnam(target_user).pw_uid
+            cmd_sudo = ["journalctl", "-q", "-o", "short-iso", "_COMM=sudo", f"_UID={target_uid}", "-n", "150", "--no-pager"]
+            res_sudo = _run_cmd(cmd_sudo, timeout=6)
+            if res_sudo and res_sudo.stdout:
+                sudo_handled_by_section_3 = True
+                p_sudo = re.compile(
+                    r"sudo(?:\[\d+\])?:\s+(?P<user>[\w.-]+)\s*:\s+"
+                    r"(?:(?P<alert>(?:\d+\s+incorrect\s+password\s+attempt|user\s+NOT\s+in\s+sudoers|[\w\s]+error|[\w\s]+failure|conversation\s+failed)[^;]*);\s*)?"
+                    r"(?:TTY=(?P<tty>\S+)\s*;\s*)?"
+                    r"(?:PWD=(?P<pwd>\S+)\s*;\s*)?"
+                    r"(?:USER=(?P<target>\S+)\s*;\s*)?"
+                    r"(?:COMMAND=(?P<cmd>.+))?$"
+                )
+                p_pam_sudo = re.compile(
+                    r"pam_unix\(sudo(?::auth)?\):\s+authentication failure;\s*(?P<extra>.*)$"
+                )
+                for line in res_sudo.stdout.splitlines():
+                    ts = line[:19].replace("T", " ") if len(line) >= 19 else ""
+                    # 1. Tangkap kegagalan autentikasi PAM per percobaan password salah (Sorry, try again)
+                    m_pam = p_pam_sudo.search(line)
+                    if m_pam:
+                        extra = m_pam.group("extra") or ""
+                        m_tty = re.search(r"\btty=(?:/dev/)?(\S+)", extra)
+                        tty = m_tty.group(1) if m_tty else "(lokal)"
+                        m_u = re.search(r"\buser=([\w.-]+)", extra)
+                        u = m_u.group(1) if m_u else target_user
+                        m_pwd = re.search(r"\bpwd=(\S+)", extra)
+                        pwd_val = m_pwd.group(1) if m_pwd else "—"
+                        fail_key = (u, ts, tty, "sudo_gagal", line[-35:])
+                        if fail_key not in seen_sudo:
+                            seen_sudo.add(fail_key)
+                            events.append({
+                                "ts": ts,
+                                "user": u,
+                                "type": "sudo_gagal",
+                                "from": "(lokal)",
+                                "tty": tty,
+                                "pwd": pwd_val,
+                                "target_user": "root",
+                                "alert": "Kata Sandi Salah",
+                                "method": "Percobaan Otentikasi Ditolak",
+                            })
+                        continue
+
+                    # 2. Tangkap eksekusi perintah sudo atau alert sudo terminal
+                    m = p_sudo.search(line)
+                    if m:
+                        tty = m.group("tty") or "(lokal)"
+                        pwd_val = m.group("pwd") or ""
+                        target_val = m.group("target") or "root"
+                        cmd_val = (m.group("cmd") or "").strip() or "Otentikasi Sudo Gagal"
+                        alert_raw = (m.group("alert") or "").strip().rstrip(";")
+                        is_failed = bool(alert_raw and ("incorrect" in alert_raw.lower() or "not in sudoers" in alert_raw.lower() or "failure" in alert_raw.lower() or "failed" in alert_raw.lower()))
+                        ev_type = "sudo_gagal" if is_failed else "sudo"
+                        clean_alert = alert_raw
+                        if is_failed:
+                            if "not in sudoers" in alert_raw.lower():
+                                clean_alert = "Pengguna Tidak Berhak Sudo"
+                            elif "incorrect" in alert_raw.lower():
+                                clean_alert = "Kata Sandi Salah"
+                            elif "conversation" in alert_raw.lower():
+                                clean_alert = "Sesi Prompt Dibatalkan"
+                            else:
+                                clean_alert = "Kata Sandi Salah"
+                        sudo_key = (target_user, ts, tty, cmd_val, ev_type)
+                        if sudo_key not in seen_sudo:
+                            seen_sudo.add(sudo_key)
+                            events.append({
+                                "ts": ts,
+                                "user": target_user,
+                                "type": ev_type,
+                                "from": "(lokal)",
+                                "tty": tty,
+                                "pwd": pwd_val,
+                                "target_user": target_val,
+                                "alert": clean_alert if is_failed else (alert_raw if alert_raw else ""),
+                                "method": cmd_val,
+                            })
+        except Exception:
+            pass
+
+    # 4. Kueri Otorisasi Administratif Polkit (Perintah sistem tanpa sudo, e.g. systemctl)
+    try:
+        polkit_action_map = {
+            "org.freedesktop.systemd1.manage-units": "systemctl (Kontrol Unit Layanan)",
+            "org.freedesktop.systemd1.manage-unit-files": "systemctl (Konfigurasi Unit File)",
+            "org.freedesktop.systemd1.reload-daemon": "systemctl daemon-reload",
+            "org.freedesktop.login1.reboot": "systemctl reboot",
+            "org.freedesktop.login1.reboot-multiple-sessions": "systemctl reboot",
+            "org.freedesktop.login1.power-off": "systemctl poweroff",
+            "org.freedesktop.login1.power-off-multiple-sessions": "systemctl poweroff",
+            "org.freedesktop.timedate1.set-time": "timedatectl set-time",
+            "org.freedesktop.timedate1.set-timezone": "timedatectl set-timezone",
+            "org.freedesktop.hostname1.set-static-hostname": "hostnamectl set-hostname",
+            "org.freedesktop.networkd.modify": "networkctl modify",
+            "org.freedesktop.NetworkManager.settings.modify.system": "nmcli connection modify",
+            "org.freedesktop.packagekit.system-sources-refresh": "packagekit refresh",
+            "org.freedesktop.packagekit.package-install": "packagekit install",
+        }
+        p_polkit = re.compile(
+            r"(?:Operator of \S+ (?P<fail>FAILED to authenticate to gain(?: ONE-SHOT)? authorization)|"
+            r"Operator of \S+ (?P<succ>successfully authenticated as unix-user:(?P<auth_user>[\w.-]+) to gain(?: ONE-SHOT)? authorization)|"
+            r"Operator of \S+ (?P<grant>gained authorization)) "
+            r"for action (?P<action>[\w.-]+)"
+            r"(?:.*?owned by unix-user:(?P<owner_user>[\w.-]+))?"
+        )
+        res_polkit = _run_cmd(["journalctl", "-q", "-o", "short-iso", "-u", "polkit.service", "-n", "100", "--no-pager"], timeout=5)
+        if not res_polkit or not res_polkit.stdout:
+            res_polkit = _run_cmd(["journalctl", "-q", "-o", "short-iso", "_COMM=polkitd", "-n", "100", "--no-pager"], timeout=5)
+        if res_polkit and res_polkit.stdout:
+            for line in res_polkit.stdout.splitlines():
+                m_pk = p_polkit.search(line)
+                if m_pk:
+                    ts = line[:19].replace("T", " ") if len(line) >= 19 else ""
+                    g = m_pk.groupdict()
+                    u = g.get("owner_user") or g.get("auth_user") or ""
+                    if not u or u == "pantau":
+                        continue
+                    if target_user and u != target_user and not u.endswith(" " + target_user):
+                        continue
+                    is_fail = bool(g.get("fail"))
+                    action = g.get("action") or ""
+                    cmd_label = polkit_action_map.get(action, action.split(".")[-1])
+                    ev_type = "polkit_gagal" if is_fail else "polkit"
+                    alert_msg = "Otorisasi Ditolak / Dibatalkan" if is_fail else ""
+                    pk_key = (u, ts, action, ev_type)
+                    if pk_key not in seen_sudo:
+                        seen_sudo.add(pk_key)
+                        events.append({
+                            "ts": ts,
+                            "user": u,
+                            "type": ev_type,
+                            "from": "(lokal)",
+                            "tty": "—",
+                            "pwd": "—",
+                            "target_user": "root",
+                            "alert": alert_msg,
+                            "raw_action": action,
+                            "method": cmd_label,
+                        })
+    except Exception:
+        pass
+
+    # 5. Log Otentikasi Terperinci (auth.log, secure, atau systemd journalctl)
+    patterns = [
+        ("login", re.compile(
+            r"Accepted (?P<method>password|publickey|keyboard-interactive|gssapi-with-mic) "
+            r"for (?:invalid user )?(?P<user>[\w.-]+) from (?P<from>[\da-fA-F:.]+)")),
+        ("gagal", re.compile(
+            r"Failed password for (?:invalid user )?(?P<user>[\w.-]+) from (?P<from>[\da-fA-F:.]+)")),
+        ("gagal", re.compile(
+            r"Invalid user (?P<user>[\w.-]+) from (?P<from>[\da-fA-F:.]+)")),
+        ("gagal", re.compile(
+            r"Maximum authentication attempts exceeded for (?:invalid user )?"
+            r"(?P<user>[\w.-]+) from (?P<from>[\da-fA-F:.]+)")),
+    ]
+    # Hanya sertakan pola regex sudo jika kueri journalctl khusus sudo (Langkah 3) tidak dijalankan
+    if not sudo_handled_by_section_3:
+        patterns.append(("sudo", re.compile(
+            r"sudo(?:\[\d+\])?:\s+(?P<user>[\w.-]+)\s*:\s+(?:TTY=(?P<tty>\S+)\s*;\s*)?.+?USER=\S+\s*;\s*"
+            r"COMMAND=(?P<cmd>.+)$")))
+
+    data = ""
+    for auth_path in (AUTH_FILE, "/var/log/secure"):
+        if os.path.isfile(auth_path):
+            try:
+                with open(auth_path, "rb") as f:
+                    f.seek(0, 2)
+                    size = f.tell()
+                    chunk = min(size, 8 * 1024 * 1024)
+                    f.seek(size - chunk)
+                    data = f.read().decode("utf-8", errors="replace")
+                if data:
+                    break
+            except OSError:
+                pass
+
+    if not data:
+        # Fallback journalctl untuk host tanpa file auth fisik
+        res_j = _run_cmd(
+            ["journalctl", "-q", "-o", "short-iso",
+             "_SYSTEMD_UNIT=ssh.service", "+",
+             "_SYSTEMD_UNIT=sshd.service", "+",
+             "_SYSTEMD_UNIT=systemd-logind.service",
+             "-n", "200", "--no-pager"],
+            timeout=10,
+        )
+        if res_j and res_j.stdout:
+            data = res_j.stdout
+
+    if data:
+        for line in data.splitlines():
+            ts = line[:19].replace("T", " ") if len(line) >= 19 else ""
+            for kind, regex in patterns:
+                m = regex.search(line)
+                if not m:
+                    continue
+                g = m.groupdict()
+                user = g.get("user", "?")
+                if user == "pantau":          # aktivitas agen sendiri = noise
+                    break
+                if target_user and user != target_user and not user.endswith(" " + target_user):
+                    break
+                if "invalid user" in line and kind == "gagal":
+                    user = "(invalid) " + user
+                if kind == "sudo":
+                    src = "(lokal)"
+                    tty_val = g.get("tty") or "(lokal)"
+                    method = (g.get("cmd") or "").strip()
+                    sudo_key = (user, ts, tty_val, method)
+                    if sudo_key in seen_sudo:
+                        break
+                    seen_sudo.add(sudo_key)
+                else:
+                    src = g.get("from") or "(lokal)"
+                    tty_val = ""
+                    auth_m = g.get("method")
+                    if auth_m:
+                        method = f"ssh ({auth_m})"
+                    else:
+                        method = "ssh" if kind != "sesi" else "console"
+                auth_key = (user, ts[:16], src, kind)
+                if auth_key not in seen_auth:
+                    seen_auth.add(auth_key)
+                    enriched = False
+                    if kind == "login":
+                        for ev in events:
+                            if ev.get("type") == "login" and ev.get("user") == user and str(ev.get("ts", ""))[:16] == ts[:16]:
+                                if src != "(lokal)" and (not ev.get("from") or ev.get("from") == "(lokal)"):
+                                    ev["from"] = src
+                                if "ssh (" in method:
+                                    ev["method"] = method
+                                enriched = True
+                                break
+                    if not enriched:
+                        events.append({"ts": ts, "user": user, "type": kind, "from": src, "tty": tty_val, "method": method})
+                break
+
+    # 6. Riwayat Perintah Shell Non-Sudo (Pengguna Umum & Sudoers tanpa awalan sudo)
+    if target_user:
+        # 6a. Prioritas Utama: Audit Real-Time Perintah Shell via Journalctl (pantau-shell)
+        try:
+            cmd_sh = ["journalctl", "-q", "-o", "short-iso", "-t", "pantau-shell", "-n", "300", "--no-pager"]
+            res_sh = _run_cmd(cmd_sh, timeout=6)
+            if res_sh and res_sh.stdout:
+                p_sh = re.compile(
+                    r"^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})\S*\s+\S+\s+pantau-shell(?:\[\d+\])?:\s+"
+                    r"\[USER=(?P<user>[^\]]+)\]\s+"
+                    r"\[PWD=(?P<pwd>[^\]]+)\]\s+"
+                    r"\[TTY=(?P<tty>[^\]]+)\]\s+"
+                    r"CMD:\s+(?P<cmd>.+)$"
+                )
+                for line in res_sh.stdout.splitlines():
+                    m = p_sh.match(line.strip())
+                    if not m:
+                        continue
+                    u = m.group("user").strip()
+                    if target_user and u != target_user:
+                        continue
+                    cmd_val = (m.group("cmd") or "").strip()
+                    if not cmd_val or is_ignorable_shell_cmd(cmd_val):
+                        continue
+                    # Hindari duplikasi jika perintah diawali sudo dan sudah ada di audit sudo
+                    if cmd_val.startswith("sudo ") or cmd_val.startswith("sudo\t"):
+                        cmd_core = cmd_val[5:].strip()
+                        if any(cmd_core in s[3] or s[3] in cmd_core for s in seen_sudo if len(s) >= 4):
+                            continue
+                    ts_iso = m.group(1).replace("T", " ")
+                    pwd_val = m.group("pwd").strip()
+                    tty_val = m.group("tty").strip()
+                    sh_key = (u, ts_iso, cmd_val, "shell")
+                    if sh_key not in seen_sudo:
+                        seen_sudo.add(sh_key)
+                        events.append({
+                            "ts": ts_iso,
+                            "user": u,
+                            "type": "shell",
+                            "from": "(lokal)",
+                            "tty": tty_val,
+                            "pwd": pwd_val,
+                            "target_user": u,
+                            "alert": "",
+                            "method": cmd_val,
+                        })
+                    # Sinkronisasi event siklus hidup sesi Web Terminal
+                    if cmd_val == "[Sesi Web Terminal Dibuka]":
+                        open_key = (u, ts_iso, tty_val, "login")
+                        if open_key not in seen_sessions:
+                            seen_sessions.add(open_key)
+                            events.append({
+                                "ts": ts_iso,
+                                "user": u,
+                                "type": "login",
+                                "from": "Web Terminal",
+                                "tty": tty_val,
+                                "login_time": ts_iso,
+                                "pwd": pwd_val,
+                                "target_user": u,
+                                "alert": "",
+                                "method": f"{tty_val} (Web Terminal)",
+                                "active": False,
+                            })
+                    elif cmd_val.startswith("[Sesi Web Terminal Ditutup"):
+                        close_key = (u, ts_iso, tty_val, "selesai")
+                        if close_key not in seen_sessions:
+                            seen_sessions.add(close_key)
+                            events.append({
+                                "ts": ts_iso,
+                                "user": u,
+                                "type": "selesai",
+                                "from": "Web Terminal",
+                                "tty": tty_val,
+                                "logout_time": ts_iso,
+                                "pwd": pwd_val,
+                                "target_user": u,
+                                "alert": "",
+                                "method": f"{tty_val} (Web Terminal)",
+                                "active": False,
+                            })
+        except Exception:
+            pass
+
+        # 6b. Riwayat Cadangan dari Berkas Riwayat Shell (.bash_history, dll)
+        try:
+            hist_list = _collect_user_history(target_user, max_lines=250)
+            for h in hist_list:
+                cmd_raw = (h.get("cmd") or "").strip()
+                if not cmd_raw:
+                    continue
+                ts_hist = h.get("ts") or ""
+                # Abaikan riwayat tanpa stempel waktu epoch sah agar tidak menginjeksi perintah usang ke sesi aktif terkini
+                if not ts_hist:
+                    continue
+                # Eliminasi noise navigasi & terminal bawaan non-esensial (cd, ls, clear, exit, dll)
+                if is_ignorable_shell_cmd(cmd_raw):
+                    continue
+                # Jangan duplikasi bila perintah diawali sudo dan sudah ada di audit sudo
+                if cmd_raw.startswith("sudo ") or cmd_raw.startswith("sudo\t"):
+                    cmd_core = cmd_raw[5:].strip()
+                    if any(cmd_core in s[3] or s[3] in cmd_core for s in seen_sudo if len(s) >= 4):
+                        continue
+                # Jika sudah ada entri dengan perintah yang sama tercatat di seen_sudo baru-baru ini, hindari duplikasi
+                if any(cmd_raw == s[2] for s in seen_sudo if len(s) >= 4 and s[3] == "shell"):
+                    continue
+                sh_key = (target_user, ts_hist, cmd_raw, "shell")
+                if sh_key not in seen_sudo:
+                    seen_sudo.add(sh_key)
+                    events.append({
+                        "ts": ts_hist,
+                        "user": target_user,
+                        "type": "shell",
+                        "from": "(lokal)",
+                        "tty": "—",
+                        "pwd": "—",
+                        "target_user": target_user,
+                        "alert": "",
+                        "method": cmd_raw,
+                    })
+        except Exception:
+            pass
+
+    # 7. Deteksi Proses Layanan & Daemon Latar Belakang (Akun Reguler & Sistem)
+    if target_user:
+        try:
+            ps_u_cmd = ["ps", "-u", target_user, "-o", "pid,lstart,stat,time,command", "--no-headers"]
+            res_u = _run_cmd(ps_u_cmd, timeout=4)
+            if res_u and res_u.stdout:
+                seen_pids = set()
+                for pline in res_u.stdout.splitlines():
+                    pparts = pline.split(None, 8)
+                    if len(pparts) < 9:
+                        continue
+                    pid_str, dow, mon, day, tm, yr, stat_str, cputime, cmd_str = pparts
+                    if pid_str in seen_pids:
+                        continue
+                    seen_pids.add(pid_str)
+                    cmd_clean = cmd_str.strip()
+                    if not cmd_clean:
+                        continue
+                    if "agent_pantau" in cmd_clean and target_user != "root":
+                        continue
+                    try:
+                        dt_proc = datetime.strptime(f"{dow} {mon} {day} {tm} {yr}", "%a %b %d %H:%M:%S %Y")
+                        proc_ts = dt_proc.strftime("%Y-%m-%d %H:%M:%S")
+                    except Exception:
+                        proc_ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+                    cwd_path = "—"
+                    try:
+                        cwd_path = os.readlink(f"/proc/{pid_str}/cwd")
+                    except Exception:
+                        pass
+
+                    proc_key = (target_user, pid_str, "proses")
+                    if proc_key not in seen_sudo:
+                        seen_sudo.add(proc_key)
+                        events.append({
+                            "ts": proc_ts,
+                            "user": target_user,
+                            "type": "proses",
+                            "from": "(proses)",
+                            "tty": f"PID {pid_str}",
+                            "pwd": cwd_path,
+                            "target_user": target_user,
+                            "alert": f"Proses Layanan Aktif ({stat_str})",
+                            "method": cmd_clean,
+                            "active": True,
+                        })
+        except Exception:
+            pass
+
+        # 8. Deteksi Tugas Terjadwal (Cron) Milik Pengguna
+        try:
+            cron_data = collect_cron_jobs()
+            for c_item in cron_data.get("jobs", []):
+                if c_item.get("user") == target_user:
+                    cmd_c = (c_item.get("command") or "").strip()
+                    if not cmd_c:
+                        continue
+                    sched_c = c_item.get("schedule") or "terjadwal"
+                    ident_c = c_item.get("ident") or "cron"
+                    now_ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    cron_key = (target_user, sched_c, cmd_c, "cron")
+                    if cron_key not in seen_sudo:
+                        seen_sudo.add(cron_key)
+                        events.append({
+                            "ts": now_ts,
+                            "user": target_user,
+                            "type": "cron",
+                            "from": f"({ident_c})",
+                            "tty": "cron",
+                            "pwd": "~",
+                            "target_user": target_user,
+                            "alert": f"Jadwal: {sched_c}",
+                            "method": cmd_c,
+                            "active": True,
+                        })
+        except Exception:
+            pass
+
+        # 9. Log Jurnal Sistem Terkait UID Pengguna
+        try:
+            import pwd
+            pw_entry = pwd.getpwnam(target_user)
+            uid_val = pw_entry.pw_uid
+            cmd_j = ["journalctl", "-q", "-o", "short-iso", f"_UID={uid_val}", "-n", "30", "--no-pager"]
+            res_j = _run_cmd(cmd_j, timeout=5)
+            if res_j and res_j.stdout:
+                p_jline = re.compile(r"^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})[^\s]*\s+\S+\s+(?:([^:\[]+)(?:\[\d+\])?:)?\s*(.*)$")
+                for jline in res_j.stdout.splitlines():
+                    jline = jline.strip()
+                    if not jline:
+                        continue
+                    m_j = p_jline.match(jline)
+                    if not m_j:
+                        continue
+                    j_ts_raw, j_ident_raw, j_msg_raw = m_j.groups()
+                    j_ts = j_ts_raw.replace("T", " ")
+                    j_ident = (j_ident_raw or "sistem").strip()
+                    j_msg = (j_msg_raw or "").strip()
+                    if not j_msg:
+                        continue
+                    if "agent_pantau" in j_msg:
+                        continue
+                    j_key = (target_user, j_ts, j_msg[:40], "sistem")
+                    if j_key not in seen_sudo:
+                        seen_sudo.add(j_key)
+                        events.append({
+                            "ts": j_ts,
+                            "user": target_user,
+                            "type": "sistem",
+                            "from": f"({j_ident})",
+                            "tty": "jurnal",
+                            "pwd": "—",
+                            "target_user": target_user,
+                            "alert": f"Log Sistem ({j_ident})",
+                            "method": j_msg,
+                            "active": False,
+                        })
+        except Exception:
+            pass
+
+    # Sinkronisasi timestamp sesi aktif agar konsisten dan tidak tertinggal di bawah perintah yang terjadi di dalamnya
+    max_ev_ts = max((str(e.get("ts", "")) for e in events if e.get("type") not in ("aktif", "proses") and len(str(e.get("ts", ""))) >= 19), default="")
+    for e in events:
+        if e.get("type") in ("aktif", "proses"):
+            login_t = str(e.get("login_time", ""))
+            cur_ts = str(e.get("ts", ""))
+            if login_t and cur_ts < login_t:
+                e["ts"] = login_t
+            if max_ev_ts and str(e.get("ts", "")) < max_ev_ts:
+                e["ts"] = max_ev_ts
+
+    def _sort_key(ev):
+        t = str(ev.get("ts", ""))
+        typ = ev.get("type", "")
+        # Sesi Aktif & Proses Aktif diprioritaskan di atas
+        if typ == "aktif":
+            prio = 5
+        elif typ == "proses":
+            prio = 4
+        elif typ == "selesai":
+            prio = 3
+        elif typ in ("login", "sukses"):
+            prio = 1
+        elif typ == "cron":
+            prio = 3
+        else:
+            prio = 2
+        return (t, prio)
+
+    events.sort(key=_sort_key, reverse=True)
+    return events[: max(0, max_events)]
+
+
+_security_cache: dict = {"at": 0.0, "data": None}
+
+
+def collect_security() -> dict:
+    """Ringkasan keamanan dari auth log / journalctl (window ±4 MB terakhir).
+
+    Dipakai indikator 'status masalah' pada Dashboard (serangan/brute force).
+    Dihitung maksimal sekali per 60 detik karena auth.log sering ditulis.
+
+    Kembalikan: {"failed", "invalid_users", "source_ips": {ip: n}, "window": [start,end]}
+    """
+    now = time.monotonic()
+    if _security_cache["data"] is not None and now - _security_cache["at"] < 60:
+        return _security_cache["data"]
+
+    out: dict = {"failed": 0, "invalid_users": 0, "source_ips": {}, "window": []}
+    data = ""
+    for cand in (AUTH_FILE, "/var/log/secure"):
+        if os.path.isfile(cand):
+            try:
+                with open(cand, "rb") as f:
+                    f.seek(0, 2)
+                    size = f.tell()
+                    chunk = min(size, 4 * 1024 * 1024)
+                    f.seek(size - chunk)
+                    data = f.read().decode("utf-8", errors="replace")
+                if data:
+                    break
+            except OSError:
+                pass
+
+    if not data:
+        # Fallback journalctl untuk host tanpa file auth fisik
+        res_j = _run_cmd(
+            ["journalctl", "-u", "ssh", "-u", "sshd", "-n", "300", "--no-pager"],
+            timeout=8,
+        )
+        if res_j and res_j.stdout:
+            data = res_j.stdout
+
+    lines = data.splitlines() if data else []
+    if lines:
+        out["window"] = [lines[0][:19], lines[-1][:19]]
+    last_ts = None
+    for line in lines:
+        # "Invalid user" hanya baris info; upaya nyata dihitung dari baris
+        # "Failed password"/"Maximum authentication" agar tidak dobel.
+        is_invalid = "Invalid user" in line
+        is_failed = ("Failed password" in line
+                     or "Maximum authentication attempts" in line)
+        if not (is_invalid or is_failed):
+            continue
+        if is_failed:
+            out["failed"] += 1
+        if is_invalid:
+            out["invalid_users"] += 1
+        m = re.search(r"from ([\da-fA-F:.]+)", line)
+        ip = m.group(1) if m else "?"
+        out["source_ips"][ip] = out["source_ips"].get(ip, 0) + 1
+        mts = re.match(r"^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})", line) \
+            or re.match(r"^(\w{3}\s+\d{1,2} \d{2}:\d{2}:\d{2})", line)
+        if mts:
+            last_ts = mts.group(1)
+    if last_ts:
+        try:
+            if "T" in last_ts:
+                _dt = datetime.fromisoformat(last_ts)
+            else:
+                _dt = datetime.strptime(
+                    last_ts + " " + str(datetime.now().year), "%b %d %H:%M:%S %Y")
+            # Normalisasi ke UTC agar terbaca absen-tenang yang benar di server
+            # yang membandingkan dengan datetime.utcnow() (zona host klien apa pun).
+            _dt = _dt.astimezone(timezone.utc).replace(tzinfo=None)
+            out["last_seen"] = _dt.isoformat(timespec="seconds")
+        except ValueError:
+            out.pop("last_seen", None)
+    out["source_ips"] = dict(
+        sorted(out["source_ips"].items(), key=lambda kv: -kv[1])[:15])
+    _security_cache["data"] = out
+    _security_cache["at"] = now
+    return out
+
+
+_cron_cache: dict = {"at": 0.0, "data": None}
+
+
+def collect_cron_jobs() -> dict:
+    """Kumpulkan daftar tugas terjadwal dari crontab sistem, user, dan systemd timers."""
+    now = time.monotonic()
+    if _cron_cache["data"] is not None and now - _cron_cache["at"] < 30:
+        return _cron_cache["data"]
+
+    items: list[dict] = []
+    
+    # 1. Parse /etc/crontab (system-wide)
+    if os.path.isfile("/etc/crontab"):
+        try:
+            with open("/etc/crontab", "r", encoding="utf-8", errors="replace") as f:
+                for idx, line in enumerate(f, 1):
+                    raw = line.strip()
+                    if not raw or raw.startswith("#"):
+                        continue
+                    if re.match(r"^[A-Za-z_][A-Za-z0-9_]*\s*=", raw):
+                        continue
+                    parts = re.split(r"\s+", raw)
+                    if len(parts) >= 7:
+                        sched = " ".join(parts[0:5])
+                        user = parts[5]
+                        cmd = " ".join(parts[6:])
+                        items.append({
+                            "type": "cron",
+                            "source": "/etc/crontab",
+                            "line": idx,
+                            "schedule": sched,
+                            "user": user,
+                            "command": cmd,
+                            "is_managed": False,
+                            "ident": "",
+                            "is_enabled": True,
+                        })
+        except OSError:
+            pass
+
+    # 2. Parse /etc/cron.d/*
+    for path in sorted(glob.glob("/etc/cron.d/*")):
+        if os.path.basename(path).startswith("."):
+            continue
+        try:
+            with open(path, "r", encoding="utf-8", errors="replace") as f:
+                for idx, line in enumerate(f, 1):
+                    raw = line.strip()
+                    is_enabled = True
+                    if raw.startswith("# DISABLED_BY_PANTAU"):
+                        is_enabled = False
+                        raw = raw[len("# DISABLED_BY_PANTAU"):].strip()
+                    elif not raw or raw.startswith("#"):
+                        continue
+                    if re.match(r"^[A-Za-z_][A-Za-z0-9_]*\s*=", raw):
+                        continue
+                    parts = re.split(r"\s+", raw)
+                    if len(parts) >= 7:
+                        sched = " ".join(parts[0:5])
+                        user = parts[5]
+                        cmd = " ".join(parts[6:])
+                        bname = os.path.basename(path)
+                        is_managed = bname.startswith("pantau-")
+                        ident = bname[len("pantau-"):] if is_managed else ""
+                        items.append({
+                            "type": "cron",
+                            "source": path,
+                            "line": idx,
+                            "schedule": sched,
+                            "user": user,
+                            "command": cmd,
+                            "is_managed": is_managed,
+                            "ident": ident,
+                            "is_enabled": is_enabled,
+                        })
+        except OSError:
+            pass
+
+    # 3. Systemd Timers (Modern Linux schedulers)
+    timers: list[dict] = []
+    try:
+        res = _run_cmd(["systemctl", "list-timers", "--all", "--no-pager"], timeout=5)
+        if res and res.returncode == 0:
+            lines = [l.strip() for l in res.stdout.splitlines() if l.strip()]
+            for l in lines[1:]:
+                if "ACTIVATES" in l or "timers listed" in l:
+                    continue
+                parts = l.split()
+                timer_unit = [p for p in parts if p.endswith(".timer")]
+                svc_unit = [p for p in parts if p.endswith(".service") or p.endswith(".target")]
+                if timer_unit and svc_unit:
+                    timers.append({
+                        "timer": timer_unit[0],
+                        "activates": svc_unit[0],
+                        "raw": l,
+                    })
+    except Exception:
+        pass
+
+    out = {"jobs": items[:100], "timers": timers[:50]}
+    _cron_cache["data"] = out
+    _cron_cache["at"] = now
+    return out
+
+
+_fw_cache: dict = {"at": 0.0, "data": None}
+
+
+def _ensure_pantau_firewall_wrapper() -> None:
+    """Memastikan /usr/local/sbin/pantau-firewall memiliki penanganan case status)."""
+    wrapper_path = PANTAU_FIREWALL
+    pantau_file = PANTAU_FILE_CMD
+    if not os.path.isfile(wrapper_path):
+        return
+    try:
+        with open(wrapper_path, "r", encoding="utf-8", errors="ignore") as f:
+            content = f.read()
+        if "status)" in content:
+            return
+
+        status_block = """    status)
+        if command -v ufw >/dev/null 2>&1; then
+            ufw status verbose 2>&1 || true
+        fi
+        echo "--- IPTABLES ---"
+        if [ -x "$IPT" ]; then
+            "$IPT" -L INPUT -n -v --line-numbers 2>&1 || true
+        fi
+        exit 0
+        ;;
+"""
+        idx = content.find('*) fail')
+        if idx != -1:
+            new_content = content[:idx] + status_block + content[idx:]
+        else:
+            idx = content.rfind("esac")
+            if idx != -1:
+                new_content = content[:idx] + status_block + content[idx:]
+            else:
+                return
+
+        if IS_ROOT:
+            with open(wrapper_path, "w", encoding="utf-8") as f:
+                f.write(new_content)
+            os.chmod(wrapper_path, 0o755)
+        elif os.path.isfile(pantau_file):
+            payload = json.dumps({
+                "action": "write",
+                "params": {
+                    "path": wrapper_path,
+                    "content": new_content,
+                    "make_backup": False,
+                }
+            })
+            _run_cmd(["/usr/bin/sudo", "-n", pantau_file], timeout=5, input=payload)
+            chmod_payload = json.dumps({
+                "action": "chmod",
+                "params": {
+                    "path": wrapper_path,
+                    "mode": "0755",
+                }
+            })
+            _run_cmd(["/usr/bin/sudo", "-n", pantau_file], timeout=5, input=chmod_payload)
+    except Exception as e:
+        _log_debug(f"Gagal self-heal pantau-firewall: {e}")
+
+
+def collect_firewall() -> dict:
+    """Inspeksi status firewall (UFW dan/atau iptables) dan daftar IP terblokir."""
+    now = time.monotonic()
+    if _fw_cache["data"] is not None and now - _fw_cache["at"] < 20:
+        return _fw_cache["data"]
+
+    fw: dict = {
+        "backend": "unknown",
+        "status": "inactive",
+        "rules": [],
+        "blocked_ips": [],
+    }
+
+    # 1. Panggil pantau-firewall status jika non-root
+    raw_output = ""
+    if not IS_ROOT:
+        res = _run_cmd(["/usr/bin/sudo", "-n", PANTAU_FIREWALL, "status"], timeout=6)
+        if res and res.returncode == 0:
+            raw_output = res.stdout
+        else:
+            # Bila returncode != 0, kemungkinan wrapper pantau-firewall belum memiliki case status)
+            _ensure_pantau_firewall_wrapper()
+            res2 = _run_cmd(["/usr/bin/sudo", "-n", PANTAU_FIREWALL, "status"], timeout=6)
+            if res2 and res2.returncode == 0:
+                raw_output = res2.stdout
+    else:
+        # Root langsung
+        try:
+            r_ufw = _run_cmd(["ufw", "status", "verbose"], timeout=5)
+            r_ipt = _run_cmd(["iptables", "-L", "INPUT", "-n", "-v", "--line-numbers"], timeout=5)
+            raw_output = (r_ufw.stdout if r_ufw else "") + "\n" + (r_ipt.stdout if r_ipt else "")
+        except Exception:
+            pass
+
+    if raw_output:
+        lines = [l.strip() for l in raw_output.splitlines() if l.strip()]
+        has_ufw = any("ufw status" in l.lower() or "status: " in l.lower() for l in lines)
+        if has_ufw:
+            fw["backend"] = "ufw"
+            for l in lines:
+                if l.lower().startswith("status:"):
+                    fw["status"] = "active" if "active" in l.lower() and "inactive" not in l.lower() else "inactive"
+                    break
+        else:
+            fw["backend"] = "iptables"
+            fw["status"] = "active"
+
+        in_rules = False
+        in_iptables = False
+        for l in lines:
+            if l.startswith("--- IPTABLES"):
+                in_iptables = True
+                in_rules = False
+                continue
+            if not in_iptables:
+                if l.startswith("--"):
+                    in_rules = True
+                    continue
+                if in_rules:
+                    fw["rules"].append(l[:120])
+            else:
+                parts = l.split()
+                if len(parts) >= 9 and parts[3] == "DROP":
+                    fw["blocked_ips"].append({
+                        "num": parts[0],
+                        "pkts": parts[1],
+                        "bytes": parts[2],
+                        "source": parts[8],
+                    })
+
+    # Fallback deterministik jika raw_output gagal atau backend masih unknown
+    if not raw_output or fw["backend"] == "unknown":
+        ufw_conf = "/etc/ufw/ufw.conf"
+        if os.path.isfile(ufw_conf):
+            fw["backend"] = "ufw"
+            try:
+                with open(ufw_conf, "r", encoding="utf-8", errors="ignore") as f:
+                    for line in f:
+                        line_s = line.strip()
+                        if line_s.startswith("ENABLED="):
+                            val = line_s.split("=", 1)[1].strip().lower().strip("\"'")
+                            fw["status"] = "active" if val == "yes" else "inactive"
+                            break
+            except Exception:
+                pass
+        elif shutil.which("ufw"):
+            fw["backend"] = "ufw"
+            res_sc = _run_cmd(["systemctl", "is-active", "ufw"], timeout=3)
+            if res_sc and "active" in (res_sc.stdout or "").lower():
+                fw["status"] = "active"
+        elif shutil.which("iptables"):
+            fw["backend"] = "iptables"
+            fw["status"] = "active"
+
+    fw["rules"] = fw["rules"][:100]
+    fw["blocked_ips"] = fw["blocked_ips"][:100]
+    _fw_cache["data"] = fw
+    _fw_cache["at"] = now
+    return fw
+
+
+_ports_cache: dict = {"at": 0.0, "data": None}
+
+
+def collect_listening_ports() -> list[dict]:
+    """Audit listening ports & socket via ss -tulpn (dengan hak sudo ss agar nama proses terbaca)."""
+    now = time.monotonic()
+    if _ports_cache["data"] is not None and now - _ports_cache["at"] < 15:
+        return _ports_cache["data"]
+
+    ports: list[dict] = []
+    cmd = [SS_BIN, "-tulpn"] if IS_ROOT else ["/usr/bin/sudo", "-n", SS_BIN, "-tulpn"]
+    res = _run_cmd(cmd, timeout=5)
+
+    if res and res.returncode == 0:
+        for line in res.stdout.splitlines()[1:]:
+            parts = line.split()
+            if len(parts) >= 5:
+                proto = parts[0].lower()
+                local = parts[4]
+                if ":" in local:
+                    ip, port_str = local.rsplit(":", 1)
+                else:
+                    continue
+                try:
+                    port = int(port_str)
+                except ValueError:
+                    continue
+                proc = ""
+                pid = None
+                pname = ""
+                tail = " ".join(parts[5:])
+                m = re.search(r'"([^"]+)",pid=(\d+)', tail)
+                if m:
+                    pname = m.group(1)
+                    pid = int(m.group(2))
+                    proc = f"{pname} (PID {pid})"
+                elif len(parts) >= 7:
+                    proc = parts[6]
+                is_loopback = ip in ("127.0.0.1", "::1", "127.0.0.53", "127.0.0.54") or ip.startswith("127.0.0.") or ip.endswith("%lo")
+                ports.append({
+                    "proto": proto,
+                    "ip": ip,
+                    "port": port,
+                    "proc": proc,
+                    "pid": pid,
+                    "pname": pname,
+                    "is_loopback": is_loopback,
+                    "is_public": not is_loopback,
+                })
+
+    ports = ports[:60]
+    _ports_cache["data"] = ports
+    _ports_cache["at"] = now
+    return ports
+
+
+_ssl_cache: dict = {"at": 0.0, "data": None}
+
+
+def _parse_agent_cert_date(date_str: str) -> datetime | None:
+    """Parsing tanggal sertifikat SSL dengan dukungan berbagai format dan zona waktu."""
+    if not date_str:
+        return None
+    s = re.sub(r"\s+", " ", date_str.strip())
+    for fmt in (
+        "%b %d %H:%M:%S %Y %Z",
+        "%b %d %H:%M:%S %Y GMT",
+        "%b %d %H:%M:%S %Y UTC",
+        "%b %d %H:%M:%S %Y",
+        "%Y-%m-%d %H:%M:%S",
+        "%Y%m%d%H%M%SZ",
+    ):
+        try:
+            dt = datetime.strptime(s, fmt)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt
+        except ValueError:
+            continue
+    return None
+
+
+def collect_ssl_certs() -> list[dict]:
+    """Inspeksi berkas sertifikat SSL/TLS untuk mendeteksi masa kedaluwarsa."""
+    now = time.monotonic()
+    if _ssl_cache["data"] is not None and now - _ssl_cache["at"] < 300:
+        return _ssl_cache["data"]
+
+    certs: list[dict] = []
+    patterns = [
+        "/etc/letsencrypt/live/*/cert.pem",
+        "/etc/letsencrypt/live/*/fullchain.pem",
+        "/etc/ssl/certs/*.crt",
+        "/etc/nginx/ssl/*.crt",
+        "/etc/apache2/ssl/*.crt",
+    ]
+    seen_files = set()
+    found_paths = []
+    custom_reals = set()
+
+    # Sertifikat kustom yang didaftarkan lewat Pantau
+    custom_conf = "/etc/pantau/custom_ssl.conf"
+    if os.path.isfile(custom_conf):
+        try:
+            with open(custom_conf, "r", encoding="utf-8", errors="replace") as f:
+                for line in f:
+                    cpath = line.strip()
+                    if cpath and not cpath.startswith("#") and os.path.isfile(cpath):
+                        try:
+                            r = os.path.realpath(cpath)
+                            custom_reals.add(r)
+                            if r not in seen_files:
+                                seen_files.add(r)
+                                found_paths.append(cpath)
+                        except OSError:
+                            continue
+        except OSError:
+            pass
+
+    for pat in patterns:
+        for p in sorted(glob.glob(pat)):
+            try:
+                real = os.path.realpath(p)
+                if real not in seen_files:
+                    seen_files.add(real)
+                    found_paths.append(p)
+            except OSError:
+                continue
+
+    utc_now = datetime.now(timezone.utc)
+    for p in found_paths[:50]:
+        try:
+            subject = ""
+            issuer = ""
+            sans = []
+            cn = ""
+            not_after = None
+
+            # 1. Pustaka standar internal: ssl._ssl._test_decode_cert
+            try:
+                decoded = ssl._ssl._test_decode_cert(p)
+                if decoded:
+                    if "subject" in decoded:
+                        subject = ", ".join(f"{k}={v}" for rdn in decoded["subject"] for k, v in rdn)
+                        cn = next((v for rdn in decoded["subject"] for k, v in rdn if k == "commonName"), "")
+                    if "issuer" in decoded:
+                        issuer = ", ".join(f"{k}={v}" for rdn in decoded["issuer"] for k, v in rdn)
+                    if "subjectAltName" in decoded:
+                        sans = [str(v) for k, v in decoded["subjectAltName"] if k == "DNS"]
+                    if "notAfter" in decoded:
+                        not_after = _parse_agent_cert_date(decoded["notAfter"])
+            except Exception:
+                decoded = None
+
+            # 2. Fallback: CLI openssl x509 bawaan sistem
+            if not not_after:
+                try:
+                    res = subprocess.run(
+                        ["openssl", "x509", "-in", p, "-noout", "-subject", "-issuer", "-enddate", "-ext", "subjectAltName"],
+                        capture_output=True,
+                        text=True,
+                        timeout=5.0,
+                    )
+                    if res.returncode == 0:
+                        for line in res.stdout.splitlines():
+                            line_s = line.strip()
+                            if line_s.startswith("subject=") and not subject:
+                                subject = line_s.split("subject=", 1)[1].strip()
+                                cn_m = re.search(r"(?:^|,\s*)CN\s*=\s*([^,]+)", subject, re.IGNORECASE)
+                                if cn_m:
+                                    cn = cn_m.group(1).strip()
+                            elif line_s.startswith("issuer=") and not issuer:
+                                issuer = line_s.split("issuer=", 1)[1].strip()
+                            elif line_s.startswith("notAfter="):
+                                date_str = line_s.split("notAfter=", 1)[1].strip()
+                                not_after = _parse_agent_cert_date(date_str)
+                            elif "DNS:" in line_s and not sans:
+                                sans = [item.strip()[4:] for item in line_s.split(",") if item.strip().startswith("DNS:")]
+                except Exception:
+                    pass
+
+            if not not_after:
+                continue
+
+            days_left = (not_after - utc_now).days
+
+            is_custom = False
+            try:
+                is_custom = os.path.realpath(p) in custom_reals
+            except OSError:
+                pass
+
+            domains = sans if sans else ([cn] if cn else ([subject] if subject else []))
+
+            certs.append({
+                "path": p,
+                "subject": subject,
+                "domains": domains,
+                "issuer": issuer,
+                "not_after": not_after.isoformat(),
+                "days_left": days_left,
+                "is_expired": days_left < 0,
+                "is_critical": 0 <= days_left <= 14,
+                "is_warning": 14 < days_left <= 30,
+                "is_custom": is_custom,
+            })
+        except Exception:
+            continue
+
+    _ssl_cache["data"] = certs
+    _ssl_cache["at"] = now
+    return certs
+
+
+_fim_cache: dict = {"at": 0.0, "data": None}
+FIM_CUSTOM_PATHS_FILE = "/etc/pantau/fim_paths.json"
+FIM_BASELINE_FILE = "/etc/pantau/fim_baseline.json"
+FIM_LAST_STATE_FILE = "/etc/pantau/fim_last_state.json"
+
+DEFAULT_FIM_PATHS = [
+    {"path": "/etc/sudoers", "scope": "single_file", "category": "system"},
+    {"path": "/etc/passwd", "scope": "single_file", "category": "system"},
+    {"path": "/etc/shadow", "scope": "single_file", "category": "system"},
+    {"path": "/etc/ssh/sshd_config", "scope": "single_file", "category": "system"},
+    {"path": "/root/.ssh/authorized_keys", "scope": "single_file", "category": "system"},
+    {"path": "/etc/systemd/system", "scope": "dir_shallow", "category": "system"},
+    {"path": "/etc/crontab", "scope": "single_file", "category": "system"},
+]
+
+
+def _load_fim_custom_paths() -> list[dict]:
+    if os.path.isfile(FIM_CUSTOM_PATHS_FILE):
+        try:
+            with open(FIM_CUSTOM_PATHS_FILE, "r", encoding="utf-8", errors="replace") as f:
+                res = json.load(f)
+                if isinstance(res, list):
+                    return res
+        except Exception:
+            pass
+    return []
+
+
+def _save_fim_custom_paths(paths: list[dict]) -> bool:
+    try:
+        content = json.dumps(paths, ensure_ascii=False, indent=2)
+        if IS_ROOT:
+            os.makedirs(os.path.dirname(FIM_CUSTOM_PATHS_FILE), exist_ok=True)
+            with open(FIM_CUSTOM_PATHS_FILE, "w", encoding="utf-8") as f:
+                f.write(content)
+            return True
+        else:
+            res = run_file_op("write", {"path": FIM_CUSTOM_PATHS_FILE, "content": content, "make_backup": False})
+            return res.get("ok", False)
+    except Exception:
+        return False
+
+
+def _load_fim_baseline() -> dict:
+    if os.path.isfile(FIM_BASELINE_FILE):
+        try:
+            with open(FIM_BASELINE_FILE, "r", encoding="utf-8", errors="replace") as f:
+                res = json.load(f)
+                if isinstance(res, dict):
+                    return res
+        except Exception:
+            pass
+    return {}
+
+
+def _save_fim_baseline(baseline: dict) -> bool:
+    try:
+        content = json.dumps(baseline, ensure_ascii=False, indent=2)
+        if IS_ROOT:
+            os.makedirs(os.path.dirname(FIM_BASELINE_FILE), exist_ok=True)
+            with open(FIM_BASELINE_FILE, "w", encoding="utf-8") as f:
+                f.write(content)
+            return True
+        else:
+            res = run_file_op("write", {"path": FIM_BASELINE_FILE, "content": content, "make_backup": False})
+            return res.get("ok", False)
+    except Exception:
+        return False
+
+
+def _load_fim_last_state() -> dict:
+    if os.path.isfile(FIM_LAST_STATE_FILE):
+        try:
+            with open(FIM_LAST_STATE_FILE, "r", encoding="utf-8", errors="replace") as f:
+                res = json.load(f)
+                if isinstance(res, dict):
+                    return res
+        except Exception:
+            pass
+    return {}
+
+
+def _save_fim_last_state(state: dict) -> bool:
+    try:
+        content = json.dumps(state, ensure_ascii=False, indent=2)
+        if IS_ROOT:
+            os.makedirs(os.path.dirname(FIM_LAST_STATE_FILE), exist_ok=True)
+            with open(FIM_LAST_STATE_FILE, "w", encoding="utf-8") as f:
+                f.write(content)
+            return True
+        else:
+            res = run_file_op("write", {"path": FIM_LAST_STATE_FILE, "content": content, "make_backup": False})
+            return res.get("ok", False)
+    except Exception:
+        return False
+
+
+def _cleanup_systemd_bak() -> None:
+    """Bersihkan residu berkas cadangan otomatis lama (.bak) di /etc/systemd/system."""
+    try:
+        baks = glob.glob("/etc/systemd/system/agent_pantau.service.bak*")
+        for b in baks:
+            try:
+                if IS_ROOT:
+                    os.unlink(b)
+                else:
+                    run_file_op("rm", {"path": b})
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+
+# Pola karakteristik berkas volatil/log dinamis untuk Diferensiasi Kebijakan Atribut FIM
+FIM_VOLATILE_EXTENSIONS = {
+    ".log", ".tmp", ".swp", ".swo", ".pid", ".sock", ".sess", ".cache", ".dat", ".journal",
+}
+
+
+def _is_volatile_fim_file(rel_path: str, filename: str) -> bool:
+    """Evaluasi agnostik apakah berkas merupakan data volatil / log dinamis.
+    Bebas dari hardcode nama aplikasi pihak ketiga. Berkas volatil tetap diawasi
+    atribut keamanan fisiknya (hak akses, kepemilikan, keberadaan, dan deteksi penghapusan)
+    tanpa memicu alarm palsu pada pertumbuhan ukuran log atau fluktuasi hash isi.
+    """
+    f_lower = filename.lower()
+    if any(f_lower.endswith(ext) for ext in FIM_VOLATILE_EXTENSIONS):
+        return True
+    if f_lower.startswith("sess_"):
+        return True
+    parts = [p.lower() for p in rel_path.replace("\\", "/").split("/")[:-1]]
+    if any(p.endswith("logs") or p.endswith("log") or "cache" in p or p.startswith("sess") or p in {"tmp", "temp"} for p in parts):
+        return True
+    return False
+
+
+def _scan_dir_tree(dir_path: str, max_depth: int = 10, max_files: int = 5000) -> dict:
+    """
+    Pemindaian pohon direktori secara rekursif hingga kedalaman tertentu (maksimal max_depth subfolder).
+    Mengumpulkan peta file spesifik (ukuran, mtime, permissions, user/owner, sha256) untuk
+    deteksi insiden integritas mendalam hingga ke file dalam subdirektori.
+    """
+    dir_path_clean = os.path.abspath(dir_path)
+    empty_res = {
+        "exists": False,
+        "is_dir": True,
+        "size": 0,
+        "count": 0,
+        "dir_count": 0,
+        "file_count": 0,
+        "mtime": 0,
+        "permissions": "0755",
+        "owner_group": "root:root",
+        "sha256": "",
+        "files": {},
+    }
+    if not os.path.exists(dir_path_clean):
+        return empty_res
+
+    try:
+        st_root = os.stat(dir_path_clean)
+    except Exception:
+        return empty_res
+
+    try:
+        root_owner = pwd.getpwuid(st_root.st_uid).pw_name
+    except Exception:
+        root_owner = str(st_root.st_uid)
+    try:
+        root_group = grp.getgrgid(st_root.st_gid).gr_name
+    except Exception:
+        root_group = str(st_root.st_gid)
+    root_perm = oct(st_root.st_mode & 0o777)[2:].zfill(4)
+
+    files_map = {}
+    dir_count = 0
+    file_count = 0
+    total_size = 0
+
+    ignored_dirs = {".git", ".svn", ".cache", "node_modules", "__pycache__", ".idea", ".vscode"}
+
+    try:
+        for root, dirs, files in os.walk(dir_path_clean, topdown=True, followlinks=False):
+            dirs[:] = [d for d in dirs if not d.startswith(".") and d not in ignored_dirs]
+            rel_root = os.path.relpath(root, dir_path_clean)
+            depth = 0 if rel_root == "." else len(rel_root.split(os.sep))
+            if depth >= max_depth:
+                dirs.clear()
+                continue
+
+            dir_count += len(dirs)
+
+            for f in files:
+                if f.startswith("."):
+                    continue
+                if file_count >= max_files:
+                    break
+                full_path = os.path.join(root, f)
+                rel_file = os.path.relpath(full_path, dir_path_clean)
+                is_vol = _is_volatile_fim_file(rel_file, f)
+
+                try:
+                    st = os.stat(full_path)
+                except Exception:
+                    continue
+
+                try:
+                    f_owner = pwd.getpwuid(st.st_uid).pw_name
+                except Exception:
+                    f_owner = str(st.st_uid)
+                try:
+                    f_group = grp.getgrgid(st.st_gid).gr_name
+                except Exception:
+                    f_group = str(st.st_gid)
+                f_perm = oct(st.st_mode & 0o777)[2:].zfill(4)
+                f_size = st.st_size
+                f_mtime = int(st.st_mtime)
+                total_size += f_size
+
+                # Hitung hash SHA-256 untuk file <= 5MB, metadata hash untuk file > 5MB
+                f_hash = ""
+                if f_size <= 5 * 1024 * 1024:
+                    try:
+                        h = hashlib.sha256()
+                        with open(full_path, "rb") as fh:
+                            while chunk := fh.read(65536):
+                                h.update(chunk)
+                        f_hash = h.hexdigest()
+                    except Exception:
+                        f_hash = f"meta:{f_perm}:{f_size}:{f_mtime}"
+                else:
+                    f_hash = f"meta:{f_perm}:{f_size}:{f_mtime}"
+
+                files_map[rel_file] = {
+                    "size": f_size,
+                    "mtime": f_mtime,
+                    "perm": f_perm,
+                    "owner": f_owner,
+                    "group": f_group,
+                    "sha256": f_hash,
+                    "is_volatile": is_vol,
+                }
+                file_count += 1
+
+            if file_count >= max_files:
+                break
+    except Exception:
+        pass
+
+    # Hitung hash pohon direktori terpadu berdasarkan kebijakan atribut
+    manifest_items = []
+    for k in sorted(files_map.keys())[:max_files]:
+        fm = files_map[k]
+        if fm.get("is_volatile"):
+            manifest_items.append(f"{k}:vol:{fm['perm']}:{fm['owner']}:{fm['group']}")
+        else:
+            manifest_items.append(f"{k}:{fm['sha256']}:{fm['size']}:{fm['perm']}:{fm['owner']}")
+    manifest_str = f"cnt:{file_count}|dirs:{dir_count}|files:{file_count}|" + ";;".join(manifest_items)
+    tree_hash = hashlib.sha256(manifest_str.encode("utf-8")).hexdigest()
+
+    return {
+        "exists": True,
+        "is_dir": True,
+        "size": total_size if total_size > 0 else st_root.st_size,
+        "count": file_count + dir_count,
+        "dir_count": dir_count,
+        "file_count": file_count,
+        "mtime": int(st_root.st_mtime),
+        "permissions": root_perm,
+        "owner_group": f"{root_owner}:{root_group}",
+        "sha256": tree_hash,
+        "files": files_map,
+    }
+
+
+def _inspect_fim_target(path: str) -> dict:
+    """Inspeksi status, ukuran, hak akses, dan SHA-256 hash dari target path.
+    Mempertahankan prinsip zero-external dependency dan toleransi terhadap boundary hak akses.
+    """
+    empty_result = {
+        "exists": False,
+        "is_dir": False,
+        "size": 0,
+        "count": 0,
+        "dir_count": 0,
+        "file_count": 0,
+        "mtime": 0,
+        "permissions": "",
+        "owner_group": "",
+        "sha256": "",
+        "files": {},
+    }
+    if not path:
+        return empty_result
+
+    # 1. Evaluasi keberadaan dan metadata fisik sistem via stat native (berlaku untuk semua file di path terakses)
+    try:
+        if not os.path.exists(path):
+            return empty_result
+
+        st = os.stat(path)
+        is_dir = stat.S_ISDIR(st.st_mode)
+        oct_mode = oct(st.st_mode & 0o777)[2:].zfill(4)
+        try:
+            owner = pwd.getpwuid(st.st_uid).pw_name
+        except Exception:
+            owner = str(st.st_uid)
+        try:
+            group = grp.getgrgid(st.st_gid).gr_name
+        except Exception:
+            group = str(st.st_gid)
+
+        if is_dir:
+            return _scan_dir_tree(path)
+
+        # Target adalah file reguler: hitung hash SHA-256
+        cur_hash = ""
+        try:
+            h = hashlib.sha256()
+            with open(path, "rb") as f:
+                while chunk := f.read(65536):
+                    h.update(chunk)
+            cur_hash = h.hexdigest()
+        except (PermissionError, IOError):
+            # Target terproteksi (misal /etc/shadow) dan user tidak memiliki izin baca langsung
+            res = run_file_op("hash", {"path": path})
+            if res.get("ok") and res.get("sha256"):
+                cur_hash = res.get("sha256", "")
+            else:
+                # Fallback bila wrapper pantau-file lama belum memiliki sub-aksi 'hash'
+                cur_hash = f"meta:{oct_mode}:{st.st_size}:{int(st.st_mtime)}"
+
+        return {
+            "exists": True,
+            "is_dir": False,
+            "size": st.st_size,
+            "count": 0,
+            "dir_count": 0,
+            "file_count": 0,
+            "mtime": int(st.st_mtime),
+            "permissions": oct_mode,
+            "owner_group": f"{owner}:{group}",
+            "sha256": cur_hash,
+            "files": {},
+        }
+    except Exception:
+        pass
+
+    # 2. Upaya alternatif fallback via wrapper pantau-file jika os.stat native terhalang izin direktori
+    try:
+        res = run_file_op("hash", {"path": path})
+        if res.get("ok"):
+            return {
+                "exists": res.get("exists", True),
+                "is_dir": res.get("is_dir", False),
+                "size": res.get("size", 0),
+                "count": res.get("count", 0),
+                "dir_count": res.get("dir_count", 0),
+                "file_count": res.get("file_count", 0),
+                "mtime": res.get("mtime", 0),
+                "permissions": res.get("octal_mode", ""),
+                "owner_group": f"{res.get('owner', '')}:{res.get('group', '')}",
+                "sha256": res.get("sha256", ""),
+                "files": res.get("files", {}),
+            }
+    except Exception:
+        pass
+
+    return empty_result
+
+
+def _format_size_human(size_bytes: int, is_dir: bool, count: int = 0) -> str:
+    if is_dir:
+        return "Direktori"
+    if size_bytes < 1024:
+        return f"{size_bytes} B"
+    elif size_bytes < 1024 * 1024:
+        return f"{size_bytes / 1024:.1f} KB"
+    elif size_bytes < 1024 * 1024 * 1024:
+        return f"{size_bytes / (1024 * 1024):.1f} MB"
+    return f"{size_bytes / (1024 * 1024 * 1024):.1f} GB"
+
+
+def _rebaseline_fim_path(target_path: str = "") -> None:
+    baseline = _load_fim_baseline()
+    last_state = _load_fim_last_state()
+    paths_to_check = []
+    if target_path:
+        paths_to_check.append(target_path)
+    else:
+        all_specs = DEFAULT_FIM_PATHS + _load_fim_custom_paths()
+        paths_to_check = [s["path"] for s in all_specs]
+
+    for p in paths_to_check:
+        info = _inspect_fim_target(p)
+        if info.get("exists"):
+            data_p = {
+                "sha256": info.get("sha256", ""),
+                "size": info.get("size", 0),
+                "mtime": info.get("mtime", 0),
+                "permissions": info.get("permissions", ""),
+                "owner_group": info.get("owner_group", ""),
+                "count": info.get("count", 0),
+                "dir_count": info.get("dir_count", 0),
+                "file_count": info.get("file_count", 0),
+                "files": info.get("files", {}),
+            }
+            baseline[p] = data_p
+            last_state[p] = data_p
+        else:
+            baseline.pop(p, None)
+            last_state.pop(p, None)
+    baseline["_meta_agent_version"] = AGENT_VERSION
+    _save_fim_baseline(baseline)
+    _save_fim_last_state(last_state)
+
+
+def _remove_fim_baseline(target_path: str) -> None:
+    baseline = _load_fim_baseline()
+    last_state = _load_fim_last_state()
+    changed = False
+    if target_path in baseline:
+        baseline.pop(target_path, None)
+        changed = True
+    if target_path in last_state:
+        last_state.pop(target_path, None)
+        changed = True
+    if changed:
+        _save_fim_baseline(baseline)
+        _save_fim_last_state(last_state)
+
+
+def collect_fim(force: bool = False) -> dict:
+    """Kumpulkan telemetri integritas file (FIM) dan deteksi modifikasi terhadap baseline."""
+    now = time.monotonic()
+    if not force and _fim_cache["data"] is not None and (now - _fim_cache["at"] < 15):
+        return _fim_cache["data"]
+
+    all_specs = DEFAULT_FIM_PATHS + _load_fim_custom_paths()
+    baseline = _load_fim_baseline()
+    last_state = _load_fim_last_state()
+    needs_save_baseline = False
+    needs_save_last_state = False
+
+    # Deteksi pembaruan versi agen: jika versi berubah (misal pasca update OTA/install.sh/git),
+    # otomatis sinkronkan acuan direktori yang dipantau agar berkas log dinamis yang baru dikecualikan tidak memicu alarm FIM palsu.
+    last_agent_ver = baseline.get("_meta_agent_version", "")
+    if last_agent_ver != AGENT_VERSION:
+        baseline["_meta_agent_version"] = AGENT_VERSION
+        _cleanup_systemd_bak()
+        for p_key, b_val in list(baseline.items()):
+            if p_key.startswith("_") or not isinstance(b_val, dict):
+                continue
+            if os.path.isdir(p_key) or b_val.get("is_dir") or "files" in b_val or p_key == "/etc/systemd/system":
+                info_dir = _inspect_fim_target(p_key)
+                if info_dir.get("exists"):
+                    dir_data = {
+                        "is_dir": True,
+                        "sha256": info_dir.get("sha256", ""),
+                        "size": info_dir.get("size", 0),
+                        "mtime": info_dir.get("mtime", 0),
+                        "permissions": info_dir.get("permissions", ""),
+                        "owner_group": info_dir.get("owner_group", ""),
+                        "count": info_dir.get("count", 0),
+                        "dir_count": info_dir.get("dir_count", 0),
+                        "file_count": info_dir.get("file_count", 0),
+                        "files": info_dir.get("files", {}),
+                    }
+                    baseline[p_key] = dir_data
+                    last_state[p_key] = dir_data
+                    needs_save_last_state = True
+                    needs_save_baseline = True
+
+        # Auto-promosi berkas baseline fallback 'meta:' ke SHA-256 asli pasca peningkatan kapabilitas wrapper
+        for p_key, b_val in list(baseline.items()):
+            if p_key.startswith("_") or not isinstance(b_val, dict):
+                continue
+            b_h = b_val.get("sha256", "")
+            if b_h.startswith("meta:"):
+                info_p = _inspect_fim_target(p_key)
+                if info_p.get("exists") and len(info_p.get("sha256", "")) == 64 and not info_p["sha256"].startswith("meta:"):
+                    parts = b_h.split(":")
+                    if len(parts) >= 4:
+                        try:
+                            if parts[1] == info_p.get("permissions") and int(parts[2]) == info_p.get("size") and abs(int(parts[3]) - info_p.get("mtime", 0)) <= 2:
+                                b_val["sha256"] = info_p["sha256"]
+                                if p_key in last_state and isinstance(last_state[p_key], dict):
+                                    last_state[p_key]["sha256"] = info_p["sha256"]
+                                    needs_save_last_state = True
+                        except (ValueError, IndexError):
+                            pass
+        needs_save_baseline = True
+
+    paths_result = []
+    events_result = []
+    now_iso = datetime.now(timezone.utc).isoformat()
+
+    for item in all_specs:
+        p = item["path"]
+        cat = item.get("category", "custom")
+        sc = item.get("scope", "single_file")
+
+        info = _inspect_fim_target(p)
+        exists = info.get("exists", False)
+        is_dir = info.get("is_dir", False)
+        size_b = info.get("size", 0)
+        cnt = info.get("count", 0)
+        dir_count = info.get("dir_count", 0)
+        file_count = info.get("file_count", 0)
+        size_human = _format_size_human(size_b, is_dir, cnt)
+        if is_dir:
+            size_detail = f"{dir_count} direktori, {file_count} file"
+        else:
+            size_detail = f"{size_b} B" if size_b < 1024 else f"{size_b:,} byte ({size_human})"
+        cur_hash = info.get("sha256", "")
+        cur_perm = info.get("permissions", "")
+        cur_og = info.get("owner_group", "")
+        cur_mtime = info.get("mtime", 0)
+        cur_files = info.get("files", {}) if is_dir else {}
+
+        base_info = baseline.get(p)
+        last_info = last_state.get(p)
+        ev_sev = "warning" if cat == "system" else "info"
+
+        # -------------------------------------------------------------
+        # 1. EVALUASI KEJADIAN RUNTIME TERKINI TERHADAP LAST_STATE
+        # -------------------------------------------------------------
+        if not exists:
+            if last_info and last_info.get("sha256"):
+                events_result.append({
+                    "path": p,
+                    "event_type": "DELETED",
+                    "severity": ev_sev,
+                    "details": "Objek berkas atau direktori telah dihapus dari sistem",
+                    "detected_at": now_iso,
+                })
+                last_state[p] = {"exists": False, "sha256": "", "files": {}}
+                needs_save_last_state = True
+        else:
+            if last_info is None:
+                # Inisialisasi awal pelacakan runtime terkini
+                last_state[p] = {
+                    "exists": True,
+                    "is_dir": is_dir,
+                    "sha256": cur_hash,
+                    "size": size_b,
+                    "mtime": cur_mtime,
+                    "permissions": cur_perm,
+                    "owner_group": cur_og,
+                    "count": cnt,
+                    "dir_count": dir_count,
+                    "file_count": file_count,
+                    "files": dict(cur_files),
+                }
+                last_info = last_state[p]
+                needs_save_last_state = True
+
+            if is_dir:
+                last_files = last_info.get("files", {})
+
+                # 1a. Deteksi file yang dihapus sejak pemindaian terakhir
+                for rel_f, l_f in last_files.items():
+                    if rel_f not in cur_files:
+                        disp_name = f"/{rel_f}" if ("/" in rel_f or os.sep in rel_f) else rel_f
+                        events_result.append({
+                            "path": p,
+                            "event_type": "DELETED",
+                            "severity": ev_sev,
+                            "details": f"File {disp_name} dihapus dari direktori",
+                            "detected_at": now_iso,
+                        })
+
+                # 1b. Deteksi file baru yang ditambahkan sejak pemindaian terakhir
+                for rel_f, c_f in cur_files.items():
+                    if rel_f not in last_files:
+                        disp_name = f"/{rel_f}" if ("/" in rel_f or os.sep in rel_f) else rel_f
+                        events_result.append({
+                            "path": p,
+                            "event_type": "CREATED",
+                            "severity": ev_sev,
+                            "details": f"File {disp_name} baru ditambahkan ke direktori",
+                            "detected_at": now_iso,
+                        })
+
+                # 1c. Deteksi modifikasi file atau perubahan hak akses sejak pemindaian terakhir
+                for rel_f, c_f in cur_files.items():
+                    if rel_f in last_files:
+                        l_f = last_files[rel_f]
+                        cur_h_f = c_f.get("sha256", "")
+                        last_h_f = l_f.get("sha256", "")
+                        cur_sz_f = c_f.get("size", 0)
+                        last_sz_f = l_f.get("size", 0)
+                        cur_perm_f = c_f.get("perm", "")
+                        last_perm_f = l_f.get("perm", "")
+                        cur_og_f = f"{c_f.get('owner', '')}:{c_f.get('group', '')}"
+                        last_og_f = f"{l_f.get('owner', '')}:{l_f.get('group', '')}"
+                        disp_name = f"/{rel_f}" if ("/" in rel_f or os.sep in rel_f) else rel_f
+                        is_vol = c_f.get("is_volatile", False)
+
+                        if cur_perm_f and last_perm_f and cur_perm_f != last_perm_f:
+                            events_result.append({
+                                "path": p,
+                                "event_type": "PERMISSION_CHANGED",
+                                "severity": "warning",
+                                "details": f"Hak akses file {disp_name} berubah ({last_perm_f} -> {cur_perm_f})",
+                                "detected_at": now_iso,
+                            })
+                        elif cur_og_f and last_og_f and cur_og_f != last_og_f and cur_og_f != ":" and last_og_f != ":":
+                            events_result.append({
+                                "path": p,
+                                "event_type": "OWNERSHIP_CHANGED",
+                                "severity": "warning",
+                                "details": f"Kepemilikan file {disp_name} berubah ({last_og_f} -> {cur_og_f})",
+                                "detected_at": now_iso,
+                            })
+                        elif not is_vol:
+                            if (cur_h_f and last_h_f and cur_h_f != last_h_f) or (cur_sz_f != last_sz_f) or (c_f.get("mtime") != l_f.get("mtime")):
+                                events_result.append({
+                                    "path": p,
+                                    "event_type": "MODIFIED",
+                                    "severity": ev_sev,
+                                    "details": f"Modifikasi isi/ukuran file {disp_name} terdeteksi",
+                                    "detected_at": now_iso,
+                                })
+
+                last_state[p] = {
+                    "exists": True,
+                    "is_dir": True,
+                    "sha256": cur_hash,
+                    "size": size_b,
+                    "mtime": cur_mtime,
+                    "permissions": cur_perm,
+                    "owner_group": cur_og,
+                    "count": cnt,
+                    "dir_count": dir_count,
+                    "file_count": file_count,
+                    "files": dict(cur_files),
+                }
+                needs_save_last_state = True
+
+            else:
+                last_h = last_info.get("sha256", "")
+                last_sz = last_info.get("size", 0)
+                last_m = last_info.get("mtime", 0)
+                last_p = last_info.get("permissions", "")
+                last_og = last_info.get("owner_group", "")
+                is_vol_single = _is_volatile_fim_file(p, os.path.basename(p))
+
+                diffs_single = []
+                ev_type_single = "MODIFIED"
+                if cur_perm and last_p and cur_perm != last_p:
+                    diffs_single.append(f"Hak akses berkas berubah ({last_p} -> {cur_perm})")
+                    ev_type_single = "PERMISSION_CHANGED"
+                elif cur_og and last_og and cur_og != last_og:
+                    diffs_single.append(f"Kepemilikan berkas berubah ({last_og} -> {cur_og})")
+                    ev_type_single = "OWNERSHIP_CHANGED"
+                elif not is_vol_single:
+                    if (cur_hash and last_h and cur_hash != last_h) or (size_b != last_sz) or (cur_mtime != last_m):
+                        diffs_single.append("Modifikasi isi/ukuran berkas terdeteksi")
+                        ev_type_single = "MODIFIED"
+
+                if diffs_single:
+                    events_result.append({
+                        "path": p,
+                        "event_type": ev_type_single,
+                        "severity": ev_sev if ev_type_single == "MODIFIED" else "warning",
+                        "details": "; ".join(diffs_single),
+                        "detected_at": now_iso,
+                    })
+
+                last_state[p] = {
+                    "exists": True,
+                    "is_dir": False,
+                    "sha256": cur_hash,
+                    "size": size_b,
+                    "mtime": cur_mtime,
+                    "permissions": cur_perm,
+                    "owner_group": cur_og,
+                    "count": 0,
+                    "dir_count": 0,
+                    "file_count": 0,
+                    "files": {},
+                }
+                needs_save_last_state = True
+
+        # -------------------------------------------------------------
+        # 2. EVALUASI STATUS PATH TERHADAP BASELINE (VALID vs CHANGED)
+        # -------------------------------------------------------------
+        if not exists:
+            if base_info and base_info.get("sha256"):
+                status = "MISSING"
+                base_hash = base_info.get("sha256", "")
+            else:
+                status = "NOT_CONFIGURED"
+                base_hash = ""
+        else:
+            if base_info is None:
+                baseline[p] = {
+                    "sha256": cur_hash,
+                    "size": size_b,
+                    "mtime": cur_mtime,
+                    "permissions": cur_perm,
+                    "owner_group": cur_og,
+                    "count": cnt,
+                    "dir_count": dir_count,
+                    "file_count": file_count,
+                    "files": dict(cur_files),
+                }
+                needs_save_baseline = True
+                status = "VALID"
+                base_hash = cur_hash
+            else:
+                base_hash = base_info.get("sha256", "")
+                base_perm = base_info.get("permissions", "")
+                base_size = base_info.get("size", 0)
+                base_og = base_info.get("owner_group", "")
+
+                is_changed = False
+                if is_dir:
+                    base_files = base_info.get("files")
+                    if base_files is None:
+                        base_info["files"] = dict(cur_files)
+                        base_files = base_info["files"]
+                        needs_save_baseline = True
+
+                    if cur_hash != base_hash or len(cur_files) != len(base_files):
+                        is_changed = True
+                    else:
+                        for rf, cf in cur_files.items():
+                            bf = base_files.get(rf)
+                            if not bf:
+                                is_changed = True
+                                break
+                            is_vol = cf.get("is_volatile", False) or bf.get("is_volatile", False)
+                            if is_vol:
+                                # Berkas volatil: hanya awasi integritas hak akses dan kepemilikan fisik
+                                if cf.get("perm") != bf.get("perm") or cf.get("owner") != bf.get("owner") or cf.get("group") != bf.get("group"):
+                                    is_changed = True
+                                    break
+                            else:
+                                if cf.get("sha256") != bf.get("sha256") or cf.get("size") != bf.get("size") or cf.get("perm") != bf.get("perm") or cf.get("owner") != bf.get("owner"):
+                                    is_changed = True
+                                    break
+                else:
+                    # Auto-promosi fallback metadata hash ke SHA-256 asli saat atribut fisik terbukti identik
+                    if base_hash.startswith("meta:") and len(cur_hash) == 64 and not cur_hash.startswith("meta:"):
+                        parts = base_hash.split(":")
+                        if len(parts) >= 4:
+                            try:
+                                if parts[1] == cur_perm and int(parts[2]) == size_b and abs(int(parts[3]) - cur_mtime) <= 2:
+                                    base_info["sha256"] = cur_hash
+                                    base_hash = cur_hash
+                                    needs_save_baseline = True
+                            except (ValueError, IndexError):
+                                pass
+
+                    is_vol_single = _is_volatile_fim_file(p, os.path.basename(p))
+                    if is_vol_single:
+                        if (cur_perm and base_perm and cur_perm != base_perm) or (cur_og and base_og and cur_og != base_og):
+                            is_changed = True
+                    else:
+                        if (cur_hash and base_hash and cur_hash != base_hash) or (size_b != base_size) or (cur_perm and base_perm and cur_perm != base_perm) or (cur_og and base_og and cur_og != base_og):
+                            is_changed = True
+
+                status = "CHANGED" if is_changed else "VALID"
+
+        paths_result.append({
+            "path": p,
+            "category": cat,
+            "scope": sc,
+            "status": status,
+            "size_bytes": size_b,
+            "size_human": size_human,
+            "size_detail": size_detail,
+            "is_dir": is_dir,
+            "dir_count": dir_count,
+            "file_count": file_count,
+            "sha256_hash": base_hash if exists and p in baseline else cur_hash,
+            "last_sha256_hash": cur_hash,
+            "permissions": cur_perm,
+            "owner_group": cur_og,
+            "last_checked_at": now_iso,
+        })
+
+    if needs_save_baseline:
+        _save_fim_baseline(baseline)
+    if needs_save_last_state:
+        _save_fim_last_state(last_state)
+
+    data = {
+        "paths": paths_result,
+        "events": events_result,
+        "checked_at": now_iso,
+    }
+    _fim_cache["data"] = data
+    _fim_cache["at"] = now
+    return data
+
+
+_syslog_cache: dict = {"at": 0.0, "data": []}
+
+
+def collect_system_logs(lines: int = 25) -> list[dict]:
+    """Kumpulkan log galat sistem kritis (journalctl priority err, crit, alert, emerg)."""
+    now = time.monotonic()
+    if _syslog_cache["data"] and now - _syslog_cache["at"] < 30:
+        return _syslog_cache["data"]
+
+    events: list[dict] = []
+    # Jalankan journalctl -p 3 -r (0=emerg, 1=alert, 2=crit, 3=err, -r = terbaru di atas)
+    res = _run_cmd(
+        ["journalctl", "-p", "3", "-n", str(lines), "-r", "--no-pager", "-o", "json"],
+        timeout=5,
+    )
+    if res and res.returncode == 0:
+        for ln in res.stdout.splitlines():
+            if not ln.strip():
+                continue
+            try:
+                d = json.loads(ln)
+                ts = d.get("__REALTIME_TIMESTAMP")
+                time_str = ""
+                if ts:
+                    try:
+                        dt = datetime.fromtimestamp(int(ts) / 1000000.0, timezone.utc)
+                        time_str = dt.strftime("%Y-%m-%d %H:%M:%S")
+                    except Exception:
+                        time_str = str(ts)
+                unit = d.get("_SYSTEMD_UNIT") or d.get("SYSLOG_IDENTIFIER") or "-"
+                msg = (d.get("MESSAGE") or "").strip()[:400]
+                try:
+                    prio = int(d.get("PRIORITY", 3))
+                except Exception:
+                    prio = 3
+                events.append({
+                    "time": time_str,
+                    "unit": unit,
+                    "message": msg,
+                    "priority": prio,
+                })
+            except Exception:
+                continue
+
+    _syslog_cache["data"] = events
+    _syslog_cache["at"] = now
+    return events
+
+
+_avail_logs_cache: dict = {"at": 0.0, "data": []}
+
+
+def collect_available_logs() -> list[dict]:
+    """Mendeteksi berkas log yang secara nyata ada di filesystem host klien secara dinamis (bebas hardcode kaku)."""
+    now = time.monotonic()
+    if _avail_logs_cache["data"] and now - _avail_logs_cache["at"] < 45:
+        return _avail_logs_cache["data"]
+
+    avail: list[dict] = []
+    seen_paths = set()
+
+    def _add_log(log_id: str, group: str, name: str, path: str):
+        if path and path not in seen_paths and os.path.isfile(path):
+            seen_paths.add(path)
+            avail.append({"id": log_id, "group": group, "name": name, "desc": path})
+
+    # 1. Log Keamanan & Sistem Baku
+    auth_file = AUTH_FILE if os.path.isfile(AUTH_FILE) else ("/var/log/secure" if os.path.isfile("/var/log/secure") else "")
+    if auth_file:
+        _add_log("AUTH", "Keamanan & Sistem", "Log Autentikasi SSH & Sudo", auth_file)
+
+    syslog_file = SYSLOG_FILE if os.path.isfile(SYSLOG_FILE) else ("/var/log/messages" if os.path.isfile("/var/log/messages") else "")
+    if syslog_file:
+        _add_log("SYSLOG", "Keamanan & Sistem", "Syslog Sistem", syslog_file)
+
+    for pkg_cand, pkg_name in [
+        ("/var/log/dpkg.log", "Riwayat Paket (dpkg.log)"),
+        ("/var/log/apt/history.log", "Riwayat APT (history.log)"),
+        ("/var/log/dnf.log", "Riwayat DNF (dnf.log)"),
+        ("/var/log/yum.log", "Riwayat YUM (yum.log)"),
+        ("/var/log/pacman.log", "Riwayat Pacman (pacman.log)"),
+    ]:
+        if os.path.isfile(pkg_cand):
+            _add_log("DPKG", "Keamanan & Sistem", pkg_name, pkg_cand)
+            break
+
+    # 2. Penemuan Dinamis Berkas Log di /var/log/* (Web Server, Database, Layanan Aplikasi)
+    if os.path.isdir("/var/log"):
+        try:
+            for entry in os.scandir("/var/log"):
+                if entry.is_dir(follow_symlinks=False) and not entry.name.startswith("."):
+                    sub_name = entry.name.lower()
+                    if any(w in sub_name for w in ("nginx", "apache", "httpd", "caddy", "lighttpd", "traefik")):
+                        grp = "Web Server"
+                    elif any(db in sub_name for db in ("mysql", "mariadb", "postgres", "redis", "mongo")):
+                        grp = "Database"
+                    elif any(m in sub_name for m in ("mail", "postfix", "exim")):
+                        grp = "Mail Server"
+                    else:
+                        grp = f"Layanan ({entry.name})"
+
+                    try:
+                        for sub_f in os.scandir(entry.path):
+                            if sub_f.is_file() and sub_f.name.endswith(".log") and not sub_f.name.startswith("."):
+                                f_lower = sub_f.name.lower()
+                                if any(f_lower.endswith(sfx) for sfx in (".gz", ".1", ".2", ".old", ".bak")):
+                                    continue
+                                clean_stem = sub_f.name[:-4].replace("-", "_").upper()
+                                log_id = f"{entry.name.upper()}_{clean_stem}"
+                                disp_name = f"{entry.name.capitalize()} {sub_f.name[:-4].capitalize()} Log"
+                                _add_log(log_id, grp, disp_name, sub_f.path)
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+
+    avail.append({"id": "SYSTEM_ERRORS", "group": "Keamanan & Sistem", "name": "Jurnal Galat Kritis Sistem", "desc": "journalctl -p 0..3"})
+
+    _avail_logs_cache["at"] = now
+    _avail_logs_cache["data"] = avail
+    return avail
+
+
+# ---------------------------------------------------------------------------
+# Deteksi Pola Log Kritis Kernel & Sistem (OOM Killer, Storage I/O, Segfault)
+# ---------------------------------------------------------------------------
+_RE_OOM_KERNEL = re.compile(
+    r"(?:Out of memory:\s*Kill(?:ed)?\s*process\s*(\d+)\s*\(([^)]+)\)|oom-kill:.*?task=([^\s,]+),\s*pid=(\d+))",
+    re.IGNORECASE,
+)
+_RE_OOM_SYSTEMD = re.compile(
+    r"(\S+\.service):\s*A process of this unit has been killed by the OOM killer",
+    re.IGNORECASE,
+)
+_RE_DISK_IO = re.compile(
+    r"(?:blk_update_request:\s*I/O error,\s*dev\s*([a-zA-Z0-9_\/]+)|Buffer I/O error on (?:dev|device)\s*([a-zA-Z0-9_\/]+)|(?:EXT4|XFS|BTRFS)[- ](?:fs )?error.*?device\s*([a-zA-Z0-9_\/]+)|Remounting filesystem read-only)",
+    re.IGNORECASE,
+)
+_RE_SEGFAULT = re.compile(
+    r"(\S+)\[(\d+)\]:\s*segfault at [0-9a-fA-F]+\s+ip\s+[0-9a-fA-F]+\s+sp\s+[0-9a-fA-F]+",
+    re.IGNORECASE,
+)
+_RE_PANIC = re.compile(
+    r"(?:Kernel panic - not syncing:\s*(.*)|\[Hardware Error\]:\s*(Machine check events logged.*))",
+    re.IGNORECASE,
+)
+
+_kernel_events_cache: dict = {"at": 0.0, "data": {}}
+
+
+def _read_vmstat_oom() -> int:
+    try:
+        with open("/proc/vmstat", "r", encoding="utf-8") as f:
+            for line in f:
+                if line.startswith("oom_kill "):
+                    return int(line.split()[1])
+    except Exception:
+        pass
+    return 0
+
+
+def collect_kernel_events(syslogs=None) -> dict:
+    """Kumpulkan event kritis kernel (OOM Killer, Storage I/O Error, Segfault, Panic)."""
+    now = time.monotonic()
+    if _kernel_events_cache["data"] and now - _kernel_events_cache["at"] < 25:
+        return _kernel_events_cache["data"]
+
+    oom_count = _read_vmstat_oom()
+    events: list[dict] = []
+    seen_keys: set[str] = set()
+
+    # 1. Baca buffer kernel sesi boot saat ini (journalctl -k -b 0)
+    res = _run_cmd(
+        ["journalctl", "-k", "-b", "0", "-n", "80", "-r", "--no-pager", "-o", "json"],
+        timeout=4,
+    )
+    if res and res.returncode == 0:
+        for ln in res.stdout.splitlines():
+            if not ln.strip():
+                continue
+            try:
+                d = json.loads(ln)
+                msg = (d.get("MESSAGE") or "").strip()
+                if not msg:
+                    continue
+                ts_raw = d.get("__REALTIME_TIMESTAMP")
+                epoch = 0.0
+                time_str = ""
+                if ts_raw:
+                    try:
+                        epoch = int(ts_raw) / 1_000_000.0
+                        dt = datetime.fromtimestamp(epoch, timezone.utc)
+                        time_str = dt.strftime("%Y-%m-%d %H:%M:%S")
+                    except Exception:
+                        pass
+                unit = d.get("_SYSTEMD_UNIT") or d.get("SYSLOG_IDENTIFIER") or "kernel"
+
+                # Evaluasi OOM Killer
+                m_oom = _RE_OOM_KERNEL.search(msg)
+                if m_oom:
+                    pid = m_oom.group(1) or m_oom.group(4) or ""
+                    proc = m_oom.group(2) or m_oom.group(3) or "process"
+                    ev_key = f"oom:{proc}:{pid}:{time_str[:16]}"
+                    if ev_key not in seen_keys:
+                        seen_keys.add(ev_key)
+                        events.append({
+                            "type": "oom_kill",
+                            "time": time_str,
+                            "epoch": epoch,
+                            "proc": proc,
+                            "pid": int(pid) if pid.isdigit() else 0,
+                            "unit": unit,
+                            "message": msg[:300],
+                        })
+                    continue
+
+                # Evaluasi Storage I/O Error
+                m_io = _RE_DISK_IO.search(msg)
+                if m_io:
+                    dev = m_io.group(1) or m_io.group(2) or m_io.group(3) or "storage"
+                    ev_key = f"disk_io:{dev}:{time_str[:16]}"
+                    if ev_key not in seen_keys:
+                        seen_keys.add(ev_key)
+                        events.append({
+                            "type": "disk_io_error",
+                            "time": time_str,
+                            "epoch": epoch,
+                            "dev": dev,
+                            "unit": unit,
+                            "message": msg[:300],
+                        })
+                    continue
+
+                # Evaluasi Segfault
+                m_seg = _RE_SEGFAULT.search(msg)
+                if m_seg:
+                    proc = m_seg.group(1)
+                    pid = m_seg.group(2)
+                    ev_key = f"segfault:{proc}:{pid}:{time_str[:16]}"
+                    if ev_key not in seen_keys:
+                        seen_keys.add(ev_key)
+                        events.append({
+                            "type": "segfault",
+                            "time": time_str,
+                            "epoch": epoch,
+                            "proc": proc,
+                            "pid": int(pid) if pid.isdigit() else 0,
+                            "unit": unit,
+                            "message": msg[:300],
+                        })
+                    continue
+
+                # Evaluasi Kernel Panic / Hardware MCE
+                m_pan = _RE_PANIC.search(msg)
+                if m_pan:
+                    det = m_pan.group(1) or m_pan.group(2) or "Kernel Panic"
+                    ev_key = f"panic:{time_str[:16]}"
+                    if ev_key not in seen_keys:
+                        seen_keys.add(ev_key)
+                        events.append({
+                            "type": "kernel_panic",
+                            "time": time_str,
+                            "epoch": epoch,
+                            "detail": det[:100],
+                            "unit": unit,
+                            "message": msg[:300],
+                        })
+                    continue
+            except Exception:
+                continue
+
+    # 2. Cek juga log galat sistem untuk unit systemd yang dibunuh OOM killer
+    if syslogs and isinstance(syslogs, list):
+        for log in syslogs:
+            if not isinstance(log, dict):
+                continue
+            msg = log.get("message") or ""
+            m_s_oom = _RE_OOM_SYSTEMD.search(msg)
+            if m_s_oom:
+                u_name = m_s_oom.group(1)
+                proc_name = u_name[:-8] if u_name.endswith(".service") else u_name
+                time_str = log.get("time") or ""
+                ev_key = f"oom:{proc_name}:0:{time_str[:16]}"
+                if ev_key not in seen_keys:
+                    seen_keys.add(ev_key)
+                    events.append({
+                        "type": "oom_kill",
+                        "time": time_str,
+                        "epoch": time.time(),
+                        "proc": proc_name,
+                        "pid": 0,
+                        "unit": u_name,
+                        "message": msg[:300],
+                    })
+
+    result = {
+        "oom_kill_count": oom_count,
+        "events": events[:30],
+    }
+    _kernel_events_cache["data"] = result
+    _kernel_events_cache["at"] = now
+    return result
+
+
+PANTAU_HISTORY_SCRIPT_BODY = base64.b64decode("""IyEvdXNyL2Jpbi9lbnYgcHl0aG9uMwojIHBhbnRhdS1oaXN0b3J5IC0gV3JhcHBlciBwZW1iYWNhIHJpd2F5YXQgdGVybWluYWwgb3Rvbm9tIHVudHVrIEFnZW4gUGFudGF1LgojID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09CiMgRGlqYWxhbmthbiBtZWxhbHVpIHN1ZG8gTk9QQVNTV0Qgb2xlaCB1c2VyICdwYW50YXUnLgojIE1lbmR1a3VuZyBhdXRvLWZsdXNoIHRlcm1pbmFsIGFrdGlmIChUSU9DU1RJICsgbGVnYWN5X3Rpb2NzdGkgdW5sb2NrKSwgc2VydGEKIyBwZW1iZXJpYW4gaG9vayBvdG9tYXRpcyBwYWRhIHByb2ZpbCBzaXN0ZW0gZGFuIHBlbmdndW5hIHNlaGluZ2dhIHBlcmludGFoIHlhbmcKIyBkaWVrc2VrdXNpIGxhbmdzdW5nIHRlcnR1bGlzIGtlIGRpc2sgdGFucGEgbWVudW5nZ3UgbG9nb3V0IGF0YXUgJ2hpc3RvcnkgLWEnLgppbXBvcnQgc3lzCmltcG9ydCBvcwppbXBvcnQgcmUKaW1wb3J0IHRpbWUKaW1wb3J0IGZjbnRsCmltcG9ydCB0ZXJtaW9zCmltcG9ydCBzdWJwcm9jZXNzCmltcG9ydCBwd2QKCmlmIGxlbihzeXMuYXJndikgPCAyOgogICAgc3lzLmV4aXQoMikKdXNlciA9IHN5cy5hcmd2WzFdLnN0cmlwKCkKaWYgbm90IHJlLmZ1bGxtYXRjaChyIlthLXpBLVowLTlfLi1dezEsMzJ9IiwgdXNlcik6CiAgICBzeXMuZXhpdCgyKQoKdHJ5OgogICAgdV9lbnRyeSA9IHB3ZC5nZXRwd25hbSh1c2VyKQogICAgaG9tZV9kaXIgPSB1X2VudHJ5LnB3X2RpcgogICAgdGFyZ2V0X3VpZCA9IHVfZW50cnkucHdfdWlkCiAgICB0YXJnZXRfZ2lkID0gdV9lbnRyeS5wd19naWQKZXhjZXB0IEV4Y2VwdGlvbjoKICAgIHN5cy5leGl0KDMpCgppZiBub3Qgb3MucGF0aC5pc2Rpcihob21lX2Rpcik6CiAgICBzeXMuZXhpdCgzKQoKIyAxLiBQYXN0aWthbiBrZXJuZWwgbWVuZ2l6aW5rYW4gVElPQ1NUSSBqaWthIHN5c2N0bCBsZWdhY3lfdGlvY3N0aSB0ZXJzZWRpYQp0cnk6CiAgICB0aW9jX3BhdGggPSAiL3Byb2Mvc3lzL2Rldi90dHkvbGVnYWN5X3Rpb2NzdGkiCiAgICBpZiBvcy5wYXRoLmV4aXN0cyh0aW9jX3BhdGgpOgogICAgICAgIHdpdGggb3Blbih0aW9jX3BhdGgsICJyKyIpIGFzIGZfdGlvYzoKICAgICAgICAgICAgaWYgZl90aW9jLnJlYWQoKS5zdHJpcCgpID09ICIwIjoKICAgICAgICAgICAgICAgIGZfdGlvYy5zZWVrKDApCiAgICAgICAgICAgICAgICBmX3Rpb2Mud3JpdGUoIjFcbiIpCmV4Y2VwdCBFeGNlcHRpb246CiAgICBwYXNzCgojIDIuIFBhc2FuZyBob29rIGF1ZGl0IHJlYWwtdGltZSBwYWRhIHByb2ZpbCBzaXN0ZW0gZGFuIGJhc2hyYyBwZW5nZ3VuYQpob29rX2NvbnRlbnQgPSAoCiAgICAiIyBQYW50YXUgTk9DIEF1ZGl0IEhvb2s6IFNpbmtyb25pc2FzaSBpbnN0YW4gJiBhdWRpdCByZWFsLXRpbWUgcGVyaW50YWggc2hlbGxcbiIKICAgICJfX3BhbnRhdV9wcm9tcHRfYXVkaXQoKSB7XG4iCiAgICAiICAgIGxvY2FsIGhcbiIKICAgICIgICAgaD0kKGhpc3RvcnkgMSAyPi9kZXYvbnVsbClcbiIKICAgICIgICAgWyAteiBcIiRoXCIgXSAmJiByZXR1cm5cbiIKICAgICIgICAgaD1cIiR7aCNcIiR7aCUlWyEgXSp9XCJ9XCJcbiIKICAgICIgICAgaD1cIiR7aCMqWzAtOV0gfVwiXG4iCiAgICAiICAgIGg9XCIke2gjXCIke2glJVshIF0qfVwifVwiXG4iCiAgICAiICAgIGxvY2FsIGNtZFxuIgogICAgIiAgICBpZiBbWyBcIiRoXCIgPX4gXlswLTldezR9LVswLTldezJ9LVswLTldezJ9W1s6c3BhY2U6XV1bMC05XXsyfTpbMC05XXsyfTpbMC05XXsyfVtbOnNwYWNlOl1dKyguKikkIF1dOyB0aGVuXG4iCiAgICAiICAgICAgICBjbWQ9XCIke0JBU0hfUkVNQVRDSFsxXX1cIlxuIgogICAgIiAgICBlbHNlXG4iCiAgICAiICAgICAgICBjbWQ9XCIkaFwiXG4iCiAgICAiICAgIGZpXG4iCiAgICAiICAgIFsgLXogXCIkY21kXCIgXSAmJiByZXR1cm5cbiIKICAgICIgICAgaWYgWyBcIiRjbWRcIiAhPSBcIiRfX1BBTlRBVV9MQVNUX0NNRFwiIF07IHRoZW5cbiIKICAgICIgICAgICAgIF9fUEFOVEFVX0xBU1RfQ01EPVwiJGNtZFwiXG4iCiAgICAiICAgICAgICBjYXNlIFwiJGNtZFwiIGluXG4iCiAgICAiICAgICAgICAgICAgKl9fcGFudGF1KnwqbG9nZ2VyKnxcImhpc3RvcnkgLWFcIiopIDs7XG4iCiAgICAiICAgICAgICAgICAgKilcbiIKICAgICIgICAgICAgICAgICAgICAgbG9jYWwgdFxuIgogICAgIiAgICAgICAgICAgICAgICB0PSQodHR5IDI+L2Rldi9udWxsIHx8IGVjaG8gXCJsb2thbFwiKVxuIgogICAgIiAgICAgICAgICAgICAgICB0PSR7dCMvZGV2L31cbiIKICAgICIgICAgICAgICAgICAgICAgbG9nZ2VyIC10IHBhbnRhdS1zaGVsbCAtcCBhdXRoLm5vdGljZSAtLSBcIltVU0VSPSRVU0VSXSBbUFdEPSRQV0RdIFtUVFk9JHRdIENNRDogJGNtZFwiIDI+L2Rldi9udWxsIHx8IHRydWVcbiIKICAgICIgICAgICAgICAgICAgICAgOztcbiIKICAgICIgICAgICAgIGVzYWNcbiIKICAgICIgICAgZmlcbiIKICAgICIgICAgaGlzdG9yeSAtYSAyPi9kZXYvbnVsbCB8fCB0cnVlXG4iCiAgICAifVxuXG4iCiAgICAiaWYgWyAtbiBcIiRCQVNIX1ZFUlNJT05cIiBdOyB0aGVuXG4iCiAgICAiICAgIGV4cG9ydCBISVNUVElNRUZPUk1BVD1cIiVZLSVtLSVkICVIOiVNOiVTIFwiXG4iCiAgICAiICAgIHNob3B0IC1zIGhpc3RhcHBlbmQgMj4vZGV2L251bGwgfHwgdHJ1ZVxuIgogICAgIiAgICBjYXNlIFwiJFBST01QVF9DT01NQU5EXCIgaW5cbiIKICAgICIgICAgICAgICpfX3BhbnRhdV9wcm9tcHRfYXVkaXQqKSA7O1xuIgogICAgIiAgICAgICAgKikgZXhwb3J0IFBST01QVF9DT01NQU5EPVwiX19wYW50YXVfcHJvbXB0X2F1ZGl0JHtQUk9NUFRfQ09NTUFORDorOyAkUFJPTVBUX0NPTU1BTkR9XCIgOztcbiIKICAgICIgICAgZXNhY1xuIgogICAgImZpXG4iCikKdHJ5OgogICAgcHJvZl9maWxlID0gIi9ldGMvcHJvZmlsZS5kL3BhbnRhdS1oaXN0b3J5LnNoIgogICAgbmVlZF93cml0ZV9wcm9mID0gVHJ1ZQogICAgaWYgb3MucGF0aC5leGlzdHMocHJvZl9maWxlKToKICAgICAgICB3aXRoIG9wZW4ocHJvZl9maWxlLCAiciIsIGVuY29kaW5nPSJ1dGYtOCIsIGVycm9ycz0icmVwbGFjZSIpIGFzIGZfcDoKICAgICAgICAgICAgaWYgInBhbnRhdS1zaGVsbCIgaW4gZl9wLnJlYWQoKToKICAgICAgICAgICAgICAgIG5lZWRfd3JpdGVfcHJvZiA9IEZhbHNlCiAgICBpZiBuZWVkX3dyaXRlX3Byb2Y6CiAgICAgICAgd2l0aCBvcGVuKHByb2ZfZmlsZSwgInciLCBlbmNvZGluZz0idXRmLTgiKSBhcyBmOgogICAgICAgICAgICBmLndyaXRlKGhvb2tfY29udGVudCkKICAgICAgICBvcy5jaG1vZChwcm9mX2ZpbGUsIDBvNjQ0KQpleGNlcHQgRXhjZXB0aW9uOgogICAgcGFzcwoKdHJ5OgogICAgYmFzaHJjX3N5cyA9ICIvZXRjL2Jhc2guYmFzaHJjIiBpZiBvcy5wYXRoLmV4aXN0cygiL2V0Yy9iYXNoLmJhc2hyYyIpIGVsc2UgKCIvZXRjL2Jhc2hyYyIgaWYgb3MucGF0aC5leGlzdHMoIi9ldGMvYmFzaHJjIikgZWxzZSAiIikKICAgIGlmIGJhc2hyY19zeXMgYW5kIG9zLnBhdGguZXhpc3RzKGJhc2hyY19zeXMpOgogICAgICAgIHdpdGggb3BlbihiYXNocmNfc3lzLCAiciIsIGVuY29kaW5nPSJ1dGYtOCIsIGVycm9ycz0icmVwbGFjZSIpIGFzIGY6CiAgICAgICAgICAgIGJfZGF0YSA9IGYucmVhZCgpCiAgICAgICAgaWYgInBhbnRhdS1oaXN0b3J5LnNoIiBub3QgaW4gYl9kYXRhOgogICAgICAgICAgICB3aXRoIG9wZW4oYmFzaHJjX3N5cywgImEiLCBlbmNvZGluZz0idXRmLTgiKSBhcyBmOgogICAgICAgICAgICAgICAgZi53cml0ZSgiXG4jIFBhbnRhdSBOT0MgQXVkaXQgSG9va1xuWyAtZiAvZXRjL3Byb2ZpbGUuZC9wYW50YXUtaGlzdG9yeS5zaCBdICYmIC4gL2V0Yy9wcm9maWxlLmQvcGFudGF1LWhpc3Rvcnkuc2hcbiIpCmV4Y2VwdCBFeGNlcHRpb246CiAgICBwYXNzCgp0cnk6CiAgICB1X2Jhc2hyYyA9IG9zLnBhdGguam9pbihob21lX2RpciwgIi5iYXNocmMiKQogICAgaWYgb3MucGF0aC5leGlzdHModV9iYXNocmMpOgogICAgICAgIHdpdGggb3Blbih1X2Jhc2hyYywgInIiLCBlbmNvZGluZz0idXRmLTgiLCBlcnJvcnM9InJlcGxhY2UiKSBhcyBmOgogICAgICAgICAgICB1X2RhdGEgPSBmLnJlYWQoKQogICAgICAgIGlmICJwYW50YXUtaGlzdG9yeS5zaCIgbm90IGluIHVfZGF0YToKICAgICAgICAgICAgd2l0aCBvcGVuKHVfYmFzaHJjLCAiYSIsIGVuY29kaW5nPSJ1dGYtOCIpIGFzIGY6CiAgICAgICAgICAgICAgICBmLndyaXRlKCJcbiMgUGFudGF1IE5PQyBBdWRpdCBIb29rXG5bIC1mIC9ldGMvcHJvZmlsZS5kL3BhbnRhdS1oaXN0b3J5LnNoIF0gJiYgLiAvZXRjL3Byb2ZpbGUuZC9wYW50YXUtaGlzdG9yeS5zaFxuIikKICAgICAgICAgICAgdHJ5OgogICAgICAgICAgICAgICAgb3MuY2hvd24odV9iYXNocmMsIHRhcmdldF91aWQsIHRhcmdldF9naWQpCiAgICAgICAgICAgIGV4Y2VwdCBFeGNlcHRpb246CiAgICAgICAgICAgICAgICBwYXNzCmV4Y2VwdCBFeGNlcHRpb246CiAgICBwYXNzCgojIDMuIEJpbGFzIHBha3NhIGJ1ZmZlciByaXdheWF0IHBhZGEgc2VsdXJ1aCB0ZXJtaW5hbCBzZXNpIGFrdGlmIHBlbmdndW5hIHZpYSBUSU9DU1RJCnRyeToKICAgIHBzX3JlcyA9IHN1YnByb2Nlc3MucnVuKFsicHMiLCAiLXUiLCB1c2VyLCAiLW8iLCAicGlkLHR0eSxzdGF0LGNvbW0iLCAiLS1uby1oZWFkZXJzIl0sIGNhcHR1cmVfb3V0cHV0PVRydWUsIHRleHQ9VHJ1ZSwgdGltZW91dD0yKQogICAgaWYgcHNfcmVzIGFuZCBwc19yZXMuc3Rkb3V0OgogICAgICAgIHR0eV9tYXAgPSB7fQogICAgICAgIGZvciBsaW5lIGluIHBzX3Jlcy5zdGRvdXQuc3BsaXRsaW5lcygpOgogICAgICAgICAgICBwYXJ0cyA9IGxpbmUuc3BsaXQoKQogICAgICAgICAgICBpZiBsZW4ocGFydHMpID49IDQgYW5kIHBhcnRzWzFdLnN0YXJ0c3dpdGgoInB0cy8iKToKICAgICAgICAgICAgICAgIHR0eV9tYXAuc2V0ZGVmYXVsdChwYXJ0c1sxXSwgW10pLmFwcGVuZCgocGFydHNbMF0sIHBhcnRzWzJdLCBwYXJ0c1szXSkpCiAgICAgICAgZm9yIHR0eSwgcHJvY3MgaW4gdHR5X21hcC5pdGVtcygpOgogICAgICAgICAgICBmZ19wcm9jcyA9IFtwIGZvciBwIGluIHByb2NzIGlmICIrIiBpbiBwWzFdXQogICAgICAgICAgICBpZiBsZW4oZmdfcHJvY3MpID09IDEgYW5kIGZnX3Byb2NzWzBdWzJdLmxzdHJpcCgiLSIpIGluICgiYmFzaCIsICJzaCIsICJ6c2giKToKICAgICAgICAgICAgICAgIHB0c19wYXRoID0gZiIvZGV2L3t0dHl9IgogICAgICAgICAgICAgICAgdHJ5OgogICAgICAgICAgICAgICAgICAgIGZkID0gb3Mub3BlbihwdHNfcGF0aCwgb3MuT19SRFdSIHwgb3MuT19OT0NUVFkpCiAgICAgICAgICAgICAgICAgICAgZm9yIGNoIGluIGIiIGhpc3RvcnkgLWFcclxuIjoKICAgICAgICAgICAgICAgICAgICAgICAgZmNudGwuaW9jdGwoZmQsIHRlcm1pb3MuVElPQ1NUSSwgYnl0ZXMoW2NoXSkpCiAgICAgICAgICAgICAgICAgICAgb3MuY2xvc2UoZmQpCiAgICAgICAgICAgICAgICBleGNlcHQgRXhjZXB0aW9uOgogICAgICAgICAgICAgICAgICAgIHBhc3MKICAgICAgICB0aW1lLnNsZWVwKDAuMSkKZXhjZXB0IEV4Y2VwdGlvbjoKICAgIHBhc3MKCiMgNC4gQmFjYSBiZXJrYXMgcml3YXlhdCB0YXJnZXQKc3JjX2ZpbGUgPSBOb25lCmZvciBwIGluIChmIntob21lX2Rpcn0vLmJhc2hfaGlzdG9yeSIsIGYie2hvbWVfZGlyfS8uenNoX2hpc3RvcnkiLCBmIntob21lX2Rpcn0vLmxvY2FsL3NoYXJlL2Zpc2gvZmlzaF9oaXN0b3J5Iik6CiAgICBpZiBvcy5wYXRoLmlzZmlsZShwKSBhbmQgbm90IG9zLnBhdGguaXNsaW5rKHApIGFuZCBvcy5wYXRoLmdldHNpemUocCkgPiAwOgogICAgICAgIHRyeToKICAgICAgICAgICAgc3QgPSBvcy5zdGF0KHApCiAgICAgICAgICAgIGlmIHN0LnN0X3VpZCA9PSB0YXJnZXRfdWlkIG9yIHN0LnN0X3VpZCA9PSAwOgogICAgICAgICAgICAgICAgc3JjX2ZpbGUgPSBwCiAgICAgICAgICAgICAgICBicmVhawogICAgICAgIGV4Y2VwdCBFeGNlcHRpb246CiAgICAgICAgICAgIHBhc3MKCmlmIG5vdCBzcmNfZmlsZToKICAgIHN5cy5leGl0KDMpCgp0cnk6CiAgICBtdGltZSA9IGludChvcy5wYXRoLmdldG10aW1lKHNyY19maWxlKSkKICAgIHByaW50KGYiI1BBTlRBVV9NVElNRTp7bXRpbWV9IikKICAgIHN5cy5zdGRvdXQuZmx1c2goKQogICAgd2l0aCBvcGVuKHNyY19maWxlLCAicmIiKSBhcyBmOgogICAgICAgIHNpemUgPSBvcy5wYXRoLmdldHNpemUoc3JjX2ZpbGUpCiAgICAgICAgaWYgc2l6ZSA+IDUyNDI4ODoKICAgICAgICAgICAgZi5zZWVrKHNpemUgLSA1MjQyODgpCiAgICAgICAgZGF0YSA9IGYucmVhZCg1MjQyODgpCiAgICAgICAgc3lzLnN0ZG91dC5idWZmZXIud3JpdGUoZGF0YSkKZXhjZXB0IEV4Y2VwdGlvbjoKICAgIHN5cy5leGl0KDEpCg==""").decode("utf-8")
+
+
+def ensure_pantau_history_updated(force: bool = False) -> bool:
+    """Memastikan /usr/local/sbin/pantau-history, /etc/profile.d/pantau-history.sh, dan hook bashrc selalu mutakhir."""
+    try:
+        cur_content = ""
+        if not force and os.path.isfile(PANTAU_HISTORY_CMD):
+            try:
+                with open(PANTAU_HISTORY_CMD, "r", encoding="utf-8", errors="replace") as f:
+                    cur_content = f.read()
+            except Exception:
+                pass
+
+        need_update_wrapper = ("pantau-shell" not in cur_content)
+        profile_hook = "/etc/profile.d/pantau-history.sh"
+        need_update_profile = True
+        if not force and os.path.isfile(profile_hook):
+            try:
+                with open(profile_hook, "r", encoding="utf-8", errors="replace") as pf:
+                    pfc = pf.read()
+                    if "pantau-shell" in pfc and "__pantau_prompt_audit" in pfc:
+                        need_update_profile = False
+            except Exception:
+                pass
+
+        bashrc_hook = "/etc/bash.bashrc" if os.path.isfile("/etc/bash.bashrc") else ("/etc/bashrc" if os.path.isfile("/etc/bashrc") else "")
+        need_update_bashrc = False
+        if bashrc_hook and os.path.isfile(bashrc_hook):
+            try:
+                with open(bashrc_hook, "r", encoding="utf-8", errors="replace") as bf:
+                    if "pantau-history.sh" not in bf.read():
+                        need_update_bashrc = True
+            except Exception:
+                pass
+
+        if not need_update_wrapper and not need_update_profile and not need_update_bashrc:
+            return True
+
+        content_to_write = PANTAU_HISTORY_SCRIPT_BODY.strip() + "\n"
+        profile_content = (
+            "# Pantau NOC Audit Hook: Sinkronisasi instan & audit real-time perintah shell\n"
+            "__pantau_prompt_audit() {\n"
+            "    local h\n"
+            "    h=$(history 1 2>/dev/null)\n"
+            "    [ -z \"$h\" ] && return\n"
+            "    h=\"${h#\"${h%%[! ]*}\"}\"\n"
+            "    h=\"${h#*[0-9] }\"\n"
+            "    h=\"${h#\"${h%%[! ]*}\"}\"\n"
+            "    local cmd\n"
+            "    if [[ \"$h\" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}[[:space:]][0-9]{2}:[0-9]{2}:[0-9]{2}[[:space:]]+(.*)$ ]]; then\n"
+            "        cmd=\"${BASH_REMATCH[1]}\"\n"
+            "    else\n"
+            "        cmd=\"$h\"\n"
+            "    fi\n"
+            "    [ -z \"$cmd\" ] && return\n"
+            "    if [ \"$cmd\" != \"$__PANTAU_LAST_CMD\" ]; then\n"
+            "        __PANTAU_LAST_CMD=\"$cmd\"\n"
+            "        case \"$cmd\" in\n"
+            "            *__pantau*|*logger*|\"history -a\"*) ;;\n"
+            "            *)\n"
+            "                local t\n"
+            "                t=$(tty 2>/dev/null || echo \"lokal\")\n"
+            "                t=${t#/dev/}\n"
+            "                logger -t pantau-shell -p auth.notice -- \"[USER=$USER] [PWD=$PWD] [TTY=$t] CMD: $cmd\" 2>/dev/null || true\n"
+            "                ;;\n"
+            "        esac\n"
+            "    fi\n"
+            "    history -a 2>/dev/null || true\n"
+            "}\n\n"
+            "if [ -n \"$BASH_VERSION\" ]; then\n"
+            "    export HISTTIMEFORMAT=\"%Y-%m-%d %H:%M:%S \"\n"
+            "    shopt -s histappend 2>/dev/null || true\n"
+            "    case \"$PROMPT_COMMAND\" in\n"
+            "        *__pantau_prompt_audit*) ;;\n"
+            "        *) export PROMPT_COMMAND=\"__pantau_prompt_audit${PROMPT_COMMAND:+; $PROMPT_COMMAND}\" ;;\n"
+            "    esac\n"
+            "fi\n"
+        )
+        bashrc_append = (
+            "\n# Pantau NOC Audit Hook\n"
+            "[ -f /etc/profile.d/pantau-history.sh ] && . /etc/profile.d/pantau-history.sh\n"
+        )
+
+        if IS_ROOT:
+            if need_update_wrapper:
+                with open(PANTAU_HISTORY_CMD, "w", encoding="utf-8") as f:
+                    f.write(content_to_write)
+                os.chmod(PANTAU_HISTORY_CMD, 0o750)
+            if need_update_profile:
+                os.makedirs("/etc/profile.d", exist_ok=True)
+                with open(profile_hook, "w", encoding="utf-8") as f:
+                    f.write(profile_content)
+                os.chmod(profile_hook, 0o644)
+            if need_update_bashrc and bashrc_hook:
+                with open(bashrc_hook, "a", encoding="utf-8") as f:
+                    f.write(bashrc_append)
+            return True
+
+        pantau_file = "/usr/local/sbin/pantau-file"
+        if os.path.isfile(pantau_file):
+            if need_update_wrapper:
+                pw = json.dumps({"action": "write", "params": {"path": PANTAU_HISTORY_CMD, "content": content_to_write, "make_backup": False}})
+                subprocess.run(["/usr/bin/sudo", "-n", pantau_file], input=pw, text=True, capture_output=True, timeout=5)
+                pc = json.dumps({"action": "chmod", "params": {"path": PANTAU_HISTORY_CMD, "mode": "0750"}})
+                subprocess.run(["/usr/bin/sudo", "-n", pantau_file], input=pc, text=True, capture_output=True, timeout=5)
+            if need_update_profile:
+                pw2 = json.dumps({"action": "write", "params": {"path": profile_hook, "content": profile_content, "make_backup": False}})
+                subprocess.run(["/usr/bin/sudo", "-n", pantau_file], input=pw2, text=True, capture_output=True, timeout=5)
+                pc2 = json.dumps({"action": "chmod", "params": {"path": profile_hook, "mode": "0644"}})
+                subprocess.run(["/usr/bin/sudo", "-n", pantau_file], input=pc2, text=True, capture_output=True, timeout=5)
+            if need_update_bashrc and bashrc_hook:
+                try:
+                    with open(bashrc_hook, "r", encoding="utf-8", errors="replace") as cur_bf:
+                        existing_bashrc = cur_bf.read()
+                    pw3 = json.dumps({"action": "write", "params": {"path": bashrc_hook, "content": existing_bashrc + bashrc_append, "make_backup": False}})
+                    subprocess.run(["/usr/bin/sudo", "-n", pantau_file], input=pw3, text=True, capture_output=True, timeout=5)
+                except Exception:
+                    pass
+            return True
+    except Exception as e:
+        print(f"[HIST WARN] Gagal sinkronisasi pantau-history: {e}")
+    return False
+
+
+PANTAU_SHELL_SCRIPT_BODY = r"""#!/bin/sh
+# pantau-shell - Shell interaktif untuk Terminal Bawaan di Dashboard Pantau.
+#
+# Membuka sesi shell interaktif terdedikasi non-root ('operator') dengan akses
+# eskalasi 'sudo' on-demand jika dibutuhkan untuk tugas administratif.
+# Dipanggil agen 'pantau' via sudo NOPASSWD (lihat /etc/sudoers.d/pantau-agent)
+# HANYA ketika operator dashboard membuka Terminal Bawaan pada halaman Rincian
+# Server.
+#
+# Arsitektur Keamanan & Audit:
+#   - Terminal terbuka sebagai user non-root terdedikasi ('operator') di direktori /home/operator.
+#   - Perintah diagnostik (ls, ps, top, htop, cat, ping, curl, dll.) berjalan aman tanpa hak root.
+#   - Jika membutuhkan akses administratif penuh, operator dapat menjalankan:
+#       sudo <perintah>    atau    sudo -i / sudo su -
+#   - Seluruh tindakan eskalasi tercatat otomatis di auth.log/journalctl (audit trail).
+#   - Hook __pantau_prompt_audit mencatat seluruh ketikan perintah di konsol ke syslog real-time.
+#   - Riwayat terminal dicatat ke ~/.bash_history dan didukung PTY penuh di browser.
+#
+# Menutup sesi: ketik "exit" atau Ctrl+D.
+
+set -e
+
+HOSTN=$(hostname -s 2>/dev/null || cat /etc/hostname 2>/dev/null || echo server)
+TARGET_USER="operator"
+
+# Pastikan akun operator terdedikasi dan direktori home tersedia bila dijalankan oleh root
+if [ "$(id -u)" -eq 0 ]; then
+    if ! id -u "$TARGET_USER" >/dev/null 2>&1; then
+        if getent group "$TARGET_USER" >/dev/null 2>&1; then
+            useradd -m -s /bin/bash -g "$TARGET_USER" -G sudo,adm "$TARGET_USER" 2>/dev/null || \
+            useradd -m -s /bin/bash -g "$TARGET_USER" -G sudo "$TARGET_USER" 2>/dev/null || \
+            useradd -m -s /bin/bash -g "$TARGET_USER" "$TARGET_USER" 2>/dev/null || true
+        else
+            useradd -m -s /bin/bash -G sudo,adm "$TARGET_USER" 2>/dev/null || \
+            useradd -m -s /bin/bash -G sudo "$TARGET_USER" 2>/dev/null || \
+            useradd -m -s /bin/bash "$TARGET_USER" 2>/dev/null || true
+        fi
+    fi
+
+    # Pastikan direktori home ada dan berizin aman
+    TARGET_HOME=$(getent passwd "$TARGET_USER" 2>/dev/null | cut -d: -f6)
+    TARGET_HOME=${TARGET_HOME:-/home/$TARGET_USER}
+    if [ ! -d "$TARGET_HOME" ]; then
+        mkdir -p "$TARGET_HOME" 2>/dev/null || true
+        chown -R "$TARGET_USER:$TARGET_USER" "$TARGET_HOME" 2>/dev/null || chown -R "$TARGET_USER" "$TARGET_HOME" 2>/dev/null || true
+        chmod 750 "$TARGET_HOME" 2>/dev/null || true
+    fi
+
+    # Pastikan berkas .bash_history ada dan dimiliki oleh operator
+    if [ ! -f "$TARGET_HOME/.bash_history" ]; then
+        touch "$TARGET_HOME/.bash_history" 2>/dev/null || true
+        chown "$TARGET_USER:$TARGET_USER" "$TARGET_HOME/.bash_history" 2>/dev/null || chown "$TARGET_USER" "$TARGET_HOME/.bash_history" 2>/dev/null || true
+        chmod 600 "$TARGET_HOME/.bash_history" 2>/dev/null || true
+    fi
+
+    # Pastikan rule sudoers untuk operator tersedia
+    if [ -f /etc/sudoers.d/pantau-agent ] && ! grep -q "operator ALL=" /etc/sudoers.d/pantau-agent; then
+        printf "\n# Web Terminal Akun Khusus Non-Root (operator) dengan Eskalasi Sudo Terkontrol\noperator ALL=(ALL:ALL) NOPASSWD: ALL\n" >> /etc/sudoers.d/pantau-agent 2>/dev/null || true
+        chmod 440 /etc/sudoers.d/pantau-agent 2>/dev/null || true
+    fi
+fi
+
+TARGET_HOME=$(getent passwd "$TARGET_USER" 2>/dev/null | cut -d: -f6)
+TARGET_HOME=${TARGET_HOME:-/home/$TARGET_USER}
+if [ -d "$TARGET_HOME" ]; then
+    cd "$TARGET_HOME" 2>/dev/null || cd /tmp
+else
+    cd /tmp
+fi
+
+export TERM=xterm-256color
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+export LANG=${LANG:-C.UTF-8}
+
+RCFILE=$(mktemp /tmp/pantau-shellrc.XXXXXX)
+chmod 644 "$RCFILE"
+trap 'rm -f "$RCFILE"' EXIT INT TERM
+cat >"$RCFILE" <<'EOF'
+umask 027
+PS1='\u@\h:\w\$ '
+PS2='> '
+export HISTFILE="$HOME/.bash_history"
+export HISTSIZE=5000
+export HISTFILESIZE=10000
+export HISTTIMEFORMAT="%Y-%m-%d %H:%M:%S "
+shopt -s histappend 2>/dev/null || true
+
+__pantau_prompt_audit() {
+    local h
+    h=$(history 1 2>/dev/null)
+    [ -z "$h" ] && return
+    h="${h#"${h%%[! ]*}"}"
+    h="${h#*[0-9] }"
+    h="${h#"${h%%[! ]*}"}"
+    local cmd
+    if [[ "$h" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}[[:space:]][0-9]{2}:[0-9]{2}:[0-9]{2}[[:space:]]+(.*)$ ]]; then
+        cmd="${BASH_REMATCH[1]}"
+    else
+        cmd="$h"
+    fi
+    [ -z "$cmd" ] && return
+    if [ "$cmd" != "$__PANTAU_LAST_CMD" ]; then
+        __PANTAU_LAST_CMD="$cmd"
+        case "$cmd" in
+            *__pantau*|*logger*|"history -a"*) ;;
+            *)
+                local t
+                t=$(tty 2>/dev/null || echo "lokal")
+                t=${t#/dev/}
+                logger -t pantau-shell -p auth.notice -- "[USER=$USER] [PWD=$PWD] [TTY=$t] CMD: $cmd" 2>/dev/null || true
+                ;;
+        esac
+    fi
+    history -a 2>/dev/null || true
+}
+
+case "$PROMPT_COMMAND" in
+    *__pantau_prompt_audit*) ;;
+    *) export PROMPT_COMMAND="__pantau_prompt_audit${PROMPT_COMMAND:+; $PROMPT_COMMAND}" ;;
+esac
+EOF
+
+LOG_TAG=pantau-shell
+
+log() {
+    if command -v logger >/dev/null 2>&1; then
+        logger -t "$LOG_TAG" -p authpriv.notice -- "$*" 2>/dev/null || true
+    fi
+}
+
+CURRENT_TTY=$(tty 2>/dev/null || echo "pts")
+CURRENT_TTY=${CURRENT_TTY#/dev/}
+log "[USER=$TARGET_USER] [PWD=$TARGET_HOME] [TTY=$CURRENT_TTY] CMD: [Sesi Web Terminal Dibuka]"
+
+# Jalankan shell sebagai TARGET_USER
+run_as_target() {
+    if [ "$(id -u)" -eq 0 ]; then
+        if command -v runuser >/dev/null 2>&1; then
+            exec runuser -u "$TARGET_USER" -- env TERM=xterm-256color PATH="$PATH" LANG="$LANG" HOME="$TARGET_HOME" USER="$TARGET_USER" "$@"
+        elif command -v sudo >/dev/null 2>&1; then
+            exec sudo -u "$TARGET_USER" -H env TERM=xterm-256color PATH="$PATH" LANG="$LANG" "$@"
+        else
+            exec su -s /bin/bash "$TARGET_USER" -c "cd '$TARGET_HOME' && exec $*"
+        fi
+    else
+        exec "$@"
+    fi
+}
+
+# Jika tmux tersedia di server klien, gunakan sesi persisten tmux (auto-create atau attach).
+# Jika tmux tidak ada, fallback ke bash murni (didukung Python Native PTY Supervisor di Agen).
+if command -v tmux >/dev/null 2>&1; then
+    run_as_target tmux -u new-session -A -s pantau-shell /bin/bash --noprofile --rcfile "$RCFILE" -i
+else
+    if [ "$(id -u)" -eq 0 ]; then
+        if command -v runuser >/dev/null 2>&1; then
+            runuser -u "$TARGET_USER" -- env TERM=xterm-256color PATH="$PATH" LANG="$LANG" HOME="$TARGET_HOME" USER="$TARGET_USER" /bin/bash --noprofile --rcfile "$RCFILE" -i
+            _rc=$?
+        elif command -v sudo >/dev/null 2>&1; then
+            sudo -u "$TARGET_USER" -H env TERM=xterm-256color PATH="$PATH" LANG="$LANG" /bin/bash --noprofile --rcfile "$RCFILE" -i
+            _rc=$?
+        else
+            su -s /bin/bash "$TARGET_USER" -c "cd '$TARGET_HOME' && exec /bin/bash --noprofile --rcfile '$RCFILE' -i"
+            _rc=$?
+        fi
+    else
+        /bin/bash --noprofile --rcfile "$RCFILE" -i
+        _rc=$?
+    fi
+    log "[USER=$TARGET_USER] [PWD=$TARGET_HOME] [TTY=$CURRENT_TTY] CMD: [Sesi Web Terminal Ditutup (kode=$_rc)]"
+    exit $_rc
+fi
+"""
+
+
+def ensure_pantau_operator_account() -> bool:
+    """Memastikan user non-root 'operator', izin sudoers, dan sinkronisasi baseline FIM tersedia untuk Web Terminal."""
+    try:
+        user_exists = False
+        try:
+            pwd.getpwnam("operator")
+            user_exists = True
+        except KeyError:
+            pass
+
+        if not user_exists:
+            if IS_ROOT:
+                has_grp = False
+                try:
+                    grp.getgrnam("operator")
+                    has_grp = True
+                except KeyError:
+                    pass
+
+                cmd = ["useradd", "-m", "-s", "/bin/bash"]
+                if has_grp:
+                    cmd.extend(["-g", "operator"])
+                cmd.extend(["-G", "sudo,adm", "operator"])
+                res = subprocess.run(cmd, capture_output=True, timeout=10)
+                if res.returncode != 0:
+                    subprocess.run(["useradd", "-m", "-s", "/bin/bash", "-G", "sudo", "operator"], capture_output=True, timeout=10)
+            elif os.path.isfile(PANTAU_USER_CMD):
+                subprocess.run(["/usr/bin/sudo", "-n", PANTAU_USER_CMD, "create", "operator", "/bin/bash", "1", "Pantau Web Terminal Operator"], capture_output=True, timeout=10)
+
+        # Pastikan akun operator selalu tergabung dalam grup sudo dan adm secara seragam di seluruh armada
+        try:
+            if IS_ROOT:
+                for grp_name in ("sudo", "adm"):
+                    try:
+                        grp.getgrnam(grp_name)
+                        subprocess.run(["usermod", "-aG", grp_name, "operator"], capture_output=True, timeout=5)
+                    except Exception:
+                        pass
+            elif os.path.isfile(PANTAU_USER_CMD):
+                subprocess.run(["/usr/bin/sudo", "-n", PANTAU_USER_CMD, "add-group", "operator", "sudo,adm"], capture_output=True, timeout=5)
+        except Exception:
+            pass
+
+        # Pastikan direktori home dan berkas history operator tersedia
+        try:
+            op_entry = pwd.getpwnam("operator")
+            op_home = op_entry.pw_dir or "/home/operator"
+            if IS_ROOT:
+                if not os.path.isdir(op_home):
+                    os.makedirs(op_home, mode=0o750, exist_ok=True)
+                    os.chown(op_home, op_entry.pw_uid, op_entry.pw_gid)
+                hist_f = os.path.join(op_home, ".bash_history")
+                if not os.path.isfile(hist_f):
+                    with open(hist_f, "w") as hf:
+                        pass
+                    os.chmod(hist_f, 0o600)
+                    os.chown(hist_f, op_entry.pw_uid, op_entry.pw_gid)
+        except Exception:
+            pass
+
+        if IS_ROOT:
+            sd_file = "/etc/sudoers.d/pantau-agent"
+            if os.path.isfile(sd_file):
+                try:
+                    with open(sd_file, "r", encoding="utf-8", errors="replace") as sf:
+                        sd_c = sf.read()
+                    if "operator ALL=" not in sd_c:
+                        with open(sd_file, "a", encoding="utf-8") as sf:
+                            sf.write("\n# Web Terminal Akun Khusus Non-Root (operator) dengan Eskalasi Sudo Terkontrol\noperator ALL=(ALL:ALL) NOPASSWD: ALL\n")
+                        os.chmod(sd_file, 0o440)
+                except Exception:
+                    pass
+
+        # Auto-rebaseline FIM untuk /etc/passwd, /etc/shadow, dan /etc/sudoers (jika acuan masih 'meta:')
+        try:
+            _rebaseline_fim_path("/etc/passwd")
+            _rebaseline_fim_path("/etc/shadow")
+            b_sudo = _load_fim_baseline()
+            if b_sudo.get("/etc/sudoers", {}).get("sha256", "").startswith("meta:"):
+                _rebaseline_fim_path("/etc/sudoers")
+            _fim_cache["at"] = 0.0
+        except Exception:
+            pass
+
+        return True
+    except Exception as e:
+        print(f"[OPERATOR] ensure_pantau_operator_account error: {e}")
+        return False
+
+
+def ensure_pantau_shell_updated(force: bool = False) -> bool:
+    """Memastikan wrapper /usr/local/sbin/pantau-shell dikonfigurasi untuk non-root user 'operator'.
+    Jika berkas belum ada, masih menggunakan direct root shell, atau force=True, otomatis perbarui via root langsung atau sudo pantau-file.
+    """
+    try:
+        cur_content = ""
+        if not force and os.path.isfile(PANTAU_SHELL_CMD):
+            try:
+                with open(PANTAU_SHELL_CMD, "r", encoding="utf-8", errors="replace") as f:
+                    cur_content = f.read()
+            except Exception:
+                pass
+            if 'TARGET_USER="operator"' in cur_content and "__pantau_prompt_audit" in cur_content and "run_as_target" in cur_content and "umask 027" in cur_content:
+                return True
+
+        content_to_write = PANTAU_SHELL_SCRIPT_BODY.strip() + "\n"
+        if IS_ROOT:
+            with open(PANTAU_SHELL_CMD, "w", encoding="utf-8") as f:
+                f.write(content_to_write)
+            os.chmod(PANTAU_SHELL_CMD, 0o755)
+            print("[SHELL] Wrapper /usr/local/sbin/pantau-shell berhasil diperbarui (root)")
+            return True
+
+        pantau_file = "/usr/local/sbin/pantau-file"
+        if os.path.isfile(pantau_file):
+            payload_write = json.dumps({
+                "action": "write",
+                "params": {"path": PANTAU_SHELL_CMD, "content": content_to_write, "make_backup": False}
+            })
+            pw = subprocess.run(["/usr/bin/sudo", "-n", pantau_file], input=payload_write, text=True, capture_output=True, timeout=10)
+            if pw.returncode == 0:
+                payload_chmod = json.dumps({
+                    "action": "chmod",
+                    "params": {"path": PANTAU_SHELL_CMD, "mode": "0755"}
+                })
+                subprocess.run(["/usr/bin/sudo", "-n", pantau_file], input=payload_chmod, text=True, capture_output=True, timeout=10)
+                print("[SHELL] Wrapper /usr/local/sbin/pantau-shell berhasil diperbarui via pantau-file")
+                return True
+    except Exception as e:
+        print(f"[SHELL] ensure_pantau_shell_updated error: {e}")
+    return False
+
+
+
+
+PANTAU_FILE_SCRIPT_BODY = r'''#!/usr/bin/env python3
+"""
+pantau-file - Wrapper manajemen file & direktori untuk Agen Pantau.
+===================================================================
+Dijalankan melalui sudo NOPASSWD oleh user 'pantau' ketika admin dashboard
+membuka tab 'Berkas' (File Manager) pada halaman Rincian Server.
+
+Fitur & Guardrails:
+  - Eksekusi aksi: ls, cat, write, mkdir, touch, rm, chmod, chown, read_binary, write_binary.
+  - Guardrail: menolak penghapusan direktori sistem kritis (/, /etc, /bin, /boot, /usr, dll).
+  - Auto-backup: menyimpan <file>.bak.<timestamp> dan <file>.bak sebelum menulis perubahan.
+  - Penulisan atomic (tempfile di direktori sama + fsync + os.replace) mempertahankan mode & kepemilikan.
+  - Deteksi biner otomatis pada mode teks untuk mencegah kerusakan file biner.
+  - I/O berbasis JSON terstruktur.
+"""
+
+import sys
+import os
+import stat
+import json
+import shutil
+import base64
+import time
+import tempfile
+import pwd
+import grp
+import hashlib
+import subprocess
+import re
+from pathlib import Path
+from datetime import datetime
+
+# Direktori dan berkas kritis yang mutlak dilarang dimanipulasi/dihapus
+PROTECTED_PATHS = {
+    "/", "/bin", "/boot", "/dev", "/etc", "/lib", "/lib32", "/lib64",
+    "/proc", "/sys", "/usr", "/var", "/home", "/root", "/opt", "/run",
+    "/tmp", "/srv", "/mnt", "/media", "/sbin", "/vmlinuz", "/initrd.img"
+}
+
+SYSTEM_PROTECTED_FILES = {
+    "/etc/shadow", "/etc/shadow-", "/etc/gshadow", "/etc/gshadow-",
+    "/etc/passwd", "/etc/passwd-", "/etc/group", "/etc/group-",
+    "/etc/sudoers", "/etc/ld.so.preload", "/etc/securetty"
+}
+
+SYSTEM_PROTECTED_PREFIXES = (
+    "/etc/sudoers.d", "/etc/pam.d", "/etc/security",
+    "/boot", "/bin", "/sbin", "/usr/bin", "/usr/sbin", "/lib", "/lib32", "/lib64",
+    "/proc", "/sys", "/dev"
+)
+
+MAX_TEXT_SIZE = 3 * 1024 * 1024       # 3 MB batas baca text editor
+MAX_DOWNLOAD_SIZE = 100 * 1024 * 1024 # 100 MB batas download lewat web
+
+
+def err_exit(msg: str, extra: dict | None = None) -> None:
+    res = {"ok": False, "error": msg}
+    if extra:
+        res.update(extra)
+    print(json.dumps(res, ensure_ascii=False))
+    sys.exit(1)
+
+
+def check_path_protection(path: str, for_write: bool = False) -> None:
+    if not path:
+        return
+    abs_p = os.path.abspath(path)
+    real_p = os.path.realpath(abs_p)
+
+    # Izinkan pembaruan wrapper pantau dan konfigurasi /etc/pantau
+    if for_write:
+        if abs_p.startswith("/etc/pantau") or real_p.startswith("/etc/pantau"):
+            return
+        if abs_p.startswith("/usr/local/sbin/pantau-") or real_p.startswith("/usr/local/sbin/pantau-"):
+            return
+
+    for p in (abs_p, real_p):
+        if p in PROTECTED_PATHS:
+            err_exit(f"Aksi ditolak: '{path}' adalah direktori sistem kritis yang dilindungi.")
+        if p in SYSTEM_PROTECTED_FILES:
+            err_exit(f"Aksi ditolak: '{path}' adalah berkas otentikasi sistem penting yang dilindungi.")
+        for pref in SYSTEM_PROTECTED_PREFIXES:
+            if p == pref or p.startswith(pref + "/"):
+                err_exit(f"Aksi ditolak: '{path}' berada di direktori sistem terlindungi ({pref}).")
+        if for_write:
+            if p.endswith("/.ssh") or "/.ssh/" in p:
+                err_exit(f"Aksi ditolak: '{path}' adalah direktori/berkas otentikasi SSH yang dilindungi.")
+
+
+def ok_exit(data: dict) -> None:
+    data["ok"] = True
+    print(json.dumps(data, ensure_ascii=False))
+    sys.exit(0)
+
+
+def get_owner_group(st: os.stat_result) -> tuple[str, str]:
+    try:
+        owner = pwd.getpwuid(st.st_uid).pw_name
+    except (KeyError, OverflowError):
+        owner = str(st.st_uid)
+    try:
+        group = grp.getgrgid(st.st_gid).gr_name
+    except (KeyError, OverflowError):
+        group = str(st.st_gid)
+    return owner, group
+
+
+def get_parent_ownership(path: str) -> tuple[int, int]:
+    """Mengambil UID dan GID dari direktori induk agar berkas/folder baru mewarisi kepemilikan yang sah."""
+    parent_dir = os.path.dirname(os.path.abspath(path))
+    try:
+        pst = os.stat(parent_dir)
+        return pst.st_uid, pst.st_gid
+    except OSError:
+        return 0, 0
+
+
+def action_hash(path: str) -> None:
+    if not path:
+        err_exit("Path wajib diisi.")
+    path = os.path.abspath(path)
+    if not os.path.exists(path):
+        err_exit(f"Path tidak ditemukan: {path}")
+    try:
+        st = os.stat(path)
+        is_dir = stat.S_ISDIR(st.st_mode)
+        owner, group = get_owner_group(st)
+        oct_mode = oct(st.st_mode & 0o777)[2:].zfill(4)
+        if is_dir:
+            files_map = {}
+            dir_count = 0
+            file_count = 0
+            total_size = 0
+            ignored_dirs = {".git", ".svn", ".cache", "node_modules", "__pycache__", ".idea", ".vscode"}
+            try:
+                for root, dirs, files in os.walk(path, topdown=True, followlinks=False):
+                    dirs[:] = [d for d in dirs if not d.startswith(".") and d not in ignored_dirs]
+                    rel_root = os.path.relpath(root, path)
+                    depth = 0 if rel_root == "." else len(rel_root.split(os.sep))
+                    if depth >= 10:
+                        dirs.clear()
+                        continue
+                    dir_count += len(dirs)
+                    for f in files:
+                        if f.startswith("."):
+                            continue
+                        if file_count >= 5000:
+                            break
+                        full_p = os.path.join(root, f)
+                        rel_f = os.path.relpath(full_p, path)
+                        try:
+                            st_f = os.stat(full_p)
+                        except Exception:
+                            continue
+                        f_own, f_grp = get_owner_group(st_f)
+                        f_perm = oct(st_f.st_mode & 0o777)[2:].zfill(4)
+                        f_sz = st_f.st_size
+                        f_mt = int(st_f.st_mtime)
+                        total_size += f_sz
+                        if f_sz <= 5 * 1024 * 1024:
+                            try:
+                                h_f = hashlib.sha256()
+                                with open(full_p, "rb") as fh:
+                                    while chk := fh.read(65536):
+                                        h_f.update(chk)
+                                f_h = h_f.hexdigest()
+                            except Exception:
+                                f_h = f"meta:{f_perm}:{f_sz}:{f_mt}"
+                        else:
+                            f_h = f"meta:{f_perm}:{f_sz}:{f_mt}"
+                        files_map[rel_f] = {
+                            "size": f_sz,
+                            "mtime": f_mt,
+                            "perm": f_perm,
+                            "owner": f_own,
+                            "group": f_grp,
+                            "sha256": f_h,
+                        }
+                        file_count += 1
+                    if file_count >= 5000:
+                        break
+            except Exception:
+                pass
+            manifest_items = []
+            for k in sorted(files_map.keys())[:1500]:
+                fm = files_map[k]
+                manifest_items.append(f"{k}:{fm['sha256']}:{fm['size']}:{fm['perm']}:{fm['owner']}")
+            manifest_str = f"cnt:{file_count}|dirs:{dir_count}|files:{file_count}|" + ";;".join(manifest_items)
+            dir_hash = hashlib.sha256(manifest_str.encode("utf-8")).hexdigest()
+            ok_exit({
+                "path": path,
+                "is_dir": True,
+                "exists": True,
+                "size": total_size if total_size > 0 else st.st_size,
+                "count": file_count + dir_count,
+                "dir_count": dir_count,
+                "file_count": file_count,
+                "mtime": int(st.st_mtime),
+                "octal_mode": oct_mode,
+                "owner": owner,
+                "group": group,
+                "sha256": dir_hash,
+                "files": files_map,
+            })
+        else:
+            h = hashlib.sha256()
+            with open(path, "rb") as f:
+                while chunk := f.read(65536):
+                    h.update(chunk)
+            ok_exit({
+                "path": path,
+                "is_dir": False,
+                "exists": True,
+                "size": st.st_size,
+                "mtime": int(st.st_mtime),
+                "octal_mode": oct_mode,
+                "owner": owner,
+                "group": group,
+                "sha256": h.hexdigest()
+            })
+    except Exception as e:
+        err_exit(f"Gagal memproses file/direktori: {e}")
+
+
+def action_ls(path: str) -> None:
+    path = os.path.abspath(path)
+    if not os.path.exists(path):
+        err_exit(f"Path tidak ditemukan: {path}")
+    if not os.path.isdir(path):
+        err_exit(f"Path bukan direktori: {path}")
+
+    items = []
+    try:
+        with os.scandir(path) as it:
+            for entry in it:
+                try:
+                    is_symlink = entry.is_symlink()
+                    link_target = None
+                    if is_symlink:
+                        try:
+                            link_target = os.readlink(entry.path)
+                        except OSError:
+                            link_target = "?"
+                    
+                    try:
+                        st = entry.stat(follow_symlinks=False)
+                        st_mode = st.st_mode
+                        size = st.st_size
+                        mtime = int(st.st_mtime)
+                        mode_str = stat.filemode(st_mode)
+                        octal_mode = oct(st_mode & 0o777)[2:].zfill(4)
+                        owner, group = get_owner_group(st)
+                    except OSError:
+                        mode_str = "??????????"
+                        octal_mode = "0000"
+                        size = 0
+                        mtime = 0
+                        owner = "?"
+                        group = "?"
+
+                    is_dir = entry.is_dir(follow_symlinks=False)
+                    is_file = entry.is_file(follow_symlinks=False)
+                    
+                    # Deteksi tipe sederhana
+                    ext = os.path.splitext(entry.name)[1].lower()
+
+                    items.append({
+                        "name": entry.name,
+                        "path": entry.path,
+                        "is_dir": is_dir,
+                        "is_file": is_file,
+                        "is_symlink": is_symlink,
+                        "link_target": link_target,
+                        "size": size,
+                        "mode": mode_str,
+                        "octal_mode": octal_mode,
+                        "owner": owner,
+                        "group": group,
+                        "mtime": mtime,
+                        "ext": ext,
+                    })
+                except OSError:
+                    continue
+    except PermissionError:
+        err_exit(f"Akses ditolak membaca direktori: {path}")
+    except OSError as e:
+        err_exit(f"Gagal membaca direktori: {e}")
+
+    # Urutkan: direktori lebih dulu (A-Z), baru file (A-Z)
+    items.sort(key=lambda x: (not x["is_dir"], x["name"].lower()))
+
+    parent = os.path.dirname(path) if path != "/" else None
+
+    # Disk usage info
+    try:
+        du = shutil.disk_usage(path)
+        disk_info = {
+            "total": du.total,
+            "used": du.used,
+            "free": du.free,
+        }
+    except OSError:
+        disk_info = None
+
+    ok_exit({
+        "current_path": path,
+        "parent_path": parent,
+        "items": items,
+        "total_items": len(items),
+        "disk": disk_info,
+    })
+
+
+def is_binary_string(data: bytes) -> bool:
+    if not data:
+        return False
+    if b"\x00" in data:
+        return True
+    # Cek proporsi non-printable
+    text_chars = bytearray({7, 8, 9, 10, 12, 13, 27} | set(range(0x20, 0x100)) - {0x7f})
+    non_text = data.translate(None, text_chars)
+    return len(non_text) / len(data) > 0.30
+
+
+def action_cat(path: str, max_bytes: int = MAX_TEXT_SIZE) -> None:
+    path = os.path.abspath(path)
+    if not os.path.exists(path):
+        err_exit(f"File tidak ditemukan: {path}")
+    if os.path.isdir(path):
+        err_exit(f"Path adalah direktori: {path}")
+
+    try:
+        st = os.stat(path)
+    except OSError as e:
+        err_exit(f"Gagal memeriksa file: {e}")
+
+    size = st.st_size
+    if size > max_bytes:
+        err_exit(
+            f"File terlalu besar untuk editor ({size / (1024*1024):.2f} MB > {max_bytes / (1024*1024):.1f} MB). "
+            "Gunakan tombol Unduh untuk mengambil file.",
+            {"is_too_large": True, "size": size}
+        )
+
+    # Deteksi biner
+    try:
+        with open(path, "rb") as f:
+            sample = f.read(8192)
+            if is_binary_string(sample):
+                err_exit(
+                    "File terdeteksi sebagai biner (bukan teks UTF-8). "
+                    "Gunakan tombol Unduh untuk mengambil file.",
+                    {"is_binary": True, "size": size}
+                )
+            f.seek(0)
+            raw = f.read(max_bytes)
+            content = raw.decode("utf-8", errors="replace")
+    except PermissionError:
+        err_exit(f"Akses ditolak membaca file: {path}")
+    except OSError as e:
+        err_exit(f"Gagal membaca file: {e}")
+
+    owner, group = get_owner_group(st)
+    mode_str = stat.filemode(st.st_mode)
+    octal_mode = oct(st.st_mode & 0o777)[2:].zfill(4)
+
+    # Cek apakah ada file backup
+    bak_path = path + ".bak"
+    has_backup = os.path.exists(bak_path)
+
+    ok_exit({
+        "path": path,
+        "content": content,
+        "size": size,
+        "mtime": int(st.st_mtime),
+        "mode": mode_str,
+        "octal_mode": octal_mode,
+        "owner": owner,
+        "group": group,
+        "has_backup": has_backup,
+    })
+
+
+def action_write(path: str, content: str, make_backup: bool = True) -> None:
+    path = os.path.abspath(path)
+    check_path_protection(path, for_write=True)
+    parent_dir = os.path.dirname(path)
+
+    if not os.path.exists(parent_dir):
+        err_exit(f"Direktori induk tidak ditemukan: {parent_dir}")
+    if os.path.isdir(path):
+        err_exit(f"Target adalah direktori: {path}")
+
+    # Catat izin dan kepemilikan file lama jika ada
+    st_orig = None
+    if os.path.exists(path):
+        try:
+            st_orig = os.stat(path)
+        except OSError:
+            pass
+
+    # Buat backup tunggal jika file lama sudah ada dan memiliki isi (> 0 bytes)
+    backup_file = None
+    if make_backup and st_orig and st_orig.st_size > 0:
+        try:
+            backup_file = path + ".bak"
+            if os.path.islink(backup_file):
+                os.unlink(backup_file)
+            shutil.copy2(path, backup_file, follow_symlinks=False)
+        except OSError:
+            # Tetap lanjut tulis tapi beri peringatan di log jika backup gagal
+            pass
+
+    # Penulisan aman (atomic write)
+    try:
+        content_bytes = content.encode("utf-8")
+        tmp_fd, tmp_path = tempfile.mkstemp(prefix="pantau_edit_", dir=parent_dir)
+        with os.fdopen(tmp_fd, "wb") as f:
+            f.write(content_bytes)
+            f.flush()
+            os.fsync(f.fileno())
+
+        if st_orig:
+            # Kembalikan mode & kepemilikan asli
+            try:
+                os.chmod(tmp_path, st_orig.st_mode)
+                os.chown(tmp_path, st_orig.st_uid, st_orig.st_gid)
+            except OSError:
+                pass
+        else:
+            # File baru: warisi kepemilikan direktori induk, default mode 0644
+            p_uid, p_gid = get_parent_ownership(path)
+            try:
+                os.chmod(tmp_path, 0o644)
+                os.chown(tmp_path, p_uid, p_gid)
+            except OSError:
+                pass
+
+        os.replace(tmp_path, path)
+    except PermissionError:
+        err_exit(f"Akses ditolak menulis ke {path}")
+    except OSError as e:
+        err_exit(f"Gagal menulis file: {e}")
+
+    ok_exit({
+        "path": path,
+        "bytes_written": len(content_bytes),
+        "backup_created": backup_file if (make_backup and st_orig) else None,
+    })
+
+
+def action_mkdir(path: str, mode: str = "0755") -> None:
+    path = os.path.abspath(path)
+    check_path_protection(path, for_write=True)
+    if os.path.exists(path):
+        err_exit(f"Path sudah ada: {path}")
+
+    try:
+        oct_mode = int(mode, 8)
+    except ValueError:
+        oct_mode = 0o755
+
+    try:
+        os.makedirs(path, mode=oct_mode, exist_ok=False)
+        p_uid, p_gid = get_parent_ownership(path)
+        try:
+            os.chown(path, p_uid, p_gid)
+        except OSError:
+            pass
+    except PermissionError:
+        err_exit(f"Akses ditolak membuat direktori: {path}")
+    except OSError as e:
+        err_exit(f"Gagal membuat direktori: {e}")
+
+    ok_exit({"path": path, "created": True})
+
+
+def action_touch(path: str) -> None:
+    path = os.path.abspath(path)
+    check_path_protection(path, for_write=True)
+    if os.path.exists(path):
+        err_exit(f"File sudah ada: {path}")
+
+    try:
+        with open(path, "w") as f:
+            pass
+        os.chmod(path, 0o644)
+        p_uid, p_gid = get_parent_ownership(path)
+        try:
+            os.chown(path, p_uid, p_gid)
+        except OSError:
+            pass
+    except PermissionError:
+        err_exit(f"Akses ditolak membuat file: {path}")
+    except OSError as e:
+        err_exit(f"Gagal membuat file: {e}")
+
+    ok_exit({"path": path, "created": True})
+
+
+def action_rm(path: str) -> None:
+    path = os.path.abspath(path)
+    check_path_protection(path, for_write=False)
+    real_path = os.path.realpath(path)
+
+    # GUARDRAIL KEAMANAN KRITIS
+    if real_path in PROTECTED_PATHS or path in PROTECTED_PATHS:
+        err_exit(f"Aksi ditolak: '{path}' adalah direktori sistem kritis yang dilindungi.")
+
+    # Cek kedalaman path: minimal ada 2 komponen direktori, misal /home/user atau /var/www
+    parts = [p for p in real_path.split("/") if p]
+    if len(parts) < 2:
+        err_exit(f"Aksi ditolak: dilarang menghapus path top-level '{path}'.")
+
+    if not os.path.exists(path) and not os.path.islink(path):
+        err_exit(f"Path tidak ditemukan: {path}")
+
+    try:
+        if os.path.islink(path):
+            os.unlink(path)
+        elif os.path.isdir(path):
+            shutil.rmtree(path)
+        else:
+            os.unlink(path)
+    except PermissionError:
+        err_exit(f"Akses ditolak menghapus {path}")
+    except OSError as e:
+        err_exit(f"Gagal menghapus: {e}")
+
+    ok_exit({"path": path, "deleted": True})
+
+
+def action_rename(old_path: str, new_path: str) -> None:
+    old_path = os.path.abspath(old_path)
+    new_path = os.path.abspath(new_path)
+    check_path_protection(old_path, for_write=False)
+    check_path_protection(new_path, for_write=True)
+    real_old = os.path.realpath(old_path)
+
+    if real_old in PROTECTED_PATHS or old_path in PROTECTED_PATHS:
+        err_exit(f"Aksi ditolak: '{old_path}' adalah direktori sistem kritis yang dilindungi.")
+    if not os.path.exists(old_path) and not os.path.islink(old_path):
+        err_exit(f"File atau folder asal tidak ditemukan: {old_path}")
+    if os.path.exists(new_path) or os.path.islink(new_path):
+        err_exit(f"Target '{new_path}' sudah ada")
+    parent_new = os.path.dirname(new_path)
+    if not os.path.exists(parent_new):
+        err_exit(f"Direktori target tidak ditemukan: {parent_new}")
+
+    try:
+        shutil.move(old_path, new_path)
+    except PermissionError:
+        err_exit(f"Akses ditolak memindahkan/mengganti nama: {old_path}")
+    except OSError as e:
+        err_exit(f"Gagal memindahkan/mengganti nama: {e}")
+
+    ok_exit({"old_path": old_path, "new_path": new_path, "renamed": True})
+
+
+def action_chmod(path: str, mode: str) -> None:
+    path = os.path.abspath(path)
+    check_path_protection(path, for_write=False)
+    if not os.path.exists(path):
+        err_exit(f"Path tidak ditemukan: {path}")
+
+    try:
+        oct_mode = int(mode, 8)
+    except ValueError:
+        err_exit(f"Format mode tidak valid (harus oktal, misal 0644 / 0755): {mode}")
+
+    try:
+        os.chmod(path, oct_mode)
+    except PermissionError:
+        err_exit(f"Akses ditolak mengubah chmod: {path}")
+    except OSError as e:
+        err_exit(f"Gagal mengubah izin file: {e}")
+
+    ok_exit({"path": path, "mode": mode})
+
+
+def action_chown(path: str, owner: str, group: str | None = None) -> None:
+    path = os.path.abspath(path)
+    check_path_protection(path, for_write=False)
+    if not os.path.exists(path):
+        err_exit(f"Path tidak ditemukan: {path}")
+
+    try:
+        shutil.chown(path, user=owner, group=group)
+    except PermissionError:
+        err_exit(f"Akses ditolak mengubah chown: {path}")
+    except (LookupError, OSError) as e:
+        err_exit(f"Gagal mengubah kepemilikan file: {e}")
+
+    ok_exit({"path": path, "owner": owner, "group": group})
+
+
+def action_read_binary(path: str, max_bytes: int = MAX_DOWNLOAD_SIZE) -> None:
+    path = os.path.abspath(path)
+    if not os.path.exists(path):
+        err_exit(f"File tidak ditemukan: {path}")
+    if os.path.isdir(path):
+        err_exit(f"Path adalah direktori: {path}")
+
+    try:
+        st = os.stat(path)
+        size = st.st_size
+        if size > max_bytes:
+            err_exit(f"Ukuran file melampaui batas unduh ({size / (1024*1024):.1f} MB > {max_bytes / (1024*1024):.1f} MB)")
+
+        with open(path, "rb") as f:
+            raw = f.read(max_bytes)
+        b64 = base64.b64encode(raw).decode("ascii")
+    except OSError as e:
+        err_exit(f"Gagal membaca file: {e}")
+
+    ok_exit({
+        "path": path,
+        "filename": os.path.basename(path),
+        "size": size,
+        "data_b64": b64,
+    })
+
+
+def action_write_binary(path: str, data_b64: str) -> None:
+    path = os.path.abspath(path)
+    check_path_protection(path, for_write=True)
+    parent_dir = os.path.dirname(path)
+
+    if not os.path.exists(parent_dir):
+        err_exit(f"Direktori induk tidak ditemukan: {parent_dir}")
+    if os.path.isdir(path):
+        err_exit(f"Target adalah direktori: {path}")
+
+    try:
+        raw = base64.b64decode(data_b64)
+    except Exception as e:
+        err_exit(f"Gagal mendekode data base64: {e}")
+
+    st_orig = None
+    if os.path.exists(path):
+        try:
+            st_orig = os.stat(path)
+        except OSError:
+            pass
+
+    try:
+        tmp_fd, tmp_path = tempfile.mkstemp(prefix="pantau_up_", dir=parent_dir)
+        with os.fdopen(tmp_fd, "wb") as f:
+            f.write(raw)
+            f.flush()
+            os.fsync(f.fileno())
+
+        if st_orig:
+            try:
+                os.chmod(tmp_path, st_orig.st_mode)
+                os.chown(tmp_path, st_orig.st_uid, st_orig.st_gid)
+            except OSError:
+                pass
+        else:
+            p_uid, p_gid = get_parent_ownership(path)
+            try:
+                os.chmod(tmp_path, 0o644)
+                os.chown(tmp_path, p_uid, p_gid)
+            except OSError:
+                pass
+
+        os.replace(tmp_path, path)
+    except OSError as e:
+        err_exit(f"Gagal menulis file: {e}")
+
+    ok_exit({"path": path, "size": len(raw)})
+
+
+def action_copy(sources: list[str], destination: str) -> None:
+    dest_dir = os.path.abspath(destination)
+    if not os.path.exists(dest_dir):
+        err_exit(f"Direktori tujuan tidak ditemukan: {dest_dir}")
+    if not os.path.isdir(dest_dir):
+        err_exit(f"Target tujuan bukan direktori: {dest_dir}")
+
+    if not isinstance(sources, list) or not sources:
+        err_exit("Daftar file/folder yang disalin tidak boleh kosong")
+
+    copied = []
+    for src in sources:
+        src_path = os.path.abspath(src)
+        if not os.path.exists(src_path) and not os.path.islink(src_path):
+            err_exit(f"File atau folder asal tidak ditemukan: {src_path}")
+
+        src_name = os.path.basename(src_path.rstrip("/"))
+        target_path = os.path.join(dest_dir, src_name)
+        check_path_protection(target_path, for_write=True)
+
+        if os.path.dirname(src_path) == dest_dir:
+            base, ext = os.path.splitext(src_name)
+            counter = 1
+            while os.path.exists(target_path) or os.path.islink(target_path):
+                if os.path.isdir(src_path) and not os.path.islink(src_path):
+                    target_path = os.path.join(dest_dir, f"{src_name}_copy{counter}")
+                else:
+                    target_path = os.path.join(dest_dir, f"{base}_copy{counter}{ext}")
+                counter += 1
+
+        if os.path.isdir(src_path):
+            real_src = os.path.realpath(src_path)
+            real_dest = os.path.realpath(target_path)
+            if real_dest == real_src or real_dest.startswith(real_src + os.sep):
+                err_exit(f"Tidak dapat menyalin direktori ke dalam dirinya sendiri: {src_name}")
+
+        try:
+            if os.path.islink(src_path):
+                link_to = os.readlink(src_path)
+                if os.path.exists(target_path) or os.path.islink(target_path):
+                    os.unlink(target_path)
+                os.symlink(link_to, target_path)
+            elif os.path.isdir(src_path):
+                if os.path.exists(target_path):
+                    shutil.copytree(src_path, target_path, symlinks=True, dirs_exist_ok=True)
+                else:
+                    shutil.copytree(src_path, target_path, symlinks=True)
+            else:
+                shutil.copy2(src_path, target_path)
+            p_uid, p_gid = get_parent_ownership(target_path)
+            try:
+                os.chown(target_path, p_uid, p_gid)
+            except OSError:
+                pass
+            copied.append(target_path)
+        except PermissionError:
+            err_exit(f"Akses ditolak menyalin: {src_name}")
+        except OSError as e:
+            err_exit(f"Gagal menyalin {src_name}: {e}")
+
+    ok_exit({"copied": copied, "count": len(copied)})
+
+
+def action_move(sources: list[str], destination: str) -> None:
+    dest_dir = os.path.abspath(destination)
+    if not os.path.exists(dest_dir):
+        err_exit(f"Direktori tujuan tidak ditemukan: {dest_dir}")
+    if not os.path.isdir(dest_dir):
+        err_exit(f"Target tujuan bukan direktori: {dest_dir}")
+
+    if not isinstance(sources, list) or not sources:
+        err_exit("Daftar file/folder yang dipindahkan tidak boleh kosong")
+
+    moved = []
+    for src in sources:
+        src_path = os.path.abspath(src)
+        real_src = os.path.realpath(src_path)
+        if real_src in PROTECTED_PATHS or src_path in PROTECTED_PATHS:
+            err_exit(f"Aksi ditolak: '{src_path}' adalah direktori sistem kritis.")
+
+        if not os.path.exists(src_path) and not os.path.islink(src_path):
+            err_exit(f"File atau folder asal tidak ditemukan: {src_path}")
+
+        src_name = os.path.basename(src_path.rstrip("/"))
+        target_path = os.path.join(dest_dir, src_name)
+        check_path_protection(target_path, for_write=True)
+
+        if src_path == target_path:
+            continue
+
+        if os.path.isdir(src_path):
+            real_dest = os.path.realpath(target_path)
+            if real_dest == real_src or real_dest.startswith(real_src + os.sep):
+                err_exit(f"Tidak dapat memindahkan direktori ke dalam dirinya sendiri: {src_name}")
+
+        try:
+            shutil.move(src_path, target_path)
+            moved.append(target_path)
+        except PermissionError:
+            err_exit(f"Akses ditolak memindahkan: {src_name}")
+        except OSError as e:
+            err_exit(f"Gagal memindahkan {src_name}: {e}")
+
+    ok_exit({"moved": moved, "count": len(moved)})
+
+
+def action_batch_rm(paths: list[str]) -> None:
+    if not isinstance(paths, list) or not paths:
+        err_exit("Daftar path tidak boleh kosong")
+
+    deleted = []
+    for path in paths:
+        p = os.path.abspath(path)
+        check_path_protection(p, for_write=False)
+        real_p = os.path.realpath(p)
+        if real_p in PROTECTED_PATHS or p in PROTECTED_PATHS:
+            err_exit(f"Aksi ditolak: '{p}' adalah direktori sistem kritis yang dilindungi.")
+        parts = [x for x in real_p.split("/") if x]
+        if len(parts) < 2:
+            err_exit(f"Aksi ditolak: dilarang menghapus path top-level '{p}'.")
+        if not os.path.exists(p) and not os.path.islink(p):
+            continue
+        try:
+            if os.path.islink(p) or not os.path.isdir(p):
+                os.unlink(p)
+            else:
+                shutil.rmtree(p)
+            deleted.append(p)
+        except PermissionError:
+            err_exit(f"Akses ditolak menghapus: {p}")
+        except OSError as e:
+            err_exit(f"Gagal menghapus {p}: {e}")
+
+    ok_exit({"deleted": deleted, "count": len(deleted)})
+
+
+def action_batch_chmod(paths: list[str], mode: str) -> None:
+    try:
+        oct_mode = int(mode, 8)
+    except ValueError:
+        err_exit(f"Format mode tidak valid (harus oktal, misal 0644 / 0755): {mode}")
+
+    if not isinstance(paths, list) or not paths:
+        err_exit("Daftar path tidak boleh kosong")
+
+    updated = []
+    for path in paths:
+        p = os.path.abspath(path)
+        check_path_protection(p, for_write=False)
+        if not os.path.exists(p):
+            continue
+        try:
+            os.chmod(p, oct_mode)
+            updated.append(p)
+        except Exception as e:
+            err_exit(f"Gagal mengubah izin {p}: {e}")
+
+    ok_exit({"updated": updated, "mode": mode, "count": len(updated)})
+
+
+def _fmt_bytes(b: int) -> str:
+    if b <= 0:
+        return "0 B"
+    units = ["B", "KB", "MB", "GB", "TB"]
+    v = float(b)
+    for u in units:
+        if v < 1024.0 or u == "TB":
+            return f"{v:.1f} {u}" if u != "B" else f"{int(v)} B"
+        v /= 1024.0
+    return f"{b} B"
+
+
+def action_storage_triage(mount_path: str = "/") -> None:
+    if not mount_path:
+        mount_path = "/"
+    abs_mount = os.path.abspath(mount_path)
+    if not os.path.exists(abs_mount):
+        err_exit(f"Mount path '{mount_path}' tidak ditemukan")
+
+    # 1. Informasi Partisi
+    try:
+        usage = shutil.disk_usage(abs_mount)
+        total_b = usage.total
+        used_b = usage.used
+        free_b = usage.free
+        used_pct = round((used_b / total_b * 100.0), 1) if total_b > 0 else 0.0
+    except Exception:
+        total_b, used_b, free_b, used_pct = 0, 0, 0, 0.0
+
+    # 2. Level-1 Space Hogs
+    space_hogs = []
+    scan_targets = []
+    if abs_mount == "/":
+        for d in ["/var", "/tmp", "/opt", "/data", "/root", "/home", "/boot", "/etc", "/srv", "/usr"]:
+            if os.path.isdir(d):
+                scan_targets.append(d)
+    else:
+        try:
+            with os.scandir(abs_mount) as it:
+                for entry in it:
+                    if entry.is_dir(follow_symlinks=False):
+                        scan_targets.append(entry.path)
+        except Exception:
+            scan_targets = [abs_mount]
+
+    for d in scan_targets:
+        try:
+            du_p = subprocess.run(
+                ["du", "-skx", d],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+            if du_p.returncode == 0 and du_p.stdout:
+                line = du_p.stdout.strip().splitlines()[0]
+                parts = line.split(maxsplit=1)
+                if parts and parts[0].isdigit():
+                    sz_bytes = int(parts[0]) * 1024
+                    space_hogs.append({
+                        "path": d,
+                        "size_bytes": sz_bytes,
+                        "human_size": _fmt_bytes(sz_bytes),
+                    })
+        except Exception:
+            pass
+
+    space_hogs.sort(key=lambda x: x["size_bytes"], reverse=True)
+    space_hogs = space_hogs[:12]
+
+    # 3. Top Runaway Files (dimodifikasi dalam 60 menit terakhir, >= 15MB, non-database)
+    runaway_files = []
+    runaway_search_dirs = [d for d in ["/var", "/tmp", "/opt", "/data", "/root", "/home"] if os.path.isdir(d)]
+    if runaway_search_dirs:
+        find_cmd = [
+            "find", *runaway_search_dirs, "-xdev",
+            "(",
+            "-path", "*/proc", "-o", "-path", "*/sys", "-o", "-path", "*/dev", "-o",
+            "-path", "*/run", "-o", "-path", "*/mysql", "-o", "-path", "*/mariadb", "-o",
+            "-path", "*/postgresql", "-o", "-path", "*/postgres", "-o", "-path", "*/redis", "-o",
+            "-path", "*/mongodb", "-o", "-path", "*/docker/volumes", "-o",
+            "-path", "*/docker/overlay2", "-o", "-path", "*/containerd", "-o",
+            "-path", "*/.git", "-o", "-path", "*/.cache",
+            ")", "-prune", "-o",
+            "-type", "f", "-mmin", "-60", "-size", "+15M",
+            "(",
+            "-name", "*.log", "-o", "-name", "*.log.*", "-o", "-name", "*.txt", "-o",
+            "-name", "*.out", "-o", "-name", "*.err", "-o", "-name", "*.dump", "-o",
+            "-path", "/var/log/*", "-o", "-path", "/tmp/*", "-o", "-path", "/var/tmp/*",
+            ")",
+            "!", "-name", "*.ibd", "!", "-name", "*.frm", "!", "-name", "*.myd", "!", "-name", "*.myi",
+            "!", "-name", "*.db", "!", "-name", "*.sqlite*", "!", "-name", "*.rdb", "!", "-name", "*.wal",
+            "!", "-name", "*.qcow2", "!", "-name", "*.vmdk", "!", "-name", "*.img",
+            "!", "-name", "galera.cache", "!", "-name", "grastate.dat",
+            "-printf", "%s\t%p\n"
+        ]
+        try:
+            rf_proc = subprocess.run(find_cmd, capture_output=True, text=True, timeout=8)
+            if rf_proc.returncode == 0 and rf_proc.stdout:
+                for ln in rf_proc.stdout.strip().splitlines():
+                    pts = ln.split("\t", 1)
+                    if len(pts) == 2 and pts[0].isdigit():
+                        sb = int(pts[0])
+                        p = pts[1].strip()
+                        runaway_files.append({
+                            "path": p,
+                            "size_bytes": sb,
+                            "human_size": _fmt_bytes(sb),
+                        })
+        except Exception:
+            pass
+    runaway_files.sort(key=lambda x: x["size_bytes"], reverse=True)
+    runaway_files = runaway_files[:10]
+
+    # 4. Ghost Files (Unlinked open file descriptors)
+    ghost_files = []
+    try:
+        proc_dirs = [p for p in os.listdir("/proc") if p.isdigit()]
+        for pid in proc_dirs:
+            fd_dir = f"/proc/{pid}/fd"
+            if not os.path.isdir(fd_dir):
+                continue
+            try:
+                for fd in os.listdir(fd_dir):
+                    fd_path = f"{fd_dir}/{fd}"
+                    try:
+                        tgt = os.readlink(fd_path)
+                        if tgt.endswith(" (deleted)"):
+                            clean_tgt = tgt[:-10]
+                            st = os.stat(fd_path)
+                            sz = st.st_size
+                            if sz >= 524288:  # >= 512 KB
+                                comm = pid
+                                try:
+                                    with open(f"/proc/{pid}/comm", "r", encoding="utf-8", errors="ignore") as f:
+                                        comm = f.read().strip()
+                                except Exception:
+                                    pass
+                                ghost_files.append({
+                                    "command": comm,
+                                    "pid": pid,
+                                    "path": clean_tgt,
+                                    "size_bytes": sz,
+                                    "human_size": _fmt_bytes(sz),
+                                })
+                    except Exception:
+                        continue
+            except Exception:
+                continue
+    except Exception:
+        pass
+    ghost_files.sort(key=lambda x: x["size_bytes"], reverse=True)
+    ghost_files = ghost_files[:15]
+
+    # 5. Reclaimable Storage Catalog
+    reclaimables = []
+
+    # 5a. Systemd Journal Vacuum
+    journal_bytes = 0
+    journal_human = "0 B"
+    try:
+        j_p = subprocess.run(["journalctl", "--disk-usage"], capture_output=True, text=True, timeout=4)
+        if j_p.returncode == 0 and j_p.stdout:
+            m = re.search(r"take up\s+([0-9.]+)\s*([KMGTkmgt]?[Bb]?)", j_p.stdout)
+            if m:
+                val = float(m.group(1))
+                unit = m.group(2).upper()
+                mult = 1
+                if "K" in unit:
+                    mult = 1024
+                elif "M" in unit:
+                    mult = 1024 * 1024
+                elif "G" in unit:
+                    mult = 1024 * 1024 * 1024
+                elif "T" in unit:
+                    mult = 1024 * 1024 * 1024 * 1024
+                journal_bytes = int(val * mult)
+                journal_human = _fmt_bytes(journal_bytes)
+    except Exception:
+        pass
+
+    if journal_bytes > 0:
+        reclaimables.append({
+            "key": "journal",
+            "name": "Systemd Journal Logs",
+            "description": "Log runtime systemd yang diarsip. Dapat dipangkas hingga batas 200MB dengan aman.",
+            "estimated_bytes": max(0, journal_bytes - (200 * 1024 * 1024)),
+            "human_size": journal_human,
+            "command": "journalctl --vacuum-size=200M",
+            "available": True,
+        })
+
+    # 5b. Package Manager Cache (APT)
+    apt_bytes = 0
+    if os.path.isdir("/var/cache/apt/archives"):
+        try:
+            for fn in os.listdir("/var/cache/apt/archives"):
+                if fn.endswith(".deb"):
+                    fp = os.path.join("/var/cache/apt/archives", fn)
+                    try:
+                        apt_bytes += os.stat(fp).st_size
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+
+    if apt_bytes > 0:
+        reclaimables.append({
+            "key": "apt_cache",
+            "name": "APT Package Cache",
+            "description": "Berkas installer .deb sisa unduhan instalasi/pembaruan paket OS.",
+            "estimated_bytes": apt_bytes,
+            "human_size": _fmt_bytes(apt_bytes),
+            "command": "apt-get clean",
+            "available": True,
+        })
+
+    # 5c. Rotated Logs Archive (*.gz, *.[0-9].gz, *.[0-9])
+    rotated_bytes = 0
+    if os.path.isdir("/var/log"):
+        try:
+            for root, _, files in os.walk("/var/log"):
+                for fn in files:
+                    if fn.endswith(".gz") or re.search(r"\.[0-9]+(\.gz)?$", fn):
+                        fp = os.path.join(root, fn)
+                        try:
+                            rotated_bytes += os.stat(fp).st_size
+                        except Exception:
+                            pass
+        except Exception:
+            pass
+
+    if rotated_bytes > 0:
+        reclaimables.append({
+            "key": "rotated_logs",
+            "name": "Arsip Rotasi Log Usang",
+            "description": "Berkas log lawas yang telah dikompresi (.gz / .1) di /var/log.",
+            "estimated_bytes": rotated_bytes,
+            "human_size": _fmt_bytes(rotated_bytes),
+            "command": "find /var/log -type f ( -name '*.gz' -o -name '*.[0-9].gz' -o -name '*.[0-9]' ) -delete",
+            "available": True,
+        })
+
+    total_reclaim_b = sum(r["estimated_bytes"] for r in reclaimables)
+
+    ok_exit({
+        "mount_path": abs_mount,
+        "partition": {
+            "mount_point": abs_mount,
+            "total_bytes": total_b,
+            "used_bytes": used_b,
+            "free_bytes": free_b,
+            "used_percent": used_pct,
+            "total_human": _fmt_bytes(total_b),
+            "used_human": _fmt_bytes(used_b),
+            "free_human": _fmt_bytes(free_b),
+        },
+        "space_hogs": space_hogs,
+        "runaway_files": runaway_files,
+        "ghost_files": ghost_files,
+        "reclaimables": reclaimables,
+        "total_reclaim_bytes": total_reclaim_b,
+        "total_reclaim_human": _fmt_bytes(total_reclaim_b),
+    })
+
+
+def action_truncate_log(path: str) -> None:
+    if not path:
+        err_exit("Path file harus ditentukan")
+    abs_p = os.path.abspath(path)
+
+    # Validasi keamanan sistem
+    check_path_protection(abs_p, for_write=True)
+    if not os.path.exists(abs_p):
+        err_exit(f"Berkas '{path}' tidak ditemukan")
+    if not os.path.isfile(abs_p):
+        err_exit(f"Target '{path}' bukan sebuah berkas reguler (dilarang truncate direktori/device)")
+
+    # Tolak berkas database & binari penting
+    lower_p = abs_p.lower()
+    db_exts = [
+        ".ibd", ".frm", ".myd", ".myi", ".db", ".sqlite", ".sqlite3",
+        ".rdb", ".aof", ".wal", ".mdf", ".ldf", ".ndf", ".edb", ".dit",
+        ".qcow2", ".vmdk", ".img", ".raw", ".vhd", ".vhdx",
+        ".so", ".bin", ".py", ".sh", ".conf", ".ini", ".yaml", ".yml", ".json",
+        ".passwd", ".shadow"
+    ]
+    for ext in db_exts:
+        if lower_p.endswith(ext):
+            err_exit(f"Aksi ditolak: Berkas '{path}' memiliki ekstensi terproteksi ({ext}) dan tidak boleh di-truncate")
+
+    for db_dir in ["/mysql/", "/mariadb/", "/postgresql/", "/postgres/", "/redis/", "/mongodb/", "/docker/volumes/"]:
+        if db_dir in lower_p:
+            err_exit(f"Aksi ditolak: Berkas '{path}' berada di dalam direktori penyimpanan database")
+
+    try:
+        prev_size = os.stat(abs_p).st_size
+        with open(abs_p, "r+", encoding="utf-8", errors="ignore") as f:
+            f.truncate(0)
+        ok_exit({
+            "path": abs_p,
+            "truncated": True,
+            "freed_bytes": prev_size,
+            "freed_human": _fmt_bytes(prev_size),
+        })
+    except Exception as e:
+        err_exit(f"Gagal mengosongkan berkas log '{path}': {e}")
+
+
+def action_storage_reclaim(target: str) -> None:
+    if not target:
+        err_exit("Target reclaim harus ditentukan")
+
+    if target == "journal":
+        try:
+            p = subprocess.run(["journalctl", "--vacuum-size=200M"], capture_output=True, text=True, timeout=20)
+            out = p.stdout.strip() or p.stderr.strip() or "Vacuum journalctl berhasil."
+            ok_exit({"target": target, "success": True, "output": out})
+        except Exception as e:
+            err_exit(f"Gagal vacuum journal: {e}")
+
+    elif target == "apt_cache":
+        try:
+            p = subprocess.run(["apt-get", "clean"], capture_output=True, text=True, timeout=20)
+            out = p.stdout.strip() or p.stderr.strip() or "Cache APT berhasil dibersihkan (apt-get clean)."
+            ok_exit({"target": target, "success": True, "output": out})
+        except Exception as e:
+            err_exit(f"Gagal membersihkan cache APT: {e}")
+
+    elif target == "rotated_logs":
+        try:
+            freed_bytes = 0
+            removed_count = 0
+            for root, _, files in os.walk("/var/log"):
+                for fn in files:
+                    if fn.endswith(".gz") or re.search(r"\.[0-9]+(\.gz)?$", fn):
+                        fp = os.path.join(root, fn)
+                        try:
+                            st = os.stat(fp)
+                            freed_bytes += st.st_size
+                            os.remove(fp)
+                            removed_count += 1
+                        except Exception:
+                            pass
+            out = f"Berhasil menghapus {removed_count} berkas arsip log lama, membebaskan {_fmt_bytes(freed_bytes)} ruang disk."
+            ok_exit({"target": target, "success": True, "output": out, "freed_bytes": freed_bytes})
+        except Exception as e:
+            err_exit(f"Gagal menghapus arsip log: {e}")
+
+    else:
+        err_exit(f"Target reclaim tidak dikenal: '{target}'")
+
+
+def action_duplicate(source_path: str, target_name: str = "") -> None:
+    """Kloning lokal aman berkas atau direktori (ADR-0028)."""
+    if not source_path or not os.path.exists(source_path):
+        err_exit(f"Sumber berkas/direktori tidak ditemukan: '{source_path}'")
+    parent_dir = os.path.dirname(os.path.abspath(source_path))
+    if not target_name:
+        now_str = datetime.now().strftime("%Y%m%d%H%M%S")
+        base = os.path.basename(source_path)
+        if os.path.isfile(source_path) and "." in base and not base.startswith("."):
+            parts = base.rsplit(".", 1)
+            target_name = f"{parts[0]}_{now_str}.{parts[1]}"
+        else:
+            target_name = f"{base}_{now_str}"
+
+    target_name = os.path.basename(target_name.strip())
+    if not target_name:
+        err_exit("Nama target duplikasi tidak valid")
+
+    target_path = os.path.join(parent_dir, target_name)
+    if os.path.exists(target_path):
+        err_exit(f"Target berkas/direktori sudah ada: '{target_path}'")
+
+    # Disk Space Safety Check (ADR-0028): periksa kapasitas sisa partisi + safety buffer 100 MB
+    src_bytes = 0
+    try:
+        vfs = os.statvfs(parent_dir)
+        free_bytes = vfs.f_bavail * vfs.f_frsize
+        if os.path.isfile(source_path):
+            src_bytes = os.path.getsize(source_path)
+        else:
+            du_res = subprocess.run(["du", "-sk", source_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            if du_res.returncode == 0:
+                src_bytes = int(du_res.stdout.split()[0]) * 1024
+            else:
+                src_bytes = 10 * 1024 * 1024
+        SAFETY_BUFFER = 100 * 1024 * 1024
+        if free_bytes < (src_bytes + SAFETY_BUFFER):
+            err_exit(f"Kapasitas sisa partisi tidak mencukupi (tersedia: {free_bytes // 1048576} MB, dibutuhkan: {(src_bytes + SAFETY_BUFFER) // 1048576} MB termasuk buffer 100MB)")
+    except Exception:
+        pass
+
+    cmd = ["cp", "-a", "--", source_path, target_path]
+    res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    if res.returncode != 0:
+        err_exit(f"Gagal melakukan duplikasi: {res.stderr.strip() or 'Unknown error'}")
+
+    ok_exit({"target_path": target_path, "target_name": target_name, "source_size": src_bytes})
+
+
+def main():
+    payload = None
+    if not sys.stdin.isatty():
+        try:
+            raw = sys.stdin.read().strip()
+            if raw:
+                payload = json.loads(raw)
+        except Exception:
+            payload = None
+
+    if payload and isinstance(payload, dict):
+        action = payload.get("action", "")
+        params = payload.get("params", {})
+    else:
+        if len(sys.argv) < 2:
+            err_exit("Gunakan: pantau-file <action> [args...] atau kirim JSON ke stdin")
+        action = sys.argv[1]
+        params = {}
+        if action == "ls" and len(sys.argv) > 2:
+            params["path"] = sys.argv[2]
+        elif action == "cat" and len(sys.argv) > 2:
+            params["path"] = sys.argv[2]
+        elif action == "hash" and len(sys.argv) > 2:
+            params["path"] = sys.argv[2]
+        elif action == "mkdir" and len(sys.argv) > 2:
+            params["path"] = sys.argv[2]
+            if len(sys.argv) > 3:
+                params["mode"] = sys.argv[3]
+        elif action == "rm" and len(sys.argv) > 2:
+            params["path"] = sys.argv[2]
+        elif action == "rename" and len(sys.argv) > 3:
+            params["old_path"] = sys.argv[2]
+            params["new_path"] = sys.argv[3]
+        elif action == "chmod" and len(sys.argv) > 3:
+            params["path"] = sys.argv[2]
+            params["mode"] = sys.argv[3]
+        elif action == "chown" and len(sys.argv) > 3:
+            params["path"] = sys.argv[2]
+            params["owner"] = sys.argv[3]
+            if len(sys.argv) > 4:
+                params["group"] = sys.argv[4]
+
+    if action == "ls":
+        action_ls(params.get("path", "/"))
+    elif action == "cat":
+        action_cat(params.get("path", ""), params.get("max_bytes", MAX_TEXT_SIZE))
+    elif action == "hash":
+        action_hash(params.get("path", ""))
+    elif action == "write":
+        action_write(params.get("path", ""), params.get("content", ""), params.get("make_backup", True))
+    elif action == "mkdir":
+        action_mkdir(params.get("path", ""), params.get("mode", "0755"))
+    elif action == "touch":
+        action_touch(params.get("path", ""))
+    elif action == "rm":
+        action_rm(params.get("path", ""))
+    elif action == "rename":
+        action_rename(params.get("old_path", ""), params.get("new_path", ""))
+    elif action == "chmod":
+        action_chmod(params.get("path", ""), params.get("mode", "0644"))
+    elif action == "chown":
+        action_chown(params.get("path", ""), params.get("owner", "root"), params.get("group"))
+    elif action == "read_binary":
+        action_read_binary(params.get("path", ""), params.get("max_bytes", MAX_DOWNLOAD_SIZE))
+    elif action == "write_binary":
+        action_write_binary(params.get("path", ""), params.get("data_b64", ""))
+    elif action == "copy":
+        action_copy(params.get("sources", []), params.get("destination", ""))
+    elif action == "move":
+        action_move(params.get("sources", []), params.get("destination", ""))
+    elif action == "batch_rm":
+        action_batch_rm(params.get("paths", []))
+    elif action == "batch_chmod":
+        action_batch_chmod(params.get("paths", []), params.get("mode", "0644"))
+    elif action == "storage_triage":
+        action_storage_triage(params.get("mount_path", params.get("mount", "/")))
+    elif action == "truncate_log":
+        action_truncate_log(params.get("path", ""))
+    elif action == "storage_reclaim":
+        action_storage_reclaim(params.get("target", ""))
+    elif action == "duplicate":
+        action_duplicate(params.get("source_path", params.get("source", "")), params.get("target_name", ""))
+    else:
+        err_exit(f"Aksi tidak dikenal: '{action}'")
+
+
+if __name__ == "__main__":
+    main()'''
+
+
+def ensure_pantau_file_updated(force: bool = False) -> bool:
+    """Memastikan wrapper /usr/local/sbin/pantau-file mendukung pewarisan kepemilikan parent dir, single clean backup, proteksi otentikasi SSH, dan Storage Triage forensics.
+    Jika berkas belum ada, versi usang, atau force=True, otomatis perbarui via root langsung atau sudo pantau-file.
+    """
+    try:
+        cur_content = ""
+        if not force and os.path.isfile(PANTAU_FILE_CMD):
+            try:
+                with open(PANTAU_FILE_CMD, "r", encoding="utf-8", errors="replace") as f:
+                    cur_content = f.read()
+            except Exception:
+                pass
+            if "def action_storage_triage" in cur_content and "def get_parent_ownership" in cur_content and "action_truncate_log" in cur_content and "def action_duplicate" in cur_content:
+                return True
+
+        content_to_write = PANTAU_FILE_SCRIPT_BODY.strip() + "\n"
+        if IS_ROOT:
+            with open(PANTAU_FILE_CMD, "w", encoding="utf-8") as f:
+                f.write(content_to_write)
+            os.chmod(PANTAU_FILE_CMD, 0o750)
+            print("[FILE] Wrapper /usr/local/sbin/pantau-file berhasil diperbarui (root)")
+            return True
+
+        # Jika user 'pantau', gunakan sudo pantau-file jika tersedia
+        if os.path.isfile(PANTAU_FILE_CMD):
+            payload_write = json.dumps({
+                "action": "write",
+                "params": {"path": PANTAU_FILE_CMD, "content": content_to_write, "make_backup": False}
+            })
+            pw = subprocess.run(["/usr/bin/sudo", "-n", PANTAU_FILE_CMD], input=payload_write, text=True, capture_output=True, timeout=10)
+            if pw.returncode == 0:
+                payload_chmod = json.dumps({
+                    "action": "chmod",
+                    "params": {"path": PANTAU_FILE_CMD, "mode": "0750"}
+                })
+                subprocess.run(["/usr/bin/sudo", "-n", PANTAU_FILE_CMD], input=payload_chmod, text=True, capture_output=True, timeout=10)
+                print("[FILE] Wrapper /usr/local/sbin/pantau-file berhasil diperbarui via pantau-file")
+                return True
+    except Exception as e:
+        print(f"[FILE WARN] Gagal memperbarui {PANTAU_FILE_CMD}: {e}")
+    return False
+
+_HIST_EPOCH = re.compile(r"^#(\d{9,12})$")                      # bash: baris before command (#epoch)
+_HIST_MTIME = re.compile(r"^#PANTAU_MTIME:(\d{9,12})$")          # metadata mtime wrapper
+_HIST_ZSH = re.compile(r"^: (\d{9,12}):\d*;(.*)$")              # zsh: : <epoch>:<status>;<command>
+_HIST_FISH_CMD = re.compile(r"^- cmd:\s*(.*)$")                 # fish: - cmd: <command>
+_HIST_FISH_WHEN = re.compile(r"^\s+when:\s*(\d{9,12})$")        # fish:   when: <epoch>
+
+
+def _parse_history_entries(raw: str) -> list:
+    """Parse konten file history (bash/zsh/fish) -> [(epoch|None, command)] urut waktu.
+
+    Hanya entri dengan stempel waktu epoch sah (#<epoch> pada bash atau zsh/fish) yang
+    diberi epoch integer. Entri tanpa epoch dibiarkan None agar tidak pernah menginjeksi
+    stempel waktu palsu (mtime file) ke dalam rentang sesi aktif terkini.
+    """
+    entries: list = []
+    pending_epoch = None
+    for ln in raw.splitlines():
+        s = ln.rstrip("\r\n")
+        if not s:
+            continue
+        m = _HIST_EPOCH.match(s)
+        if m:
+            pending_epoch = int(m.group(1))
+            continue
+        m = _HIST_ZSH.match(s)
+        if m:
+            cmd = m.group(2).strip()
+            if cmd:
+                entries.append((int(m.group(1)), cmd))
+            continue
+        m = _HIST_FISH_CMD.match(s)
+        if m:
+            cmd = m.group(1).strip()
+            if cmd:
+                entries.append((None, cmd))
+            continue
+        m = _HIST_FISH_WHEN.match(s)
+        if m and entries and entries[-1][0] is None:
+            entries[-1] = (int(m.group(1)), entries[-1][1])
+            continue
+        if s.startswith("#"):          # komentar/baris penanda tak dikenal
+            continue
+        cmd = s.strip()
+        if not cmd:
+            continue
+        if pending_epoch is not None:
+            entries.append((pending_epoch, cmd))   # bash: timestamp baris previous
+            pending_epoch = None
+        else:
+            entries.append((None, cmd))
+
+    return [e for e in entries if e and e[1]]
+
+
+def _collect_user_history(user: str, max_lines: int) -> list:
+    """Riwayat perintah user (bash/zsh/fish), paling baru di atas.
+
+    Wrapper sudo hanya membaca file history di /home/<user> atau /root;
+    format diurai di sini. Setiap entri: {"ts": str, "cmd": str}.
+    """
+    if not re.fullmatch(r"[a-zA-Z0-9_.-]{1,32}", str(user)):
+        return []
+    try:
+        ensure_pantau_history_updated()
+    except Exception:
+        pass
+    cmd = [PANTAU_HISTORY_CMD, str(user)] if IS_ROOT else ["/usr/bin/sudo", "-n", PANTAU_HISTORY_CMD, str(user)]
+    res = _run_cmd(cmd, timeout=15)
+    if res is None or res.returncode != 0:
+        return []
+
+    entries = _parse_history_entries(res.stdout or "")
+    result = []
+    for ep, c in reversed(entries):
+        ts_str = ""
+        if ep:
+            try:
+                ts_str = datetime.fromtimestamp(ep).strftime("%Y-%m-%d %H:%M:%S")
+            except Exception:
+                ts_str = ""
+        result.append({"ts": ts_str, "cmd": c})
+        if len(result) >= max_lines:
+            break
+    return result
+
+
+def _tail_file(path: str, lines: int) -> str:
+    try:
+        with open(path, "rb") as f:
+            f.seek(0, 2)
+            size = f.tell()
+            chunk = min(size, max(65536, lines * 512))
+            f.seek(size - chunk)
+            data = f.read().decode("utf-8", errors="replace")
+        out = data.splitlines()[-lines:]
+        return "\n".join(out)
+    except OSError as e:
+        return f"[gagal membaca {path}: {e}]"
+
+
+def poll_log_requests(cfg: dict):
+    """Ambil permintaan log antrian dari Dashboard, eksekusi, kirim hasil."""
+    code, data = http_json_request(cfg, "/api/logs/pending", "GET")
+    if code != 200 or not data:
+        return
+    requests = data.get("requests", [])[:5]
+    for req in requests:
+        try:
+            rid = int(req["id"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        unit = str(req.get("unit", ""))
+        try:
+            lines = int(req.get("lines", 200))
+        except (TypeError, ValueError):
+            lines = 200
+        lines = max(10, min(lines, 2000))
+        http_json_request(cfg, f"/api/logs/{rid}/status", "POST", {"status": "executing"})
+
+        if not re.fullmatch(r"[A-Za-z0-9@_.:+-]{1,100}", unit):
+            result = {"status": "failed", "result": "Nama unit tidak valid"}
+        elif unit in ("APT_UPDATE", "APT_UPGRADE", "APT_UPGRADE_INTERACT", "APT_DIST_UPGRADE", "APT_FIX", "PKG_UPGRADE", "PKG_CLEAN"):
+            detail_val = str(req.get("detail", "") or "")
+            threading.Thread(
+                target=_run_apt_in_thread, args=(cfg, rid, unit, detail_val), daemon=True
+            ).start()
+            continue
+        elif unit == "PKG_LIST":
+            try:
+                pkgs = collect_installed_packages()
+                result = {"status": "success", "result": json.dumps(pkgs)}
+            except Exception as e:
+                result = {"status": "failed", "result": f"Gagal membaca daftar packages: {e}"}
+        elif unit == "SYSTEMD_LIST":
+            try:
+                units = collect_systemd_units()
+                result = {"status": "success", "result": json.dumps(units)}
+            except Exception as e:
+                result = {"status": "failed", "result": f"Gagal membaca unit systemd: {e}"}
+        elif unit == "PKG_CLEAR_CACHE":
+            try:
+                pkg_name = str(req.get("detail", "") or "").strip()
+                res_msg = clear_package_cache(pkg_name)
+                result = {"status": "success", "result": res_msg}
+            except Exception as e:
+                result = {"status": "failed", "result": f"Gagal membersihkan cache packages: {e}"}
+        elif unit == "PKG_LOGS":
+            try:
+                pkg_name = str(req.get("detail", "") or "").strip()
+                log_out = get_package_logs(pkg_name, lines)
+                result = {"status": "success", "result": log_out}
+            except Exception as e:
+                result = {"status": "failed", "result": f"Gagal membaca log package: {e}"}
+        elif unit == "SHELL":
+            # Terminal Bawaan: shell root interaktif milik admin dashboard.
+            threading.Thread(
+                target=_run_shell_in_thread, args=(cfg, rid), daemon=True
+            ).start()
+            continue
+        elif unit == "USER_ACTIVITY":
+            try:
+                username = str(req.get("detail", "") or "")
+                logins = [
+                    e for e in collect_user_logins(500, target_user=username)
+                    if e.get("user") == username
+                    or e.get("user", "").endswith(" " + username)
+                ]
+                text = json.dumps({"logins": logins})
+                result = {"status": "success", "result": text[:60000]}
+                print(f"[LOG] Aktivitas user '{username}' -> {result['status']} "
+                      f"({len(logins)} entri login/sudo)")
+            except Exception as e:
+                result = {"status": "failed", "result": f"[error internal: {e}]"}
+        else:
+            try:
+                text = fetch_log_lines(unit, lines)
+                result = {"status": "success", "result": text[:120000]}
+            except Exception as e:
+                result = {"status": "failed", "result": f"[error internal: {e}]"}
+        print(f"[LOG] Log '{unit}' ({lines} baris) -> {result['status']}")
+        http_json_request(cfg, f"/api/logs/{rid}/result", "POST", result)
+
+
+def _log_worker_loop(cfg: dict) -> None:
+    """Worker background untuk merespons dan mengeksekusi permintaan log & aktivitas pengguna seketika (1.0 dtk)."""
+    while True:
+        try:
+            poll_log_requests(cfg)
+        except Exception:
+            pass
+        time.sleep(1.0)
+
+
+# ---------------------------------------------------------------------------
+# File Manager operations (Berkas)
+# ---------------------------------------------------------------------------
+def run_file_op(action: str, params: dict) -> dict:
+    """Jalankan operasi file melalui wrapper /usr/local/sbin/pantau-file (sudo root)."""
+    ensure_pantau_file_updated()
+    payload = json.dumps({"action": action, "params": params}).encode("utf-8")
+    if os.path.exists(PANTAU_FILE_CMD):
+        try:
+            cmd = [PANTAU_FILE_CMD] if IS_ROOT else ["/usr/bin/sudo", "-n", PANTAU_FILE_CMD]
+            proc = subprocess.run(
+                cmd,
+                input=payload,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                timeout=45,
+            )
+            if proc.stdout:
+                try:
+                    return json.loads(proc.stdout.decode("utf-8", errors="replace"))
+                except json.JSONDecodeError:
+                    pass
+            err = proc.stderr.decode("utf-8", errors="replace").strip()
+            if err:
+                return {"ok": False, "error": f"[pantau-file error] {err}"}
+        except Exception as e:
+            return {"ok": False, "error": f"Eksekusi pantau-file gagal: {e}"}
+
+    # Fallback jika wrapper sudo belum terpasang atau jalan native
+    try:
+        proc = subprocess.run(
+            [sys.executable, PANTAU_FILE_CMD],
+            input=payload,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=45,
+        )
+        if proc.stdout:
+            return json.loads(proc.stdout.decode("utf-8", errors="replace"))
+    except Exception as e:
+        return {"ok": False, "error": f"Fallback pantau-file gagal: {e}"}
+    return {"ok": False, "error": "pantau-file tidak dapat dieksekusi"}
+
+
+def _file_worker_loop(cfg: dict) -> None:
+    """Worker background untuk merespons permintaan file manager secara instan (long-poll)."""
+    while True:
+        try:
+            code, data = http_json_request(cfg, "/api/agent/file-requests", method="GET", timeout=25)
+            if code == 200 and data and isinstance(data.get("requests"), list):
+                for req in data["requests"]:
+                    req_id = req.get("id")
+                    action = req.get("action")
+                    params = req.get("params", {})
+                    if not req_id or not action:
+                        continue
+                    res = run_file_op(action, params)
+                    http_json_request(
+                        cfg,
+                        f"/api/agent/file-requests/{req_id}/result",
+                        method="POST",
+                        data=res,
+                        timeout=20,
+                    )
+            elif code in (401, 403):
+                # API key salah / server belum siap
+                time.sleep(10.0)
+            elif code == 0:
+                time.sleep(2.0)
+        except Exception:
+            time.sleep(2.0)
+
+
+# ---------------------------------------------------------------------------
+# Realtime Terminal (PTY + WebSocket Stream Bridge)
+# ---------------------------------------------------------------------------
+def _set_terminal_winsize(fd: int, rows: int, cols: int) -> None:
+    try:
+        winsize = struct.pack("HHHH", int(rows), int(cols), 0, 0)
+        fcntl.ioctl(fd, termios.TIOCSWINSZ, winsize)
+    except Exception:
+        pass
+
+
+# Pola escape sequence probe/query terminal dan respon internal xterm.js
+DA_QUERY_PATTERN = re.compile(
+    r"\x1b\[c|\x1b\[0c|\x1b\[>c|\x1b\[>0c|\x1b\[>q|\x1b\]1[01];\?(?:\x07|\x1b\\)"
+)
+DA_RESP_PATTERN = re.compile(
+    r"\x1b\[[?>!][0-9;]*c|\x1b\[\??[0-9]+;[0-9]+R|\x1b\[[0-9]+n|\x1b\](?:10|11);[^\x07\x1b]*(?:\x07|\x1b\\)"
+)
+
+
+def _run_terminal_session(cfg: dict, session_id: str) -> None:
+    """Jalankan proses shell interaktif di pseudo-terminal (PTY) realtime.
+
+    Terkoneksi langsung ke sesi WebSocket browser via bridge dashboard Pantau.
+    """
+    ensure_pantau_operator_account()
+    ensure_pantau_shell_updated()
+    master_fd, slave_fd = pty.openpty()
+    _set_terminal_winsize(master_fd, 24, 80)
+    slave_name = ""
+    try:
+        slave_name = os.ttyname(slave_fd).replace("/dev/", "")
+    except Exception:
+        slave_name = ""
+
+    if os.path.exists(PANTAU_SHELL_CMD):
+        cmd = [PANTAU_SHELL_CMD] if IS_ROOT else ["/usr/bin/sudo", "-n", PANTAU_SHELL_CMD]
+    else:
+        cmd = ["/bin/bash", "-i"]
+
+    def _preexec():
+        os.setsid()
+        try:
+            fcntl.ioctl(slave_fd, termios.TIOCSCTTY, 0)
+        except Exception:
+            pass
+
+    try:
+        proc = subprocess.Popen(
+            cmd,
+            stdin=slave_fd,
+            stdout=slave_fd,
+            stderr=slave_fd,
+            preexec_fn=_preexec,
+            close_fds=True,
+        )
+    except Exception as e:
+        try:
+            os.close(slave_fd)
+            os.close(master_fd)
+        except Exception:
+            pass
+        http_json_request(
+            cfg,
+            f"/api/agent/terminal/{session_id}/stdout",
+            method="POST",
+            data={"chunk": f"\r\n[Gagal membuka terminal: {e}]\r\n"},
+            timeout=5,
+        )
+        http_json_request(cfg, f"/api/agent/terminal/{session_id}/close", method="POST", timeout=5)
+        return
+
+    # Registrasi sesi Web Terminal aktif untuk pemantauan realtime
+    start_ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    _ACTIVE_WEB_TERMINALS[session_id] = {
+        "tty": slave_name,
+        "pid": proc.pid,
+        "user": "operator",
+        "time": start_ts,
+    }
+
+    # Tutup slave_fd di proses induk agar master_fd menerima EOF saat anak selesai
+    try:
+        os.close(slave_fd)
+    except Exception:
+        pass
+
+    stop_event = threading.Event()
+
+    bash_pgrp = proc.pid
+    try:
+        bash_pgrp = os.getpgid(proc.pid)
+    except Exception:
+        pass
+
+    def check_terminal_busy() -> bool:
+        # 1. POSIX PTY foreground group check (untuk bash langsung tanpa tmux)
+        try:
+            curr_pgrp = os.tcgetpgrp(master_fd)
+            if curr_pgrp > 0 and curr_pgrp != bash_pgrp:
+                return True
+        except Exception:
+            pass
+
+        # 2. Kernel proc stat check untuk bash di bawah tmux / sudo wrapper
+        try:
+            for pid_str in os.listdir("/proc"):
+                if not pid_str.isdigit():
+                    continue
+                try:
+                    with open(f"/proc/{pid_str}/comm", "r") as cf:
+                        if cf.read().strip() != "bash":
+                            continue
+                    with open(f"/proc/{pid_str}/cmdline", "rb") as cf:
+                        cmd = cf.read().replace(b"\x00", b" ").decode("utf-8", errors="ignore")
+                    if "--rcfile" in cmd and "pantau-shellrc" in cmd:
+                        with open(f"/proc/{pid_str}/stat", "r") as sf:
+                            c = sf.read()
+                            idx = c.rfind(")")
+                            if idx != -1:
+                                fields = c[idx + 2:].split()
+                                if len(fields) >= 6:
+                                    pgrp = int(fields[2])
+                                    tpgid = int(fields[5])
+                                    if tpgid > 0 and pgrp != tpgid:
+                                        return True
+                except Exception:
+                    continue
+        except Exception:
+            pass
+
+        return False
+
+    def pty_reader():
+        pending_out = []
+        last_busy_state = False
+        last_busy_check = 0.0
+
+        try:
+            while not stop_event.is_set():
+                now = time.time()
+                r, _, _ = select.select([master_fd], [], [], 0.05)
+                if not r:
+                    if proc.poll() is not None:
+                        break
+                    # Cek berkala saat terminal idle untuk mendeteksi selesainya proses tanpa stdout baru
+                    if now - last_busy_check >= 0.25:
+                        last_busy_check = now
+                        curr_busy = check_terminal_busy()
+                        if curr_busy != last_busy_state:
+                            last_busy_state = curr_busy
+                            http_json_request(
+                                cfg,
+                                f"/api/agent/terminal/{session_id}/stdout",
+                                method="POST",
+                                data={"chunk": "", "busy": curr_busy},
+                                timeout=5,
+                            )
+                    continue
+
+                try:
+                    data = os.read(master_fd, 4096)
+                except OSError:
+                    break
+                if not data:
+                    break
+
+                chunks = [data]
+                while True:
+                    r, _, _ = select.select([master_fd], [], [], 0.005)
+                    if not r:
+                        break
+                    try:
+                        more = os.read(master_fd, 4096)
+                        if not more:
+                            break
+                        chunks.append(more)
+                    except OSError:
+                        break
+
+                chunk = b"".join(chunks).decode("utf-8", errors="replace")
+                chunk = DA_QUERY_PATTERN.sub("", chunk)
+                if not chunk and not pending_out:
+                    continue
+                if pending_out:
+                    chunk = "".join(pending_out) + chunk
+                    pending_out.clear()
+
+                last_busy_check = time.time()
+                curr_busy = check_terminal_busy()
+                last_busy_state = curr_busy
+
+                code, _ = http_json_request(
+                    cfg,
+                    f"/api/agent/terminal/{session_id}/stdout",
+                    method="POST",
+                    data={"chunk": chunk, "busy": curr_busy},
+                    timeout=10,
+                )
+                if code == 410:
+                    break
+                elif code == 0:
+                    pending_out.append(chunk)
+                    if len(pending_out) > 50:
+                        pending_out.pop(0)
+                    time.sleep(0.5)
+        except Exception:
+            pass
+        finally:
+            stop_event.set()
+
+    def stdin_poller():
+        try:
+            while not stop_event.is_set():
+                if proc.poll() is not None:
+                    break
+                code, data = http_json_request(
+                    cfg,
+                    f"/api/agent/terminal/{session_id}/stdin",
+                    method="GET",
+                    timeout=20,
+                )
+                if code in (404, 410):
+                    break
+                if code != 200 or not data:
+                    time.sleep(1.0)
+                    continue
+
+                mtype = data.get("type")
+                if mtype == "input":
+                    text = data.get("data", "")
+                    if text:
+                        cleaned = DA_RESP_PATTERN.sub("", text)
+                        if cleaned:
+                            os.write(master_fd, cleaned.encode("utf-8", errors="replace"))
+                elif mtype == "resize":
+                    cols = data.get("cols", 80)
+                    rows = data.get("rows", 24)
+                    _set_terminal_winsize(master_fd, rows, cols)
+        except Exception:
+            pass
+        finally:
+            stop_event.set()
+
+    t_reader = threading.Thread(target=pty_reader, daemon=True)
+    t_poller = threading.Thread(target=stdin_poller, daemon=True)
+    t_reader.start()
+    t_poller.start()
+
+    stop_event.wait()
+
+    # Bersihkan proses shell dan proses group (misal htop/vim)
+    try:
+        if proc.poll() is None:
+            pgid = os.getpgid(proc.pid)
+            os.killpg(pgid, signal.SIGTERM)
+            time.sleep(0.2)
+            if proc.poll() is None:
+                os.killpg(pgid, signal.SIGKILL)
+    except Exception:
+        pass
+
+    try:
+        os.close(master_fd)
+    except Exception:
+        pass
+
+    # Beri tahu server bahwa sesi terminal selesai
+    try:
+        http_json_request(cfg, f"/api/agent/terminal/{session_id}/close", method="POST", timeout=5)
+    except Exception:
+        pass
+    finally:
+        _ACTIVE_WEB_TERMINALS.pop(session_id, None)
+
+
+def _terminal_worker_loop(cfg: dict) -> None:
+    """Worker background untuk mem-poll permintaan pembukaan sesi terminal realtime."""
+    while True:
+        try:
+            code, data = http_json_request(cfg, "/api/agent/terminal-requests", method="GET", timeout=25)
+            if code == 200 and data and data.get("session_id"):
+                sess_id = data["session_id"]
+                threading.Thread(
+                    target=_run_terminal_session,
+                    args=(cfg, sess_id),
+                    daemon=True,
+                ).start()
+            elif code in (401, 403):
+                time.sleep(10.0)
+            elif code == 0:
+                time.sleep(2.0)
+        except Exception:
+            time.sleep(2.0)
+
+
+# ---------------------------------------------------------------------------
+# Main loop
+# ---------------------------------------------------------------------------
+prev_services: dict[int, str] = {}
+last_apt: dict | None = None
+_tick = 0
+_last_pkg_signature: tuple | None = None
+
+
+def _get_pkg_state_signature() -> tuple:
+    """Mengambil signature timestamp status manajer paket untuk deteksi reaktif instan.
+    Mendukung dpkg (Debian/Ubuntu), RPM / sqlite (RHEL/CentOS/Rocky), pacman (Arch).
+    """
+    m_pkg = 0.0
+    m_lists = 0.0
+    for p in ("/var/lib/dpkg/status", "/var/lib/rpm/rpmdb.sqlite", "/var/lib/rpm/Packages", "/var/lib/pacman/local"):
+        try:
+            if os.path.exists(p):
+                m_pkg = max(m_pkg, os.path.getmtime(p))
+        except Exception:
+            pass
+    for p in ("/var/lib/apt/lists", "/var/cache/dnf", "/var/cache/yum", "/var/lib/pacman/sync"):
+        try:
+            if os.path.exists(p):
+                m_lists = max(m_lists, os.path.getmtime(p))
+        except Exception:
+            pass
+    return (m_pkg, m_lists)
+
+
+def main():
+    print("=" * 60)
+    print(f"  Agen Pantau v{AGENT_VERSION} (Production Package)")
+    print("=" * 60)
+
+    cfg = load_config()
+    server_url = cfg.get("server_url", "")
+    if (server_url.startswith("http://")
+            and "127.0.0.1" not in server_url
+            and "localhost" not in server_url):
+        print(
+            f"[PERINGATAN KEAMANAN] server_url menggunakan HTTP (bukan HTTPS): {server_url}. "
+            "API key dikirim tanpa enkripsi! Pertimbangkan untuk menggunakan HTTPS "
+            "dengan reverse proxy (Nginx + TLS) di sisi server."
+        )
+
+    print(f"[INFO] Server URL  : {cfg['server_url']}")
+    print(f"[INFO] Interval    : {cfg['interval_seconds']} detik")
+    print(f"[INFO] Hostname    : {get_hostname()}")
+    print(f"[INFO] IP Address  : {get_local_ip()}")
+    print(f"[INFO] Mode        : {'root' if IS_ROOT else 'user pantau (sudo ss/wrapper)'}")
+    ensure_pantau_apt_updated()
+    ensure_pantau_user_updated()
+    ensure_pantau_file_updated()
+    ensure_pantau_history_updated()
+    ensure_pantau_firewall_updated()
+    ensure_pantau_operator_account()
+    ensure_pantau_shell_updated()
+    print()
+
+    running = True
+
+    def handle_signal(sig, frame):
+        nonlocal running
+        print(f"\n[INFO] Signal {sig} diterima, menghentikan agen...")
+        running = False
+
+    signal.signal(signal.SIGINT, handle_signal)
+    signal.signal(signal.SIGTERM, handle_signal)
+
+    # Jalankan worker file manager, terminal, command executor & log worker di background thread
+    threading.Thread(target=_file_worker_loop, args=(cfg,), daemon=True).start()
+    threading.Thread(target=_terminal_worker_loop, args=(cfg,), daemon=True).start()
+    threading.Thread(target=_command_worker_loop, args=(cfg,), daemon=True).start()
+    threading.Thread(target=_log_worker_loop, args=(cfg,), daemon=True).start()
+
+    run_once(cfg)
+
+    while running:
+        time.sleep(cfg["interval_seconds"])
+        if running:
+            run_once(cfg)
+
+
+def run_once(cfg: dict):
+    """Muatan satu siklus; error apa pun di-quarantine agar agen tidak mati."""
+    try:
+        _run_once(cfg)
+    except Exception:
+        traceback.print_exc()
+        print("[ERROR] Satu siklus gagal; agen tetap berjalan.")
+
+
+def _run_once(cfg: dict):
+    global prev_services, last_apt, _tick, _last_pkg_signature
+    _tick += 1
+
+    # Eksekusi command yang mungkin pending sebelum pemindaian services
+    try:
+        poll_and_execute_commands(cfg)
+    except Exception as e:
+        print(f"[WARN] Polling command error: {e}")
+
+    # 1. Deteksi services + snapshot kinerja
+    services = detect_all_services()
+    system = collect_system()
+
+    current_ports = {s["port"]: s["service_name"] for s in services}
+    new_ports = set(current_ports) - set(prev_services)
+    removed_ports = set(prev_services) - set(current_ports)
+
+    for p in new_ports:
+        print(f"  [NEW] Service baru: {current_ports[p]} (port {p})")
+    for p in removed_ports:
+        print(f"  [GONE] Service hilang: {prev_services[p]} (port {p})")
+
+    prev_services = current_ports
+
+    print(f"  {'Service':15s} {'Port':>6s} {'Status':6s} {'Conns':>5s} {'Resp(ms)':>9s}")
+    total_conns = 0
+    for s in services:
+        total_conns += s["active_connections"]
+        print(
+            f"  {s['service_name']:15s} {s['port']:>6d} {s['status']:6s} "
+            f"{s['active_connections']:>5d} {s['response_time_ms']:>9d}"
+        )
+
+    # Sesi pengguna, akun (SSH login/logout), dan unit layanan dilaporkan di setiap siklus
+    accounts = collect_accounts()
+    units = collect_units()
+
+    # Deteksi reaktif perubahan paket di server klien (misal operator menjalankan apt di SSH)
+    current_pkg_sig = _get_pkg_state_signature()
+    pkg_changed = False
+    if _last_pkg_signature is not None and _last_pkg_signature != current_pkg_sig:
+        pkg_changed = True
+
+    if last_apt is None or pkg_changed or (_tick % 6 == 2):
+        last_apt = collect_apt()
+        _last_pkg_signature = current_pkg_sig
+
+    apt = last_apt
+
+    if send_report(cfg, services, system, accounts, units, apt, pkg_changed):
+        print(f"[OK] Laporan terkirim ({len(services)} services, {total_conns} conns, "
+              f"CPU {system['cpu']:.0f}%)")
+    else:
+        print("[FAIL] Gagal mengirim laporan")
+
+    # 2. Polling command dari Dashboard
+    try:
+        poll_and_execute_commands(cfg)
+    except Exception as e:
+        print(f"[WARN] Polling command error: {e}")
+
+    print()
+
+
+if __name__ == "__main__":
+    if any(arg in sys.argv for arg in ("--test-runtime", "--check-syntax-only")):
+        # Inisialisasi modul dan validasi interpreter Python berhasil.
+        # Periksa integritas konstanta dan fungsi penting sebelum keluar 0 tanpa efek samping.
+        if not (isinstance(AGENT_VERSION, str) and AGENT_VERSION):
+            print("ERROR: Konstanta AGENT_VERSION tidak terdefinisi atau kosong", file=sys.stderr)
+            sys.exit(1)
+        if not callable(main):
+            print("ERROR: Fungsi main() tidak terdefinisi", file=sys.stderr)
+            sys.exit(1)
+        if not callable(_exec_update_agent):
+            print("ERROR: Fungsi _exec_update_agent() tidak terdefinisi", file=sys.stderr)
+            sys.exit(1)
+        print(f"Pantau Agent v{AGENT_VERSION} runtime pre-flight check OK")
+        sys.exit(0)
+    if any(arg in sys.argv for arg in ("-v", "--version")):
+        print(f"AgentPantau v{AGENT_VERSION}")
+        sys.exit(0)
+    if any(arg in sys.argv for arg in ("-h", "--help")):
+        print(f"Pantau Monitoring Agent v{AGENT_VERSION}")
+        print("Penggunaan: agent_pantau.py [OPSI]")
+        print("Opsi:")
+        print("  --test-runtime, --check-syntax-only  Uji integritas sintaks & inisialisasi modul tanpa menjalankan loop")
+        print("  -v, --version                        Tampilkan versi agen")
+        print("  -h, --help                           Tampilkan bantuan ini")
+        sys.exit(0)
+    main()
