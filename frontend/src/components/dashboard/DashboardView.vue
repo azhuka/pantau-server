@@ -223,14 +223,16 @@
               <th class="py-2.5 px-3 w-32 text-center">{{ t('dash_col_severity') }}</th>
               <th class="py-2.5 px-4">{{ t('dash_col_description') }}</th>
               <th class="py-2.5 px-4 w-28 text-right">{{ t('dash_col_duration') }}</th>
-              <th class="py-2.5 px-3 w-28 text-center">{{ t('col_actions') }}</th>
+              <th class="py-2.5 px-3 w-10 text-center"></th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-800/40 bg-[#090e1c]/40">
             <tr
               v-for="prob in activeProblems"
               :key="prob.id"
-              class="hover:bg-cyan-950/20 transition-colors group"
+              @click="$emit('inspect-node', prob.server_id)"
+              class="hover:bg-cyan-950/30 transition-colors group cursor-pointer"
+              :title="`Open details for ${prob.hostname}`"
             >
               <!-- TIME -->
               <td class="py-2.5 px-4 text-gray-400 whitespace-nowrap">
@@ -288,19 +290,11 @@
                 </span>
               </td>
 
-              <!-- ACTION: OPEN WORKSPACE -->
-              <td class="py-2.5 px-3 text-center whitespace-nowrap">
-                <button
-                  @click="$emit('inspect-node', prob.server_id)"
-                  class="px-2.5 py-1 rounded bg-cyan-950/80 hover:bg-cyan-800 text-cyan-300 hover:text-white border border-cyan-600/50 transition cursor-pointer text-xs font-bold flex items-center justify-center gap-1.5 mx-auto"
-                  title="View incident and asset details"
-                >
-                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
-                    <circle cx="12" cy="12" r="3"/>
-                  </svg>
-                  <span>View</span>
-                </button>
+              <!-- PASSIVE NAVIGATION CHEVRON -->
+              <td class="py-2.5 px-3 text-center text-gray-500 group-hover:text-cyan-400 transition">
+                <svg class="w-3.5 h-3.5 mx-auto opacity-40 group-hover:opacity-100 group-hover:translate-x-0.5 transition" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="9 18 15 12 9 6"/>
+                </svg>
               </td>
             </tr>
           </tbody>

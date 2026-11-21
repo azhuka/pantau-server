@@ -198,9 +198,21 @@ Dokumen ini mencatat setiap pembelajaran dari koreksi operator dan temuan teknis
   2. Istilah dramatisasi fiktif yang tidak tepat konteks (*Investigate* alih-alih *View*).
   3. Penggunaan karakter emoji bawaan OS alih-alih vektor SVG tipis monokromatik.
 - **Aturan Pencegahan `[Lead UI/UX, SF, NOC Data Density, Zero-Fictitious]`:**
-  1. **Aksi Rincian Aset Bernama "View" (Bukan "Investigate"):** Seluruh tombol pembuka jendela modal rincian aset di dasbor dan tabel armada menggunakan label baku **"View"** dengan ikon SVG mata (*Eye*), bukan "Investigate" atau emoji petir.
+  1. **Aksi Rincian Aset Bernama "View" (Bukan "Investigate"):** Tombol pembuka jendela modal rincian aset di tabel inventaris armada (`FleetTableView.vue`) menggunakan label baku **"View"** dengan ikon SVG mata (*Eye*), bukan "Investigate" atau emoji petir. Di halaman dasbor (`DashboardView.vue`), proteksi pasif berlaku mutlak: DILARANG ada kolom aksi atau tombol View di dasbor.
   2. **Keseragaman Tombol Kontrol Jendela (Icon-Only + Tooltip As Label):** Seluruh tombol pada bilah kontrol jendela (termasuk *Pop-out*, *Clear Screen*, *Full Window*, *Fullscreen*, *Close*) **wajib seragam berupa tombol ikon SVG tanpa label teks horizontal**, di mana *tooltip* (`title="..."`) berfungsi sebagai label penjelas. Dilarang menduplikasi teks label yang sama persis dengan isi tooltip.
   3. **Larangan Mutlak Emoji Kartun (Zero-Emoji Mandate):** Seluruh elemen UI wajib menggunakan **vektor SVG inline monokromatik/semantik** (stroke 1.5–2px, adaptif terhadap warna tema NOC) dan DILARANG KERAS menggunakan karakter emoji bergambar.
+
+---
+
+## Lesson 20: Larangan Keras Kolom Aksi / Tombol View di Halaman Dasbor (Dasbor Murni Pasif Sesuai App Lama)
+- **Konteks:**
+  Pada tabel insiden dasbor (`DashboardView.vue`), sempat ditambahkan kolom "Actions" dengan tombol interaktif `[ View ]`. Hal ini diprotes keras oleh operator karena melanggar konsep orisinal aplikasi lama dan merusak hakikat dasbor yang murni pasif.
+- **Akar Masalah:**
+  Generalisasi penyeragaman tombol aksi yang salah tempat. Di aplikasi lama, halaman dasbor adalah instrumen pengawasan makro pasif: tabel insiden dan armada tidak memiliki kolom aksi sama sekali. Pengguna berinteraksi secara pasif dengan mengklik baris data secara langsung (`cursor: pointer`), dengan indikator navigasi chevron halus `>` di ujung baris tanpa tombol aksi aktif.
+- **Aturan Pencegahan `[Lead UI/UX, Proteksi Dasbor, Ubiquitous Concept]`:**
+  1. **Dasbor Murni Pasif (Zero Action Buttons/Columns in Dashboard):** Dilarang keras menempatkan kolom aksi ("Actions" / "Tindakan") atau tombol aksi aktif (seperti tombol `View`) di dalam tabel-tabel pada halaman Dasbor (`DashboardView.vue`).
+  2. **Navigasi Klik-Baris Pasif (Passive Row Triage):** Setiap baris insiden atau baris server pada dasbor dapat diklik langsung (`@click="$emit('inspect-node', ...)"`) dengan kelas `cursor-pointer`, efek latar hover halus (`hover:bg-cyan-950/30`), dan diakhiri dengan indikator chevron navigasi pasif tanpa tombol fisik, persis seperti perilaku unggul di aplikasi lama.
+
 
 
 

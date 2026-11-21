@@ -18,7 +18,7 @@ Seluruh alur peningkatan versi SemVer, kompilasi sintaksis, verifikasi lapangan 
 
 ## 3. Disiplin Rekayasa Mutlak
 
-1. **Proteksi Dasbor (Murni Pasif)**: Dasbor adalah area pemantauan makro & triase insiden pasif. Dilarang menambahkan tombol aksi aktif atau mutasi di dasbor.
+1. **Proteksi Dasbor (Murni Pasif)**: Dasbor adalah area pemantauan makro & triase insiden pasif. Dilarang menambahkan kolom aksi ("Actions") atau tombol aksi fisik (termasuk tombol View) di dasbor. Seluruh interaksi baris insiden/armada bersifat pasif murni melalui klik baris langsung (`cursor-pointer`) dengan penunjuk chevron halus `>` sesuai konsep aplikasi lama.
 2. **Jendela Taktis Mengambang (Workspace Controller)**: Seluruh kontrol aktif dan investigasi mendalam (layanan, proses, port, firewall, cron, user/SSH) berada eksklusif di modal `ServerWorkspaceModal.vue`.
 3. **Paginasi Universal**: $\le 10$ baris disembunyikan otomatis (`display: none !important`), $> 10$ baris ditampilkan.
 4. **Standarisasi Kolom & Tindakan**: Header kolom kontrol bernama "Actions" / "Tindakan" (kapitalisasi diawali huruf besar). Dropdown `Aksi ▾` jika $> 2$ opsi aksi; tombol inline sejajar jika $\le 2$ opsi aksi.

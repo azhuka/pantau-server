@@ -8,16 +8,20 @@ const puppeteer = require('puppeteer-core');
   });
   const page = await browser.newPage();
   await page.goto('http://localhost:8401/', { waitUntil: 'networkidle2' });
-  await page.waitForSelector('button', { timeout: 5000 });
+  await page.waitForSelector('#dash-problems-card', { timeout: 5000 });
   
-  // 1. Open Workspace modal by clicking View on incident
-  const buttons = await page.$$('button');
-  for (const b of buttons) {
-    const text = await page.evaluate(el => el.textContent, b);
-    if (text && text.trim() === 'View') {
-      await b.click();
-      break;
-    }
+  // 0. Capture Clean Passive Dashboard
+  await page.screenshot({ path: 'screenshots/visual_0_dashboard.png' });
+  console.log('0. Captured visual_0_dashboard.png');
+
+  // 1. Open Workspace modal by clicking incident row or fleet row
+  await page.waitForSelector('#dash-problems-card tbody tr', { timeout: 5000 });
+  const row = await page.$('#dash-problems-card tbody tr');
+  if (row) {
+    await row.click();
+  } else {
+    const anyRow = await page.$('tbody tr');
+    if (anyRow) await anyRow.click();
   }
   await new Promise(r => setTimeout(r, 1000));
   await page.screenshot({ path: 'screenshots/visual_1_workspace_header.png' });
