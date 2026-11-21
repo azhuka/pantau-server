@@ -1,4 +1,10 @@
 import json
+import os
+import re
+import stat
+import pwd
+import grp
+import subprocess
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Body
 from sqlalchemy.orm import Session
@@ -256,3 +262,309 @@ def dispatch_server_action(
     db.commit()
 
     return {"ok": True, "command_id": cmd.id, "message": f"Perintah {action} berhasil dijadwalkan"}
+
+
+def _format_size(size_bytes: int) -> str:
+    for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+        if size_bytes < 1024.0:
+            return f"{size_bytes:.1f} {unit}" if unit != 'B' else f"{size_bytes} B"
+        size_bytes /= 1024.0
+    return f"{size_bytes:.1f} PB"
+
+
+@router.post("/{sid}/terminal/exec")
+def execute_terminal_command(
+    sid: int,
+    body: dict = Body(...),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Eksekusi perintah terminal pada server secara real-time."""
+    if not user.can_access_server(sid):
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    server = db.query(Server).filter(Server.id == sid).first()
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+
+    cmd = (body.get("cmd") or "").strip()
+    cwd = body.get("cwd") or "/root"
+    if not cmd:
+        return {"ok": False, "error": "Command is empty"}
+
+    # Proteksi dasar perintah destruktif fatal
+    dangerous_patterns = [r"\brm\s+-rf\s+/\b", r"\bmkfs\b", r"\bdd\s+if="]
+    for pattern in dangerous_patterns:
+        if re.search(pattern, cmd):
+            raise HTTPException(status_code=400, detail="Command blocked by safety guardrails")
+
+    now = datetime.utcnow()
+    audit = AuditLog(
+        server_id=sid,
+        username=user.username,
+        action="terminal_exec",
+        target=cmd[:200],
+        result="success",
+        meta=f"Terminal command executed by {user.username}",
+        created_at=now
+    )
+    db.add(audit)
+    db.commit()
+
+    try:
+        run_cwd = cwd if (os.path.isdir(cwd) and os.access(cwd, os.R_OK | os.X_OK)) else os.path.expanduser("~")
+        res = subprocess.run(
+            cmd,
+            shell=True,
+            cwd=run_cwd,
+            text=True,
+            capture_output=True,
+            timeout=15,
+            executable="/bin/bash"
+        )
+        out = res.stdout
+        if res.stderr:
+            out = f"{out}\n{res.stderr}" if out else res.stderr
+        return {
+            "ok": True,
+            "output": out if out else "(Command completed with no output)",
+            "exit_code": res.returncode,
+            "cwd": run_cwd
+        }
+    except subprocess.TimeoutExpired:
+        return {
+            "ok": False,
+            "output": "Error: Command timed out after 15 seconds.",
+            "exit_code": 124,
+            "cwd": cwd
+        }
+    except Exception as e:
+        return {
+            "ok": False,
+            "output": f"Execution error: {str(e)}",
+            "exit_code": 1,
+            "cwd": cwd
+        }
+
+
+@router.get("/{sid}/files")
+def list_server_files(
+    sid: int,
+    path: str = "/home/bos",
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Daftar berkas dan direktori pada server."""
+    if not user.can_access_server(sid):
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    target_path = os.path.abspath(path)
+    if not (os.path.exists(target_path) and os.access(target_path, os.R_OK)):
+        target_path = os.path.expanduser("~")
+
+    items = []
+    if target_path != "/":
+        parent_dir = os.path.dirname(target_path)
+        items.append({
+            "name": ".. (parent)",
+            "path": parent_dir,
+            "is_dir": True,
+            "size": 0,
+            "size_human": "-",
+            "perms": "drwxr-xr-x",
+            "owner": "root:root",
+            "mtime": "-"
+        })
+
+    try:
+        with os.scandir(target_path) as it:
+            entries = sorted(list(it), key=lambda e: (not e.is_dir(), e.name.lower()))
+            for entry in entries:
+                try:
+                    st = entry.stat()
+                    is_dir = entry.is_dir()
+                    mode_str = stat.filemode(st.st_mode)
+                    try:
+                        owner_name = pwd.getpwuid(st.st_uid).pw_name
+                        group_name = grp.getgrgid(st.st_gid).gr_name
+                        owner = f"{owner_name}:{group_name}"
+                    except Exception:
+                        owner = f"{st.st_uid}:{st.st_gid}"
+
+                    mtime_dt = datetime.fromtimestamp(st.st_mtime)
+                    mtime_str = mtime_dt.strftime("%Y-%m-%d %H:%M")
+
+                    items.append({
+                        "name": entry.name,
+                        "path": os.path.join(target_path, entry.name),
+                        "is_dir": is_dir,
+                        "size": st.st_size if not is_dir else 0,
+                        "size_human": _format_size(st.st_size) if not is_dir else "Dir",
+                        "perms": mode_str,
+                        "owner": owner,
+                        "mtime": mtime_str
+                    })
+                except (PermissionError, FileNotFoundError):
+                    continue
+        return {"ok": True, "path": target_path, "items": items}
+    except PermissionError:
+        raise HTTPException(status_code=403, detail="Permission denied reading directory")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{sid}/files/content")
+def read_file_content(
+    sid: int,
+    path: str,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Membaca isi berkas teks (maksimal 2MB)."""
+    if not user.can_access_server(sid):
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    target_path = os.path.abspath(path)
+    if not os.path.isfile(target_path):
+        raise HTTPException(status_code=404, detail="File not found")
+
+    st = os.stat(target_path)
+    if st.st_size > 2 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File too large to open in web editor (max 2MB)")
+
+    try:
+        with open(target_path, "r", encoding="utf-8", errors="replace") as f:
+            content = f.read()
+        return {
+            "ok": True,
+            "path": target_path,
+            "content": content,
+            "size": st.st_size,
+            "mtime": datetime.fromtimestamp(st.st_mtime).strftime("%Y-%m-%d %H:%M")
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{sid}/files/save")
+def save_file_content(
+    sid: int,
+    body: dict = Body(...),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Menyimpan modifikasi isi berkas."""
+    if not user.can_access_server(sid):
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    path = body.get("path")
+    content = body.get("content", "")
+    if not path:
+        raise HTTPException(status_code=400, detail="Path is required")
+
+    target_path = os.path.abspath(path)
+    try:
+        with open(target_path, "w", encoding="utf-8") as f:
+            f.write(content)
+
+        audit = AuditLog(
+            server_id=sid,
+            username=user.username,
+            action="file_save",
+            target=target_path,
+            result="success",
+            meta=f"File {target_path} edited and saved by {user.username}",
+            created_at=datetime.utcnow()
+        )
+        db.add(audit)
+        db.commit()
+
+        return {"ok": True, "message": "File saved successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{sid}/maintenance")
+def toggle_server_maintenance(
+    sid: int,
+    body: dict = Body(default={}),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Aktifkan atau nonaktifkan status maintenance mode server."""
+    if not user.can_access_server(sid):
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    server = db.query(Server).filter(Server.id == sid).first()
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+
+    server.is_maintenance = 0 if server.is_maintenance else 1
+    server.maintenance_reason = body.get("reason", "Manual toggle by operator")
+    now = datetime.utcnow()
+
+    audit = AuditLog(
+        server_id=sid,
+        username=user.username,
+        action="maintenance_toggle",
+        target=f"is_maintenance={server.is_maintenance}",
+        result="success",
+        meta=f"Maintenance mode set to {server.is_maintenance} by {user.username}",
+        created_at=now
+    )
+    db.add(audit)
+    db.commit()
+
+    return {
+        "ok": True,
+        "is_maintenance": bool(server.is_maintenance),
+        "message": f"Maintenance mode {'enabled' if server.is_maintenance else 'disabled'}"
+    }
+
+
+@router.get("/{sid}/packages")
+def get_server_packages(sid: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    extras = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
+    if not extras or not extras.apt_packages:
+        return {"ok": True, "packages": [], "upgradable_count": extras.apt_upgradable if extras else 0}
+    try:
+        data = json.loads(extras.apt_packages)
+        return {"ok": True, "packages": data, "upgradable_count": extras.apt_upgradable or len(data)}
+    except Exception:
+        return {"ok": True, "packages": [], "upgradable_count": 0}
+
+
+@router.get("/{sid}/ssl")
+def get_server_ssl(sid: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    extras = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
+    if not extras or not extras.ssl_certs:
+        return {"ok": True, "certs": []}
+    try:
+        data = json.loads(extras.ssl_certs)
+        return {"ok": True, "certs": data}
+    except Exception:
+        return {"ok": True, "certs": []}
+
+
+@router.get("/{sid}/logs")
+def get_server_logs(sid: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    extras = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
+    if not extras or not extras.system_logs:
+        return {"ok": True, "logs": []}
+    try:
+        data = json.loads(extras.system_logs)
+        return {"ok": True, "logs": data}
+    except Exception:
+        return {"ok": True, "logs": []}
+
+
+@router.get("/{sid}/fim")
+def get_server_fim(sid: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    extras = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
+    if not extras or not extras.security:
+        return {"ok": True, "fim": []}
+    try:
+        data = json.loads(extras.security)
+        return {"ok": True, "fim": data}
+    except Exception:
+        return {"ok": True, "fim": []}

@@ -1537,45 +1537,35 @@ function popoutTerminalWindow() {
   )
 }
 
-function executeTermCommand() {
+async function executeTermCommand() {
   const cmd = currentTermInput.value.trim()
   if (!cmd) return
   termLines.value.push({ type: 'cmd', text: cmd })
   currentTermInput.value = ''
 
-  const c = cmd.toLowerCase()
-  if (c === 'clear') {
+  if (cmd.toLowerCase() === 'clear') {
     termLines.value = []
-  } else if (c === 'help') {
-    termLines.value.push({
-      type: 'text',
-      text: 'Available system commands: uptime, uname -a, df -h, free -m, ps aux, systemctl status, clear'
+    return
+  }
+
+  const token = localStorage.getItem('pantau_token')
+  try {
+    const res = await fetch(`/api/servers/${currentServerId.value}/terminal/exec`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ cmd, cwd: '/root' })
     })
-  } else if (c === 'uptime') {
-    termLines.value.push({
-      type: 'text',
-      text: ` 13:20:00 up ${formatUptime(server.value?.metrics?.uptime_secs)}, 1 user, load average: ${(server.value?.metrics?.load || [0.5, 0.4, 0.3]).join(', ')}`
-    })
-  } else if (c.startsWith('uname')) {
-    termLines.value.push({
-      type: 'text',
-      text: `Linux ${server.value?.hostname} ${server.value?.kernel} #1 SMP PREEMPT ${server.value?.arch || 'x86_64'} GNU/Linux`
-    })
-  } else if (c.startsWith('df')) {
-    termLines.value.push({
-      type: 'text',
-      text: `Filesystem     1K-blocks      Used Available Use% Mounted on\n/dev/nvme0n1p2 103079840  33554432  64267408  35% /\ntmpfs            16777216         0  16777216   0% /dev/shm`
-    })
-  } else if (c.startsWith('free')) {
-    termLines.value.push({
-      type: 'text',
-      text: `               total        used        free      shared  buff/cache   available\nMem:        32768000    12582912    18874368      524288     1310720    20185088\nSwap:        8388608      524288     7864320`
-    })
-  } else {
-    termLines.value.push({
-      type: 'text',
-      text: `[pantau-exec] Command dispatched: '${cmd}' -> completed successfully (exit code: 0)`
-    })
+    const data = await res.json()
+    if (data.ok) {
+      termLines.value.push({ type: 'text', text: data.output })
+    } else {
+      termLines.value.push({ type: 'text', text: `[Error: ${data.output || data.error || data.detail || 'Execution failed'}]` })
+    }
+  } catch (err) {
+    termLines.value.push({ type: 'text', text: `[Connection error: ${err.message}]` })
   }
 }
 
@@ -1587,15 +1577,8 @@ const currentFmPath = ref('/root')
 const fmSearchFilter = ref('')
 const fmEditingFile = ref(null)
 const fmEditorContent = ref('')
-
-const fmItems = ref([
-  { name: '.. (parent)', is_dir: true, perms: 'drwxr-xr-x', owner: 'root:root', size: '4.0 KB', mtime: 'Today' },
-  { name: 'pantau-agent.conf', is_dir: false, perms: '-rw-r--r--', owner: 'root:root', size: '1.2 KB', mtime: 'Nov 21 04:30', content: '# Pantau Client Configuration\nserver_url = "http://192.168.1.100:8401"\nreport_interval = 10\nenable_fim = true\n' },
-  { name: 'nginx.conf', is_dir: false, perms: '-rw-r--r--', owner: 'root:root', size: '3.4 KB', mtime: 'Nov 20 18:12', content: 'user www-data;\nworker_processes auto;\npid /run/nginx.pid;\n\nevents {\n    worker_connections 1024;\n}\n\nhttp {\n    sendfile on;\n    tcp_nopush on;\n    keepalive_timeout 65;\n    include /etc/nginx/mime.types;\n    default_type application/octet-stream;\n}\n' },
-  { name: 'syslog', is_dir: false, perms: '-rw-r-----', owner: 'syslog:adm', size: '142.5 KB', mtime: 'Nov 21 13:10', content: 'Nov 21 13:10:00 srv systemd[1]: Started Daily apt upgrade and clean activities.\nNov 21 13:10:05 srv kernel: [ 4521.102] TCP: request_sock_TCP: Possible SYN flooding on port 80. Sending cookies.\n' },
-  { name: 'backups', is_dir: true, perms: 'drwx------', owner: 'root:root', size: '4.0 KB', mtime: 'Nov 19 02:00' },
-  { name: 'scripts', is_dir: true, perms: 'drwxr-xr-x', owner: 'root:root', size: '4.0 KB', mtime: 'Nov 18 11:45' }
-])
+const fmLoading = ref(false)
+const fmItems = ref([])
 
 const filteredFmItems = computed(() => {
   if (!fmSearchFilter.value) return fmItems.value
@@ -1603,8 +1586,30 @@ const filteredFmItems = computed(() => {
   return fmItems.value.filter(i => i.name.toLowerCase().includes(q))
 })
 
+async function fetchFmDirectory(path = currentFmPath.value) {
+  fmLoading.value = true
+  const token = localStorage.getItem('pantau_token')
+  try {
+    const res = await fetch(`/api/servers/${currentServerId.value}/files?path=${encodeURIComponent(path)}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    const data = await res.json()
+    if (data.ok) {
+      currentFmPath.value = data.path
+      fmItems.value = data.items
+    } else {
+      alert(data.detail || 'Failed to list directory')
+    }
+  } catch (err) {
+    console.error('Error fetching files:', err)
+  } finally {
+    fmLoading.value = false
+  }
+}
+
 function openFileManagerModal() {
   showFileManagerModal.value = true
+  fetchFmDirectory(currentFmPath.value)
 }
 
 function toggleFMFullscreen() {
@@ -1623,62 +1628,98 @@ function navigateFmUp() {
   if (currentFmPath.value === '/' || currentFmPath.value === '') return
   const parts = currentFmPath.value.split('/').filter(Boolean)
   parts.pop()
-  currentFmPath.value = '/' + parts.join('/')
+  const parent = '/' + parts.join('/')
+  fetchFmDirectory(parent)
 }
 
 function fmRefresh() {
-  // simulated refresh
+  fetchFmDirectory(currentFmPath.value)
 }
 
 function fmNewFilePrompt() {
   const name = prompt('Enter new file name:')
   if (name) {
-    fmItems.value.push({
-      name,
-      is_dir: false,
-      perms: '-rw-r--r--',
-      owner: 'root:root',
-      size: '0 B',
-      mtime: 'Just now',
-      content: ''
-    })
+    const newPath = (currentFmPath.value.endsWith('/') ? currentFmPath.value : currentFmPath.value + '/') + name
+    fmEditingFile.value = { name, path: newPath, is_dir: false }
+    fmEditorContent.value = ''
   }
 }
 
-function handleFmItemClick(item) {
+async function handleFmItemClick(item) {
   if (item.is_dir) {
     if (item.name.startsWith('..')) {
       navigateFmUp()
     } else {
-      currentFmPath.value = (currentFmPath.value.endsWith('/') ? currentFmPath.value : currentFmPath.value + '/') + item.name
+      const nextPath = item.path || ((currentFmPath.value.endsWith('/') ? currentFmPath.value : currentFmPath.value + '/') + item.name)
+      await fetchFmDirectory(nextPath)
     }
   } else {
-    openFmEditor(item)
+    await openFmEditor(item)
   }
 }
 
-function openFmEditor(item) {
-  fmEditingFile.value = item
-  fmEditorContent.value = item.content || `# Content of ${item.name}\n`
+async function openFmEditor(item) {
+  const token = localStorage.getItem('pantau_token')
+  try {
+    const res = await fetch(`/api/servers/${currentServerId.value}/files/content?path=${encodeURIComponent(item.path)}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    const data = await res.json()
+    if (data.ok) {
+      fmEditingFile.value = item
+      fmEditorContent.value = data.content
+    } else {
+      alert(data.detail || 'Unable to read file')
+    }
+  } catch (err) {
+    alert('Error reading file: ' + err.message)
+  }
 }
 
-function saveFmEditor() {
-  if (fmEditingFile.value) {
-    fmEditingFile.value.content = fmEditorContent.value
-    fmEditingFile.value.mtime = 'Just now'
-    alert(`File ${fmEditingFile.value.name} successfully saved! Automatic backup (${fmEditingFile.value.name}.bak) created.`)
-    fmEditingFile.value = null
+async function saveFmEditor() {
+  if (!fmEditingFile.value) return
+  const token = localStorage.getItem('pantau_token')
+  try {
+    const res = await fetch(`/api/servers/${currentServerId.value}/files/save`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        path: fmEditingFile.value.path,
+        content: fmEditorContent.value
+      })
+    })
+    const data = await res.json()
+    if (data.ok) {
+      alert(`File ${fmEditingFile.value.name} successfully saved!`)
+      fmEditingFile.value = null
+      await fetchFmDirectory(currentFmPath.value)
+    } else {
+      alert(data.detail || 'Failed to save file')
+    }
+  } catch (err) {
+    alert('Error saving file: ' + err.message)
   }
 }
 
 function downloadFmFile(item) {
-  const blob = new Blob([item.content || ''], { type: 'text/plain' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = item.name
-  a.click()
-  URL.revokeObjectURL(url)
+  const token = localStorage.getItem('pantau_token')
+  fetch(`/api/servers/${currentServerId.value}/files/content?path=${encodeURIComponent(item.path)}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+    .then(r => r.json())
+    .then(data => {
+      const blob = new Blob([data.content || ''], { type: 'text/plain' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = item.name
+      a.click()
+      URL.revokeObjectURL(url)
+    })
+    .catch(err => alert('Download failed: ' + err.message))
 }
 
 const servicesList = ref([])
@@ -1688,21 +1729,25 @@ const accountsList = ref([])
 const serverProblems = ref([])
 const firewallData = ref({ status: 'unknown', rules: [] })
 const cronData = ref({ jobs: [] })
+const packagesList = ref([])
+const sslCertsList = ref([])
+const logsList = ref([])
+const fimEventsList = ref([])
 
 const serviceSearch = ref('')
 const processSearch = ref('')
 
 const subTabs = computed(() => [
   { id: 'overview', label: t('tab_perf') },
-  { id: 'problems', label: t('tab_incidents') },
+  { id: 'problems', label: t('tab_incidents'), badge: serverProblems.value.length || null },
   { id: 'services_ports', label: t('tab_services_ports'), badge: servicesList.value.length + portsList.value.length || null },
   { id: 'processes', label: t('tab_tasks'), badge: processesList.value.length || null },
   { id: 'firewall', label: t('tab_firewall') },
-  { id: 'accounts', label: t('tab_users_ssh') },
-  { id: 'cron', label: t('tab_cron') },
-  { id: 'fim', label: t('tab_fim') },
-  { id: 'packages', label: t('tab_packages'), badge: server.value?.apt_upgradable || null },
-  { id: 'ssl', label: t('tab_ssl') },
+  { id: 'accounts', label: t('tab_users_ssh'), badge: activeSSHSessions.value.length || null },
+  { id: 'cron', label: t('tab_cron'), badge: cronData.value?.jobs?.length || null },
+  { id: 'fim', label: t('tab_fim'), badge: fimEventsList.value.length || null },
+  { id: 'packages', label: t('tab_packages'), badge: server.value?.apt_upgradable || packagesList.value.length || null },
+  { id: 'ssl', label: t('tab_ssl'), badge: sslCertsList.value.length || null },
   { id: 'logs', label: t('tab_logs') },
 ])
 
@@ -1785,7 +1830,7 @@ async function loadServerData() {
     }
 
     // Parallel fetch sub-datasets
-    const [svcRes, procRes, portRes, accRes, probRes, fwRes, cronRes] = await Promise.all([
+    const [svcRes, procRes, portRes, accRes, probRes, fwRes, cronRes, pkgRes, sslRes, logsRes, fimRes] = await Promise.all([
       fetch(`/api/servers/${currentServerId.value}/services`, { headers }),
       fetch(`/api/servers/${currentServerId.value}/processes`, { headers }),
       fetch(`/api/servers/${currentServerId.value}/ports`, { headers }),
@@ -1793,6 +1838,10 @@ async function loadServerData() {
       fetch(`/api/servers/${currentServerId.value}/problems`, { headers }),
       fetch(`/api/servers/${currentServerId.value}/firewall`, { headers }),
       fetch(`/api/servers/${currentServerId.value}/cron`, { headers }),
+      fetch(`/api/servers/${currentServerId.value}/packages`, { headers }),
+      fetch(`/api/servers/${currentServerId.value}/ssl`, { headers }),
+      fetch(`/api/servers/${currentServerId.value}/logs`, { headers }),
+      fetch(`/api/servers/${currentServerId.value}/fim`, { headers }),
     ])
 
     const svcData = await svcRes.json()
@@ -1802,6 +1851,10 @@ async function loadServerData() {
     const probData = await probRes.json()
     const fwData = await fwRes.json()
     const cronD = await cronRes.json()
+    const pkgData = await pkgRes.json()
+    const sslData = await sslRes.json()
+    const logsData = await logsRes.json()
+    const fimData = await fimRes.json()
 
     servicesList.value = svcData.services || []
     processesList.value = procData.processes || []
@@ -1810,6 +1863,10 @@ async function loadServerData() {
     serverProblems.value = probData.problems || []
     firewallData.value = fwData.firewall || { status: 'unknown', rules: [] }
     cronData.value = cronD.cron || { jobs: [] }
+    packagesList.value = pkgData.packages || []
+    sslCertsList.value = sslData.certs || []
+    logsList.value = logsData.logs || []
+    fimEventsList.value = fimData.fim || []
   } catch (err) {
     console.error('Error fetching server workspace data:', err)
   } finally {
@@ -1874,17 +1931,34 @@ onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyDown)
 })
 
-function triggerMaintenanceToggle() {
-  alert(`Maintenance Mode for ${server.value?.hostname}: Status updated.`)
+async function triggerMaintenanceToggle() {
+  const token = localStorage.getItem('pantau_token')
+  try {
+    const res = await fetch(`/api/servers/${currentServerId.value}/maintenance`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ reason: 'Operator toggle from workspace deck' })
+    })
+    const data = await res.json()
+    if (data.ok && server.value) {
+      server.value.is_maintenance = data.is_maintenance ? 1 : 0
+      alert(data.message)
+    }
+  } catch (err) {
+    alert('Failed to toggle maintenance mode: ' + err.message)
+  }
 }
 
-function triggerOSUpdate() {
-  alert(`Package index refresh (apt update) dispatched to agent on ${server.value?.hostname}.`)
+async function triggerOSUpdate() {
+  await dispatchAction('update_os', {})
 }
 
-function triggerOSUpgrade() {
+async function triggerOSUpgrade() {
   if (!confirm(`Upgrade ${server.value?.apt_upgradable || 0} operating system packages on ${server.value?.hostname}?`)) return
-  dispatchAction('upgrade_os', {})
+  await dispatchAction('upgrade_os', {})
 }
 
 function openGuardrailConfirm(action) {

@@ -54,11 +54,13 @@ const puppeteer = require('puppeteer-core');
   await page.screenshot({ path: 'screenshots/visual_3_floating_terminal.png' });
   console.log('3. Captured visual_3_floating_terminal.png');
 
-  // Close terminal modal
+  // Close terminal modal if open
   await page.evaluate(() => {
-    const closeBtns = Array.from(document.querySelectorAll('button'));
-    const cb = closeBtns.find(b => b.title && b.title.includes('Close'));
-    if (cb) cb.click();
+    const termModal = document.querySelector('.z-\\[60\\]');
+    if (termModal) {
+      const closeBtn = termModal.querySelector('button[title*="Close"]');
+      if (closeBtn) closeBtn.click();
+    }
   });
   await new Promise(r => setTimeout(r, 400));
 
@@ -68,7 +70,7 @@ const puppeteer = require('puppeteer-core');
     const fBtn = btns.find(b => b.textContent.trim().includes('File Manager'));
     if (fBtn) fBtn.click();
   });
-  await new Promise(r => setTimeout(r, 600));
+  await new Promise(r => setTimeout(r, 800));
   await page.screenshot({ path: 'screenshots/visual_4_floating_filemanager.png' });
   console.log('4. Captured visual_4_floating_filemanager.png');
 
