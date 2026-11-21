@@ -298,6 +298,30 @@
         </div>
       </div>
 
+      <!-- Bulk Action Bar (when items are selected) -->
+      <div
+        v-if="selectedPaths.length > 0"
+        class="bg-cyan-950/40 border-b border-cyan-500/40 px-3 py-1.5 flex items-center justify-between text-xs transition"
+      >
+        <div class="flex items-center gap-2">
+          <span class="font-bold text-cyan-300">{{ selectedPaths.length }} items selected</span>
+          <button
+            @click="clearSelection"
+            class="text-[11px] text-gray-400 hover:text-gray-200 underline cursor-pointer"
+          >
+            Clear (Esc)
+          </button>
+        </div>
+        <div class="flex items-center gap-2">
+          <button
+            @click="confirmBulkDelete"
+            class="px-2.5 py-1 rounded bg-rose-950 text-rose-300 border border-rose-800 hover:bg-rose-900 cursor-pointer font-bold text-xs transition"
+          >
+            Delete Selected
+          </button>
+        </div>
+      </div>
+
       <!-- Feedback Notification Toast -->
       <div
         v-if="feedbackMsg"
@@ -308,26 +332,62 @@
         <button @click="feedbackMsg = null" class="text-xs ml-2 cursor-pointer">✕</button>
       </div>
 
-      <!-- Directory Items Table -->
+      <!-- Directory Items Table (Canon ~/rj45 table structure) -->
       <div class="flex-1 overflow-y-auto p-3 select-text">
         <table class="w-full text-left text-xs border-collapse">
           <thead class="border-b border-cyan-500/20 text-gray-400 uppercase font-bold tracking-wider sticky top-0 bg-[#070b16] select-none z-10">
             <tr>
-              <th class="py-2 px-3">File Name</th>
-              <th class="py-2 px-3">Permissions</th>
-              <th class="py-2 px-3">Owner</th>
-              <th class="py-2 px-3">Size</th>
-              <th class="py-2 px-3">Modified</th>
-              <th class="py-2 px-3 text-right">Actions</th>
+              <th class="py-2 px-3 w-8 text-center">
+                <input
+                  type="checkbox"
+                  :checked="isAllSelected"
+                  @change="toggleSelectAll"
+                  class="cursor-pointer accent-cyan-500 rounded"
+                  title="Select All"
+                />
+              </th>
+              <th class="py-2 px-3">Nama</th>
+              <th class="py-2 px-3">Ukuran</th>
+              <th class="py-2 px-3">Izin</th>
+              <th class="py-2 px-3">Pemilik : Grup</th>
+              <th class="py-2 px-3">Waktu Diubah</th>
+              <th class="py-2 px-3 text-center w-24">Tindakan</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-800/40">
+            <!-- Row: .. (Parent Directory) when currentPath !== '/' -->
+            <tr
+              v-if="currentPath !== '/' && currentPath !== ''"
+              class="hover:bg-cyan-950/20 transition cursor-pointer"
+              @click="navigateUp"
+            >
+              <td class="py-2 px-3 text-center text-gray-600">-</td>
+              <td colspan="6" class="py-2 px-3 font-semibold text-gray-400 hover:text-cyan-300 flex items-center gap-2">
+                <svg class="w-4 h-4 text-cyan-500/70 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/>
+                </svg>
+                <span>.. (Parent Directory)</span>
+              </td>
+            </tr>
+
+            <!-- File and Folder Items -->
             <tr
               v-for="item in filteredItems"
               :key="item.path || item.name"
               class="hover:bg-cyan-950/20 transition group"
+              :class="{ 'bg-cyan-950/30': isSelected(item.path) }"
             >
-              <!-- Name & Icon -->
+              <!-- Checkbox -->
+              <td class="py-2 px-3 text-center" @click.stop>
+                <input
+                  type="checkbox"
+                  :checked="isSelected(item.path)"
+                  @change="toggleSelect(item.path)"
+                  class="cursor-pointer accent-cyan-500 rounded"
+                />
+              </td>
+
+              <!-- Nama & Icon: clicking folder navigates in; clicking file opens editor -->
               <td
                 class="py-2 px-3 font-semibold flex items-center gap-2 cursor-pointer"
                 @click="handleItemClick(item)"
@@ -344,84 +404,108 @@
                 <span :class="item.is_dir ? 'text-cyan-300 font-bold' : 'text-gray-200'">{{ item.name }}</span>
               </td>
 
-              <!-- Permissions -->
+              <!-- Ukuran (Size): '-' for directory, human size for file -->
+              <td class="py-2 px-3 text-gray-300 font-mono text-[11px]">
+                {{ item.is_dir ? '—' : (item.size_human || item.size) }}
+              </td>
+
+              <!-- Izin (Permissions) -->
               <td class="py-2 px-3 text-gray-400 font-mono text-[11px]">{{ item.perms }}</td>
 
-              <!-- Owner -->
+              <!-- Pemilik : Grup -->
               <td class="py-2 px-3 text-gray-400 font-mono text-[11px]">{{ item.owner }}</td>
 
-              <!-- Size -->
-              <td class="py-2 px-3 text-gray-300 font-mono text-[11px]">{{ item.size_human || item.size }}</td>
-
-              <!-- Modified -->
+              <!-- Waktu Diubah (Modified Date) -->
               <td class="py-2 px-3 text-gray-400 font-mono text-[11px]">{{ item.mtime }}</td>
 
-              <!-- Actions -->
-              <td class="py-2 px-3 text-right">
-                <div class="inline-flex items-center gap-1.5 justify-end">
-                  <!-- File: Edit -->
+              <!-- Tindakan: Uniform Dropdown "Aksi ▾" matching ~/rj45 and GEMINI.md Rule 3 -->
+              <td class="py-2 px-3 text-center" @click.stop>
+                <div class="relative inline-block text-left">
                   <button
-                    v-if="!item.is_dir"
                     type="button"
-                    @click.stop="openEditor(item)"
-                    class="px-2 py-0.5 rounded text-[11px] bg-cyan-950 text-cyan-300 border border-cyan-800 hover:bg-cyan-900 cursor-pointer font-bold inline-flex items-center gap-1 transition"
-                    title="Edit File"
+                    @click="toggleDropdown(item.path)"
+                    class="px-2 py-0.5 rounded text-[11px] bg-gray-900 hover:bg-cyan-950 text-gray-300 hover:text-cyan-300 border border-gray-700 hover:border-cyan-800 transition cursor-pointer font-bold inline-flex items-center gap-1"
                   >
-                    <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
-                    </svg>
-                    <span>Edit</span>
+                    <span>Aksi ▾</span>
                   </button>
 
-                  <!-- File: Download -->
-                  <button
-                    v-if="!item.is_dir"
-                    type="button"
-                    @click.stop="downloadFile(item)"
-                    class="w-6 h-6 flex items-center justify-center rounded text-[11px] bg-gray-900 text-gray-300 border border-gray-700 hover:bg-gray-800 hover:text-cyan-300 cursor-pointer transition"
-                    title="Download File"
+                  <!-- Dropdown Menu -->
+                  <div
+                    v-if="activeDropdownPath === item.path"
+                    class="fixed z-[99999] bg-[#0c1328] border border-cyan-500/50 rounded shadow-2xl py-1 text-xs w-40 font-sans"
+                    :style="dropdownPositionStyle"
+                    @click.stop
                   >
-                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                      <polyline points="7 10 12 15 17 10"/>
-                      <line x1="12" y1="15" x2="12" y2="3"/>
-                    </svg>
-                  </button>
+                    <!-- File Actions -->
+                    <template v-if="!item.is_dir">
+                      <button
+                        type="button"
+                        @click="openEditor(item); closeDropdown()"
+                        class="w-full text-left px-3 py-1.5 hover:bg-cyan-950 text-cyan-200 hover:text-white flex items-center gap-2 cursor-pointer"
+                      >
+                        <svg class="w-3.5 h-3.5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+                        </svg>
+                        <span>View & Edit</span>
+                      </button>
+                      <button
+                        type="button"
+                        @click="downloadFile(item); closeDropdown()"
+                        class="w-full text-left px-3 py-1.5 hover:bg-cyan-950 text-gray-200 hover:text-white flex items-center gap-2 cursor-pointer"
+                      >
+                        <svg class="w-3.5 h-3.5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                          <polyline points="7 10 12 15 17 10"/>
+                          <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                        <span>Download</span>
+                      </button>
+                    </template>
 
-                  <!-- Directory: Open -->
-                  <button
-                    v-if="item.is_dir && item.name !== '.. (parent)'"
-                    type="button"
-                    @click.stop="loadDirectory(item.path)"
-                    class="w-6 h-6 flex items-center justify-center rounded text-[11px] bg-cyan-950/80 text-cyan-300 border border-cyan-800 hover:bg-cyan-900 cursor-pointer transition"
-                    title="Open Directory"
-                  >
-                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <polyline points="9 18 15 12 9 6"/>
-                    </svg>
-                  </button>
-
-                  <!-- Delete File/Directory -->
-                  <button
-                    v-if="item.name !== '.. (parent)'"
-                    type="button"
-                    @click.stop="confirmDeleteItem(item)"
-                    class="w-6 h-6 flex items-center justify-center rounded text-[11px] bg-gray-900 text-rose-400 border border-gray-800 hover:bg-rose-950 hover:border-rose-700 cursor-pointer transition"
-                    :title="item.is_dir ? 'Delete Directory' : 'Delete File'"
-                  >
-                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <polyline points="3 6 5 6 21 6"/>
-                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                    </svg>
-                  </button>
+                    <!-- Common Actions (File & Directory) -->
+                    <button
+                      type="button"
+                      @click="openRenameModal(item); closeDropdown()"
+                      class="w-full text-left px-3 py-1.5 hover:bg-cyan-950 text-gray-200 hover:text-white flex items-center gap-2 cursor-pointer"
+                    >
+                      <svg class="w-3.5 h-3.5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                      </svg>
+                      <span>Rename</span>
+                    </button>
+                    <button
+                      type="button"
+                      @click="openChmodModal(item); closeDropdown()"
+                      class="w-full text-left px-3 py-1.5 hover:bg-cyan-950 text-gray-200 hover:text-white flex items-center gap-2 cursor-pointer"
+                    >
+                      <svg class="w-3.5 h-3.5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                      </svg>
+                      <span>Permissions</span>
+                    </button>
+                    <div class="border-t border-gray-800 my-1"></div>
+                    <button
+                      type="button"
+                      @click="confirmDeleteItem(item); closeDropdown()"
+                      class="w-full text-left px-3 py-1.5 hover:bg-rose-950/80 text-rose-400 hover:text-rose-200 flex items-center gap-2 cursor-pointer"
+                    >
+                      <svg class="w-3.5 h-3.5 text-rose-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                      </svg>
+                      <span>Delete</span>
+                    </button>
+                  </div>
                 </div>
               </td>
             </tr>
 
             <!-- Empty / No Items row -->
             <tr v-if="filteredItems.length === 0 && !loading">
-              <td colspan="6" class="py-8 text-center text-gray-500 italic">
-                {{ searchFilter ? 'No matching files found' : 'Empty directory' }}
+              <td colspan="7" class="py-8 text-center text-gray-500 italic">
+                {{ searchFilter ? 'No matching files found' : 'This directory is empty.' }}
               </td>
             </tr>
           </tbody>
@@ -522,6 +606,97 @@
               class="px-3 py-1 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs cursor-pointer"
             >
               Create
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL: RENAME PROMPT -->
+      <div
+        v-if="itemToRename"
+        class="absolute inset-0 bg-black/75 z-30 flex items-center justify-center p-4"
+        @click.self="itemToRename = null"
+      >
+        <div class="bg-[#0b1226] border border-cyan-500/60 rounded-lg p-5 w-full max-w-sm flex flex-col space-y-3 shadow-2xl">
+          <div class="text-xs font-bold text-cyan-300 flex items-center gap-2">
+            <svg class="w-4 h-4 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+            <span>Rename {{ itemToRename.is_dir ? 'Folder' : 'File' }}</span>
+          </div>
+          <div class="text-[11px] text-gray-400 truncate">
+            Current: <span class="font-mono text-cyan-200">{{ itemToRename.name }}</span>
+          </div>
+          <input
+            v-model="renameNewName"
+            type="text"
+            class="bg-[#030612] border border-cyan-900 rounded px-3 py-1.5 text-xs text-gray-100 focus:outline-none focus:border-cyan-400 font-mono"
+            @keydown.enter="submitRename"
+            autofocus
+          />
+          <div class="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              @click="itemToRename = null"
+              class="px-3 py-1 rounded bg-gray-800 text-gray-300 hover:bg-gray-700 text-xs cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              @click="submitRename"
+              class="px-3 py-1 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs cursor-pointer"
+            >
+              Rename
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL: CHMOD PROMPT -->
+      <div
+        v-if="itemToChmod"
+        class="absolute inset-0 bg-black/75 z-30 flex items-center justify-center p-4"
+        @click.self="itemToChmod = null"
+      >
+        <div class="bg-[#0b1226] border border-cyan-500/60 rounded-lg p-5 w-full max-w-sm flex flex-col space-y-3 shadow-2xl">
+          <div class="text-xs font-bold text-cyan-300 flex items-center gap-2">
+            <svg class="w-4 h-4 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            <span>Change Permissions (chmod)</span>
+          </div>
+          <div class="text-[11px] text-gray-400 truncate">
+            Target: <span class="font-mono text-cyan-200">{{ itemToChmod.name }}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <label class="text-xs text-gray-300">Octal Mode:</label>
+            <input
+              v-model="chmodOctalMode"
+              type="text"
+              placeholder="0644"
+              class="w-24 bg-[#030612] border border-cyan-900 rounded px-2.5 py-1 text-xs text-gray-100 focus:outline-none focus:border-cyan-400 font-mono"
+              @keydown.enter="submitChmod"
+              autofocus
+            />
+            <span class="text-[11px] text-gray-500 font-mono">e.g. 0644, 0755</span>
+          </div>
+          <div class="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              @click="itemToChmod = null"
+              class="px-3 py-1 rounded bg-gray-800 text-gray-300 hover:bg-gray-700 text-xs cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              @click="submitChmod"
+              class="px-3 py-1 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs cursor-pointer"
+            >
+              Update Mode
             </button>
           </div>
         </div>
@@ -629,7 +804,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 
 const props = defineProps({
   open: { type: Boolean, default: false },
@@ -650,18 +825,29 @@ const searchFilter = ref('')
 const historyStack = ref([])
 const historyIndex = ref(-1)
 
+// Selection state
+const selectedPaths = ref([])
+
 // Address bar manual input
 const isManualPathInput = ref(false)
 const manualPathInputValue = ref('')
 const manualPathInputRef = ref(null)
 
-// Actions state
+// Actions & Dialogs state
 const showNewFileDialog = ref(false)
 const newFileName = ref('')
 const showNewDirDialog = ref(false)
 const newDirName = ref('')
+const itemToRename = ref(null)
+const renameNewName = ref('')
+const itemToChmod = ref(null)
+const chmodOctalMode = ref('0644')
 const itemToDelete = ref(null)
 const feedbackMsg = ref(null)
+
+// Dropdown Action Menu state
+const activeDropdownPath = ref(null)
+const dropdownPositionStyle = ref({})
 
 // Editor state
 const editingFile = ref(null)
@@ -689,15 +875,22 @@ const breadcrumbSegments = computed(() => {
 })
 
 const filteredItems = computed(() => {
-  if (!searchFilter.value) return items.value
+  // Exclude raw .. if returned from backend, since we handle Parent row explicitly at top
+  const list = items.value.filter(i => i.name !== '.. (parent)' && i.name !== '..')
+  if (!searchFilter.value) return list
   const q = searchFilter.value.toLowerCase()
-  return items.value.filter(i => i.name.toLowerCase().includes(q))
+  return list.filter(i => i.name.toLowerCase().includes(q))
+})
+
+const isAllSelected = computed(() => {
+  if (filteredItems.value.length === 0) return false
+  return filteredItems.value.every(i => selectedPaths.value.includes(i.path))
 })
 
 const summaryStats = computed(() => {
-  const dirs = items.value.filter(i => i.is_dir && i.name !== '.. (parent)').length
-  const files = items.value.filter(i => !i.is_dir).length
-  return `${items.value.length} items (${dirs} folders, ${files} files)`
+  const dirs = filteredItems.value.filter(i => i.is_dir).length
+  const files = filteredItems.value.filter(i => !i.is_dir).length
+  return `${filteredItems.value.length} items (${dirs} folders, ${files} files)`
 })
 
 const editorLineCount = computed(() => {
@@ -721,20 +914,94 @@ function copyIp(ip) {
 function handleEsc() {
   if (editingFile.value) {
     closeEditor()
+  } else if (activeDropdownPath.value) {
+    closeDropdown()
+  } else if (itemToRename.value) {
+    itemToRename.value = null
+  } else if (itemToChmod.value) {
+    itemToChmod.value = null
   } else if (showNewFileDialog.value) {
     showNewFileDialog.value = false
   } else if (showNewDirDialog.value) {
     showNewDirDialog.value = false
   } else if (itemToDelete.value) {
     itemToDelete.value = null
+  } else if (selectedPaths.value.length > 0) {
+    clearSelection()
   } else {
     emit('close')
   }
 }
 
+// Selection handling
+function isSelected(path) {
+  return selectedPaths.value.includes(path)
+}
+
+function toggleSelect(path) {
+  const idx = selectedPaths.value.indexOf(path)
+  if (idx >= 0) {
+    selectedPaths.value.splice(idx, 1)
+  } else {
+    selectedPaths.value.push(path)
+  }
+}
+
+function toggleSelectAll() {
+  if (isAllSelected.value) {
+    selectedPaths.value = []
+  } else {
+    selectedPaths.value = filteredItems.value.map(i => i.path)
+  }
+}
+
+function clearSelection() {
+  selectedPaths.value = []
+}
+
+// Dropdown Action Menu
+function toggleDropdown(path) {
+  if (activeDropdownPath.value === path) {
+    closeDropdown()
+    return
+  }
+  activeDropdownPath.value = path
+  nextTick(() => {
+    // Smart positioning
+    const ev = window.event
+    if (ev && ev.target) {
+      const rect = ev.target.getBoundingClientRect()
+      dropdownPositionStyle.value = {
+        top: `${rect.bottom + 4}px`,
+        right: `${window.innerWidth - rect.right}px`
+      }
+    }
+  })
+}
+
+function closeDropdown() {
+  activeDropdownPath.value = null
+}
+
+function handleClickOutside(e) {
+  if (activeDropdownPath.value && !e.target.closest('.noc-act-dropdown')) {
+    closeDropdown()
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('click', handleClickOutside)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('click', handleClickOutside)
+})
+
 async function loadDirectory(path = currentPath.value, pushToHistory = true) {
   if (!props.server?.id) return
   loading.value = true
+  closeDropdown()
+  selectedPaths.value = []
   const token = localStorage.getItem('pantau_token')
   try {
     const res = await fetch(`/api/servers/${props.server.id}/files?path=${encodeURIComponent(path)}`, {
@@ -818,6 +1085,7 @@ function popoutWindow() {
   )
 }
 
+// Navigating via click: clicking folder enters directory; clicking file opens editor
 function handleItemClick(item) {
   if (item.is_dir) {
     loadDirectory(item.path)
@@ -883,6 +1151,85 @@ async function submitNewDir() {
   }
 }
 
+// Rename
+function openRenameModal(item) {
+  itemToRename.value = item
+  renameNewName.value = item.name
+}
+
+async function submitRename() {
+  if (!itemToRename.value) return
+  const newName = renameNewName.value.trim()
+  if (!newName || newName === itemToRename.value.name) {
+    itemToRename.value = null
+    return
+  }
+  const token = localStorage.getItem('pantau_token')
+  const dir = currentPath.value.endsWith('/') ? currentPath.value : currentPath.value + '/'
+  const newPath = dir + newName
+
+  try {
+    const res = await fetch(`/api/servers/${props.server.id}/files/rename`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        old_path: itemToRename.value.path,
+        new_path: newPath
+      })
+    })
+    const data = await res.json()
+    if (data.ok) {
+      notify(`Renamed to ${newName}`)
+      itemToRename.value = null
+      await loadDirectory(currentPath.value, false)
+    } else {
+      notify(data.detail || 'Failed to rename', 'error')
+    }
+  } catch (err) {
+    notify('Error renaming: ' + err.message, 'error')
+  }
+}
+
+// Chmod
+function openChmodModal(item) {
+  itemToChmod.value = item
+  chmodOctalMode.value = item.is_dir ? '0755' : '0644'
+}
+
+async function submitChmod() {
+  if (!itemToChmod.value) return
+  const mode = chmodOctalMode.value.trim()
+  if (!mode) return
+  const token = localStorage.getItem('pantau_token')
+  try {
+    const res = await fetch(`/api/servers/${props.server.id}/files/chmod`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        path: itemToChmod.value.path,
+        mode: mode
+      })
+    })
+    const data = await res.json()
+    if (data.ok) {
+      notify(`Permissions updated to ${mode}`)
+      itemToChmod.value = null
+      await loadDirectory(currentPath.value, false)
+    } else {
+      notify(data.detail || 'Failed to update permissions', 'error')
+    }
+  } catch (err) {
+    notify('Error updating permissions: ' + err.message, 'error')
+  }
+}
+
+// Delete
 function confirmDeleteItem(item) {
   itemToDelete.value = item
 }
@@ -912,6 +1259,35 @@ async function executeDeleteItem() {
   }
 }
 
+// Bulk Delete
+async function confirmBulkDelete() {
+  if (selectedPaths.value.length === 0) return
+  if (!confirm(`Are you sure you want to delete ${selectedPaths.value.length} selected items?`)) return
+
+  const token = localStorage.getItem('pantau_token')
+  let deletedCount = 0
+  for (const path of selectedPaths.value) {
+    try {
+      const res = await fetch(`/api/servers/${props.server.id}/files/rm`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ path })
+      })
+      const data = await res.json()
+      if (data.ok) deletedCount++
+    } catch (err) {
+      console.error('Error deleting:', path, err)
+    }
+  }
+  notify(`Deleted ${deletedCount} of ${selectedPaths.value.length} items`)
+  selectedPaths.value = []
+  await loadDirectory(currentPath.value, false)
+}
+
+// Editor
 async function openEditor(item) {
   const token = localStorage.getItem('pantau_token')
   try {

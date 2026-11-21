@@ -45,34 +45,37 @@ const puppeteer = require('puppeteer-core');
     await new Promise(r => setTimeout(r, 1500));
 
     // Verify File Manager elements
-    console.log('4. Verifying File Manager modal DOM elements...');
+    console.log('4. Verifying File Manager UI & Absence of redundant "Open Directory" button...');
     const fmInfo = await page.evaluate(() => {
-      const header = document.querySelector('span.text-cyan-300');
-      const bookmarks = Array.from(document.querySelectorAll('button')).filter(b => 
-        ['~ Home', '/ Root', '/var/log', '/etc', '/opt', '/var/www'].some(text => b.textContent.includes(text))
-      );
-      const actionBtns = Array.from(document.querySelectorAll('button')).filter(b =>
-        ['New File', 'New Folder'].some(text => b.textContent.includes(text))
-      );
+      const allBtns = Array.from(document.querySelectorAll('button'));
+      const openDirBtn = allBtns.find(b => b.title === 'Open Directory' || b.textContent.trim() === 'Open Directory');
+      const aksiDropdownBtns = allBtns.filter(b => b.textContent.includes('Aksi ▾'));
+      const tableHeaders = Array.from(document.querySelectorAll('thead th')).map(th => th.textContent.trim());
       const tableRows = document.querySelectorAll('tbody tr');
+      
       return {
-        hasHeader: !!header,
-        headerText: header ? header.textContent.trim() : null,
-        bookmarksCount: bookmarks.length,
-        actionBtnsCount: actionBtns.length,
-        itemsInTable: tableRows.length
+        hasRedundantOpenDirButton: !!openDirBtn,
+        aksiDropdownCount: aksiDropdownBtns.length,
+        tableHeaders: tableHeaders,
+        totalRows: tableRows.length
       };
     });
 
     console.log('File Manager Verification Result:', JSON.stringify(fmInfo, null, 2));
 
-    if (fmInfo.bookmarksCount >= 4 && fmInfo.actionBtnsCount >= 2) {
-      console.log('\n========================================================');
-      console.log('  REMOTE FILE MANAGER UI VERIFICATION PASSED');
-      console.log('========================================================');
-    } else {
-      console.warn('File Manager UI elements count lower than expected:', fmInfo);
+    if (fmInfo.hasRedundantOpenDirButton) {
+      throw new Error('FAIL: Redundant "Open Directory" button is still present in the UI!');
     }
+    if (fmInfo.aksiDropdownCount === 0) {
+      throw new Error('FAIL: Expected uniform "Aksi ▾" dropdown buttons in table rows!');
+    }
+
+    console.log('\n========================================================');
+    console.log('  REMOTE FILE MANAGER UI VERIFICATION PASSED (CANON MATCH)');
+    console.log('  - Zero "Open Directory" button');
+    console.log(`  - ${fmInfo.aksiDropdownCount} uniform "Aksi ▾" dropdowns present`);
+    console.log(`  - Headers: ${fmInfo.tableHeaders.join(' | ')}`);
+    console.log('========================================================');
   } catch (err) {
     console.error('Error during FM UI test:', err);
     process.exit(1);

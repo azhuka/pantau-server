@@ -647,6 +647,88 @@ def download_server_file(
     return FileResponse(target_path, filename=filename)
 
 
+@router.post("/{sid}/files/rename")
+def rename_server_file(
+    sid: int,
+    body: dict = Body(...),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Mengganti nama berkas atau direktori."""
+    if not user.can_access_server(sid):
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    old_path = str(body.get("old_path", "")).strip()
+    new_path = str(body.get("new_path", "")).strip()
+    if not old_path or not new_path:
+        raise HTTPException(status_code=400, detail="Old path and new path are required")
+
+    target_old = os.path.abspath(old_path)
+    target_new = os.path.abspath(new_path)
+
+    if not os.path.exists(target_old):
+        raise HTTPException(status_code=404, detail="Source file or directory not found")
+
+    if os.path.exists(target_new):
+        raise HTTPException(status_code=400, detail="Target path already exists")
+
+    try:
+        os.rename(target_old, target_new)
+        audit = AuditLog(
+            server_id=sid,
+            username=user.username,
+            action="file_rename",
+            target=f"{target_old} -> {target_new}",
+            result="success",
+            meta=f"Renamed by {user.username}",
+            created_at=datetime.utcnow()
+        )
+        db.add(audit)
+        db.commit()
+        return {"ok": True, "message": "Renamed successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{sid}/files/chmod")
+def chmod_server_file(
+    sid: int,
+    body: dict = Body(...),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Mengubah izin berkas atau direktori (mode oktal, misal '0644' atau '0755')."""
+    if not user.can_access_server(sid):
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    path = str(body.get("path", "")).strip()
+    mode = str(body.get("mode", "")).strip()
+    if not path or not mode:
+        raise HTTPException(status_code=400, detail="Path and mode are required")
+
+    target_path = os.path.abspath(path)
+    if not os.path.exists(target_path):
+        raise HTTPException(status_code=404, detail="File or directory not found")
+
+    try:
+        mode_int = int(mode, 8)
+        os.chmod(target_path, mode_int)
+        audit = AuditLog(
+            server_id=sid,
+            username=user.username,
+            action="file_chmod",
+            target=f"{target_path} (mode={mode})",
+            result="success",
+            meta=f"Chmod by {user.username}",
+            created_at=datetime.utcnow()
+        )
+        db.add(audit)
+        db.commit()
+        return {"ok": True, "message": "Permissions updated successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.post("/{sid}/maintenance")
 def toggle_server_maintenance(
     sid: int,

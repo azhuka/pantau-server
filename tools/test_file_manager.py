@@ -83,6 +83,31 @@ def test_file_manager_lifecycle():
     assert body.decode("utf-8") == updated_content, "Downloaded content mismatch!"
     print(f"-> Download verified via FileResponse. Content size: {len(body)} bytes.")
 
+    # 4b. Test chmod & rename
+    print(f"\n[5b] Testing POST /api/servers/1/files/chmod ...")
+    status, body = make_req("/api/servers/1/files/chmod", method="POST", data={
+        "path": test_file_path,
+        "mode": "0600"
+    }, token=token)
+    assert status == 200, f"Chmod failed ({status}): {body.decode('utf-8')}"
+    file_mode = oct(os.stat(test_file_path).st_mode & 0o777)
+    assert file_mode == "0o600", f"Chmod mode mismatch: {file_mode}"
+    print(f"-> Chmod verified. File mode is now 0600.")
+
+    print(f"\n[5c] Testing POST /api/servers/1/files/rename ...")
+    renamed_path = test_file_path + ".renamed"
+    if os.path.exists(renamed_path):
+        os.remove(renamed_path)
+    status, body = make_req("/api/servers/1/files/rename", method="POST", data={
+        "old_path": test_file_path,
+        "new_path": renamed_path
+    }, token=token)
+    assert status == 200, f"Rename failed ({status}): {body.decode('utf-8')}"
+    assert os.path.exists(renamed_path), "Renamed file does not exist!"
+    # Rename back so next steps work smoothly
+    os.rename(renamed_path, test_file_path)
+    print(f"-> Rename verified successfully.")
+
     # 5. Mkdir /tmp/pantau_test_dir
     test_dir_path = "/tmp/pantau_test_dir"
     if os.path.exists(test_dir_path):
