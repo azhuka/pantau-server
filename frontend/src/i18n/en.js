@@ -7,6 +7,7 @@ export default {
   nav_settings: 'Settings',
   nav_status_live: 'LIVE TELEMETRY',
   nav_status_all_secure: 'ALL SECURE',
+  nav_status_no_nodes: 'NO SERVERS CONNECTED',
   nav_status_alert: 'ALERT DETECTED',
   nav_operator: 'Operator',
   nav_logout: 'Sign Out',
@@ -43,7 +44,8 @@ export default {
   sev_ignored: 'Ignored',
 
   dash_recent_incidents: 'Recent Incidents',
-  dash_incidents_empty: 'No active incidents. All 10 fleet servers are operating normally.',
+  dash_incidents_empty: 'No active incidents. All {count} fleet servers are operating normally.',
+  dash_incidents_empty_no_servers: 'No active incidents. No fleet servers connected yet.',
   dash_open_fleet: 'Open Fleet Inventory →',
   dash_col_time: 'TIME',
   dash_col_server: 'SERVER',

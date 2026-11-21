@@ -159,9 +159,9 @@
           </h3>
           <span
             class="px-2.5 py-0.5 rounded text-xs font-mono font-bold"
-            :class="activeProblems.length > 0 ? 'bg-rose-950 text-rose-300 border border-rose-800' : 'bg-emerald-950 text-emerald-400 border border-emerald-800'"
+            :class="activeProblems.length > 0 ? 'bg-rose-950 text-rose-300 border border-rose-800' : (servers.length === 0 ? 'bg-gray-800 text-gray-400 border border-gray-700' : 'bg-emerald-950 text-emerald-400 border border-emerald-800')"
           >
-            {{ activeProblems.length > 0 ? `${activeProblems.length} ${t('active_incidents')}` : t('nav_status_all_secure') }}
+            {{ activeProblems.length > 0 ? `${activeProblems.length} ${t('active_incidents')}` : (servers.length === 0 ? t('nav_status_no_nodes') : t('nav_status_all_secure')) }}
           </span>
         </div>
 
@@ -173,13 +173,24 @@
         </button>
       </div>
 
-      <!-- State Kosong / 100% Normal -->
+      <!-- State Kosong / Status Insiden Dinamis -->
       <div
         v-if="activeProblems.length === 0"
-        class="p-5 text-center text-xs text-gray-300 font-mono flex items-center justify-center gap-2.5 bg-[#090d16]/40 border-l-[3px] border-l-emerald-500"
+        class="p-5 text-center text-xs font-mono flex items-center justify-center gap-2.5 bg-[#090d16]/40"
+        :class="servers.length === 0 ? 'border-l-[3px] border-l-gray-600 text-gray-400' : 'border-l-[3px] border-l-emerald-500 text-gray-300'"
       >
-        <span class="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold">✓</span>
-        <span>{{ t('dash_incidents_empty') }}</span>
+        <span
+          class="w-4 h-4 rounded-full flex items-center justify-center text-xs font-bold"
+          :class="servers.length === 0 ? 'bg-gray-800 text-gray-400' : 'bg-emerald-500/20 text-emerald-400'"
+        >
+          {{ servers.length === 0 ? '○' : '✓' }}
+        </span>
+        <span>
+          {{ servers.length === 0
+            ? t('dash_incidents_empty_no_servers')
+            : t('dash_incidents_empty', { count: servers.length })
+          }}
+        </span>
       </div>
 
       <!-- Tabel Insiden Terkini -->

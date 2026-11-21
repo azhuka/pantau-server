@@ -7,6 +7,7 @@ export default {
   nav_settings: 'Pengaturan',
   nav_status_live: 'TELEMETRI LANGSUNG',
   nav_status_all_secure: '100% AMAN',
+  nav_status_no_nodes: 'BELUM ADA SERVER',
   nav_status_alert: 'ANOMALI TERDETEKSI',
   nav_operator: 'Operator',
   nav_logout: 'Keluar',
@@ -43,7 +44,8 @@ export default {
   sev_ignored: 'Diabaikan',
 
   dash_recent_incidents: 'Insiden Terkini',
-  dash_incidents_empty: 'Tidak ada insiden aktif. Seluruh 10 server armada beroperasi normal.',
+  dash_incidents_empty: 'Tidak ada insiden aktif. Seluruh {count} server armada beroperasi normal.',
+  dash_incidents_empty_no_servers: 'Tidak ada insiden aktif. Belum ada server armada terhubung.',
   dash_open_fleet: 'Buka Inventaris Armada →',
   dash_col_time: 'WAKTU',
   dash_col_server: 'SERVER',
