@@ -144,12 +144,21 @@ Dokumen ini mencatat setiap pembelajaran dari koreksi operator dan temuan teknis
 
 ---
 
-## Lesson 16: Larangan Sikap Pasif & Makna Kata "Sekarang" Adalah Eksekusi Berjalan (Action Over Rhetorical Permission)
-- **Konteks:** Memaparkan rencana kerja berikutnya dan berhenti secara pasif menunggu instruksi/persetujuan operator ("saya siap mengeksekusi..."), bukannya langsung melakukan eksekusi nyata.
-- **Akar Masalah:** Pelanggaran prinsip *Action Over Explanation* dan mandat kepemilikan teknis penuh (*Full Technical Ownership*). Jika sebuah tahapan kerja sudah terdefinisi jelas dalam Master Plan dan rencana arsitektur, tugas asisten adalah LANGSUNG mengeksekusi, menguji secara mandiri, dan menyajikan hasilnya yang sudah siap pakai.
-- **Aturan Pencegahan `[FTO, Action Over Explanation, PCF]`:**
-  1. **Larangan Berhenti untuk Meminta Izin Retoris:** Dilarang keras berhenti di tengah jalan untuk bertanya hal-hal retoris atau meminta persetujuan atas langkah yang sudah disepakati dalam arsitektur induk. Langsung eksekusi secara atomik, verifikasi end-to-end, dan laporkan hasil yang sudah tuntas.
-  2. **Makna Kata "Sekarang" Adalah Eksekusi Sedang/Telah Berjalan:** Kata "sekarang" berarti pekerjaan teknis telah dijalankan dan diverifikasi keadaannya, bukan wacana masa depan yang menggantungkan tindakan pada respon operator.
+## Lesson 17: Hierarki Layout Jendela Kontrol Taktis, Penempatan Window Chrome, dan Pemisahan Konsol Khusus (Terminal & File Manager)
+- **Konteks:** Kontrol jendela (minimize, maximize, close) dan bilah switcher armada terbungkus (*flex-wrap*) ke baris kedua di sebelah kiri, serta adanya duplikasi tombol Terminal & File Manager pada bilah tab horizontal biasa.
+- **Akar Masalah:**
+  1. Menggabungkan informasi identitas host, tombol aksi hero, dan kontrol jendela ke dalam kontainer flexbox tunggal yang mengizinkan *flex-wrap*, sehingga elemen kontrol jendela terdorong ke posisi yang aneh saat lebar layar menyempit.
+  2. Menempatkan konsol interaktif khusus (Terminal dan File Manager) sebagai sub-tab telemetri horizontal biasa, alih-alih memperlakukannya sebagai jendela kerja mengambang mandiri (*floating console window*).
+- **Aturan Pencegahan `[RP, Anti-User QA, Systems Thinking]`:**
+  1. **Pemisahan Tegas Tiga Layer Header Modal:**
+     - *Baris 1 (Window Chrome & Fleet Navigator):* Memuat identitas target dan telemetri di kiri, Switcher Armada terpusat dengan dropdown ber-z-index tinggi, dan tombol kontrol jendela (`—`, `⛶`, `✕`) **wajib terkunci permanen di sudut kanan atas jendela** tanpa terkena *wrap*.
+     - *Baris 2 (Dedicated Command Deck):* Bilah khusus berisi tombol tindakan hero (Terminal, File Manager, Mode Pemeliharaan di kiri; Update, Upgrade, Reboot, Power Off di kanan).
+     - *Baris 3 (Tactical Tabbar):* Murni navigasi 11 sub-konsol telemetri fisik; **dilarang menyematkan tombol Terminal & File Manager di bilah tab horizontal**.
+  2. **Konsol Khusus Terminal & File Manager Sebagai Jendela Mengambang Mandiri:**
+     - Terminal dan File Manager dibuka dalam jendela mengambang terpisah (*floating modal*) yang dilengkapi kontrol lengkap: *Clear Screen*, *Full Window*, *Fullscreen*, *Buka Jendela Terpisah / Pop-out Window* (ala Proxmox/noVNC), dan *Close*.
+  3. **Inspeksi Visual Mandiri Berbasis Alat Otomasi (Anti-Kebutaan Piksel):**
+     - Wajib menggunakan alat uji visual otomatis berbasis peramban (`tools/capture_ui_suite.js` via headless Chrome) untuk mengambil dan memverifikasi tangkapan layar antarmuka nyata sebelum menyatakan pekerjaan selesai kepada operator.
+
 
 
 
