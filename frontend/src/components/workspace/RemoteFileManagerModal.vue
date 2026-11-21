@@ -223,13 +223,13 @@
         </div>
       </div>
 
-      <!-- Quick Bookmarks Bar (matching ~/rj45) -->
-      <div class="bg-[#04060d] border-b border-cyan-500/15 px-3 py-1 flex items-center gap-1.5 flex-wrap text-[11px] select-none">
+      <!-- Dynamic Bookmarks Bar (Physically verified on host) -->
+      <div v-if="bookmarks.length > 0" class="bg-[#04060d] border-b border-cyan-500/15 px-3 py-1 flex items-center gap-1.5 flex-wrap text-[11px] select-none">
         <span class="text-[10px] uppercase font-bold text-gray-400 flex items-center gap-1 tracking-wider mr-1">
           <svg class="w-3 h-3 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>
           </svg>
-          Bookmarks:
+          {{ t('fm_bookmarks_label') || 'Bookmarks:' }}
         </span>
         <button
           v-for="bm in bookmarks"
@@ -257,7 +257,7 @@
               <line x1="12" y1="5" x2="12" y2="19"/>
               <line x1="5" y1="12" x2="19" y2="12"/>
             </svg>
-            <span>New File</span>
+            <span>{{ t('fm_new_file') || 'New File' }}</span>
           </button>
           <!-- + New Folder -->
           <button
@@ -270,7 +270,33 @@
               <line x1="12" y1="10" x2="12" y2="16"/>
               <line x1="9" y1="13" x2="15" y2="13"/>
             </svg>
-            <span>New Folder</span>
+            <span>{{ t('fm_new_dir') || 'New Folder' }}</span>
+          </button>
+          <!-- Upload File -->
+          <button
+            type="button"
+            @click="openUploadModal"
+            class="px-2.5 py-1 rounded bg-gray-900 hover:bg-cyan-950 text-cyan-300 border border-cyan-800 hover:border-cyan-500 transition flex items-center gap-1 cursor-pointer font-bold"
+          >
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            <span>{{ t('fm_upload_file') || 'Upload File' }}</span>
+          </button>
+          <!-- Paste (visible when clipboard has items) -->
+          <button
+            v-if="clipboard && clipboard.items && clipboard.items.length > 0"
+            type="button"
+            @click="pasteClipboard"
+            class="px-2.5 py-1 rounded bg-cyan-900/80 hover:bg-cyan-800 text-cyan-200 border border-cyan-500 transition flex items-center gap-1 cursor-pointer font-bold"
+          >
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+              <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+            </svg>
+            <span>{{ t('fm_paste') || 'Paste' }} ({{ clipboard.items.length }})</span>
           </button>
         </div>
 
@@ -295,6 +321,39 @@
           <span class="text-[10px] text-amber-400 font-bold px-2 py-0.5 rounded bg-amber-950/60 border border-amber-800/60 hidden sm:inline select-none">
             AUTO .bak ENABLED
           </span>
+        </div>
+      </div>
+
+      <!-- Floating Clipboard Bar -->
+      <div
+        v-if="clipboard && clipboard.items && clipboard.items.length > 0"
+        class="bg-cyan-950/60 border-b border-cyan-500/30 px-3 py-1.5 flex items-center justify-between text-xs transition"
+      >
+        <div class="flex items-center gap-2">
+          <span class="font-bold text-cyan-300">
+            {{ clipboard.items.length }} {{ t('fm_ready_to_paste') || 'item(s) ready to paste' }}
+            <span class="text-cyan-400/70 font-mono text-[11px]">({{ clipboard.mode === 'cut' ? 'cut' : 'copied' }})</span>
+          </span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            @click="pasteClipboard"
+            class="px-2.5 py-1 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold cursor-pointer transition text-xs flex items-center gap-1"
+          >
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+              <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+            </svg>
+            <span>{{ t('fm_paste_here') || 'Paste Here' }}</span>
+          </button>
+          <button
+            type="button"
+            @click="clearClipboard"
+            class="px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 cursor-pointer text-xs"
+          >
+            {{ t('fm_cancel') || 'Cancel' }}
+          </button>
         </div>
       </div>
 
@@ -375,7 +434,7 @@
               v-for="item in filteredItems"
               :key="item.path || item.name"
               class="hover:bg-cyan-950/20 transition group"
-              :class="{ 'bg-cyan-950/30': isSelected(item.path) }"
+              :class="{ 'bg-cyan-950/30': isSelected(item.path), 'opacity-40': isCut(item.path) }"
             >
               <!-- Checkbox -->
               <td class="py-2 px-3 text-center" @click.stop>
@@ -418,21 +477,27 @@
               <!-- Waktu Diubah (Modified Date) -->
               <td class="py-2 px-3 text-gray-400 font-mono text-[11px]">{{ item.mtime }}</td>
 
-              <!-- Tindakan: Uniform Dropdown "Aksi ▾" matching ~/rj45 and GEMINI.md Rule 3 -->
+              <!-- Tindakan: Sleek 3-Dots Dropdown Menu -->
               <td class="py-2 px-3 text-center" @click.stop>
                 <div class="relative inline-block text-left">
                   <button
                     type="button"
-                    @click="toggleDropdown(item.path)"
-                    class="px-2 py-0.5 rounded text-[11px] bg-gray-900 hover:bg-cyan-950 text-gray-300 hover:text-cyan-300 border border-gray-700 hover:border-cyan-800 transition cursor-pointer font-bold inline-flex items-center gap-1"
+                    @click.stop="toggleDropdown(item.path, $event)"
+                    class="w-7 h-7 inline-flex items-center justify-center rounded text-gray-400 hover:text-cyan-300 hover:bg-cyan-950/80 border border-gray-800/80 hover:border-cyan-500/50 transition cursor-pointer"
+                    :title="t('fm_col_actions') || 'Actions'"
+                    aria-label="Actions"
                   >
-                    <span>{{ t('fm_action_btn') || 'Actions ▾' }}</span>
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+                      <circle cx="19" cy="12" r="1.5" fill="currentColor"/>
+                      <circle cx="5" cy="12" r="1.5" fill="currentColor"/>
+                    </svg>
                   </button>
 
                   <!-- Dropdown Menu -->
                   <div
                     v-if="activeDropdownPath === item.path"
-                    class="fixed z-[99999] bg-[#0c1328] border border-cyan-500/50 rounded shadow-2xl py-1 text-xs w-40 font-sans"
+                    class="fixed z-[99999] bg-[#0c1328] border border-cyan-500/50 rounded shadow-2xl py-1 text-xs w-44 font-sans"
                     :style="dropdownPositionStyle"
                     @click.stop
                   >
@@ -460,19 +525,45 @@
                         </svg>
                         <span>{{ t('fm_download') || 'Download' }}</span>
                       </button>
+                      <div class="border-t border-gray-800 my-1"></div>
                     </template>
 
                     <!-- Common Actions (File & Directory) -->
                     <button
                       type="button"
-                      @click="openRenameModal(item); closeDropdown()"
+                      @click="copyItem(item); closeDropdown()"
                       class="w-full text-left px-3 py-1.5 hover:bg-cyan-950 text-gray-200 hover:text-white flex items-center gap-2 cursor-pointer"
                     >
                       <svg class="w-3.5 h-3.5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
+                        <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
                       </svg>
-                      <span>{{ t('fm_rename') || 'Rename' }}</span>
+                      <span>{{ t('fm_copy') || 'Copy' }}</span>
+                    </button>
+                    <button
+                      type="button"
+                      @click="openDuplicateModal(item); closeDropdown()"
+                      class="w-full text-left px-3 py-1.5 hover:bg-cyan-950 text-gray-200 hover:text-white flex items-center gap-2 cursor-pointer"
+                    >
+                      <svg class="w-3.5 h-3.5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M15 12l5 5m-5 0 5-5"/>
+                        <rect width="12" height="12" x="2" y="2" rx="2"/>
+                      </svg>
+                      <span>{{ t('fm_duplicate') || 'Duplicate' }}</span>
+                    </button>
+                    <button
+                      type="button"
+                      @click="cutItem(item); closeDropdown()"
+                      class="w-full text-left px-3 py-1.5 hover:bg-cyan-950 text-gray-200 hover:text-white flex items-center gap-2 cursor-pointer"
+                    >
+                      <svg class="w-3.5 h-3.5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="6" cy="6" r="3"/>
+                        <circle cx="6" cy="18" r="3"/>
+                        <line x1="20" y1="4" x2="8.12" y2="15.88"/>
+                        <line x1="14.47" y1="14.48" x2="20" y2="20"/>
+                        <line x1="8.12" y1="8.12" x2="12" y2="12"/>
+                      </svg>
+                      <span>{{ t('fm_cut') || 'Cut' }}</span>
                     </button>
                     <button
                       type="button"
@@ -484,6 +575,17 @@
                         <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                       </svg>
                       <span>{{ t('fm_permissions') || 'Permissions' }}</span>
+                    </button>
+                    <button
+                      type="button"
+                      @click="openRenameModal(item); closeDropdown()"
+                      class="w-full text-left px-3 py-1.5 hover:bg-cyan-950 text-gray-200 hover:text-white flex items-center gap-2 cursor-pointer"
+                    >
+                      <svg class="w-3.5 h-3.5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                      </svg>
+                      <span>{{ t('fm_rename') || 'Rename' }}</span>
                     </button>
                     <div class="border-t border-gray-800 my-1"></div>
                     <button
@@ -729,7 +831,7 @@
               @click="itemToDelete = null"
               class="px-3 py-1 rounded bg-gray-800 text-gray-300 hover:bg-gray-700 text-xs cursor-pointer"
             >
-              Cancel
+              {{ t('fm_cancel') || 'Cancel' }}
             </button>
             <button
               type="button"
@@ -737,6 +839,98 @@
               class="px-3 py-1 rounded bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs cursor-pointer"
             >
               Delete Permanently
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL: DUPLICATE PROMPT -->
+      <div
+        v-if="itemToDuplicate"
+        class="absolute inset-0 bg-black/75 z-30 flex items-center justify-center p-4"
+        @click.self="itemToDuplicate = null"
+      >
+        <div class="bg-[#0b1226] border border-cyan-500/60 rounded-lg p-5 w-full max-w-sm flex flex-col space-y-3 shadow-2xl">
+          <div class="text-xs font-bold text-cyan-300 flex items-center gap-2">
+            <svg class="w-4 h-4 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M15 12l5 5m-5 0 5-5"/>
+              <rect width="12" height="12" x="2" y="2" rx="2"/>
+            </svg>
+            <span>{{ t('fm_duplicate_title') || 'Duplicate File / Folder' }}</span>
+          </div>
+          <div class="text-[11px] text-gray-400 truncate">
+            Source: <span class="font-mono text-cyan-200">{{ itemToDuplicate.name }}</span>
+          </div>
+          <input
+            v-model="duplicateNewName"
+            type="text"
+            class="bg-[#030612] border border-cyan-900 rounded px-3 py-1.5 text-xs text-gray-100 focus:outline-none focus:border-cyan-400 font-mono"
+            @keydown.enter="submitDuplicate"
+            autofocus
+          />
+          <div class="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              @click="itemToDuplicate = null"
+              class="px-3 py-1 rounded bg-gray-800 text-gray-300 hover:bg-gray-700 text-xs cursor-pointer"
+            >
+              {{ t('fm_cancel') || 'Cancel' }}
+            </button>
+            <button
+              type="button"
+              @click="submitDuplicate"
+              class="px-3 py-1 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs cursor-pointer"
+            >
+              {{ t('fm_duplicate') || 'Duplicate' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL: UPLOAD FILE -->
+      <div
+        v-if="showUploadDialog"
+        class="absolute inset-0 bg-black/75 z-30 flex items-center justify-center p-4"
+        @click.self="showUploadDialog = false"
+      >
+        <div class="bg-[#0b1226] border border-cyan-500/60 rounded-lg p-5 w-full max-w-sm flex flex-col space-y-3 shadow-2xl">
+          <div class="text-xs font-bold text-cyan-300 flex items-center gap-2">
+            <svg class="w-4 h-4 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            <span>{{ t('fm_upload_title') || 'Upload File to Server' }}</span>
+          </div>
+          <div class="text-[11px] text-gray-400">
+            Destination: <span class="font-mono text-cyan-200">{{ currentPath }}</span>
+          </div>
+          <div class="border-2 border-dashed border-gray-700 hover:border-cyan-500/60 rounded p-4 text-center cursor-pointer bg-[#02040a]">
+            <input
+              type="file"
+              ref="uploadFileInputRef"
+              @change="onFileSelected"
+              class="text-xs text-gray-300 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-cyan-950 file:text-cyan-300 cursor-pointer w-full"
+            />
+          </div>
+          <div v-if="selectedUploadFile" class="text-[11px] text-gray-300 font-mono truncate">
+            {{ selectedUploadFile.name }} ({{ selectedUploadFile.size }} bytes)
+          </div>
+          <div class="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              @click="showUploadDialog = false"
+              class="px-3 py-1 rounded bg-gray-800 text-gray-300 hover:bg-gray-700 text-xs cursor-pointer"
+            >
+              {{ t('fm_cancel') || 'Cancel' }}
+            </button>
+            <button
+              type="button"
+              @click="submitUpload"
+              :disabled="!selectedUploadFile || uploading"
+              class="px-3 py-1 rounded bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-xs cursor-pointer flex items-center gap-1"
+            >
+              <span>{{ uploading ? 'Uploading...' : (t('fm_upload') || 'Upload') }}</span>
             </button>
           </div>
         </div>
@@ -857,15 +1051,21 @@ const editingFile = ref(null)
 const editorContent = ref('')
 const savingFile = ref(false)
 
-// Quick bookmarks matching ~/rj45
-const bookmarks = [
-  { label: '~ Home', path: '/root', title: 'Operator Home (/root)' },
-  { label: '/ Root', path: '/', title: 'Root Filesystem (/)' },
-  { label: '/var/log', path: '/var/log', title: 'System Logs (/var/log)' },
-  { label: '/etc', path: '/etc', title: 'System Config (/etc)' },
-  { label: '/opt', path: '/opt', title: 'Optional Software (/opt)' },
-  { label: '/var/www', path: '/var/www', title: 'Web Data (/var/www)' }
-]
+// Dynamic bookmarks physically discovered from server
+const bookmarks = ref([])
+
+// Clipboard state (copy / cut / paste)
+const clipboard = ref(null) // { mode: 'copy'|'cut', items: string[], sourceDir: string }
+
+// Duplicate Modal state
+const itemToDuplicate = ref(null)
+const duplicateNewName = ref('')
+
+// Upload Modal state
+const showUploadDialog = ref(false)
+const selectedUploadFile = ref(null)
+const uploadFileInputRef = ref(null)
+const uploading = ref(false)
 
 const breadcrumbSegments = computed(() => {
   if (!currentPath.value || currentPath.value === '/') return []
@@ -919,6 +1119,10 @@ function handleEsc() {
     closeEditor()
   } else if (activeDropdownPath.value) {
     closeDropdown()
+  } else if (itemToDuplicate.value) {
+    itemToDuplicate.value = null
+  } else if (showUploadDialog.value) {
+    showUploadDialog.value = false
   } else if (itemToRename.value) {
     itemToRename.value = null
   } else if (itemToChmod.value) {
@@ -963,23 +1167,19 @@ function clearSelection() {
 }
 
 // Dropdown Action Menu
-function toggleDropdown(path) {
+function toggleDropdown(path, event) {
   if (activeDropdownPath.value === path) {
     closeDropdown()
     return
   }
   activeDropdownPath.value = path
-  nextTick(() => {
-    // Smart positioning
-    const ev = window.event
-    if (ev && ev.target) {
-      const rect = ev.target.getBoundingClientRect()
-      dropdownPositionStyle.value = {
-        top: `${rect.bottom + 4}px`,
-        right: `${window.innerWidth - rect.right}px`
-      }
+  if (event && event.currentTarget) {
+    const rect = event.currentTarget.getBoundingClientRect()
+    dropdownPositionStyle.value = {
+      top: `${rect.bottom + 4}px`,
+      right: `${window.innerWidth - rect.right}px`
     }
-  })
+  }
 }
 
 function closeDropdown() {
@@ -989,6 +1189,156 @@ function closeDropdown() {
 function handleClickOutside(e) {
   if (activeDropdownPath.value && !e.target.closest('.noc-act-dropdown')) {
     closeDropdown()
+  }
+}
+
+// Clipboard methods (Copy / Cut / Paste)
+function copyItem(item) {
+  clipboard.value = {
+    mode: 'copy',
+    items: [item.path],
+    sourceDir: currentPath.value
+  }
+  notify(`Copied to clipboard: ${item.name}`)
+}
+
+function cutItem(item) {
+  clipboard.value = {
+    mode: 'cut',
+    items: [item.path],
+    sourceDir: currentPath.value
+  }
+  notify(`Cut to clipboard: ${item.name}`)
+}
+
+function isCut(path) {
+  return clipboard.value?.mode === 'cut' && clipboard.value?.items?.includes(path)
+}
+
+function clearClipboard() {
+  clipboard.value = null
+}
+
+async function pasteClipboard() {
+  if (!clipboard.value || !clipboard.value.items || clipboard.value.items.length === 0) return
+  const isCutMode = clipboard.value.mode === 'cut'
+  const endpoint = isCutMode ? `/api/servers/${props.server.id}/files/move` : `/api/servers/${props.server.id}/files/copy`
+  const token = localStorage.getItem('pantau_token')
+  try {
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        sources: clipboard.value.items,
+        destination: currentPath.value
+      })
+    })
+    const data = await res.json()
+    if (data.ok) {
+      notify(`Pasted ${clipboard.value.items.length} item(s) successfully`)
+      if (isCutMode) {
+        clipboard.value = null
+      }
+      await loadDirectory(currentPath.value, false)
+    } else {
+      notify(data.detail || 'Failed to paste items', 'error')
+    }
+  } catch (err) {
+    notify('Error pasting items: ' + err.message, 'error')
+  }
+}
+
+// Duplicate methods
+function openDuplicateModal(item) {
+  itemToDuplicate.value = item
+  const now = new Date()
+  const pad = n => String(n).padStart(2, '0')
+  const ts = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`
+  if (!item.is_dir && item.name.includes('.') && !item.name.startsWith('.')) {
+    const lastDot = item.name.lastIndexOf('.')
+    const base = item.name.substring(0, lastDot)
+    const ext = item.name.substring(lastDot)
+    duplicateNewName.value = `${base}_${ts}${ext}`
+  } else {
+    duplicateNewName.value = `${item.name}_${ts}`
+  }
+}
+
+async function submitDuplicate() {
+  if (!itemToDuplicate.value) return
+  const targetName = duplicateNewName.value.trim()
+  if (!targetName) return
+  const token = localStorage.getItem('pantau_token')
+  try {
+    const res = await fetch(`/api/servers/${props.server.id}/files/duplicate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        source: itemToDuplicate.value.path,
+        target_name: targetName
+      })
+    })
+    const data = await res.json()
+    if (data.ok) {
+      notify(`Duplicated to ${targetName}`)
+      itemToDuplicate.value = null
+      await loadDirectory(currentPath.value, false)
+    } else {
+      notify(data.detail || 'Failed to duplicate item', 'error')
+    }
+  } catch (err) {
+    notify('Error duplicating: ' + err.message, 'error')
+  }
+}
+
+// Upload methods
+function openUploadModal() {
+  selectedUploadFile.value = null
+  showUploadDialog.value = true
+}
+
+function onFileSelected(e) {
+  const files = e.target.files
+  if (files && files.length > 0) {
+    selectedUploadFile.value = files[0]
+  }
+}
+
+async function submitUpload() {
+  if (!selectedUploadFile.value) return
+  uploading.value = true
+  const token = localStorage.getItem('pantau_token')
+  const formData = new FormData()
+  formData.append('destination', currentPath.value)
+  formData.append('file', selectedUploadFile.value)
+
+  try {
+    const res = await fetch(`/api/servers/${props.server.id}/files/upload`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`
+      },
+      body: formData
+    })
+    const data = await res.json()
+    if (data.ok) {
+      notify(`Uploaded ${selectedUploadFile.value.name} successfully`)
+      showUploadDialog.value = false
+      selectedUploadFile.value = null
+      await loadDirectory(currentPath.value, false)
+    } else {
+      notify(data.detail || 'Failed to upload file', 'error')
+    }
+  } catch (err) {
+    notify('Error uploading file: ' + err.message, 'error')
+  } finally {
+    uploading.value = false
   }
 }
 
@@ -1015,6 +1365,9 @@ async function loadDirectory(path = currentPath.value, pushToHistory = true) {
       currentPath.value = data.path
       items.value = data.items || []
       isManualPathInput.value = false
+      if (data.bookmarks && Array.isArray(data.bookmarks)) {
+        bookmarks.value = data.bookmarks
+      }
       if (pushToHistory) {
         if (historyIndex.value < historyStack.value.length - 1) {
           historyStack.value = historyStack.value.slice(0, historyIndex.value + 1)

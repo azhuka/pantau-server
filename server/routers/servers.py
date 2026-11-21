@@ -4,9 +4,10 @@ import re
 import stat
 import pwd
 import grp
+import shutil
 import subprocess
 from datetime import datetime, timedelta
-from fastapi import APIRouter, Depends, HTTPException, Body
+from fastapi import APIRouter, Depends, HTTPException, Body, Form, File, UploadFile
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from core.database import get_db
@@ -416,7 +417,23 @@ def list_server_files(
                     })
                 except (PermissionError, FileNotFoundError):
                     continue
-        return {"ok": True, "path": target_path, "items": items}
+
+        # Dynamic bookmark discovery (anti-hardcoding: only paths that actually exist on this host)
+        candidate_bookmarks = [
+            {"label": "~ Home", "path": os.path.expanduser("~"), "title": f"Home ({os.path.expanduser('~')})"},
+            {"label": "/ Root", "path": "/", "title": "Root Filesystem (/)"},
+            {"label": "/var/log", "path": "/var/log", "title": "System Logs (/var/log)"},
+            {"label": "/etc", "path": "/etc", "title": "System Config (/etc)"},
+            {"label": "/opt", "path": "/opt", "title": "Optional Software (/opt)"},
+            {"label": "/var/www", "path": "/var/www", "title": "Web Data (/var/www)"},
+            {"label": "/tmp", "path": "/tmp", "title": "Temporary Directory (/tmp)"},
+        ]
+        discovered_bookmarks = [
+            bm for bm in candidate_bookmarks
+            if os.path.exists(bm["path"]) and os.path.isdir(bm["path"])
+        ]
+
+        return {"ok": True, "path": target_path, "items": items, "bookmarks": discovered_bookmarks}
     except PermissionError:
         raise HTTPException(status_code=403, detail="Permission denied reading directory")
     except Exception as e:
@@ -727,6 +744,179 @@ def chmod_server_file(
         return {"ok": True, "message": "Permissions updated successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{sid}/files/copy")
+def copy_server_files(
+    sid: int,
+    body: dict = Body(...),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Menyalin berkas atau direktori."""
+    if not user.can_access_server(sid):
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    sources = body.get("sources", [])
+    destination = str(body.get("destination", "")).strip()
+    if not sources or not isinstance(sources, list) or not destination:
+        raise HTTPException(status_code=400, detail="Sources and destination required")
+
+    target_dest = os.path.abspath(destination)
+    if not os.path.isdir(target_dest):
+        raise HTTPException(status_code=404, detail="Destination directory not found")
+
+    copied = []
+    for src in sources:
+        target_src = os.path.abspath(src)
+        if not os.path.exists(target_src):
+            continue
+        dest_item = os.path.join(target_dest, os.path.basename(target_src))
+        if os.path.isdir(target_src):
+            shutil.copytree(target_src, dest_item, dirs_exist_ok=True)
+        else:
+            shutil.copy2(target_src, dest_item)
+        copied.append(target_src)
+
+    audit = AuditLog(
+        server_id=sid,
+        username=user.username,
+        action="file_copy",
+        target=f"{len(copied)} items -> {target_dest}",
+        result="success",
+        meta=f"Copied by {user.username}",
+        created_at=datetime.utcnow()
+    )
+    db.add(audit)
+    db.commit()
+    return {"ok": True, "copied": copied}
+
+
+@router.post("/{sid}/files/move")
+def move_server_files(
+    sid: int,
+    body: dict = Body(...),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Memindahkan berkas atau direktori (cut-paste)."""
+    if not user.can_access_server(sid):
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    sources = body.get("sources", [])
+    destination = str(body.get("destination", "")).strip()
+    if not sources or not isinstance(sources, list) or not destination:
+        raise HTTPException(status_code=400, detail="Sources and destination required")
+
+    target_dest = os.path.abspath(destination)
+    if not os.path.isdir(target_dest):
+        raise HTTPException(status_code=404, detail="Destination directory not found")
+
+    moved = []
+    for src in sources:
+        target_src = os.path.abspath(src)
+        if not os.path.exists(target_src):
+            continue
+        dest_item = os.path.join(target_dest, os.path.basename(target_src))
+        shutil.move(target_src, dest_item)
+        moved.append(target_src)
+
+    audit = AuditLog(
+        server_id=sid,
+        username=user.username,
+        action="file_move",
+        target=f"{len(moved)} items -> {target_dest}",
+        result="success",
+        meta=f"Moved by {user.username}",
+        created_at=datetime.utcnow()
+    )
+    db.add(audit)
+    db.commit()
+    return {"ok": True, "moved": moved}
+
+
+@router.post("/{sid}/files/duplicate")
+def duplicate_server_file(
+    sid: int,
+    body: dict = Body(...),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Duplikasi kloning lokal berkas/folder pada server."""
+    if not user.can_access_server(sid):
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    source = str(body.get("source", "")).strip()
+    target_name = str(body.get("target_name", "")).strip()
+    if not source or not target_name:
+        raise HTTPException(status_code=400, detail="Source and target_name required")
+
+    target_src = os.path.abspath(source)
+    if not os.path.exists(target_src):
+        raise HTTPException(status_code=404, detail="Source not found")
+
+    parent = os.path.dirname(target_src)
+    target_dst = os.path.join(parent, target_name)
+    if os.path.exists(target_dst):
+        raise HTTPException(status_code=409, detail="Target name already exists")
+
+    if os.path.isdir(target_src):
+        shutil.copytree(target_src, target_dst)
+    else:
+        shutil.copy2(target_src, target_dst)
+
+    audit = AuditLog(
+        server_id=sid,
+        username=user.username,
+        action="file_duplicate",
+        target=f"{target_src} -> {target_dst}",
+        result="success",
+        meta=f"Duplicated by {user.username}",
+        created_at=datetime.utcnow()
+    )
+    db.add(audit)
+    db.commit()
+    return {"ok": True, "target_path": target_dst, "target_name": target_name}
+
+
+@router.post("/{sid}/files/upload")
+async def upload_server_file(
+    sid: int,
+    destination: str = Form(...),
+    file: UploadFile = File(...),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Unggah berkas ke server."""
+    if not user.can_access_server(sid):
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    target_dest = os.path.abspath(destination)
+    if not os.path.isdir(target_dest):
+        raise HTTPException(status_code=404, detail="Destination directory not found")
+
+    filename = os.path.basename(file.filename or "uploaded_file")
+    target_path = os.path.join(target_dest, filename)
+
+    raw = await file.read()
+    if len(raw) > 100 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File too large (max 100 MB)")
+
+    with open(target_path, "wb") as f:
+        f.write(raw)
+
+    audit = AuditLog(
+        server_id=sid,
+        username=user.username,
+        action="file_upload",
+        target=f"{target_path} ({len(raw)} bytes)",
+        result="success",
+        meta=f"Uploaded by {user.username}",
+        created_at=datetime.utcnow()
+    )
+    db.add(audit)
+    db.commit()
+    return {"ok": True, "path": target_path, "size": len(raw)}
 
 
 @router.post("/{sid}/maintenance")

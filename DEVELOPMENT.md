@@ -174,6 +174,14 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.10
+
+### v0.1.10 — Dynamic Bookmarks Discovery & Modern 3-Dots Action Dropdown File Manager
+- **Dynamic Bookmarks Detection:** Eliminasi hardcoding path bookmark. Jalur seperti /var/www, /opt, /var/log, /tmp dipindai secara fisik pada host aset klien dan hanya ditampilkan jika direktori fisik terbukti ada.
+- **Modern 3-Dots Row Action Trigger:** Mengganti tombol teks kaku dengan ikon 3-dots (...) yang ramping dan ergonomis pada setiap baris berkas/folder.
+- **Complete File Workflows:** Melengkapi alur Copy, Cut, Paste (bilah tempel & clipboard banner), Duplicate (penamaan timestamp aman), dan Upload File biner/teks dengan modal terintegrasi.
+
+
 ### Versi v0.1.9
 
 - **Automated Quality Gate Anti-Hardcode**: Mengintegrasikan tools/lint_i18n.py ke dalam sop_release.py untuk memblokir rilis jika ditemukan string teks statis di template Vue.

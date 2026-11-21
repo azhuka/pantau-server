@@ -49,7 +49,7 @@ const puppeteer = require('puppeteer-core');
     const fmInfo = await page.evaluate(() => {
       const allBtns = Array.from(document.querySelectorAll('button'));
       const openDirBtn = allBtns.find(b => b.title === 'Open Directory' || b.textContent.trim() === 'Open Directory');
-      const aksiDropdownBtns = allBtns.filter(b => b.textContent.includes('Actions ▾') || b.textContent.includes('Aksi ▾'));
+      const aksiDropdownBtns = allBtns.filter(b => (b.title && b.title.includes('Actions')) || (b.getAttribute('aria-label') === 'Actions') || b.textContent.includes('Actions ▾'));
       const tableHeaders = Array.from(document.querySelectorAll('thead th')).map(th => th.textContent.trim());
       const tableRows = document.querySelectorAll('tbody tr');
       

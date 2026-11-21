@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import shutil
 import urllib.request
 import urllib.error
 
@@ -37,7 +38,12 @@ def test_file_manager_lifecycle():
     assert status == 200, f"List failed ({status}): {body.decode('utf-8')}"
     data = json.loads(body.decode("utf-8"))
     assert data.get("ok") is True
+    bookmarks = data.get("bookmarks", [])
+    assert isinstance(bookmarks, list) and len(bookmarks) > 0, "Bookmarks list is empty or invalid!"
+    for bm in bookmarks:
+        assert os.path.isdir(bm["path"]), f"Discovered bookmark path {bm['path']} is not a valid directory!"
     print(f"-> Directory listing successful. Found {len(data.get('items', []))} items in /tmp.")
+    print(f"-> Dynamic bookmarks verified physically ({len(bookmarks)} valid paths: {[b['label'] for b in bookmarks]}).")
 
     # 2. Touch new file /tmp/pantau_test_fm.txt
     test_file_path = "/tmp/pantau_test_fm.txt"
@@ -108,10 +114,54 @@ def test_file_manager_lifecycle():
     os.rename(renamed_path, test_file_path)
     print(f"-> Rename verified successfully.")
 
+    # 5d. Duplicate file
+    dup_file_name = "pantau_test_fm_dup.txt"
+    dup_file_path = f"/tmp/{dup_file_name}"
+    if os.path.exists(dup_file_path): os.remove(dup_file_path)
+    print(f"\n[5d] Testing POST /api/servers/1/files/duplicate ...")
+    status, body = make_req("/api/servers/1/files/duplicate", method="POST", data={
+        "source": test_file_path,
+        "target_name": dup_file_name
+    }, token=token)
+    assert status == 200, f"Duplicate failed ({status}): {body.decode('utf-8')}"
+    assert os.path.exists(dup_file_path), "Duplicated file does not exist on disk!"
+    os.remove(dup_file_path)
+    print("-> Duplicate verified successfully.")
+
+    # 5e. Copy file
+    copy_dir = "/tmp/pantau_copy_dest"
+    if os.path.exists(copy_dir): shutil.rmtree(copy_dir)
+    os.makedirs(copy_dir, exist_ok=True)
+    print(f"\n[5e] Testing POST /api/servers/1/files/copy ...")
+    status, body = make_req("/api/servers/1/files/copy", method="POST", data={
+        "sources": [test_file_path],
+        "destination": copy_dir
+    }, token=token)
+    assert status == 200, f"Copy failed ({status}): {body.decode('utf-8')}"
+    copied_path = os.path.join(copy_dir, os.path.basename(test_file_path))
+    assert os.path.exists(copied_path), "Copied file does not exist in destination!"
+    print("-> Copy verified successfully.")
+
+    # 5f. Move file
+    move_dir = "/tmp/pantau_move_dest"
+    if os.path.exists(move_dir): shutil.rmtree(move_dir)
+    os.makedirs(move_dir, exist_ok=True)
+    print(f"\n[5f] Testing POST /api/servers/1/files/move ...")
+    status, body = make_req("/api/servers/1/files/move", method="POST", data={
+        "sources": [copied_path],
+        "destination": move_dir
+    }, token=token)
+    assert status == 200, f"Move failed ({status}): {body.decode('utf-8')}"
+    moved_path = os.path.join(move_dir, os.path.basename(copied_path))
+    assert os.path.exists(moved_path), "Moved file does not exist in destination!"
+    assert not os.path.exists(copied_path), "Source file still exists after move!"
+    shutil.rmtree(copy_dir)
+    shutil.rmtree(move_dir)
+    print("-> Move verified successfully.")
+
     # 5. Mkdir /tmp/pantau_test_dir
     test_dir_path = "/tmp/pantau_test_dir"
     if os.path.exists(test_dir_path):
-        import shutil
         shutil.rmtree(test_dir_path)
 
     print(f"\n[6] Testing POST /api/servers/1/files/mkdir ({test_dir_path}) ...")
