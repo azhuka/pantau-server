@@ -16,7 +16,7 @@
         <div class="flex items-center justify-between mb-1.5">
           <div class="text-xs font-bold uppercase tracking-wider text-gray-400 font-mono flex items-center gap-2">
             <span class="w-2 h-2 rounded-full bg-cyan-400 beacon-live"></span>
-            <span>// RECON: FLEET ASSETS</span>
+            <span>// FLEET INFRASTRUCTURE OVERVIEW</span>
           </div>
           <span class="text-xs text-gray-500 group-hover:text-cyan-400 transition font-mono font-bold">➔</span>
         </div>
@@ -57,7 +57,7 @@
               class="w-2 h-2 rounded-full"
               :class="dangerCount > 0 ? 'bg-rose-400 radar-critical' : (warnCount > 0 ? 'bg-amber-400 radar-warning' : 'bg-emerald-400 beacon-live')"
             ></span>
-            <span>// THREAT & ANOMALY MATRIX</span>
+            <span>// INCIDENT & ANOMALY MATRIX</span>
           </div>
           <div class="text-xs text-gray-400 font-mono">
             {{ t('dash_kpi_total') }}: <strong class="text-cyan-300 font-bold text-sm">{{ activeProblems.length }}</strong>
@@ -129,7 +129,7 @@
         <div class="flex items-center justify-between mb-1">
           <div class="text-xs font-bold uppercase tracking-wider text-gray-400 font-mono flex items-center gap-2">
             <span class="w-2 h-2 rounded-full bg-emerald-400 beacon-live"></span>
-            <span>// CHRONO: SATELLITE SYNC</span>
+            <span>// SYSTEM CLOCK & TIME SYNC</span>
           </div>
           <span class="text-[10px] px-1.5 py-0.2 rounded bg-cyan-950/80 text-cyan-300 font-mono font-bold border border-cyan-800/50">
             NOC-CLOCK
@@ -171,7 +171,7 @@
             :class="dangerCount > 0 ? 'bg-rose-400 radar-critical' : (warnCount > 0 ? 'bg-amber-400 radar-warning' : 'bg-emerald-400 beacon-live')"
           ></span>
           <h3 class="text-xs font-bold text-gray-100 tracking-wider uppercase">
-            // ACTIVE THREATS & INCIDENT LOGS
+            // ACTIVE INCIDENTS & ALERTS QUEUE
           </h3>
           <span
             class="px-2 py-0.2 rounded text-[11px] font-bold"
@@ -310,7 +310,7 @@
           <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 beacon-live"></span>
           <div>
             <h3 class="text-xs font-bold text-gray-100 tracking-wider uppercase">
-              // FLEET TELEMETRY RADAR
+              // FLEET TELEMETRY & PERFORMANCE
             </h3>
           </div>
         </div>

@@ -16,7 +16,7 @@
           </div>
           <div class="text-[10px] text-gray-400 tracking-widest font-mono uppercase flex items-center gap-1.5">
             <span class="text-cyan-500/80">//</span>
-            <span>TACTICAL CYBER COMMAND ROOM</span>
+            <span>FLEET TELEMETRY &amp; NOC CONTROL</span>
           </div>
         </div>
       </div>
@@ -94,16 +94,6 @@
         <span class="w-2 h-2 rounded-full bg-emerald-400 beacon-live beacon-radar"></span>
         <span class="tracking-wider text-[11px]">FEED // LIVE</span>
       </div>
-
-      <!-- Multi-Language i18n Switcher Button (EN / ID) -->
-      <button
-        @click="toggleLocale"
-        class="px-2.5 py-1 rounded bg-[#0e1628] border border-cyan-500/30 hover:border-cyan-400 text-xs font-mono font-bold text-gray-200 hover:text-cyan-300 transition cursor-pointer flex items-center gap-1.5 shadow-sm"
-        :title="locale === 'en' ? 'Switch Language (to Bahasa Indonesia)' : 'Ganti Bahasa (ke English)'"
-      >
-        <span>🌐</span>
-        <span class="tracking-widest">{{ locale.toUpperCase() }}</span>
-      </button>
 
       <!-- Operator User Badge -->
       <div v-if="user" class="flex items-center gap-2.5 border-l border-gray-800 pl-3.5">

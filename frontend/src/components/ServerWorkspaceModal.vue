@@ -30,7 +30,7 @@
           </div>
           <div class="min-w-0">
             <div class="flex items-center gap-2 font-mono flex-wrap sm:flex-nowrap">
-              <span class="text-xs text-cyan-400 font-bold">// TARGET LOCKED:</span>
+              <span class="text-xs text-cyan-400 font-bold">// Asset Details:</span>
               <span class="font-extrabold text-gray-100 text-sm tracking-tight truncate">
                 {{ server?.hostname || t('ws_loading_host') }}
               </span>
@@ -54,7 +54,7 @@
               <span
                 v-if="server?.is_proxmox_ha"
                 class="text-[10px] px-1.5 py-0.2 rounded bg-amber-950/80 text-amber-300 border border-amber-800 font-bold shrink-0"
-                title="Server terproteksi Proxmox HA"
+                title="Host is protected by Proxmox HA"
               >
                 PROXMOX HA
               </span>
@@ -444,17 +444,17 @@
                 <div>
                   <div class="flex items-center justify-between mb-2">
                     <h3 class="text-xs font-bold text-purple-400 uppercase tracking-wider">
-                      // DESKRIPSI & CATATAN SERVER
+                      // HOST DESCRIPTION &amp; NOTES
                     </h3>
                     <span class="text-[10px] text-gray-500">OPERATOR MEMO</span>
                   </div>
                   <p class="text-xs text-gray-300 leading-relaxed">
-                    {{ server.notes || 'Belum ada catatan deskripsi yang disematkan untuk server ini. Catatan operasional dapat disunting di tab Pengaturan Host.' }}
+                    {{ server.notes || 'No operational notes attached to this host yet. Notes can be configured in Host Settings.' }}
                   </p>
                 </div>
                 <div class="mt-3 pt-2 border-t border-cyan-500/10 flex items-center justify-between text-[11px] text-gray-500">
                   <span>TAGS: {{ server.tags || 'core, production' }}</span>
-                  <span class="text-cyan-400 font-semibold">{{ server.is_isolated_net ? 'Jaringan Terisolasi' : 'Jaringan Terbuka' }}</span>
+                  <span class="text-cyan-400 font-semibold">{{ server.is_isolated_net ? 'Isolated Network' : 'Standard Network' }}</span>
                 </div>
               </div>
             </div>
@@ -594,7 +594,7 @@
                       <th class="py-2.5 px-3">{{ t('ws_col_service_name') }}</th>
                       <th class="py-2.5 px-3">{{ t('col_status') }}</th>
                       <th class="py-2.5 px-3">{{ t('ws_col_description') }}</th>
-                      <th class="py-2.5 px-3 text-right">Tindakan</th>
+                      <th class="py-2.5 px-3 text-right">{{ t('col_actions') }}</th>
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-gray-800/40">
@@ -684,7 +684,7 @@
                     <th class="py-2.5 px-3">CPU %</th>
                     <th class="py-2.5 px-3">RAM %</th>
                     <th class="py-2.5 px-3">{{ t('ws_col_command') }}</th>
-                    <th class="py-2.5 px-3 text-right">Tindakan</th>
+                    <th class="py-2.5 px-3 text-right">{{ t('col_actions') }}</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-800/40">
@@ -989,12 +989,12 @@
         </div>
         <div class="flex items-center gap-2">
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 beacon-live"></span>
-          <span class="text-emerald-400 font-bold">// SECURE SESSION ACTIVE</span>
+          <span class="text-emerald-400 font-bold">// SECURE CONNECTION ACTIVE</span>
         </div>
       </div>
     </div>
 
-    <!-- GUARDRAIL CONFIRMATION MODAL (Untuk Reboot & Power Off) -->
+    <!-- GUARDRAIL CONFIRMATION MODAL (Reboot & Power Off) -->
     <div
       v-if="showGuardrailModal"
       class="fixed inset-0 z-60 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 font-mono select-none"
@@ -1007,10 +1007,10 @@
         <div class="flex items-center justify-between border-b border-rose-500/30 pb-2">
           <div class="flex items-center gap-2 text-rose-400 font-bold text-xs uppercase">
             <span class="text-base">⚠️</span>
-            <span>GUARDRAIL: KONFIRMASI KONTROL DAYA</span>
+            <span>GUARDRAIL: POWER CONTROL CONFIRMATION</span>
           </div>
           <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950 text-rose-300 border border-rose-700">
-            {{ guardrailAction === 'reboot' ? 'DAMPAK SERVICES' : 'DAMPAK KRITIS' }}
+            {{ guardrailAction === 'reboot' ? 'SERVICE DISRUPTION' : 'CRITICAL IMPACT' }}
           </span>
         </div>
 
@@ -1021,8 +1021,8 @@
           </div>
           <div class="text-gray-300 leading-relaxed pt-1">
             {{ guardrailAction === 'reboot'
-              ? 'Restart sistem operasi host. Seluruh unit services dan koneksi aktif akan terputus sementara hingga mesin boot kembali.'
-              : 'Matikan daya server (Power Off). Host tidak dapat dihidupkan kembali melalui dashboard (memerlukan IPMI / akses fisik hypervisor).'
+              ? 'Restart host operating system. All running services and active network connections will be interrupted temporarily until reboot completes.'
+              : 'Power off server (Shutdown). Host cannot be powered back on remotely via this dashboard (requires IPMI or hypervisor console access).'
             }}
           </div>
         </div>
@@ -1032,14 +1032,14 @@
             @click="showGuardrailModal = false"
             class="px-3 py-1.5 rounded bg-gray-800 text-gray-300 hover:text-white text-xs font-bold transition cursor-pointer"
           >
-            BATAL
+            CANCEL
           </button>
           <button
             @click="executeGuardrailAction"
             class="px-4 py-1.5 rounded text-white text-xs font-bold transition cursor-pointer shadow-lg"
             :class="guardrailAction === 'reboot' ? 'bg-amber-600 hover:bg-amber-500' : 'bg-rose-600 hover:bg-rose-500'"
           >
-            {{ guardrailAction === 'reboot' ? 'EKSEKUSI REBOOT' : 'EKSEKUSI POWER OFF' }}
+            {{ guardrailAction === 'reboot' ? 'EXECUTE REBOOT' : 'EXECUTE POWER OFF' }}
           </button>
         </div>
       </div>
@@ -1123,7 +1123,7 @@
         <!-- Terminal Body -->
         <div class="flex-1 bg-[#04060c] p-4 overflow-y-auto font-mono text-xs text-gray-200 select-text flex flex-col justify-between">
           <div class="space-y-1.5" ref="termOutputRef">
-            <div class="text-cyan-400 font-bold">// SECURE SESSION INITIATED: {{ server?.hostname }} ({{ server?.ip_address }})</div>
+            <div class="text-cyan-400 font-bold">// TERMINAL SESSION CONNECTED: {{ server?.hostname }} ({{ server?.ip_address }})</div>
             <div class="text-gray-400 text-[11px]">Linux {{ server?.hostname }} {{ server?.kernel }} #1 SMP PREEMPT {{ server?.arch || 'x86_64' }}</div>
             <div class="text-gray-500 text-[11px]">Connected via secure authenticated control channel. Type 'help' for available system commands.</div>
             
@@ -1146,7 +1146,7 @@
               autofocus
             />
             <button type="submit" class="text-[11px] px-2.5 py-1 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 hover:bg-cyan-900 cursor-pointer font-bold">
-              KIRIM ↵
+              SUBMIT ↵
             </button>
           </form>
         </div>
@@ -1266,12 +1266,12 @@
           <table class="w-full text-left text-xs border-collapse">
             <thead class="border-b border-cyan-500/20 text-gray-400 uppercase font-bold tracking-wider">
               <tr>
-                <th class="py-2.5 px-3">Nama Berkas</th>
-                <th class="py-2.5 px-3">Izin</th>
-                <th class="py-2.5 px-3">Pemilik</th>
-                <th class="py-2.5 px-3">Ukuran</th>
-                <th class="py-2.5 px-3">Modifikasi</th>
-                <th class="py-2.5 px-3 text-right">Tindakan</th>
+                <th class="py-2.5 px-3">File Name</th>
+                <th class="py-2.5 px-3">Permissions</th>
+                <th class="py-2.5 px-3">Owner</th>
+                <th class="py-2.5 px-3">Size</th>
+                <th class="py-2.5 px-3">Modified</th>
+                <th class="py-2.5 px-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-800/40">
@@ -1290,15 +1290,15 @@
                       v-if="!item.is_dir"
                       @click="openFmEditor(item)"
                       class="px-2 py-0.5 rounded text-[11px] bg-cyan-950 text-cyan-300 border border-cyan-800 hover:bg-cyan-900 cursor-pointer font-bold"
-                      title="Sunting Berkas"
+                      title="Edit File"
                     >
-                      ✏️ Sunting
+                      ✏️ Edit
                     </button>
                     <button
                       v-if="!item.is_dir"
                       @click="downloadFmFile(item)"
                       class="px-2 py-0.5 rounded text-[11px] bg-gray-900 text-gray-300 border border-gray-700 hover:bg-gray-800 cursor-pointer"
-                      title="Unduh Berkas"
+                      title="Download File"
                     >
                       ⬇️
                     </button>
@@ -1319,10 +1319,10 @@
             </div>
             <div class="flex items-center gap-2">
               <button @click="saveFmEditor" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded text-xs cursor-pointer">
-                Simpan (Save)
+                Save
               </button>
               <button @click="fmEditingFile = null" class="px-3 py-1 bg-gray-800 hover:bg-gray-700 text-gray-200 rounded text-xs cursor-pointer">
-                Tutup
+                Close
               </button>
             </div>
           </div>
@@ -1498,7 +1498,7 @@ function fmRefresh() {
 }
 
 function fmNewFilePrompt() {
-  const name = prompt('Masukkan nama berkas baru:')
+  const name = prompt('Enter new file name:')
   if (name) {
     fmItems.value.push({
       name,
@@ -1506,7 +1506,7 @@ function fmNewFilePrompt() {
       perms: '-rw-r--r--',
       owner: 'root:root',
       size: '0 B',
-      mtime: 'Baru saja',
+      mtime: 'Just now',
       content: ''
     })
   }
@@ -1532,8 +1532,8 @@ function openFmEditor(item) {
 function saveFmEditor() {
   if (fmEditingFile.value) {
     fmEditingFile.value.content = fmEditorContent.value
-    fmEditingFile.value.mtime = 'Baru saja'
-    alert(`Berkas ${fmEditingFile.value.name} berhasil disimpan! Cadangan otomatis (${fmEditingFile.value.name}.bak) telah dibuat.`)
+    fmEditingFile.value.mtime = 'Just now'
+    alert(`File ${fmEditingFile.value.name} successfully saved! Automatic backup (${fmEditingFile.value.name}.bak) created.`)
     fmEditingFile.value = null
   }
 }
@@ -1742,15 +1742,15 @@ onUnmounted(() => {
 })
 
 function triggerMaintenanceToggle() {
-  alert(`Mode Pemeliharaan untuk ${server.value?.hostname}: Status telah diperbarui.`)
+  alert(`Maintenance Mode for ${server.value?.hostname}: Status updated.`)
 }
 
 function triggerOSUpdate() {
-  alert(`Pemeriksaan paket baru (apt update) telah dikirim ke agen di ${server.value?.hostname}.`)
+  alert(`Package index refresh (apt update) dispatched to agent on ${server.value?.hostname}.`)
 }
 
 function triggerOSUpgrade() {
-  if (!confirm(`Tingkatkan ${server.value?.apt_upgradable || 0} packages sistem operasi pada ${server.value?.hostname}?`)) return
+  if (!confirm(`Upgrade ${server.value?.apt_upgradable || 0} operating system packages on ${server.value?.hostname}?`)) return
   dispatchAction('upgrade_os', {})
 }
 

@@ -8,7 +8,7 @@
       <div>
         <h2 class="text-sm font-bold text-gray-100 uppercase tracking-wider font-mono flex items-center gap-2">
           <span class="w-2 h-2 rounded-full bg-cyan-400 beacon-live"></span>
-          <span>// RECON: FLEET TELEMETRY MATRIX</span>
+          <span>// FLEET INFRASTRUCTURE MATRIX</span>
           <span class="text-xs text-cyan-400 font-bold">({{ filteredServers.length }} {{ t('nodes_monitored') }})</span>
         </h2>
         <p class="text-xs text-gray-400 font-mono mt-0.5">

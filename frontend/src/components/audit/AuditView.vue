@@ -8,7 +8,7 @@
       <div>
         <h2 class="text-sm font-bold text-gray-100 uppercase tracking-wider font-mono flex items-center gap-2">
           <span class="w-2 h-2 rounded-full bg-cyan-400 beacon-live"></span>
-          <span>// RECON: OPERATOR AUDIT TRAIL</span>
+          <span>// SYSTEM AUDIT TRAIL</span>
         </h2>
         <p class="text-xs text-gray-400 font-mono mt-0.5">
           {{ t('audit_subtitle') }}

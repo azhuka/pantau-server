@@ -2,8 +2,8 @@ import { ref, computed } from 'vue'
 import en from './en.js'
 import id from './id.js'
 
-const savedLocale = localStorage.getItem('pantau_locale') || 'en'
-export const currentLocale = ref(savedLocale)
+const savedLocale = 'en'
+export const currentLocale = ref('en')
 
 const translations = {
   en,
@@ -11,15 +11,11 @@ const translations = {
 }
 
 export function setLocale(locale) {
-  if (translations[locale]) {
-    currentLocale.value = locale
-    localStorage.setItem('pantau_locale', locale)
-  }
+  currentLocale.value = 'en'
 }
 
 export function toggleLocale() {
-  const next = currentLocale.value === 'en' ? 'id' : 'en'
-  setLocale(next)
+  currentLocale.value = 'en'
 }
 
 export function t(key, params = {}) {
