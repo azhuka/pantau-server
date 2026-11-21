@@ -164,3 +164,25 @@ Seluruh commit ke repositori Git wajib menggunakan standar **Conventional Commit
 ---
 
 Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server**. Setiap penambahan fitur atau perombakan kode wajib tunduk pada filosofi dan arah arsitektur yang telah ditetapkan dalam dokumen ini.
+
+---
+
+## Catatan Perubahan (Changelog)
+
+### Versi v0.1.1
+
+- Standarisasi kontrol window chrome: tombol ikon persegi seragam dengan SVG external-link pada konsol Web Terminal dan File Manager.
+- Eliminasi total emoji kartun di seluruh antarmuka dan standardisasi vektor SVG monokromatik.
+- Penegakan proteksi murni pasif pada dasbor (eliminasi kolom aksi dan tombol View di dasbor, navigasi pasif klik-baris).
+- Standardisasi tombol aksi rincian armada menjadi 'View' dengan SVG Eye.
+- Perombakan total berkas README.md menjadi standar dokumentasi produksi profesional.
+- Pemulihan skrip otomatisasi rilis SemVer dan sinkronisasi versi aplikasi.
+
+
+### Versi v0.1.0
+
+- Peletakan fondasi arsitektur bersih (*Clean Architecture*) FastAPI dan database relasional mandiri (`pantau_server_db`).
+- Rancang bangun antarmuka SPA Vue 3 berbasis tema *Tactical Cyber Command Room*.
+- Banner metrik KPI asimetris, dasbor insiden pasif, dan tabel inventaris armada.
+- Modal kerja aset mengambang (*Workspace Controller*) dengan sistem rak bawah (*shelf tray*).
+

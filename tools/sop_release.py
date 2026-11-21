@@ -111,6 +111,20 @@ def update_version_files(new_ver: str, changelog_block: str = None) -> list:
                 f4.write_text(c4_new, encoding="utf-8")
                 modified_files.append(str(f4.relative_to(ROOT_DIR)))
 
+    # 5. frontend/src/components/Navbar.vue
+    f5 = ROOT_DIR / "frontend" / "src" / "components" / "Navbar.vue"
+    if f5.exists():
+        c5 = f5.read_text(encoding="utf-8")
+        c5_new = re.sub(
+            r'v[0-9]+\.[0-9]+\.[0-9]+',
+            f'v{new_ver}',
+            c5,
+            count=1
+        )
+        if c5 != c5_new:
+            f5.write_text(c5_new, encoding="utf-8")
+            modified_files.append(str(f5.relative_to(ROOT_DIR)))
+
     return modified_files
 
 
@@ -168,7 +182,7 @@ def main():
     # 3. Git Commit & Push
     print("\n[3/4] Menjalankan alur Git staging, commit, dan push main...")
     commit_msg = args.commit_msg or f"chore(release): rilis versi v{new_ver}"
-    all_files_to_add = set(mod_files + (args.extra_files or []) + ["frontend/dist"])
+    all_files_to_add = set(mod_files + (args.extra_files or []))
     add_str = " ".join(f"'{f}'" for f in all_files_to_add) if all_files_to_add else "."
     run_cmd(f"git add {add_str}")
     run_cmd(f'git commit -m "{commit_msg}"')

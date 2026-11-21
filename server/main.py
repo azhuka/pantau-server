@@ -8,7 +8,7 @@ from routers import api_agent, auth, servers, problems
 
 app = FastAPI(
     title="Pantau Server",
-    version="0.1.0",
+    version=settings.APP_VERSION,
     docs_url="/api/docs",
     redoc_url=None,
 )
@@ -30,7 +30,7 @@ app.include_router(problems.router)
 
 @app.get("/api/health")
 def healthcheck():
-    return {"status": "ok", "app": "pantau-server", "version": "0.1.0"}
+    return {"status": "ok", "app": "pantau-server", "version": settings.APP_VERSION}
 
 # Static Files & SPA fallback
 frontend_dist = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
