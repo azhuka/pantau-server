@@ -220,6 +220,13 @@ export default {
   login_conn_fail: 'Failed to connect to backend server: ',
 
   // Tooltips & Messages
+  tooltip_copy: 'Copy',
+  tooltip_copied: 'Copied!',
+  tooltip_info: 'Information',
+  tooltip_cmd: 'Command Line',
+  tooltip_kernel: 'Kernel Version',
+  tooltip_ip: 'Network Address',
+  tooltip_select_hint: 'Text can be highlighted or copied',
   tooltip_node_online: 'Node Online - Telemetry Active',
   tooltip_node_offline: 'Node Offline / Contact Lost',
   tooltip_apt_upgradable: 'APT packages can be upgraded',

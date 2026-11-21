@@ -25,6 +25,12 @@ Dokumen pelacak kemajuan (*progress tracking*) implementasi Pantau Server baru (
   - [x] Standarisasi hierarki tipografi: Judul 15px–16px (`text-base`), sel tabel 13.5px–14px (`text-sm`), label/header 12px (`text-xs font-bold uppercase`), badge 12px (`text-xs font-bold`), angka KPI 24px–28px (`text-2xl`–`text-3xl`).
   - [x] Penataan asimetris kartu KPI dasbor presisi: Total Server (`minmax(210px, 240px)`), Insiden Aktif (`1fr`), Waktu Sistem (`minmax(280px, 320px)`).
   - [x] Padding kartu (`p-3 px-4`) dan sel tabel (`py-2.5 px-3` / `py-2.5 px-4`) yang lega dan nyaman tanpa membuang kepadatan data.
+- [x] **Seleksi Teks Universal & Sistem Tooltip Taktis Terpadu (`v-tooltip`):** `[RP, Ergonomics]`
+  - [x] Eliminasi pemblokiran seleksi (`select-none` dicabut dari root container, teks armada/metrik/log bebas disalin).
+  - [x] Styling sorotan seleksi berpresisi tinggi (`::selection` cyan glow kontras tinggi).
+  - [x] Komponen tooltip interaktif mengambang (`TacticalTooltip.vue`) dengan status persisten saat kursor masuk (`pointer-events: auto`).
+  - [x] Tombol aksi salin instan satu klik `[ 📋 Copy / Salin ]` pada seluruh tooltip dengan umpan balik visual `[ ✓ Copied! ]`.
+  - [x] Direktive global `v-tooltip` untuk IP, kernel, full process command (PID), cron command, status node, dan audit target.
 
 - [x] **Navbar Taktis (`Navbar.vue`):**
   - [x] Navigasi 4 halaman: Dasbor, Rincian Armada, Log Audit, Pengaturan.

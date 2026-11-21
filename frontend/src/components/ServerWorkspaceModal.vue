@@ -475,7 +475,12 @@
                     <td class="py-2.5 px-3 text-gray-300">{{ p.user }}</td>
                     <td class="py-2.5 px-3 text-gray-200 font-semibold">{{ p.cpu || p.cpu_percent || 0 }}%</td>
                     <td class="py-2.5 px-3 text-gray-200 font-semibold">{{ p.mem || p.mem_percent || 0 }}%</td>
-                    <td class="py-2.5 px-3 text-gray-400 truncate max-w-sm" :title="p.cmd || p.command">{{ p.cmd || p.command }}</td>
+                    <td
+                      class="py-2.5 px-3 text-gray-400 truncate max-w-sm cursor-help hover:text-cyan-200"
+                      v-tooltip="{ title: `${t('ws_col_command')} (PID ${p.pid})`, text: p.cmd || p.command || '', code: true, copyable: true, extra: `User: ${p.user || 'root'} · CPU: ${p.cpu || p.cpu_percent || 0}% · RAM: ${p.mem || p.mem_percent || 0}%` }"
+                    >
+                      {{ p.cmd || p.command }}
+                    </td>
                     <td class="py-2.5 px-3 text-right">
                       <button
                         @click="killProcess(p.pid)"
@@ -509,7 +514,12 @@
                 </thead>
                 <tbody class="divide-y divide-gray-800/60">
                   <tr v-for="(pt, idx) in portsList" :key="idx" class="hover:bg-gray-800/30">
-                    <td class="py-2.5 px-3 font-bold text-blue-400">{{ pt.port }}</td>
+                    <td
+                      class="py-2.5 px-3 font-bold text-blue-400 cursor-help hover:underline decoration-blue-500/50"
+                      v-tooltip="{ title: 'Listening Socket', text: `${pt.proto || 'tcp'}:${pt.port} on ${pt.bind || pt.address || '0.0.0.0'}`, code: true, copyable: true, extra: `Bound Process: ${pt.process || pt.service || 'Unknown'}` }"
+                    >
+                      {{ pt.port }}
+                    </td>
                     <td class="py-2.5 px-3 text-gray-400 uppercase">{{ pt.proto || 'tcp' }}</td>
                     <td class="py-2.5 px-3 text-gray-300 font-semibold">{{ pt.bind || pt.address || '0.0.0.0' }}</td>
                     <td class="py-2.5 px-3 text-gray-200">{{ pt.process || pt.service || '-' }}</td>
@@ -588,7 +598,12 @@
                   <tr v-for="(j, idx) in cronData.jobs" :key="idx" class="hover:bg-gray-800/30">
                     <td class="py-2.5 px-3 font-bold text-amber-300">{{ j.schedule }}</td>
                     <td class="py-2.5 px-3 text-gray-300 font-medium">{{ j.user || 'root' }}</td>
-                    <td class="py-2.5 px-3 text-gray-200 truncate max-w-md" :title="j.command">{{ j.command }}</td>
+                    <td
+                      class="py-2.5 px-3 text-gray-200 truncate max-w-md cursor-help hover:text-cyan-200"
+                      v-tooltip="{ title: `${t('ws_cron_title')} (${j.user || 'root'})`, text: j.command || '', code: true, copyable: true, extra: `Schedule: ${j.schedule || 'Cron'} · Source: ${j.source || '-'}` }"
+                    >
+                      {{ j.command }}
+                    </td>
                     <td class="py-2.5 px-3 text-gray-400">{{ j.source || '-' }}</td>
                   </tr>
                 </tbody>

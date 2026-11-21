@@ -49,7 +49,12 @@
                   {{ log.action }}
                 </span>
               </td>
-              <td class="py-2.5 px-4 text-gray-300 font-mono text-xs truncate max-w-xs" :title="log.target">{{ log.target }}</td>
+              <td
+                class="py-2.5 px-4 text-gray-300 font-mono text-xs truncate max-w-xs cursor-help hover:text-cyan-300"
+                v-tooltip="{ title: 'Audit Target', text: log.target || '-', code: true, copyable: true, extra: `Action: ${log.action} · Actor: ${log.username}` }"
+              >
+                {{ log.target }}
+              </td>
               <td class="py-2.5 px-4 text-center whitespace-nowrap">
                 <span class="px-2 py-0.5 rounded text-xs font-bold font-mono bg-emerald-950 text-emerald-400 border border-emerald-800/50">
                   {{ log.result || 'SUCCESS' }}

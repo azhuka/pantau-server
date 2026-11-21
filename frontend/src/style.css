@@ -29,6 +29,17 @@
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    user-select: text;
+  }
+
+  /* High-contrast tactical selection highlight */
+  ::selection {
+    background-color: rgba(56, 189, 248, 0.4);
+    color: #ffffff;
+  }
+  ::-moz-selection {
+    background-color: rgba(56, 189, 248, 0.4);
+    color: #ffffff;
   }
 
   /* Monospace strictly for raw telemetry, IPs, ports, code, and tabular digits */

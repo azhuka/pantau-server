@@ -91,16 +91,16 @@
               <td class="py-2.5 px-3 text-center whitespace-nowrap">
                 <span
                   v-if="s.is_online"
-                  class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-bold font-mono bg-emerald-950/70 text-emerald-400 border border-emerald-800/50"
-                  :title="t('tooltip_node_online')"
+                  class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-bold font-mono bg-emerald-950/70 text-emerald-400 border border-emerald-800/50 cursor-help"
+                  v-tooltip="{ title: t('col_status'), text: t('tooltip_node_online'), extra: s.last_seen ? formatRelativeTime(s.last_seen) : 'Active' }"
                 >
                   <span class="w-2 h-2 rounded-full bg-emerald-400 beacon-live"></span>
                   LIVE
                 </span>
                 <span
                   v-else
-                  class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-bold font-mono bg-rose-950/70 text-rose-400 border border-rose-800/50"
-                  :title="t('tooltip_node_offline')"
+                  class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-bold font-mono bg-rose-950/70 text-rose-400 border border-rose-800/50 cursor-help"
+                  v-tooltip="{ title: t('col_status'), text: t('tooltip_node_offline'), extra: s.last_seen ? formatRelativeTime(s.last_seen) : 'Disconnected' }"
                 >
                   <span class="w-2 h-2 rounded-full bg-rose-500"></span>
                   DOWN
@@ -136,20 +136,33 @@
 
               <!-- 3. IP / IFACE -->
               <td class="py-2.5 px-3 whitespace-nowrap">
-                <div class="text-cyan-300 font-semibold font-mono text-sm">{{ s.ip_address || '-' }}</div>
+                <div
+                  class="text-cyan-300 font-semibold font-mono text-sm cursor-help hover:text-cyan-200 hover:underline decoration-cyan-500/40"
+                  v-tooltip="{ title: t('tooltip_ip'), text: s.ip_address || '127.0.0.1', code: true, copyable: true, extra: 'Primary Interface: ens18 · MTU: 1500' }"
+                >
+                  {{ s.ip_address || '-' }}
+                </div>
                 <div class="text-xs text-gray-500 font-mono">ens18 · MTU 1500</div>
               </td>
 
               <!-- 4. PLATFORM -->
               <td class="py-2.5 px-3 whitespace-nowrap text-gray-200 text-xs">
-                <div>{{ s.platform || 'KVM Virtual' }}</div>
-                <div class="text-gray-500 font-mono">{{ s.arch || 'x86_64' }}</div>
+                <div
+                  class="cursor-help"
+                  v-tooltip="{ title: t('col_platform'), text: `${s.platform || 'KVM Virtual Machine'} (${s.arch || 'x86_64'})`, copyable: true }"
+                >
+                  <div>{{ s.platform || 'KVM Virtual' }}</div>
+                  <div class="text-gray-500 font-mono">{{ s.arch || 'x86_64' }}</div>
+                </div>
               </td>
 
               <!-- 5. OS & KERNEL -->
               <td class="py-2.5 px-3 whitespace-nowrap text-gray-200 text-xs">
                 <div class="text-gray-200 font-medium">{{ s.os_label || 'Linux' }}</div>
-                <div class="text-gray-500 font-mono truncate max-w-[130px]" :title="s.kernel">
+                <div
+                  class="text-gray-500 font-mono truncate max-w-[130px] cursor-help hover:text-cyan-300 transition"
+                  v-tooltip="{ title: t('tooltip_kernel'), text: s.kernel || 'Linux 6.x kernel', code: true, copyable: true, extra: `${s.os_label || 'Linux'} · ${s.arch || 'x86_64'}` }"
+                >
                   {{ s.kernel || 'Kernel 6.1.x' }}
                 </div>
               </td>
@@ -212,8 +225,8 @@
                 </span>
                 <span
                   v-if="s.apt_upgradable > 0"
-                  class="ml-1 px-1.5 py-0.5 rounded text-xs font-bold bg-amber-950 text-amber-300 border border-amber-800 font-mono"
-                  :title="`${s.apt_upgradable} ${t('tooltip_apt_upgradable')}`"
+                  class="ml-1 px-1.5 py-0.5 rounded text-xs font-bold bg-amber-950 text-amber-300 border border-amber-800 font-mono cursor-help"
+                  v-tooltip="{ title: 'APT Packages', text: `${s.apt_upgradable} ${t('tooltip_apt_upgradable')}`, code: true, copyable: true, extra: 'Execute: apt list --upgradable' }"
                 >
                   {{ s.apt_upgradable }}
                 </span>
@@ -232,7 +245,7 @@
                   <button
                     @click="$emit('open-workspace', s.id, 'overview')"
                     class="px-3 py-1.5 rounded-md bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow transition cursor-pointer flex items-center gap-1.5"
-                    :title="t('tooltip_view')"
+                    v-tooltip="{ title: t('btn_view'), text: 'Open comprehensive tactical workspace for server inspection', copyable: false }"
                   >
                     <span>📂</span>
                     <span>{{ t('btn_view') }}</span>
@@ -242,7 +255,7 @@
                   <button
                     @click="$emit('open-workspace', s.id, 'overview')"
                     class="w-7 h-7 flex items-center justify-center rounded-md bg-[#131d33] hover:bg-blue-600/30 text-blue-400 border border-gray-700/80 transition cursor-pointer text-xs"
-                    :title="t('tooltip_metrics')"
+                    v-tooltip="{ title: t('tooltip_metrics'), text: 'Inspect CPU, RAM, Disk I/O telemetry charts', copyable: false }"
                   >
                     📊
                   </button>
@@ -251,7 +264,7 @@
                   <button
                     @click="$emit('open-workspace', s.id, 'terminal')"
                     class="w-7 h-7 flex items-center justify-center rounded-md bg-[#131d33] hover:bg-blue-600/30 text-blue-400 border border-gray-700/80 transition cursor-pointer text-xs"
-                    :title="t('tooltip_terminal')"
+                    v-tooltip="{ title: t('tooltip_terminal'), text: 'Spawn secure Web Terminal session', copyable: false }"
                   >
                     🖥️
                   </button>
@@ -260,7 +273,7 @@
                   <button
                     @click="$emit('probe-node', s.id)"
                     class="w-7 h-7 flex items-center justify-center rounded-md bg-[#131d33] hover:bg-emerald-600/30 text-gray-300 hover:text-emerald-400 border border-gray-700/80 transition cursor-pointer text-xs"
-                    :title="t('tooltip_sync')"
+                    v-tooltip="{ title: t('tooltip_sync'), text: 'Dispatch immediate telemetry refresh probe', copyable: false }"
                   >
                     🔄
                   </button>
@@ -269,7 +282,7 @@
                   <button
                     @click="$emit('more-actions', s.id, $event)"
                     class="w-7 h-7 flex items-center justify-center rounded-md bg-[#131d33] hover:bg-gray-700 text-gray-400 hover:text-white border border-gray-700/80 transition cursor-pointer text-xs font-bold"
-                    :title="t('btn_more')"
+                    v-tooltip="{ title: t('btn_more'), text: 'More operational actions (Power, FIM, Network Audit)', copyable: false }"
                   >
                     ⋮
                   </button>
@@ -280,7 +293,7 @@
             <!-- EMPTY STATE ROW (Kondisi Bersih Awal) -->
             <tr v-if="filteredServers.length === 0">
               <td colspan="12" class="py-12 px-4 text-center">
-                <div class="flex flex-col items-center justify-center gap-2 select-none">
+                <div class="flex flex-col items-center justify-center gap-2">
                   <span class="text-3xl text-gray-600">📡</span>
                   <div class="text-sm font-bold text-gray-200 font-mono tracking-wide">{{ t('fleet_empty_title') }}</div>
                   <div class="text-xs text-gray-400 font-mono max-w-md">{{ t('fleet_empty_desc') }}</div>

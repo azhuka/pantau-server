@@ -7,8 +7,8 @@
         href="#fleet"
         @click.prevent="$emit('nav', 'fleet')"
         id="kpi-card-total"
-        class="bg-[#0c121e] border border-gray-800 border-l-[3px] border-l-[#38bdf8] p-3 px-4 rounded-lg flex flex-col justify-between hover:bg-[#111a2d] transition cursor-pointer select-none group shadow-md"
-        :title="t('dash_open_fleet')"
+        class="bg-[#0c121e] border border-gray-800 border-l-[3px] border-l-[#38bdf8] p-3 px-4 rounded-lg flex flex-col justify-between hover:bg-[#111a2d] transition cursor-pointer group shadow-md"
+        v-tooltip="{ title: t('total_servers'), text: `${servers.length} fleet hosts (${upCount} online, ${downCount} offline)`, copyable: true, extra: 'Click to navigate to fleet inventory' }"
       >
         <div class="flex items-center justify-between mb-1">
           <div class="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-2">
@@ -41,7 +41,7 @@
       <!-- KARTU 2: INSIDEN AKTIF DENGAN STRIP TINGKAT KEPARAHAN (1fr - Memanjang & Fleksibel) -->
       <div
         id="kpi-card-prob"
-        class="bg-[#0c121e] border border-gray-800 border-l-[3px] p-3 px-4 rounded-lg flex flex-col justify-between shadow-md select-none"
+        class="bg-[#0c121e] border border-gray-800 border-l-[3px] p-3 px-4 rounded-lg flex flex-col justify-between shadow-md"
         :class="dangerCount > 0 ? 'border-l-rose-500' : (avgCount > 0 ? 'border-l-orange-500' : (warnCount > 0 ? 'border-l-yellow-500' : 'border-l-emerald-500'))"
       >
         <div class="flex items-center justify-between mb-2">
@@ -110,8 +110,8 @@
       <!-- KARTU 3: WAKTU SISTEM (Proporsional 280px - 320px) -->
       <div
         id="dashClockWidget"
-        class="bg-[#0c121e] border border-gray-800 border-l-[3px] border-l-[#10b981] p-3 px-4 rounded-lg flex flex-col justify-between shadow-md select-none"
-        :title="t('dash_kpi_system_clock')"
+        class="bg-[#0c121e] border border-gray-800 border-l-[3px] border-l-[#10b981] p-3 px-4 rounded-lg flex flex-col justify-between shadow-md cursor-help"
+        v-tooltip="{ title: t('dash_kpi_system_clock'), text: `${currentTime} | UTC: ${currentUtcTime}`, copyable: true, extra: 'NTP Synchronized Precision Time' }"
       >
         <div class="flex items-center justify-between mb-1">
           <div class="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-2">
@@ -212,7 +212,7 @@
               :key="prob.id"
               @click="$emit('inspect-node', prob.server_id)"
               class="hover:bg-blue-600/10 transition-colors cursor-pointer group"
-              title="Click to inspect server in tactical workspace"
+              v-tooltip="{ title: `${prob.hostname || 'Server'} · ${prob.severity ? prob.severity.toUpperCase() : 'ALERT'}`, text: prob.description || 'Active operational anomaly', copyable: true, extra: `${formatTime(prob.started_at)} · Click to open workspace` }"
             >
               <!-- TIME -->
               <td class="py-2.5 px-4 text-gray-400 whitespace-nowrap text-xs">
@@ -419,7 +419,7 @@
             <!-- Empty State Baris -->
             <tr v-if="filteredServers.length === 0">
               <td colspan="9" class="py-10 px-4 text-center text-gray-400 font-mono text-xs">
-                <div class="flex flex-col items-center justify-center gap-1.5 select-none">
+                <div class="flex flex-col items-center justify-center gap-1.5">
                   <span class="text-2xl text-gray-600">📡</span>
                   <div class="font-bold text-gray-200">{{ t('fleet_empty_title') }}</div>
                   <div class="text-gray-400 max-w-sm">{{ t('dash_fleet_empty') }}</div>
@@ -434,7 +434,7 @@
       <div v-else class="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 bg-[#090d16]/30">
         <!-- Empty State Grid -->
         <div v-if="filteredServers.length === 0" class="col-span-full py-10 text-center text-gray-400 font-mono text-xs">
-          <div class="flex flex-col items-center justify-center gap-1.5 select-none">
+          <div class="flex flex-col items-center justify-center gap-1.5">
             <span class="text-2xl text-gray-600">📡</span>
             <div class="font-bold text-gray-200">{{ t('fleet_empty_title') }}</div>
             <div class="text-gray-400 max-w-sm">{{ t('dash_fleet_empty') }}</div>

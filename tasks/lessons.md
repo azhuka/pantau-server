@@ -114,6 +114,17 @@ Dokumen ini mencatat setiap pembelajaran dari koreksi operator dan temuan teknis
      - Jika 0: Tampilkan secara jujur *"No fleet servers connected yet"*.
      - Jika > 0: Gunakan parameter dinamis `{count: servers.length}` sehingga angka mencerminkan fakta riil.
 
+---
+
+## Lesson 14: Keterbukaan Seleksi Teks & Ergonomi Tooltip Salin-Tempel (Copyable Text & Tactical Tooltip Standard)
+- **Konteks:** Teks pada antarmuka sempat tidak bisa disorot atau disalin karena kelas CSS `select-none` diletakkan di root container (`App.vue`), serta informasi rincian pada tooltip native browser (`title="..."`) tidak dapat disorot maupun disalin oleh operator.
+- **Akar Masalah:**
+  1. Penggunaan `select-none` secara ceroboh pada container induk aplikasi membuat seluruh teks anak (telemetri, IP, hostname, status, log) terkunci dari seleksi kursor.
+  2. Tooltip bawaan browser (`title`) tidak mendukung seleksi teks (langsung tertutup saat kursor digerakkan) dan tidak memiliki tombol salin cepat.
+- **Aturan Pencegahan `[RP, Ergonomics, Systems Thinking]`:**
+  1. **Seleksi Teks Bebas Secara Universal:** Dilarang meletakkan `select-none` pada container induk (`body`, `#app`, `App.vue`). Seluruh data fakta fisik (IP, port, perintah, PID, nama host, kernel, log, metrik) wajib dapat disorot (`user-select: text`) dan disalin secara bebas oleh kursor mouse. Kelas `select-none` hanya dikhususkan bagi elemen tombol murni, ikon kontrol klik, atau bilah seret (*drag bar*).
+  2. **Standar Tooltip Taktis Terpadu & Bisa Disalin:** Seluruh tooltip informatif wajib menggunakan komponen tooltip taktis (`v-tooltip` / `TacticalTooltip.vue`) yang mempertahankan keadaan terbuka saat kursor diarahkan ke dalam tooltip (`pointer-events: auto` dengan jeda *hover bridge* 250ms), teks di dalamnya dapat disorot bebas, serta dilengkapi tombol aksi `[ 📋 Copy / Salin ]` dengan umpan balik instan.
+
 
 
 

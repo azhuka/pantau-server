@@ -220,6 +220,13 @@ export default {
   login_conn_fail: 'Gagal terhubung ke backend server: ',
 
   // Tooltips & Pesan
+  tooltip_copy: 'Salin',
+  tooltip_copied: 'Tersalin!',
+  tooltip_info: 'Informasi',
+  tooltip_cmd: 'Baris Perintah',
+  tooltip_kernel: 'Versi Kernel',
+  tooltip_ip: 'Alamat Jaringan',
+  tooltip_select_hint: 'Teks dapat disorot atau disalin',
   tooltip_node_online: 'Node Online - Telemetri Aktif',
   tooltip_node_offline: 'Node Offline / Kontak Terputus',
   tooltip_apt_upgradable: 'paket APT dapat diperbarui',

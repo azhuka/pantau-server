@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-[#06090f] text-gray-100 flex flex-col font-sans select-none">
+  <div class="min-h-screen bg-[#06090f] text-gray-100 flex flex-col font-sans select-text">
     <!-- TACTICAL NAVBAR -->
     <Navbar
       :active-tab="activeTab"
@@ -115,6 +115,9 @@
       v-if="showLoginModal"
       @logged-in="onLoggedIn"
     />
+
+    <!-- Tactical Universal Copyable Tooltip -->
+    <TacticalTooltip />
   </div>
 </template>
 
@@ -128,6 +131,7 @@ import AuditView from './components/audit/AuditView.vue'
 import SettingsView from './components/settings/SettingsView.vue'
 import ServerWorkspaceModal from './components/ServerWorkspaceModal.vue'
 import LoginModal from './components/LoginModal.vue'
+import TacticalTooltip from './components/common/TacticalTooltip.vue'
 
 const { t } = useI18n()
 
