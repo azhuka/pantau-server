@@ -52,8 +52,11 @@ const puppeteer = require('puppeteer-core');
 
     // Wait for PTY WebSocket connection and output
     await new Promise(r => setTimeout(r, 2000));
+    console.log('Typing command into xterm...');
+    await page.keyboard.type('uname -a\n');
+    await new Promise(r => setTimeout(r, 1500));
     await page.screenshot({ path: 'screenshots/visual_terminal_dock_tab1.png' });
-    console.log('Captured screenshots/visual_terminal_dock_tab1.png');
+    console.log('Captured screenshots/visual_terminal_dock_tab1.png with executed command output');
 
     // 3. Open second tab
     console.log('3. Opening second tab for multi-tab management...');

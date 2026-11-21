@@ -46,6 +46,9 @@ async def websocket_terminal(
     db = SessionLocal()
     user = None
     server = None
+    server_hostname = "Server"
+    server_ip = "127.0.0.1"
+    username = "operator"
     try:
         user = _get_user_from_token(token, db)
         if not user:
@@ -70,13 +73,17 @@ async def websocket_terminal(
             await websocket.close(code=4404)
             return
 
+        server_hostname = str(server.hostname)
+        server_ip = str(server.ip_address or "127.0.0.1")
+        username = str(user.username)
+
         audit = AuditLog(
             server_id=sid,
-            username=user.username,
+            username=username,
             action="terminal_connect",
-            target=f"{server.hostname}:{server.ip_address}",
+            target=f"{server_hostname}:{server_ip}",
             result="success",
-            meta=f"Operator {user.username} initiated Web Terminal PTY session",
+            meta=f"Operator {username} initiated Web Terminal PTY session",
             created_at=datetime.utcnow()
         )
         db.add(audit)
@@ -86,7 +93,7 @@ async def websocket_terminal(
 
     welcome_banner = (
         f"\r\n\x1b[1;36m// PANTAU TACTICAL PTY TERMINAL DOCK\x1b[0m\r\n"
-        f"\x1b[32m● CONNECTED:\x1b[0m \x1b[1m{server.hostname}\x1b[0m ({server.ip_address or '127.0.0.1'})\r\n"
+        f"\x1b[32m● CONNECTED:\x1b[0m \x1b[1m{server_hostname}\x1b[0m ({server_ip})\r\n"
         f"\x1b[90mSession started at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} | Interactive Bash Ready.\x1b[0m\r\n\r\n"
     )
     await websocket.send_text(json.dumps({"type": "stdout", "data": welcome_banner}))
@@ -98,7 +105,7 @@ async def websocket_terminal(
     env["COLORTERM"] = "truecolor"
     env["LANG"] = "en_US.UTF-8"
     env["PANTAU_SERVER_ID"] = str(sid)
-    env["PANTAU_HOSTNAME"] = str(server.hostname)
+    env["PANTAU_HOSTNAME"] = server_hostname
 
     import subprocess
     process = subprocess.Popen(
@@ -192,9 +199,9 @@ async def websocket_terminal(
         try:
             audit = AuditLog(
                 server_id=sid,
-                username=user.username if user else "operator",
+                username=username,
                 action="terminal_disconnect",
-                target=f"{server.hostname}:{server.ip_address}" if server else str(sid),
+                target=f"{server_hostname}:{server_ip}",
                 result="closed",
                 meta="Web Terminal PTY session closed",
                 created_at=datetime.utcnow()

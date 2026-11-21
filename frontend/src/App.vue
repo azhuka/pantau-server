@@ -226,10 +226,11 @@ const terminalTabsCount = computed(() => {
 function openTerminalDock(server = null) {
   isTerminalDockOpen.value = true
   isTerminalDockMinimized.value = false
-  if (server) {
-    terminalDockInitialServer.value = server
+  const targetServer = server || (servers.value.length > 0 ? servers.value[0] : null)
+  if (targetServer) {
+    terminalDockInitialServer.value = targetServer
     if (terminalDockRef.value) {
-      terminalDockRef.value.openNewTabForServer(server)
+      terminalDockRef.value.openNewTabForServer(targetServer)
     }
   }
 }
