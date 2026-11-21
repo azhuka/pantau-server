@@ -13,7 +13,7 @@ Pantau Server adalah **Pusat Kendali Operasional NOC (*Network Operations Center
 
 Pantau Server **BUKAN**:
 * Bukan aplikasi web CRUD standar.
-* Bukan klon atau tiruan dangkal dari aplikasi lain (termasuk bukan salinan antarmuka `~/pantau` maupun Grafana).
+* Bukan klon atau tiruan dangkal dari aplikasi generic web dashboard maupun Grafana.
 * Bukan sekadar penampil grafik pasif, melainkan **platform kendali operasional aktif** yang memadukan pemantauan telemetri presisi kernel dengan eksekusi tindakan mitigasi cepat (*remediation*).
 
 ### 1.2 Nilai Rasa (*Feel*) & Pengalaman Pengguna (UX Target)

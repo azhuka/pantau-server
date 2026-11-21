@@ -15,28 +15,30 @@ Sistem ini didesain khusus bagi tim NOC dan sysadmin untuk:
 
 ---
 
-## 2. Hubungan dengan Aplikasi Referensi
+## 2. Paradigma Desain Sistem & Ergonomi Pengguna
 
-### A. Pantau Server Lama (`~/rj45`) — Blueprint Fungsional & Domain Knowledge
-* **Status:** Berfungsi sebagai **Blueprint Konseptual Murni** untuk seluruh kapabilitas fitur, alur kerja telemetri, dan domain bisnis NOC.
-* **Yang Diadopsi & Dipertahankan (Konsep & Workflow Murni):**
-  * Kelengkapan konsep fitur telemetri: Ringkasan Metrik, Systemd Units, Top Processes, Listening Ports, UFW Firewall, Crontab & Timers, User Accounts & Sesi SSH Aktif, FIM (File Integrity Monitoring), Probing jaringan, dan Audit Log.
-  * Alur interaksi & tata kelola NOC: Dasbor pasif, jendela inspeksi taktis mengambang (*floating workspace modal*), RBAC parity.
-  * Protokol konsep telemetri agen push (`POST /api/report` & `GET /api/commands`).
-* **Yang Dilarang Keras & Ditinggalkan (Anti-Pola & Larangan Kontaminasi Data):**
-  * ❌ *Larangan Keras Duplikasi / Sambungan Data Lama:* DILARANG KERAS mengimpor, menduplikasi, atau menyambungkan basis data lama (`pantau_db`) ke aplikasi baru. Database baru wajib *Clean Slate* agar inkonsistensi skema dan kekeliruan data historis lama tidak mengotori kemurnian sistem baru.
-  * ❌ *Monolithic Spaghetti HTML/JS:* Mengharamkan berkas template tunggal belasan ribu baris (seperti `services.html` 15.537 baris) yang menggabungkan HTML, CSS, dan logika script tanpa batas.
-  * ❌ *Full-Page Navigation Disruption:* Mengharamkan perpindahan halaman penuh saat memeriksa rincian server yang memutus sesi terminal, menghilangkan posisi scroll, dan memicu jeda muat ulang.
-  * ❌ *Reactive Patching:* Mengharamkan penambalan lokal tanpa menguji daur hidup data end-to-end.
+### A. Spesifikasi Fungsional & Domain Knowledge NOC
+* **Kelengkapan Fitur Telemetri Sentral:**
+  * Metrik Inti: Utilisasi CPU (per-core & total), Memory/Swap, Partisi Disk I/O, Network Throughput, dan Uptime.
+  * Inspeksi Mendalam: Status Unit Systemd, Top Processes, Listening Ports & Socket Kernel, Aturan UFW Firewall, Crontab & Timers, User Accounts & Intersepsi Sesi Remote SSH Aktif, FIM (File Integrity Monitoring), Probing Jaringan, dan Log Audit.
+  * Alur interaksi & tata kelola NOC: Dasbor pasif untuk triase makro, jendela inspeksi taktis mengambang (*floating workspace modal*), dan kesetaraan wewenang operasional (*RBAC Parity*).
+  * Protokol telemetri agen push mandiri (`POST /api/report` & `GET /api/commands`).
+* **Prinsip Anti-Pola & Integritas Bersih:**
+  * ❌ *Anti-Monolitik Spaghetti:* Mengharamkan berkas template raksasa belasan ribu baris yang mencampur aduk HTML, CSS, dan logika script tanpa modularitas.
+  * ❌ *Anti-Disrupsi Halaman Penuh:* Mengharamkan perpindahan halaman penuh saat memeriksa rincian server yang memutus sesi terminal, menghilangkan posisi scroll, dan memicu jeda muat ulang.
+  * ❌ *Anti-Penambalan Lokal (Anti-Reactive Patching):* Mengharamkan perbaikan sepotong tanpa menguji daur hidup data end-to-end.
 
-### B. Pantau Agentless Go (`~/pantau`) — Standar Emas Interaksi UI/UX
-* **Status:** Berfungsi sebagai **Benchmark Interaksi Antarmuka & Ergonomi Pengguna**.
-* **Yang Diadopsi & Direplikasi:**
-  * ✨ **Floating Workspace Modal (`.modal-workspace`):** Alih-alih berpindah halaman atau URL penuh, inspeksi mendalam server dibuka melalui jendela mengambang interaktif berdimensi luas (`85vw` x `85vh`, rounded-xl, backdrop-blur) di atas dasbor armada.
-  * ✨ **Host Switcher Terintegrasi:** Navigasi cepat antar server langsung dari header jendela mengambang via tombol Prev (`<` / `[`), Next (`>` / `]`), serta popover pencarian server tanpa perlu menutup jendela inspeksi.
-  * ✨ **Kontrol Jendela Penuh:** Mendukung Minimalkan ke Bilah Rak (*Workspace Shelf*), Maksimalkan ke Layar Penuh (*Maximize / Restore*), dan Tutup cepat (`✕` / tombol `ESC`).
-  * ✨ **Workspace Shelf (Bilah Rak Bawah):** Jendela inspeksi yang diminimalkan tersimpan rapi di bilah bawah layar, memungkinkan operator memantau dasbor armada dan membuka kembali jendela server dengan status tab & scroll yang tetap terjaga.
-  * ✨ **Zero-Reload Tab Switching:** Seluruh sub-tab (Overview, Layanan, Proses, Port, Firewall, Cron, SSH, Terminal, Berkas) berpindah instan di memori klien.
+### B. Standar Emas Interaksi Antarmuka (Tactical UX Standard)
+* **Floating Workspace Modal (`.modal-workspace`):**
+  * Alih-alih berpindah halaman atau URL penuh, inspeksi mendalam server dibuka melalui jendela mengambang interaktif berdimensi luas (`85vw` x `85vh`, rounded-xl, backdrop-blur) di atas dasbor armada.
+* **Host Switcher Terintegrasi:**
+  * Navigasi cepat antar server langsung dari header jendela mengambang via tombol Prev (`<` / `[`), Next (`>` / `]`), serta popover pencarian server tanpa perlu menutup jendela inspeksi.
+* **Kontrol Jendela Penuh:**
+  * Mendukung Minimalkan ke Bilah Rak (*Workspace Shelf*), Maksimalkan ke Layar Penuh (*Maximize / Restore*), dan Tutup cepat (`✕` / tombol `ESC`).
+* **Workspace Shelf (Bilah Rak Bawah):**
+  * Jendela inspeksi yang diminimalkan tersimpan rapi di bilah bawah layar, memungkinkan operator memantau dasbor armada dan membuka kembali jendela server dengan status tab & scroll yang tetap terjaga.
+* **Zero-Reload Tab Switching:**
+  * Seluruh sub-tab (Overview, Layanan, Proses, Port, Firewall, Cron, SSH, Terminal, Berkas) berpindah instan di memori klien secara reaktif.
 
 ---
 
@@ -55,8 +57,8 @@ Sistem ini didesain khusus bagi tim NOC dan sysadmin untuk:
   * Logika bisnis dan evaluasi anomali terisolasi di Service Layer (`telemetry_service.py`, `problem_service.py`).
 
 ### Pilar 3: Evolusi Bertahap Bebas Regresi (*Zero-Downtime & Zero-Regression*)
-* Pembangunan dan pengujian berjalan berdampingan tanpa mengganggu layanan armada klien aktif.
-* Database produksi (`pantau_db`) tetap terjaga integritasnya. Seluruh armada klien tetap dapat melapor dan menerima perintah tanpa gangguan.
+* Pembangunan dan pengujian berjalan berdampingan dengan skema basis data terisolasi murni (`pantau_server_db`).
+* Seluruh operasi sistem menjamin nol disrupsi bagi klien aktif dan integritas data kernel yang valid.
 
 ### Pilar 4: Kepadatan Data & Ergonomi Operasional NOC (*High-Density & Zero-Flicker UX*)
 * Tampilan visual dirancang untuk observasi cepat operator:

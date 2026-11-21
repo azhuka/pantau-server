@@ -20,36 +20,28 @@ Berkas ini adalah **Manifes Rekayasa, Rujukan Arsitektur Utama, dan Peta Jalan P
 
 ---
 
-## 2. Latar Belakang: Mengapa Pembangunan Ulang Bersih (*Clean Architecture Rebuild*)?
+## 2. Prinsip Arsitektur: Fondasi Clean Architecture & Pemisahan Tanggung Jawab
 
-Sistem pendahulu (Pantau Server lama di `~/rj45`) telah membuktikan efektivitas konsep telemetri di lapangan. Namun, seiring berjalannya waktu, aplikasi lama tersebut menumpuk hutang teknis (*technical debt*) yang menghambat stabilitas:
-* **Monolitik Spaghetti:** Berkas antarmuka lama (seperti `services.html`) membengkak hingga **15.537 baris** dalam satu template yang mencampur aduk Jinja HTML, styling CSS inline, dan puluhan fungsi JavaScript tanpa modularitas.
-* **Disrupsi Navigasi Halaman Penuh:** Setiap kali operator ingin memeriksa rincian suatu server, sistem lama memuat ulang halaman secara penuh (*full page reload*), yang berakibat pada putusnya sesi Web Terminal aktif, hilangnya posisi scroll, dan jeda muat yang membuang waktu.
-* **Inkonsistensi & Anomali Data:** Basis data lama menyimpan banyak data telemetri ke dalam kolom `TEXT` tak ternormalisasi yang berisi string JSON mentah, sehingga sulit diindeks, rawan korupsi data, dan menyulitkan evolusi skema.
-
-Oleh karena itu, diputuskan untuk melakukan **pembangunan ulang bersih dari nol (*clean rebuild from first principles*)** dengan memisahkan secara tegas antara arsitektur data, API backend, dan antarmuka frontend modern.
+Pantau Server dirancang dari nol (*from first principles*) dengan standar rekayasa perangkat lunak kelas industri untuk menyelesaikan tantangan operasional NOC modern:
+* **Anti-Monolitik Spaghetti:** Memisahkan secara tegas antara antarmuka visual (Vue 3 SPA komponen kecil <250 baris), pengontrol API (FastAPI Routers tipis), logika evaluasi telemetri (Domain Services murni), dan persistensi data (SQLAlchemy Repositories). Mengharamkan penumpukan kode campuran HTML, CSS, dan skrip ke dalam berkas monolitik raksasa.
+* **Ergonomi Tanpa Disrupsi (*Zero-Disruption Navigation*):** Menolak keras pola navigasi halaman penuh (*full page reload*) saat memeriksa rincian host. Navigasi halaman penuh memutus sesi Web Terminal aktif, menghilangkan posisi scroll armada, dan membuang waktu investigasi operator.
+* **Integritas Skema & Normalisasi Data:** Basis data menggunakan skema relasional InnoDB yang ternormalisasi secara ketat. Dilarang menyimpan telemetri penting ke dalam kolom JSON mentah tak berstruktur yang rentan korupsi dan tidak dapat diindeks.
 
 ---
 
-## 3. Hubungan dengan Aplikasi Referensi (Dual-Blueprint Approach)
+## 3. Paradigma Inti Antarmuka & Interaksi NOC (Core Interaction Paradigm)
 
-Pembangunan sistem baru ini secara konsisten mengadopsi kekuatan terbaik dari dua aplikasi acuan:
+Sistem antarmuka Pantau Server mengadopsi standar kontrol taktis mutakhir:
 
-### A. Pantau Server Lama (`~/rj45`) — Blueprint Fungsional & Domain Knowledge
-* **Yang Diambil Murni Konsepnya:**
-  - Konsep pengawasan pasif dasbor makro 24/7/365.
-  - Kelengkapan fitur telemetri NOC: Ringkasan Hardware, Unit Layanan Systemd, Top Processes, Listening Ports, UFW Firewall, Crontab & Timers, User Accounts, dan Intersepsi Sesi SSH Aktif.
-  - Konsep kesetaraan wewenang operasional (*RBAC Parity*) dan perlindungan integritas akun.
-* **Yang Dilarang Keras & Ditinggalkan:**
-  - ❌ **Dilarang menduplikasi atau menyalin data riil lama:** Data lama sarat dengan anomali dan format usang. Sistem baru dimulai dalam kondisi bersih (*clean slate*).
-  - ❌ **Dilarang meniru struktur monolitik spaghetti.**
+### A. Jendela Kerja Mengambang (*Floating Workspace Modal*)
+* **Inspeksi Mikro Tanpa Kehilangan Konteks Makro:** Jendela taktis interaktif berdimensi luas (`85vw x 85vh`) yang terbuka mengambang di atas dasbor armada tanpa berpindah halaman atau memutus koneksi terminal.
+* **Host Switcher Terintegrasi:** Berpindah antar server secara langsung dari bilah atas modal menggunakan pintasan keyboard `[` dan `]` atau pencarian cepat, menghemat waktu triase insiden.
+* **Workspace Shelf (Bilah Rak Bawah):** Kemampuan meminimalkan jendela kerja ke rak bawah layar saat memantau dasbor dan membukanya kembali seketika tanpa kehilangan status tab aktif atau posisi scroll.
+* **Zero-Flicker Reactive Rendering:** Pembaruan data terjadi di memori Virtual DOM tanpa kedipan visual yang mengganggu mata saat telemetri masuk setiap 3–5 detik.
 
-### B. Pantau Agentless Go (`~/pantau`) — Standar Emas Interaksi UI/UX
-* **Yang Diadopsi & Direplikasi:**
-  - ✨ **Jendela Kerja Mengambang (*Floating Workspace Modal*):** Jendela taktis interaktif berdimensi luas (`85vw x 85vh`) yang terbuka mengambang di atas dasbor armada tanpa berpindah halaman.
-  - ✨ **Host Switcher Terintegrasi:** Berpindah antar server secara langsung dari bilah atas modal menggunakan pintasan keyboard `[` dan `]` atau pencarian cepat.
-  - ✨ **Workspace Shelf (Bilah Rak Bawah):** Kemampuan meminimalkan jendela kerja ke rak bawah layar saat memantau dasbor dan membukanya kembali seketika tanpa kehilangan status tab aktif.
-  - ✨ **Zero-Flicker Reactive Rendering:** Pembaruan data terjadi di memori Virtual DOM tanpa kedipan visual yang mengganggu mata.
+### B. Dasbor Triase Murni Pasif
+* **Observasi Situasional 24/7/365:** Dasbor dikhususkan sebagai layar pemantauan makro, menampilkan banner KPI 3-kartu asimetris (Total Servers, Active Incidents 5-strip Zabbix, Jam Presisi Sistem) dan tabel insiden pasif. Dilarang keras menambahkan tombol aksi aktif atau mutasi di halaman dasbor.
+* **Kesetaraan Wewenang Operasional (*RBAC Parity*):** Operator berakses penuh memiliki kesetaraan fungsional dalam melakukan kontrol teknis armada, dengan proteksi mutlak terhadap integritas akun master dan akun diri sendiri.
 
 ---
 
@@ -96,22 +88,18 @@ Sistem dibangun dengan pemisahan lapisan tanggung jawab yang ketat (*Strict Sepa
 * Penanganan aset statis dikompilasi ke direktori `frontend/dist/` dan disajikan langsung oleh FastAPI, menghasilkan **arsitektur binary/daemon tunggal** yang mudah dipelihara via `systemd`.
 
 ### 4.3 Kebijakan Penyimpanan Data Bersih (*Clean Slate Persistence*)
-* Sistem baru menolak tegas penyalinan data dari `pantau_db` lama.
-* Basis data baru menggunakan skema mandiri yang ternormalisasi secara elegan, di mana relasi antar Server, Snapshot Metrik, Tiket Insiden, dan Log Audit terhubung dengan *foreign keys* yang valid dan integritas referensial yang kuat.
+* Sistem beroperasi dengan skema mandiri yang dibangun bersih dari nol (*clean slate*).
+* Basis data menggunakan skema relasional InnoDB yang ternormalisasi secara elegan, di mana relasi antar Server, Snapshot Metrik, Tiket Insiden, dan Log Audit terhubung dengan *foreign keys* yang valid dan integritas referensial yang kuat.
 
 ---
 
-## 5. Analisis & Evaluasi Strategis Agen Klien (`agent_pantau`)
+## 5. Spesifikasi Teknis Agen Klien (`agent_pantau`)
 
-Daemon agen di server klien adalah ujung tombak pengumpulan telemetri. Dari audit arsitektur terhadap agen lama (`/home/bos/rj45/agent/agent_pantau.py`):
-* **Kondisi Eksisting:** Berupa skrip monolitik sebesar **10.156 baris**.
-* **Kelemahan Kritis:** Agen lama mencampur telemetri dasar dengan eksekusi terminal PTY, file manager, dan FIM dalam satu berkas raksasa; sering memanggil *subprocess* eksternal (`ss`, `ufw`, `systemctl`); serta mengirimkan bongkahan JSON raksasa yang boros bandwidth.
-
-### Peta Jalan Penggantian Agen Generasi Baru:
-1. **Fase Transisi:** Server baru menyediakan antarmuka API penerima telemetri yang ramping dan adaptif, sehingga jika agen lama diarahkan ke server baru, datanya dapat diserap secara aman.
-2. **Pengembangan Agen Baru:**
-   - **Target Desain:** Ramping (< 600–800 baris Python modular murni standar library atau biner Go tunggal < 10 MB ala `~/pantau`).
-   - **Prinsip Operasional:** Membaca data langsung dari kernel interface (`/proc/stat`, `/proc/meminfo`, `/proc/net/dev`, socket netlink) tanpa *subprocess spawning* berulang-ulang, menghasilkan konsumsi RAM < 10–15 MB dan CPU overhead < 0.1%.
+Daemon agen di server klien adalah ujung tombak pengumpulan telemetri armada. Agen dirancang dengan prinsip rekayasa presisi:
+* **Zero External Dependencies:** Beroperasi murni menggunakan pustaka standar Python 3.10+ tanpa memerlukan dependensi paket pihak ketiga (seperti `psutil`, `requests`, atau `curl`).
+* **Target Desain Ramping:** Berukuran ringkas (< 600–800 baris Python modular) dengan konsumsi memori sangat hemat (RAM < 15–20 MB) dan beban CPU terukur < 0.1%.
+* **Prinsip Operasional Kernel Langsung:** Membaca data langsung dari kernel interface Linux (`/proc/stat`, `/proc/meminfo`, `/proc/net/dev`, socket netlink) tanpa memicu pemanggilan *subprocess* berulang-ulang yang memboroskan sumber daya sistem produksi.
+* **Protokol Telemetri Asinkron:** Mengirimkan payload snapshot terkompresi secara berkala (default interval 5 detik) melalui HTTP POST aman ke endpoint `/api/report`, dan menerima instruksi kendali melalui `/api/commands`.
 
 ---
 

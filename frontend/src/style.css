@@ -38,7 +38,7 @@
   }
 }
 
-/* Asymmetric Operations KPI Grid (Battle-Tested from rj45 Blueprint) */
+/* Asymmetric Operations KPI Grid (Standard NOC HUD Layout) */
 .dash-kpi-grid {
   display: grid;
   grid-template-columns: minmax(210px, 240px) 1fr minmax(280px, 320px);

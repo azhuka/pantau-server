@@ -3,7 +3,7 @@
 
 **Dokumen Rujukan Desain Antarmuka & Ergonomi Visual Pengguna**  
 *Konsep Visual: "Tactical Cyber Command Center / Ruang Operasi Intelijen"*  
-*Prinsip Utama: Seluruh Alur Kerja (Workflow) Aplikasi Lama (~/rj45) adalah Blueprint Concept*  
+*Prinsip Utama: Alur Kerja Taktis Presisi Tinggi & Ergonomi Tanpa Disrupsi*  
 *Aturan Baku Dasbor: Murni Aksi Pasif (Observasi & Navigasi). Bebas dari Tombol Kontrol/Mutasi Aktif*  
 *Bahasa Default: English (Multi-Bahasa: EN / ID Toggle)*
 
@@ -41,7 +41,7 @@ Aplikasi menggunakan **Bahasa Inggris secara default** agar terminologi komputas
 
 ---
 
-## 3. Peta Navigasi 4 Halaman Berbasis Blueprint Alur Kerja Lama
+## 3. Peta Navigasi 4 Halaman Berbasis Alur Kerja Taktis NOC
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -54,7 +54,7 @@ Aplikasi menggunakan **Bahasa Inggris secara default** agar terminologi komputas
 │ 1. DASHBOARD      │ │ 2. FLEET INVENTORY TABLE               │ │ 3. AUDIT TRAIL  │ │ 4. SETTINGS & RBAC│
 │ (MURNI PASIF:     │ │ (Inventaris Lengkap - Belum Kontrol)   │ │ (Rekam Jejak    │ │ (Otoritas & Hak   │
 │ Observasi Situasi │ │ - Tabel Kolom Rapat & Presisi          │ │  Aksi Operator) │ │  Akses Operator)  │
-│ & Triage Pasif)   │ │ - Klaster Tombol Aksi ala Pantau:      │ │ - Timeline Aksi │ │ - Kelola Akun     │
+│ & Triage Pasif)   │ │ - Klaster Tombol Aksi Presisi:         │ │ - Timeline Aksi │ │ - Kelola Akun     │
 │ - KPI Ribbon      │ │   [ View ] ────────┐                   │ │ - Aktor/User    │ │ - Izin Granular   │
 │ - Insiden Terkini │ │   [ 📊 ] [ 🖥️ ]     │                   │ │ - Target Host   │ │ - Kunci API Agen  │
 │ - Mini Fleet Grid │ │   [ 🔄 ] [ ⋮ ]     │                   │ │ - Parameter     │ │ - Thresholds      │
@@ -77,14 +77,14 @@ Aplikasi menggunakan **Bahasa Inggris secara default** agar terminologi komputas
 ---
 
 ### DETAIL HALAMAN 1: DASBOR (DASHBOARD — MURNI PASIF)
-*Persis seperti konsep dasbor lama `dashboard.html` di `~/rj45`. Dikhususkan sebagai layar pemantauan situasional dan triase pasif. DILARANG ADA TOMBOL AKSI AKTIF (seperti restart atau kill).*
+*Dikhususkan sebagai layar pemantauan situasional dan triase pasif 24/7/365. DILARANG ADA TOMBOL AKSI AKTIF (seperti restart atau kill).*
 
 1. **Bilah Kartu Ringkasan KPI (Atas):**
    * **Total Server:** Total armada terdaftar, rasio node online vs offline.
    * **Ringkasan Insiden:** Penghitung tiket aktif terpilah berdasarkan tingkat keparahan (*Critical, High, Warning, Info, Active SSH*).
    * **Jam Presisi NOC & Heartbeat:** Waktu sistem real-time dan latensi lapor telemetri.
 2. **Kartu Insiden Terkini (*Recent Incidents Card* — Tabel Pasif):**
-   * Persis format tabel insiden dasbor lama:
+   * Format tabel insiden taktis:
      * `WAKTU` (Waktu kejadian)
      * `SERVER` (Hostname & badge grup)
      * `KEPARAHAN` (Lencana Kritis, Gawat, Peringatan, Sesi SSH)
@@ -98,7 +98,7 @@ Aplikasi menggunakan **Bahasa Inggris secara default** agar terminologi komputas
 ---
 
 ### DETAIL HALAMAN 2: RINCIAN ARMADA (FLEET INVENTORY TABLE — BELUM KONTROL)
-*Persis seperti tabel `servers.html` di `~/rj45`, menampilkan inventaris teknis lengkap seluruh armada. Kontrol aktif baru dimulai saat tombol aksi diklik.*
+*Menampilkan inventaris teknis lengkap seluruh armada secara padat dan presisi. Kontrol aktif baru dimulai saat tombol aksi diklik.*
 
 1. **Toolbar Atas:** Pencarian instan (Host, IP, OS, Grup), filter status cepat (`All`, `Online`, `Offline`, `SSH Active`).
 2. **Tabel Rincian Armada (Kolom Padat & Presisi):**

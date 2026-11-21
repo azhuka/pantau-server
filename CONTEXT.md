@@ -199,7 +199,7 @@ Penegakan kontras visual antarmuka menggunakan variabel CSS semantik (`var(--car
 ### F. Alur Kerja Rilis & Otomasi Pembaruan
 
 **Otomasi SemVer 7 Berkas (`sop_release.py`)**:
-Skrip otomasi produksi ([`tools/sop_release.py`](file:///home/bos/rj45/tools/sop_release.py)) yang mengeksekusi kenaikan versi SemVer secara atomik pada 7 berkas inti, pengujian sintaksis Python/Shell/Jinja, restart daemon lokal, dan publikasi Git/Tag/GitHub Release dalam 15–30 detik.
+Skrip otomasi produksi ([`tools/sop_release.py`](file:///home/bos/pantau-server/tools/sop_release.py)) yang mengeksekusi kenaikan versi SemVer secara atomik pada 7 berkas inti, pengujian sintaksis Python/Shell/Jinja, restart daemon lokal, dan publikasi Git/Tag/GitHub Release dalam 15–30 detik.
 *Hindari*: Manual bump, release script, deploy tool, version pusher.
 
 **Verifikasi Lapangan Mutlak 100% Armada**:
@@ -270,7 +270,7 @@ Setiap kali menyelesaikan penambahan fitur, perbaikan bug, atau refactor:
 3. **Verifikasi Lapangan Mutlak 100% Armada:**
    Kueri basis data untuk memastikan seluruh armada aktif telah melapor pada versi baru:
    ```bash
-   PYTHONPATH=/home/bos/rj45/server /home/bos/rj45/env/bin/python -c "
+   PYTHONPATH=/home/bos/pantau-server/server /home/bos/pantau-server/env/bin/python -c "
    from sqlalchemy import create_engine, text
    from config import settings
 

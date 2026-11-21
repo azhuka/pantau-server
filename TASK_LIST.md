@@ -8,7 +8,7 @@ Dokumen pelacak kemajuan (*progress tracking*) implementasi Pantau Server baru (
 
 ### 1. Fondasi Backend (FastAPI + SQLAlchemy 2.0)
 - [x] Inisialisasi struktur direktori bersih (`core`, `models`, `routers`, `services`). `[CA]`
-- [x] Isolasi basis data mandiri (*Clean Slate Database* — larangan keras duplikasi/kontaminasi data `pantau_db` lama). `[SF, PCF]`
+- [x] Isolasi basis data mandiri (*Clean Slate Database* — skema `pantau_server_db` bersih dan terisolasi penuh). `[SF, PCF]`
 - [x] Otentikasi aman JWT + native bcrypt (`core/security.py`). `[SFT]`
 - [x] Endpoints Agen Telemetri: `POST /api/report`, `GET /api/commands`. `[IV]`
 - [x] Mesin Deteksi Masalah: Evaluasi utilisasi dan deteksi sesi remote SSH aktif (`services/problem_service.py`). `[SFT]`

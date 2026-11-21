@@ -35,13 +35,13 @@ Dokumen ini mencatat setiap pembelajaran dari koreksi operator dan temuan teknis
 ## Lesson 5: Paradigma Interaksi Inspeksi Server (Floating Workspace over Full-Page Reload)
 - **Konteks:** Mengklik baris server sempat mengalihkan tampilan ke halaman baru (`activeTab = 'detail'`), memutus sesi terminal dan menghilangkan konteks armada.
 - **Akar Masalah:** Menerapkan navigasi halaman penuh seperti aplikasi web biasa, bukan standar NOC.
-- **Aturan Pencegahan `[SF, CA]`:** Terapkan standar interaksi mengambang (`.modal-workspace`) dari acuan `~/pantau`. Matriks armada tetap terlihat di latar belakang, server dibuka di jendela modal fleksibel, lengkap dengan navigasi antar-host langsung (`[` dan `]`), tombol maksimalkan/layar penuh (`⛶`), serta kemampuan minimalkan ke bilah rak bawah.
+- **Aturan Pencegahan `[SF, CA]`:** Terapkan standar interaksi jendela mengambang (`.modal-workspace`). Matriks armada tetap terlihat di latar belakang, server dibuka di jendela modal fleksibel, lengkap dengan navigasi antar-host langsung (`[` dan `]`), tombol maksimalkan/layar penuh (`⛶`), serta kemampuan minimalkan ke bilah rak bawah.
 
 ---
 
 ## Lesson 6: Keselarasan Blueprint Dasbor Pasif & Larangan Kartu Spekulatif
 - **Konteks:** Menambahkan kartu fiktif/spekulatif "HUMAN SSH INTERCEPTS" mandiri di dasbor tanpa server yang jelas.
-- **Akar Masalah:** Menyimpang dari blueprint matang `~/rj45/server/templates/dashboard.html` dan menciptakan fitur spekulatif tanpa arsitektur data yang jelas.
+- **Akar Masalah:** Menyimpang dari spesifikasi baku dasbor pasif dan menciptakan fitur spekulatif tanpa arsitektur data yang jelas.
 - **Aturan Pencegahan `[PEC, SF]`:** Dasbor adalah area **MURNI PASIF** untuk observasi makro dan triase insiden. Banner atas wajib setia pada proporsi asimetris baku 3 kartu: Card 1 Total Server (`minmax(210px, 240px)`), Card 2 Insiden Aktif dengan 5 Tile Keparahan Zabbix (`1fr`), Card 3 Waktu Sistem Presisi (`minmax(280px, 320px)`). Sesi SSH disajikan terstruktur sebagai tiket insiden biasa di tabel insiden atau di jendela taktis host.
 
 ---
@@ -49,7 +49,7 @@ Dokumen ini mencatat setiap pembelajaran dari koreksi operator dan temuan teknis
 ## Lesson 7: Standarisasi Tipografi NOC & Larangan Keras Font Mikroskopis
 - **Konteks:** Teks antarmuka tampak sangat kecil/buram pada resolusi standar (skala 100%), memaksa pengguna memicingkan mata atau melakukan pembesaran (zoom).
 - **Akar Masalah:** Penggunaan kelas Tailwind mikroskopis (`text-[9px]`, `text-[10px]`, `text-[11px]`) dan memaksakan font monospace (`font-mono`) pada seluruh badan teks antarmuka. Monospace memiliki glif sempit dan tipis yang sulit dibaca bila ukurannya kecil.
-- **Aturan Pencegahan `[RP, Anti-User QA]`:** Seluruh antarmuka wajib terbaca jelas, tajam, dan proporsional pada skala 100% (mengikuti standar keterbacaan `app pantau`):
+- **Aturan Pencegahan `[RP, Anti-User QA]`:** Seluruh antarmuka wajib terbaca jelas, tajam, dan proporsional pada skala 100% (standar keterbacaan NOC skala 100%):
   1. Base font antarmuka menggunakan Sans-Serif modern (`Inter`, system UI: `-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`).
   2. Font monospace (`font-mono`) **HANYA** digunakan untuk metrik telemetri, IP address, port, kode status, atau terminal shell.
   3. Skala tipografi baku: Judul kartu/seksi 15px–16px (`text-base`), isi sel tabel 13.5px–14px (`text-sm`), label kolom / header tabel 12px (`text-xs font-bold uppercase`), badge status 12px (`text-xs font-bold`), dan metrik angka KPI 24px–28px (`text-2xl`–`text-3xl font-extrabold`). Dilarang keras menggunakan ukuran font di bawah 12px.
@@ -67,13 +67,13 @@ Dokumen ini mencatat setiap pembelajaran dari koreksi operator dan temuan teknis
 
 ---
 
-## Lesson 9: Isolasi Total dari Kontaminasi Data Lama (Pure Concepts Over Dirty Data Re-use)
-- **Konteks:** Menghubungkan langsung aplikasi baru ke basis data lama (`pantau_db`) atau menduplikasi isi database lama ke sistem baru.
-- **Akar Masalah:** Terjebak dalam ilusi "memanfaatkan data eksisting", padahal data lama sarat dengan anomali, skema warisan yang tidak konsisten (kolom terpecah tanpa relasi yang bersih), data historis kotor, dan artefak peninggalan masa lalu yang mengotori arsitektur baru.
+## Lesson 9: Isolasi Total dari Kontaminasi Data Warisan (Clean Slate Architecture)
+- **Konteks:** Menghubungkan langsung aplikasi baru ke basis data warisan atau menduplikasi database yang tidak terstandarisasi.
+- **Akar Masalah:** Terjebak dalam ilusi "memanfaatkan data eksisting", padahal skema warisan sarat dengan anomali, kolom terpecah tanpa relasi yang bersih, dan artefak peninggalan masa lalu yang mengotori arsitektur baru.
 - **Aturan Pencegahan `[SF, PCF, Absolute Data Integrity]`:**
-  1. **Konsep Dulu, Bukan Data Warisan:** Aplikasi baru HANYA mengadopsi konsep, alur kerja (*workflow*), spesifikasi visual UI/UX, dan logika bisnis dari aplikasi lama sebagai *blueprint*.
-  2. **Dilarang Keras Menduplikasi atau Mengaitkan Data Lama:** Jangan pernah menyalin atau menghubungkan langsung database `pantau_db` ke aplikasi baru di tahap awal pembangunan.
-  3. **Basis Data Mandiri & Bersih (*Clean Slate Database*):** Sistem baru wajib memiliki basis data mandiri yang bersih (skema terisolasi), di mana setiap tabel, relasi, tipe data, dan indeks didesain murni sesuai *Clean Architecture*, tanpa membawa kompromi peninggalan masa lalu.
+  1. **Spesifikasi Murni, Bukan Data Warisan:** Aplikasi baru beroperasi murni berdasarkan spesifikasi domain, alur kerja (*workflow*), dan visual UI/UX tanpa membawa data kotor masa lalu.
+  2. **Dilarang Keras Menduplikasi atau Mengaitkan Data Warisan:** Jangan pernah menyalin atau menghubungkan langsung database warisan ke aplikasi baru.
+  3. **Basis Data Mandiri & Bersih (*Clean Slate Database*):** Sistem baru wajib memiliki basis data mandiri yang bersih (`pantau_server_db` dengan skema terisolasi), di mana setiap tabel, relasi, tipe data, dan indeks didesain murni sesuai *Clean Architecture*, tanpa membawa kompromi peninggalan masa lalu.
   4. **Validasi Melalui Kontrak Data Murni:** Tahap validasi konsep UI dan alur sistem dilakukan menggunakan data bersih yang terstruktur presisi sesuai kontrak API baru, sehingga kelemahan data lama tidak mengotori atau membingungkan pengujian sistem baru.
 
 ---

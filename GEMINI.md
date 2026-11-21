@@ -13,7 +13,7 @@ Berkas ini adalah spesifikasi teknis dan aturan baku permanen (*always-on projec
 - **Protokol Kecepatan & Efisiensi Eksekusi (Anti-Bekerja Berjam-jam):**
   - Tugas perbaikan bug atau penambahan fitur terfokus wajib diselesaikan secara terarah dan terencana (target 2–4 *turns*, durasi di bawah 5 menit).
   - Dilarang melakukan eksplorasi database/file secara berulang-ulang tanpa arah (*trial-and-error*).
-  - Wajib memanfaatkan skrip otomasi [`tools/sop_release.py`](file:///home/bos/rj45/tools/sop_release.py) untuk seluruh alur rilis produksi agar proses build, restart, dan deployment selesai dalam hitungan detik.
+  - Wajib memanfaatkan skrip otomasi [`tools/sop_release.py`](file:///home/bos/pantau-server/tools/sop_release.py) untuk seluruh alur rilis produksi agar proses build, restart, dan deployment selesai dalam hitungan detik.
 
 ---
 
@@ -109,7 +109,7 @@ Berkas ini adalah spesifikasi teknis dan aturan baku permanen (*always-on projec
 
 ### B. Setelah Men-generate Kode (Wajib Otomatis Menggunakan Skrip Rilis)
 Setiap kali menyelesaikan pekerjaan (bugfix/fitur baru/refactor):
-**Wajib menggunakan skrip otomatisasi satu perintah [`tools/sop_release.py`](file:///home/bos/rj45/tools/sop_release.py)** agar seluruh rangkaian berikut selesai secara atomik dalam **15–30 detik**:
+**Wajib menggunakan skrip otomatisasi satu perintah [`tools/sop_release.py`](file:///home/bos/pantau-server/tools/sop_release.py)** agar seluruh rangkaian berikut selesai secara atomik dalam **15–30 detik**:
 ```bash
 ./tools/sop_release.py [versi_baru] \
   --commit-msg "jenis(lingkup): deskripsi bahasa baku (vX.Y.Z)" \
@@ -206,9 +206,9 @@ Sebelum asisten AI menyatakan pekerjaan selesai ke operator, wajib memverifikasi
 
 ---
 
-## 16. Konsep Aplikasi Lama sebagai Blueprint Murni (Workflow & UX over Legacy Data)
-- **Status Blueprint Konseptual:** Seluruh alur kerja (*workflow*), tata letak kartu, navigasi interaksi, hierarki telemetri NOC, dan konsep pemantauan dari aplikasi lama (`~/rj45` dan benchmark `~/pantau`) wajib dipertahankan dan diwujudkan secara utuh.
-- **Batasan Mutlak (Hanya Konsep, Bukan Data):** Yang diadopsi HANYA konsep dan alur kerjanya saja. Dilarang keras menduplikasi, menyalin, atau mengaitkan data riil, skema inkonsisten, atau data kotor dari basis data lama `pantau_db` ke aplikasi baru ini.
+## 16. Kemurnian Konseptual & Isolasi Data Mutlak (Clean Slate Architecture)
+- **Spesifikasi Standar Operasional NOC:** Seluruh alur kerja (*workflow*), tata letak kartu, navigasi interaksi, hierarki telemetri NOC, dan jendela taktis mengambang diwujudkan secara utuh sebagai standar baku orisinal Pantau Server.
+- **Isolasi Mutlak (Clean Slate Database):** Sistem beroperasi dengan skema dan basis data mandiri murni (`pantau_server_db`). Dilarang keras menyalin, mengaitkan, atau menduplikasi struktur tidak konsisten atau data historis kotor dari lingkungan pengujian apa pun.
 
 ---
 
