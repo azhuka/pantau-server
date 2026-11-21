@@ -25,3 +25,6 @@ Seluruh alur peningkatan versi SemVer, kompilasi sintaksis, verifikasi lapangan 
 5. **Kejujuran Data (Zero-Fake Data)**: Hanya simpan dan tampilkan data terukur fisik dari kernel. Dilarang mengarang atribusi atau memalsukan status.
 6. **Keterbacaan Tipografi 100% Zoom**: Base font sans-serif terbaca tajam pada skala 100%, dilarang menggunakan font mikroskopis (<12px). Monospace dikhususkan untuk telemetri angka, IP, port, dan kode.
 7. **Bahasa Default Bahasa Inggris (dengan i18n Reaktif)**: Default antarmuka menggunakan Bahasa Inggris baku NOC/sysadmin dengan toggle instan ke Bahasa Indonesia. Dilarang men-hardcode string lokal di template komponen.
+8. **Anti-Jalan Praktis (Anti-Shortcut Mandate)**: Dilarang keras mengambil atau mengusulkan jalan pintas kompromis (seperti SQLite untuk sistem NOC). Selalu gunakan arsitektur standar produksi sejati (MySQL InnoDB, konkurensi tinggi, integritas fisik).
+9. **Larangan Mutlak Nomenklatur "v2"**: Aplikasi ini bernama **Pantau Server** dengan baseline **`v0.1.0`**. DILARANG KERAS melabeli atau menamai database/variabel/branch dengan istilah "v2".
+10. **Eksekusi Instan Mandat `/learn`**: Perintah `/learn` dari operator adalah instruksi mutlak; langsung catat dan terapkan ke berkas aturan tanpa menunggu konfirmasi atau persetujuan ulang.

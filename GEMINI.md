@@ -184,3 +184,22 @@ Sebelum asisten AI menyatakan pekerjaan selesai ke operator, wajib memverifikasi
     4. **Manajemen Paket & OS:** Menggunakan probing manajer paket dan lingkungan runtime riil host secara agnostik.
 - **Audit & Eliminasi Hardcode Warisan:**
   - Setiap kali menyentuh modul yang masih menyimpan jalan pintas hardcode lama, asisten AI wajib merefaktornya secara bertahap menuju arsitektur penemuan dinamis tanpa memecah kontrak data.
+
+---
+
+## 13. Larangan Keras Jalan Praktis & Mandat Standar Produksi Sejati (Anti-Shortcut Mandate)
+- **Larangan Mutlak Jalan Pintas Kompromis:** Dilarang keras memilih, mengusulkan, atau mengimplementasikan jalan pintas praktis (*lazy shortcuts*) yang mengorbankan ketangguhan arsitektur produksi (seperti mengusulkan SQLite untuk sistem pemantauan NOC yang melayani semburan telemetri simultan banyak server klien).
+- **Standar Rekayasa Sejati:** Setiap keputusan teknis wajib berdiri tegak di atas prinsip rekayasa perangkat lunak sejati: merancang untuk konkurensi riil, integritas data tingkat kernel, efisiensi sumber daya, dan keandalan operasional 24/7/365.
+
+---
+
+## 14. Larangan Mutlak Nomenklatur Spekulatif "v2" & Kepatuhan SemVer v0.1.0
+- **Larangan Keras Label "v2":** Aplikasi ini BUKAN v2 dan DILARANG KERAS melabeli, mendefinisikan, atau menamai basis data, variabel, branch, berkas, atau dokumentasi dengan istilah "v2" dalam bentuk apa pun.
+- **Identitas Tunggal Sah:** Aplikasi ini bernama resmi **Pantau Server** yang sedang dibangun dari baseline awal **`v0.1.0`**.
+- **Penamaan Objek Sistem:** Seluruh nama basis data, skema, dan variabel wajib mencerminkan identitas resmi aplikasi (misalnya `pantau_server` atau `pantau_clean_db`), tanpa embel-embel versi spekulatif.
+
+---
+
+## 15. Protokol Eksekusi Mandat `/learn` (Eksekusi Instan Tanpa Menunggu Konfirmasi)
+- **Eksekusi Langsung:** Setiap kali operator mengetikkan perintah `/learn`, hal tersebut merupakan **instruksi aturan mutlak** yang wajib langsung dibukukan, diterapkan, dan dikunci secara permanen ke dalam berkas tata kelola (`GEMINI.md`, `AGENTS.md`, `tasks/lessons.md`).
+- **Larangan Meminta Konfirmasi Ulang:** Dilarang keras menunda eksekusi, bersikap pasif, atau meminta konfirmasi/persetujuan berbelit-belit kepada operator saat `/learn` telah diberikan. Catat dan terapkan seketika.

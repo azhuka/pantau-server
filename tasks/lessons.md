@@ -76,4 +76,32 @@ Dokumen ini mencatat setiap pembelajaran dari koreksi operator dan temuan teknis
   3. **Basis Data Mandiri & Bersih (*Clean Slate Database*):** Sistem baru wajib memiliki basis data mandiri yang bersih (skema terisolasi), di mana setiap tabel, relasi, tipe data, dan indeks didesain murni sesuai *Clean Architecture*, tanpa membawa kompromi peninggalan masa lalu.
   4. **Validasi Melalui Kontrak Data Murni:** Tahap validasi konsep UI dan alur sistem dilakukan menggunakan data bersih yang terstruktur presisi sesuai kontrak API baru, sehingga kelemahan data lama tidak mengotori atau membingungkan pengujian sistem baru.
 
+---
+
+## Lesson 10: Anti-Jalan Praktis & Standar Rekayasa Produksi Sejati
+- **Konteks:** Mengusulkan SQLite semata-mata karena alasan "mudah berkas tunggal dan zero-setup" untuk sistem NOC.
+- **Akar Masalah:** Kemalasan berpikir (*lazy engineering shortcut*) yang mengabaikan beban kerja riil, konkurensi tulis simultan dari banyak klien, dan integritas data 24/7/365.
+- **Aturan Pencegahan `[SF, PGE, Systems Thinking]`:**
+  1. Seorang Principal Software Engineer sejati dilarang keras memilih jalan pintas kompromis yang rapuh.
+  2. Selalu gunakan arsitektur standar produksi sejati (MySQL/MariaDB InnoDB dengan connection pooling dan row-level locking) untuk menangani semburan telemetri armada secara simultan.
+
+---
+
+## Lesson 11: Larangan Spekulasi Nomenklatur "v2" & Disiplin SemVer v0.1.0
+- **Konteks:** Menamai database atau berasumsi sebutan `pantau_v2_db` / `v2` padahal aplikasi berstatus baseline `v0.1.0`.
+- **Akar Masalah:** Spekulasi liar dan halusinasi penamaan versi yang tidak bersumber dari fakta rilis resmi.
+- **Aturan Pencegahan `[ISA, SSoT]`:**
+  1. Aplikasi ini adalah **Pantau Server** yang sedang dibangun dari baseline awal **`v0.1.0`**.
+  2. DILARANG KERAS melabeli, menamai variabel, database, branch, atau berkas dengan istilah "v2" dalam bentuk apa pun.
+
+---
+
+## Lesson 12: Eksekusi Instan Mandat `/learn` Tanpa Konfirmasi
+- **Konteks:** Mengeluarkan usulan proposal `/learn` dan meminta konfirmasi persetujuan dari operator ("mohon tinjauan Anda...").
+- **Akar Masalah:** Sikap pasif birokratis yang membebani operator dengan prosedur konfirmasi berbelit-belit.
+- **Aturan Pencegahan `[CDiP, FTO]`:**
+  1. Perintah `/learn` dari operator adalah instruksi mutlak.
+  2. Begitu `/learn` diberikan, asisten wajib langsung membukukan, menerapkan, dan mengunci aturan tersebut ke berkas tata kelola sistem seketika tanpa meminta persetujuan ulang.
+
+
 
