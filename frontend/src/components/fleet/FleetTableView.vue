@@ -100,7 +100,15 @@
               <!-- 1. STATUS -->
               <td class="py-2.5 px-3 text-center whitespace-nowrap">
                 <span
-                  v-if="s.is_online"
+                  v-if="s.is_maintenance"
+                  class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-bold bg-amber-950/80 text-amber-300 border border-amber-600/60"
+                  :title="s.maintenance_reason ? `${t('status_maint')}: ${s.maintenance_reason}` : t('tooltip_node_maint')"
+                >
+                  <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+                  MAINT
+                </span>
+                <span
+                  v-else-if="s.is_online"
                   class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-700/60"
                   :title="t('tooltip_node_online')"
                 >

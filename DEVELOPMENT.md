@@ -174,6 +174,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.13
+
+- Dialog taktis durasi pemeliharaan terukur (30m, 1h rekomendasi, 4h, 24h, atau manual).\n- Input alasan pemeliharaan dan pencatatan audit log.\n- Auto-expiry di basis data saat batas waktu tercapai.\n- Peredaman evaluasi insiden/alarm baru di problem_service saat mode pemeliharaan aktif.\n- Indikator status amber di header workspace, toolbar, tabel armada, dan dasbor makro pasif.
+
+
 ### Versi v0.1.12
 
 Mengintegrasikan aksi 'Open Web Terminal at this path' dan 'Open in Terminal' folder agar mengangkat Terminal Dock ke lapisan teratas dan otomatis mengeksekusi cd ke direktori target.

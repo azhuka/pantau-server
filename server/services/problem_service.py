@@ -9,8 +9,22 @@ def evaluate_server_problems(db: Session, srv, report_dict: dict, extras):
     """
     Evaluasi kesehatan server dan buat/tutup tiket insiden di server_problems.
     Mendukung deteksi insiden sesi remote SSH aktif (ssh_active_session) dan kepatuhan sistem.
+    Jika mode pemeliharaan (maintenance mode) aktif, alarm dan evaluasi insiden diredam sementara.
     """
     now = datetime.utcnow()
+
+    # Evaluasi Mode Pemeliharaan (Maintenance Mode Auto-Expiry & Alert Suppression)
+    if getattr(srv, "is_maintenance", 0):
+        m_until = getattr(srv, "maintenance_until", None)
+        if m_until and m_until < now:
+            srv.is_maintenance = 0
+            srv.maintenance_until = None
+            srv.maintenance_reason = None
+            db.commit()
+        else:
+            # Mode pemeliharaan sedang aktif: redam alarm dan insiden baru
+            return
+
     active_keys = set()
     active_instances = []
 

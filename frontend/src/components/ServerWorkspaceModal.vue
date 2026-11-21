@@ -40,7 +40,17 @@
                 {{ server?.hostname || t('ws_loading_host') }}
               </span>
               <span
-                v-if="server?.is_online"
+                v-if="server?.is_maintenance"
+                class="inline-flex items-center gap-1.5 px-2 py-0.2 rounded text-[11px] font-bold bg-amber-950/80 text-amber-300 border border-amber-600/60 shrink-0 cursor-pointer hover:border-amber-400 transition"
+                @click="openMaintenanceModal"
+                :title="t('tooltip_view_maint')"
+              >
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+                <span>{{ t('status_maint') }}</span>
+                <span class="text-[10px] text-amber-200 underline font-semibold">{{ t('btn_view') || 'View' }}</span>
+              </span>
+              <span
+                v-else-if="server?.is_online"
                 class="inline-flex items-center gap-1 px-2 py-0.2 rounded text-[11px] font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-700/60 shrink-0"
               >
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 beacon-live"></span>
@@ -235,15 +245,16 @@
             </button>
             <span class="w-[1px] h-4 bg-cyan-900/40 mx-0.5"></span>
             <button
-              @click="triggerMaintenanceToggle"
+              @click="openMaintenanceModal"
               class="px-2.5 py-1 text-xs rounded transition cursor-pointer flex items-center gap-1.5 font-bold"
-              :class="server?.is_maintenance ? 'bg-amber-950 text-amber-300 border border-amber-700/60' : 'text-gray-300 hover:text-amber-300 hover:bg-amber-950/40'"
+              :class="server?.is_maintenance ? 'bg-amber-950/90 text-amber-300 border border-amber-500/80 shadow-[0_0_12px_rgba(245,158,11,0.25)]' : 'text-gray-300 hover:text-amber-300 hover:bg-amber-950/40'"
               :title="t('tooltip_maint_btn')"
             >
               <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
               </svg>
               <span>{{ t('toolbar_maint') }}</span>
+              <span v-if="server?.is_maintenance" class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
             </button>
           </div>
         </div>
@@ -1132,6 +1143,133 @@
       @close="showFileManagerModal = false"
       @open-terminal="handleTerminalFromFm"
     />
+
+    <!-- MODAL MODE PEMELIHARAAN (Tactical Maintenance Mode Window) -->
+    <div
+      v-if="showMaintenanceModal"
+      class="fixed inset-0 z-[15000] flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 font-mono select-none"
+      @click.self="closeMaintenanceModal"
+      @keydown.esc="closeMaintenanceModal"
+    >
+      <div class="bg-[#080d19] border border-cyan-500/50 shadow-[0_20px_50px_rgba(0,0,0,0.9)] rounded-xl w-full max-w-[500px] overflow-hidden">
+        <!-- Titlebar -->
+        <div class="bg-[#060a14] border-b border-cyan-500/30 px-4 py-3 flex items-center justify-between">
+          <div class="flex items-center gap-2 text-amber-400 font-bold text-xs uppercase">
+            <svg class="w-4 h-4 text-amber-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+            </svg>
+            <span>{{ t('maint_modal_title') }}</span>
+          </div>
+          <button
+            type="button"
+            @click="closeMaintenanceModal"
+            class="text-gray-400 hover:text-white transition cursor-pointer text-sm"
+            title="Close (Esc)"
+          >
+            ✕
+          </button>
+        </div>
+
+        <!-- Body -->
+        <div class="p-4 space-y-4 text-xs">
+          <p class="text-gray-400 leading-relaxed">
+            {{ t('maint_modal_desc') }}
+          </p>
+
+          <!-- Current Status Card -->
+          <div class="p-3 rounded-lg bg-[#040711] border border-cyan-900/60 space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="text-gray-400">{{ t('maint_status_label') }}</span>
+              <span
+                v-if="server?.is_maintenance"
+                class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded font-bold bg-amber-950/80 text-amber-300 border border-amber-600/60"
+              >
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+                {{ t('maint_active') }}
+              </span>
+              <span
+                v-else
+                class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-700/60"
+              >
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                {{ t('maint_inactive') }}
+              </span>
+            </div>
+
+            <div v-if="server?.maintenance_reason" class="text-[11px] text-gray-300 flex items-center justify-between">
+              <span class="text-gray-500">{{ t('maint_reason_label') }}</span>
+              <span class="text-cyan-200 font-medium truncate max-w-[280px]" :title="server.maintenance_reason">{{ server.maintenance_reason }}</span>
+            </div>
+
+            <div v-if="server?.maintenance_until" class="text-[11px] text-gray-300 flex items-center justify-between">
+              <span class="text-gray-500">{{ t('maint_until_label') }}</span>
+              <span class="text-amber-200 font-bold">{{ formatMaintenanceDate(server.maintenance_until) }}</span>
+            </div>
+          </div>
+
+          <!-- Duration Picker -->
+          <div>
+            <label class="block text-gray-300 font-bold mb-1.5">{{ t('maint_duration_label') }}</label>
+            <select
+              v-model="maintDurationMinutes"
+              class="w-full bg-[#03060f] border border-cyan-900 focus:border-cyan-400 rounded px-3 py-2 text-gray-200 text-xs focus:outline-none transition cursor-pointer"
+            >
+              <option :value="30">{{ t('maint_dur_30m') }}</option>
+              <option :value="60">{{ t('maint_dur_1h') }}</option>
+              <option :value="240">{{ t('maint_dur_4h') }}</option>
+              <option :value="1440">{{ t('maint_dur_24h') }}</option>
+              <option :value="0">{{ t('maint_dur_manual') }}</option>
+            </select>
+          </div>
+
+          <!-- Reason Input -->
+          <div>
+            <label class="block text-gray-300 font-bold mb-1.5">{{ t('maint_reason_input_label') }}</label>
+            <input
+              v-model="maintReasonInput"
+              type="text"
+              :placeholder="t('maint_reason_placeholder')"
+              class="w-full bg-[#03060f] border border-cyan-900 focus:border-cyan-400 rounded px-3 py-2 text-gray-100 text-xs focus:outline-none transition"
+            />
+          </div>
+        </div>
+
+        <!-- Footer Buttons -->
+        <div class="bg-[#060a14] border-t border-cyan-500/20 px-4 py-3 flex items-center justify-between gap-2">
+          <div>
+            <button
+              v-if="server?.is_maintenance"
+              type="button"
+              @click="submitMaintenance('disable')"
+              :disabled="maintSubmitting"
+              class="px-3 py-1.5 rounded bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-800 transition cursor-pointer font-bold flex items-center gap-1.5 shadow"
+            >
+              <span v-if="maintSubmitting" class="animate-spin text-xs">⟳</span>
+              <span>{{ t('maint_btn_disable') }}</span>
+            </button>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              @click="closeMaintenanceModal"
+              class="px-3 py-1.5 rounded bg-gray-900 text-gray-300 hover:text-white border border-gray-800 transition cursor-pointer font-bold"
+            >
+              {{ t('btn_close') || 'Close' }}
+            </button>
+            <button
+              type="button"
+              @click="submitMaintenance('enable')"
+              :disabled="maintSubmitting"
+              class="px-3.5 py-1.5 rounded bg-amber-600 hover:bg-amber-500 text-white transition cursor-pointer font-bold flex items-center gap-1.5 shadow-lg"
+            >
+              <span v-if="maintSubmitting" class="animate-spin text-xs">⟳</span>
+              <span>{{ server?.is_maintenance ? t('maint_btn_update') : t('maint_btn_enable') }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -1151,7 +1289,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['close', 'minimize', 'switch-server', 'open-terminal'])
+const emit = defineEmits(['close', 'minimize', 'switch-server', 'open-terminal', 'server-updated'])
 
 const { t } = useI18n()
 
@@ -1390,7 +1528,35 @@ onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyDown)
 })
 
-async function triggerMaintenanceToggle() {
+// Mode Pemeliharaan (Maintenance Mode)
+const showMaintenanceModal = ref(false)
+const maintDurationMinutes = ref(60)
+const maintReasonInput = ref('')
+const maintSubmitting = ref(false)
+
+function openMaintenanceModal() {
+  if (server.value) {
+    maintReasonInput.value = server.value.maintenance_reason || ''
+  }
+  showMaintenanceModal.value = true
+}
+
+function closeMaintenanceModal() {
+  showMaintenanceModal.value = false
+}
+
+function formatMaintenanceDate(val) {
+  if (!val) return '-'
+  try {
+    const d = new Date(val)
+    return d.toLocaleString()
+  } catch (e) {
+    return val
+  }
+}
+
+async function submitMaintenance(action) {
+  maintSubmitting.value = true
   const token = localStorage.getItem('pantau_token')
   try {
     const res = await fetch(`/api/servers/${currentServerId.value}/maintenance`, {
@@ -1399,15 +1565,26 @@ async function triggerMaintenanceToggle() {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`
       },
-      body: JSON.stringify({ reason: 'Operator toggle from workspace deck' })
+      body: JSON.stringify({
+        action: action,
+        duration_minutes: maintDurationMinutes.value,
+        reason: maintReasonInput.value.trim()
+      })
     })
     const data = await res.json()
     if (data.ok && server.value) {
       server.value.is_maintenance = data.is_maintenance ? 1 : 0
-      alert(data.message)
+      server.value.maintenance_until = data.maintenance_until
+      server.value.maintenance_reason = data.maintenance_reason
+      closeMaintenanceModal()
+      emit('server-updated', server.value)
+    } else {
+      alert(data.detail || data.message || 'Operation failed')
     }
   } catch (err) {
-    alert('Failed to toggle maintenance mode: ' + err.message)
+    alert('Failed to update maintenance mode: ' + err.message)
+  } finally {
+    maintSubmitting.value = false
   }
 }
 

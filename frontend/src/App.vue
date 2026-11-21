@@ -70,6 +70,7 @@
       @minimize="minimizeWorkspace"
       @switch-server="onWorkspaceSwitchServer"
       @open-terminal="openTerminalDock"
+      @server-updated="onServerUpdated"
     />
 
     <!-- GLOBAL MULTI-TAB WEB TERMINAL DOCK (xterm.js) -->
@@ -247,6 +248,14 @@ function closeTerminalDock() {
   isTerminalDockOpen.value = false
   isTerminalDockMinimized.value = false
   terminalDockInitialServer.value = null
+}
+
+function onServerUpdated(updated) {
+  if (!updated || !updated.id) return
+  const idx = servers.value.findIndex(s => s.id === updated.id)
+  if (idx !== -1) {
+    servers.value[idx] = { ...servers.value[idx], ...updated }
+  }
 }
 
 const currentUser = ref(null)

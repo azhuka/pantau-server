@@ -384,6 +384,14 @@
               <!-- Status -->
               <td class="py-2.5 px-3 text-center whitespace-nowrap">
                 <span
+                  v-if="s.is_maintenance"
+                  class="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-950/80 text-amber-300 border border-amber-600/60"
+                  :title="s.maintenance_reason ? `${t('status_maint')}: ${s.maintenance_reason}` : t('tooltip_node_maint')"
+                >
+                  {{ t('status_maint').toUpperCase() }}
+                </span>
+                <span
+                  v-else
                   class="px-2 py-0.5 rounded text-[11px] font-bold"
                   :class="s.is_online ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-700/60' : 'bg-rose-950/80 text-rose-300 border border-rose-700/60'"
                 >
@@ -509,7 +517,7 @@
           <div>
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2 truncate">
-                <span class="w-2 h-2 rounded-full shrink-0" :class="s.is_online ? 'bg-emerald-400 beacon-live' : 'bg-rose-500'"></span>
+                <span class="w-2 h-2 rounded-full shrink-0" :class="s.is_maintenance ? 'bg-amber-400 animate-pulse' : (s.is_online ? 'bg-emerald-400 beacon-live' : 'bg-rose-500')"></span>
                 <span class="font-bold text-gray-100 text-sm truncate group-hover:text-cyan-300 transition font-mono">{{ s.hostname }}</span>
               </div>
               <span class="text-[10px] font-mono text-gray-500 uppercase">{{ s.group_name || 'DEFAULT' }}</span>

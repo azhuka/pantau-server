@@ -56,6 +56,13 @@ def list_servers(user: User = Depends(get_current_user), db: Session = Depends(g
             .count()
         )
 
+        # Auto-expire maintenance mode jika batas waktu terlewati
+        if s.is_maintenance and s.maintenance_until and s.maintenance_until < now:
+            s.is_maintenance = 0
+            s.maintenance_until = None
+            s.maintenance_reason = None
+            db.commit()
+
         result.append({
             "id": s.id,
             "hostname": s.hostname,
@@ -69,6 +76,8 @@ def list_servers(user: User = Depends(get_current_user), db: Session = Depends(g
             "uptime_secs": latest_snap.uptime_secs if latest_snap else 0,
             "active_problems_count": active_problems_count,
             "is_maintenance": bool(s.is_maintenance),
+            "maintenance_until": s.maintenance_until.isoformat() if s.maintenance_until else None,
+            "maintenance_reason": s.maintenance_reason,
         })
 
     return {"ok": True, "servers": result}
@@ -82,6 +91,13 @@ def get_server_detail(sid: int, user: User = Depends(get_current_user), db: Sess
     server = db.query(Server).filter(Server.id == sid).first()
     if not server:
         raise HTTPException(status_code=404, detail="Server not found")
+
+    now = datetime.utcnow()
+    if server.is_maintenance and server.maintenance_until and server.maintenance_until < now:
+        server.is_maintenance = 0
+        server.maintenance_until = None
+        server.maintenance_reason = None
+        db.commit()
 
     extras = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
     latest_snap = (
@@ -108,6 +124,9 @@ def get_server_detail(sid: int, user: User = Depends(get_current_user), db: Sess
             "group_name": server.group_name,
             "tier": server.tier,
             "last_seen": server.last_seen.isoformat() if server.last_seen else None,
+            "is_maintenance": bool(server.is_maintenance),
+            "maintenance_until": server.maintenance_until.isoformat() if server.maintenance_until else None,
+            "maintenance_reason": server.maintenance_reason,
             "kernel": extras.kernel if extras else None,
             "os_label": extras.os_label if extras else None,
             "arch": extras.arch if extras else None,
@@ -297,6 +316,13 @@ def execute_terminal_command(
     server = db.query(Server).filter(Server.id == sid).first()
     if not server:
         raise HTTPException(status_code=404, detail="Server not found")
+
+    now = datetime.utcnow()
+    if server.is_maintenance and server.maintenance_until and server.maintenance_until < now:
+        server.is_maintenance = 0
+        server.maintenance_until = None
+        server.maintenance_reason = None
+        db.commit()
 
     cmd = (body.get("cmd") or "").strip()
     cwd = body.get("cwd") or "/root"
@@ -934,17 +960,44 @@ def toggle_server_maintenance(
     if not server:
         raise HTTPException(status_code=404, detail="Server not found")
 
-    server.is_maintenance = 0 if server.is_maintenance else 1
-    server.maintenance_reason = body.get("reason", "Manual toggle by operator")
     now = datetime.utcnow()
+    if server.is_maintenance and server.maintenance_until and server.maintenance_until < now:
+        server.is_maintenance = 0
+        server.maintenance_until = None
+        server.maintenance_reason = None
+        db.commit()
+
+    action = body.get("action", "toggle")
+    try:
+        duration = int(body.get("duration_minutes", 60) or 0)
+    except (ValueError, TypeError):
+        duration = 60
+    reason = str(body.get("reason", "") or "").strip()[:255]
+
+    if action == "toggle":
+        action = "disable" if server.is_maintenance else "enable"
+
+    if action == "enable":
+        server.is_maintenance = 1
+        server.maintenance_reason = reason or "Scheduled maintenance"
+        if duration > 0:
+            server.maintenance_until = now + timedelta(minutes=duration)
+        else:
+            server.maintenance_until = None
+        detail_msg = f"Maintenance mode enabled ({duration}m, reason: {server.maintenance_reason})"
+    else:
+        server.is_maintenance = 0
+        server.maintenance_until = None
+        server.maintenance_reason = None
+        detail_msg = "Maintenance mode disabled"
 
     audit = AuditLog(
         server_id=sid,
         username=user.username,
-        action="maintenance_toggle",
-        target=f"is_maintenance={server.is_maintenance}",
+        action="maintenance_mode",
+        target=f"{server.hostname}: is_maintenance={server.is_maintenance}",
         result="success",
-        meta=f"Maintenance mode set to {server.is_maintenance} by {user.username}",
+        meta=detail_msg,
         created_at=now
     )
     db.add(audit)
@@ -953,7 +1006,9 @@ def toggle_server_maintenance(
     return {
         "ok": True,
         "is_maintenance": bool(server.is_maintenance),
-        "message": f"Maintenance mode {'enabled' if server.is_maintenance else 'disabled'}"
+        "maintenance_until": server.maintenance_until.isoformat() if server.maintenance_until else None,
+        "maintenance_reason": server.maintenance_reason,
+        "message": detail_msg
     }
 
 
