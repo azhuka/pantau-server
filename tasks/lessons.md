@@ -213,6 +213,23 @@ Dokumen ini mencatat setiap pembelajaran dari koreksi operator dan temuan teknis
   1. **Dasbor Murni Pasif (Zero Action Buttons/Columns in Dashboard):** Dilarang keras menempatkan kolom aksi ("Actions" / "Tindakan") atau tombol aksi aktif (seperti tombol `View`) di dalam tabel-tabel pada halaman Dasbor (`DashboardView.vue`).
   2. **Navigasi Klik-Baris Pasif (Passive Row Triage):** Setiap baris insiden atau baris server pada dasbor dapat diklik langsung (`@click="$emit('inspect-node', ...)"`) dengan kelas `cursor-pointer`, efek latar hover halus (`hover:bg-cyan-950/30`), dan diakhiri dengan indikator chevron navigasi pasif tanpa tombol fisik, persis seperti perilaku unggul di aplikasi lama.
 
+---
+
+## Lesson 21: Tanggung Jawab Mutlak Rilis SemVer & Larangan Menulis Dokumen Pengguna dengan Jargon Internal Developer
+- **Konteks:**
+  1. Skrip otomatisasi rilis SemVer (`sop_release.py`) sempat rusak karena ketiadaan konstanta `APP_VERSION` di `server/config.py` dan jalur `git add frontend/dist` yang diabaikan `.gitignore`. Galat ini berlangsung selama belasan commit dan baru ditelusuri setelah operator menegur mengapa tag rilis di GitHub tertahan di `v0.1.0`.
+  2. Asisten bersikap pasif dengan melemparkan opsi teknis siklus rilis ("Opsi A atau Opsi B") kepada operator yang merupakan klien non-programmer.
+  3. Berkas `README.md` ditulis secara tidak profesional dengan menyisipkan dogma aturan internal developer/AI ("Dasbor Operasional Murni Pasif", "Proteksi Mutasi Tak Sengaja", "Inventaris Armada Berkepadatan Tinggi") alih-alih menyajikan dokumentasi produk bersih yang berorientasi pada nilai operasional sysadmin/NOC.
+- **Akar Masalah:**
+  1. Melepaskan tanggung jawab teknis (*abdication of technical ownership*): tidak memverifikasi jalur rilis setelah membuat perubahan kode.
+  2. Pelanggaran berat aturan universal: membebani operator dengan pertanyaan teknis siklus rilis.
+  3. Kegagalan membedakan audiens dokumentasi: dokumen pengguna (`README.md`) dicemari oleh justifikasi arsitektur internal yang semestinya berada di `DEVELOPMENT.md` atau `GEMINI.md`.
+- **Aturan Pencegahan `[Full Technical Ownership, Pro-Documentation, Zero-Passivity]`:**
+  1. **Kepemilikan Mutlak Jalur Rilis (Own the Release Pipeline):** Asisten AI memegang kendali penuh atas SemVer dan rilis GitHub. Setiap penyelesaian paket kerja atau perbaikan wajib langsung dieksekusi secara tuntas melalui alur rilis SemVer otomatis tanpa pernah bertanya atau meminta arahan rilis kepada operator.
+  2. **Verifikasi Mandiri Pipa Rilis:** Setiap modul otomatisasi rilis (`sop_release.py`) wajib diuji coba secara berkala; dilarang keras membiarkan proses commit manual memotong (*bypass*) rantai rilis yang rusak.
+  3. **Kemurnian Dokumentasi Pengguna (`README.md`):** Berkas `README.md` adalah etalase produk profesional bagi sysadmin/NOC luar. Wajib ditulis murni dalam bahasa fungsional bernilai tinggi (kapabilitas pemantauan, arsitektur sistem, prasyarat, panduan instalasi, variabel `.env`, navigasi) dan DILARANG KERAS memuat dogma aturan internal developer, referensi aturan AI, atau istilah teknis yang tidak relevan bagi end-user.
+
+
 
 
 
