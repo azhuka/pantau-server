@@ -10,6 +10,7 @@ Berkas ini adalah spesifikasi teknis dan aturan baku permanen (*always-on projec
 - **Jendela Kontrol Taktis Mengambang (Workspace Modal):** Seluruh aksi kontrol aktif dan investigasi per host (restart service, kill task, putus sesi SSH, audit port, firewall, cron) berada eksklusif di dalam modal mengambang `ServerWorkspaceModal.vue`.
 - **Kemandirian Agen Klien:** Agen klien (`agent_pantau.py`) wajib mempertahankan prinsip *zero external dependency* (hanya pustaka standar Python 3.10+).
 - **Standar Bahasa Antarmuka (English Default & i18n Reaktif):** Antarmuka web default menggunakan **Bahasa Inggris (`en`)** baku NOC/sysadmin (Overview, Incidents, Services, Tasks, Ports, Firewall, Total Servers, Active Incidents, System Clock, Fleet Inventory) dengan sakelar reaktif instan ke **Bahasa Indonesia (`id`)** (`[ 🌐 EN | ID ]`). Dilarang keras men-hardcode teks lokal di template komponen.
+- **Prioritas Browser (Moli First):** Setiap pengujian tampilan web atau otomasi browser wajib memprioritaskan Moli (`moli fetch` / `moli-webfetch`). Gunakan Chrome DevTools hanya jika Moli gagal.
 - **Protokol Kecepatan & Efisiensi Eksekusi (Anti-Bekerja Berjam-jam):**
   - Tugas perbaikan bug atau penambahan fitur terfokus wajib diselesaikan secara terarah dan terencana (target 2–4 *turns*, durasi di bawah 5 menit).
   - Dilarang melakukan eksplorasi database/file secara berulang-ulang tanpa arah (*trial-and-error*).

@@ -282,7 +282,7 @@
 
                   <!-- Shortcut TERMINAL -->
                   <button
-                    @click="$emit('open-workspace', s.id, 'terminal')"
+                    @click="$emit('open-terminal', s)"
                     class="w-7 h-7 flex items-center justify-center rounded bg-[#0b1324] hover:bg-cyan-950 text-cyan-400 hover:text-cyan-300 border border-cyan-800/40 transition cursor-pointer"
                     title="Web Terminal"
                   >
@@ -355,7 +355,7 @@ const props = defineProps({
   }
 })
 
-defineEmits(['open-workspace', 'probe-node', 'more-actions'])
+defineEmits(['open-workspace', 'probe-node', 'more-actions', 'open-terminal'])
 
 const { t } = useI18n()
 

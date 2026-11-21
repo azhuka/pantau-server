@@ -1125,131 +1125,6 @@
       </div>
     </div>
 
-    <!-- DEDICATED FLOATING WEB TERMINAL MODAL -->
-    <div
-      v-if="showTerminalModal"
-      class="fixed inset-0 z-[10000] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 transition-all"
-      :class="{ '!p-0': isTermFullscreen || isTermFullWindow }"
-      @click.self="showTerminalModal = false"
-    >
-      <div
-        class="bg-[#070b16] border border-cyan-500/50 shadow-[0_25px_60px_rgba(0,0,0,0.95)] flex flex-col transition-all overflow-hidden font-mono"
-        :class="[
-          isTermFullscreen || isTermFullWindow
-            ? 'w-full h-full rounded-none border-none'
-            : 'w-[92vw] max-w-[1100px] h-[80vh] min-h-[520px] rounded-xl'
-        ]"
-      >
-        <!-- Terminal Header -->
-        <div class="bg-[#090f20] border-b border-cyan-500/30 px-4 py-2.5 flex items-center justify-between select-none">
-          <div class="flex items-center gap-2">
-            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 beacon-live"></span>
-            <span class="text-xs font-bold text-cyan-300 uppercase tracking-wider">
-              // WEB TERMINAL · {{ server?.hostname }} (/dev/pts/0)
-            </span>
-            <span class="text-[10px] px-1.5 py-0.5 rounded bg-cyan-950 border border-cyan-800 text-cyan-300 font-bold">
-              LIVE PTY
-            </span>
-          </div>
-
-          <div class="flex items-center gap-1 text-xs">
-            <!-- Clear Screen -->
-            <button
-              @click="clearTerminalScreen"
-              class="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-white hover:bg-gray-800/80 transition cursor-pointer"
-              :title="t('term_clearscreen')"
-            >
-              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
-              </svg>
-            </button>
-            <!-- Full Window -->
-            <button
-              @click="isTermFullWindow = !isTermFullWindow"
-              class="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-cyan-300 hover:bg-gray-800/80 transition cursor-pointer"
-              :title="isTermFullWindow ? t('ws_restore') : t('term_fullwindow')"
-            >
-              <svg v-if="!isTermFullWindow" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect width="18" height="18" x="3" y="3" rx="2"/>
-                <line x1="3" y1="9" x2="21" y2="9"/>
-              </svg>
-              <svg v-else class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect width="13" height="13" x="8" y="3" rx="1.5"/>
-                <path d="M4 8H3a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-1"/>
-              </svg>
-            </button>
-            <!-- Fullscreen -->
-            <button
-              @click="toggleTermFullscreen"
-              class="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-cyan-300 hover:bg-gray-800/80 transition cursor-pointer"
-              :title="t('term_fullscreen')"
-            >
-              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="15 3 21 3 21 9"/>
-                <polyline points="9 21 3 21 3 15"/>
-                <line x1="21" y1="3" x2="14" y2="10"/>
-                <line x1="3" y1="21" x2="10" y2="14"/>
-              </svg>
-            </button>
-            <!-- Popout Window (Uniform Icon Button with Tooltip as Label) -->
-            <button
-              @click="popoutTerminalWindow"
-              class="w-7 h-7 flex items-center justify-center rounded text-cyan-400 hover:text-white bg-cyan-950/60 hover:bg-cyan-900 border border-cyan-800/50 hover:border-cyan-500 transition cursor-pointer"
-              :title="t('term_popout')"
-            >
-              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-                <polyline points="15 3 21 3 21 9"/>
-                <line x1="10" y1="14" x2="21" y2="3"/>
-              </svg>
-            </button>
-            <!-- Close -->
-            <button
-              @click="showTerminalModal = false"
-              class="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-rose-400 hover:bg-rose-950/60 transition cursor-pointer"
-              :title="t('ws_close')"
-            >
-              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18"/>
-                <line x1="6" y1="6" x2="18" y2="18"/>
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        <!-- Terminal Body -->
-        <div class="flex-1 bg-[#04060c] p-4 overflow-y-auto font-mono text-xs text-gray-200 select-text flex flex-col justify-between">
-          <div class="space-y-1.5" ref="termOutputRef">
-            <div class="text-cyan-400 font-bold">// TERMINAL SESSION CONNECTED: {{ server?.hostname }} ({{ server?.ip_address }})</div>
-            <div class="text-gray-400 text-[11px]">Linux {{ server?.hostname }} {{ server?.kernel }} #1 SMP PREEMPT {{ server?.arch || 'x86_64' }}</div>
-            <div class="text-gray-500 text-[11px]">Connected via secure authenticated control channel. Type 'help' for available system commands.</div>
-            
-            <div v-for="(line, idx) in termLines" :key="idx" class="leading-relaxed">
-              <span v-if="line.type === 'cmd'" class="text-emerald-400 font-semibold">operator@{{ server?.hostname }}:~$ {{ line.text }}</span>
-              <span v-else-if="line.type === 'error'" class="text-rose-400">{{ line.text }}</span>
-              <span v-else-if="line.type === 'info'" class="text-cyan-300">{{ line.text }}</span>
-              <pre v-else class="text-gray-300 font-mono whitespace-pre-wrap">{{ line.text }}</pre>
-            </div>
-          </div>
-
-          <!-- Command Input -->
-          <form @submit.prevent="executeTermCommand" class="mt-4 pt-3 border-t border-cyan-900/40 flex items-center gap-2">
-            <span class="text-emerald-400 font-bold text-xs shrink-0">operator@{{ server?.hostname }}:~$</span>
-            <input
-              v-model="currentTermInput"
-              type="text"
-              class="flex-1 bg-transparent border-none text-gray-100 text-xs font-mono focus:outline-none"
-              placeholder="Enter command (e.g., uptime, df -h, free -m, ps aux, uname -a)..."
-              autofocus
-            />
-            <button type="submit" class="text-[11px] px-2.5 py-1 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 hover:bg-cyan-900 cursor-pointer font-bold">
-              SUBMIT ↵
-            </button>
-          </form>
-        </div>
-      </div>
-    </div>
-
     <!-- DEDICATED FLOATING REMOTE FILE MANAGER MODAL -->
     <div
       v-if="showFileManagerModal"
@@ -1484,7 +1359,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['close', 'minimize', 'switch-server'])
+const emit = defineEmits(['close', 'minimize', 'switch-server', 'open-terminal'])
 
 const { t } = useI18n()
 
@@ -1501,72 +1376,8 @@ const servicesPortsMode = ref('services') // 'services' or 'ports'
 const showGuardrailModal = ref(false)
 const guardrailAction = ref('reboot') // 'reboot' or 'poweroff'
 
-// Dedicated Floating Web Terminal State
-const showTerminalModal = ref(false)
-const isTermFullWindow = ref(false)
-const isTermFullscreen = ref(false)
-const termLines = ref([
-  { type: 'info', text: 'PTY Console initialized on Linux PTS subsystem.' }
-])
-const currentTermInput = ref('')
-const termOutputRef = ref(null)
-
 function openTerminalModal() {
-  showTerminalModal.value = true
-  if (termLines.value.length === 1 && server.value) {
-    termLines.value.push({
-      type: 'info',
-      text: `Connected to ${server.value.hostname} (${server.value.ip_address}) via secure channel.`
-    })
-  }
-}
-
-function clearTerminalScreen() {
-  termLines.value = []
-}
-
-function toggleTermFullscreen() {
-  isTermFullscreen.value = !isTermFullscreen.value
-}
-
-function popoutTerminalWindow() {
-  window.open(
-    `/?standalone=terminal&sid=${currentServerId.value}`,
-    `pantau_term_${currentServerId.value}`,
-    'popup=yes,width=1100,height=720,menubar=no,toolbar=no,status=no'
-  )
-}
-
-async function executeTermCommand() {
-  const cmd = currentTermInput.value.trim()
-  if (!cmd) return
-  termLines.value.push({ type: 'cmd', text: cmd })
-  currentTermInput.value = ''
-
-  if (cmd.toLowerCase() === 'clear') {
-    termLines.value = []
-    return
-  }
-
-  const token = localStorage.getItem('pantau_token')
-  try {
-    const res = await fetch(`/api/servers/${currentServerId.value}/terminal/exec`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify({ cmd, cwd: '/root' })
-    })
-    const data = await res.json()
-    if (data.ok) {
-      termLines.value.push({ type: 'text', text: data.output })
-    } else {
-      termLines.value.push({ type: 'text', text: `[Error: ${data.output || data.error || data.detail || 'Execution failed'}]` })
-    }
-  } catch (err) {
-    termLines.value.push({ type: 'text', text: `[Connection error: ${err.message}]` })
-  }
+  emit('open-terminal', server.value || { id: currentServerId.value, hostname: server.value?.hostname || 'Server' })
 }
 
 // Dedicated Floating File Manager State
@@ -1804,7 +1615,6 @@ watch(() => props.serverId, (newId) => {
 watch(() => props.initialFloatingTool, (tool) => {
   if (tool === 'terminal') {
     openTerminalModal()
-    isTermFullWindow.value = true
   } else if (tool === 'files') {
     openFileManagerModal()
     isFMFullWindow.value = true
