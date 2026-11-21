@@ -6,53 +6,57 @@
     @click.self="handleBackdropClick"
     @keydown.esc="handleClose"
   >
-    <!-- Modal Window Card -->
+    <!-- Modal Window Card (Tactical Cyber Command Deck) -->
     <div
       :class="[
-        'bg-[#0b111e] border border-gray-800 shadow-2xl flex flex-col transition-all duration-200 overflow-hidden',
+        'hud-tactical-card shadow-2xl flex flex-col transition-all duration-200 overflow-hidden relative',
         isMaximized
           ? 'fixed inset-0 w-screen h-screen rounded-none z-50'
-          : 'w-[88vw] max-w-[1520px] h-[86vh] min-h-[580px] rounded-2xl'
+          : 'w-[88vw] max-w-[1520px] h-[86vh] min-h-[580px] rounded-xl'
       ]"
     >
+      <span class="hud-corner-tr"></span>
+      <span class="hud-corner-bl"></span>
+
       <!-- MODAL HEADER -->
       <div
-        class="bg-[#101726] border-b border-gray-800/80 px-4 py-3 flex items-center justify-between select-none cursor-default shrink-0"
+        class="bg-[#080d19] border-b border-cyan-500/20 px-4 py-2.5 flex items-center justify-between select-none cursor-default shrink-0"
         @dblclick="toggleMaximize"
       >
         <!-- Left: Host Info & Refresh -->
         <div class="flex items-center gap-3">
-          <div class="w-8 h-8 rounded-lg bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-base">
-            🖥️
+          <div class="w-8 h-8 rounded bg-cyan-950/80 border border-cyan-400/50 flex items-center justify-center text-cyan-300 font-bold text-base shadow-[0_0_10px_rgba(56,189,248,0.25)]">
+            ⛊
           </div>
           <div>
-            <div class="flex items-center gap-2">
-              <span class="font-bold text-gray-100 text-base tracking-tight font-mono">
+            <div class="flex items-center gap-2 font-mono">
+              <span class="text-xs text-cyan-400 font-bold">// TARGET LOCKED:</span>
+              <span class="font-extrabold text-gray-100 text-sm tracking-tight">
                 {{ server?.hostname || t('ws_loading_host') }}
               </span>
               <span
                 v-if="server?.is_online"
-                class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-emerald-950/70 text-emerald-400 border border-emerald-800/50"
+                class="inline-flex items-center gap-1 px-2 py-0.2 rounded text-[11px] font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-700/60"
               >
-                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                {{ t('online') }}
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 beacon-live"></span>
+                LIVE
               </span>
               <span
                 v-else
-                class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-rose-950/70 text-rose-400 border border-rose-800/50"
+                class="inline-flex items-center gap-1 px-2 py-0.2 rounded text-[11px] font-bold bg-rose-950/80 text-rose-300 border border-rose-700/60"
               >
-                <span class="w-2 h-2 rounded-full bg-rose-500"></span>
-                {{ t('offline') }}
+                <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                DOWN
               </span>
               <span class="text-xs font-mono text-cyan-300 font-semibold hidden sm:inline">
-                {{ server?.ip_address }}
+                ({{ server?.ip_address }})
               </span>
             </div>
-            <div class="text-xs text-gray-400 font-mono flex items-center gap-1.5 mt-0.5">
+            <div class="text-[11px] text-gray-400 font-mono flex items-center gap-1.5 mt-0.5">
               <span>{{ server?.os_label || 'Linux' }}</span>
-              <span>·</span>
+              <span class="text-gray-600">·</span>
               <span>Kernel {{ server?.kernel || '-' }}</span>
-              <span>·</span>
+              <span class="text-gray-600">·</span>
               <span>Agent v{{ server?.agent_version || '-' }}</span>
             </div>
           </div>
@@ -61,12 +65,12 @@
           <button
             @click="refreshData"
             :disabled="loading"
-            class="ml-1 p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800/80 transition cursor-pointer disabled:opacity-50"
+            class="ml-1 p-1.5 rounded text-gray-400 hover:text-cyan-300 hover:bg-cyan-950/40 border border-transparent hover:border-cyan-800/40 transition cursor-pointer disabled:opacity-50"
             :title="t('syncing')"
           >
             <svg
               class="w-4 h-4"
-              :class="{ 'animate-spin text-blue-400': loading }"
+              :class="{ 'animate-spin text-cyan-400': loading }"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -194,16 +198,16 @@
       </div>
 
       <!-- SUB-TABS NAVIGATION BAR -->
-      <div class="bg-[#0e1523] border-b border-gray-800 px-4 flex items-center gap-1.5 overflow-x-auto shrink-0 select-none py-2">
+      <div class="bg-[#070b16] border-b border-cyan-500/20 px-4 flex items-center gap-1 overflow-x-auto shrink-0 select-none py-1.5 font-mono text-xs">
         <button
           v-for="tab in subTabs"
           :key="tab.id"
           @click="activeSubTab = tab.id"
-          class="px-3.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 whitespace-nowrap"
+          class="px-3 py-1.5 rounded text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 whitespace-nowrap border"
           :class="[
             activeSubTab === tab.id
-              ? 'bg-blue-600 text-white shadow-sm font-bold'
-              : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/60'
+              ? 'bg-cyan-950/80 text-cyan-300 border-cyan-500/60 shadow-[0_0_8px_rgba(56,189,248,0.2)] font-bold'
+              : 'text-gray-400 hover:text-gray-100 hover:bg-gray-800/40 border-transparent'
           ]"
         >
           <span>{{ tab.icon }}</span>
@@ -211,20 +215,20 @@
           <!-- Dynamic Badges -->
           <span
             v-if="tab.id === 'problems' && serverProblems.length > 0"
-            class="px-2 py-0.5 rounded-full text-xs font-bold bg-rose-500 text-white ml-0.5"
+            class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-rose-500 text-white ml-0.5"
           >
             {{ serverProblems.length }}
           </span>
           <span
             v-else-if="tab.id === 'accounts' && activeSSHSessions.length > 0"
-            class="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-500 text-black animate-pulse ml-0.5"
+            class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-400 text-black radar-warning ml-0.5"
             :title="t('human_intercept_badge')"
           >
             {{ activeSSHSessions.length }}
           </span>
           <span
             v-else-if="tab.badge"
-            class="text-xs opacity-80 font-mono ml-0.5"
+            class="text-[10px] opacity-80 font-mono ml-0.5"
           >
             ({{ tab.badge }})
           </span>

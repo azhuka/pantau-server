@@ -2,12 +2,12 @@
 
 @layer base {
   :root {
-    --bg-void: #06090f;
-    --bg-surface: #0a101d;
-    --bg-card: #0e1526;
-    --bg-card-hover: #131d33;
-    --border-tactical: rgba(51, 65, 85, 0.6);
-    --border-glow: rgba(56, 189, 248, 0.35);
+    --bg-void: #050811;
+    --bg-surface: #090e1a;
+    --bg-card: #0d1527;
+    --bg-card-hover: #121c33;
+    --border-tactical: rgba(56, 189, 248, 0.2);
+    --border-glow: rgba(56, 189, 248, 0.45);
     
     --hud-cyan: #38bdf8;
     --hud-emerald: #10b981;
@@ -20,12 +20,12 @@
     background-color: var(--bg-void);
     color: #f1f5f9;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", "Helvetica Neue", sans-serif;
-    font-size: 14px;
+    font-size: 13.5px;
     line-height: 1.5;
     background-image: 
-      radial-gradient(rgba(56, 189, 248, 0.04) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(6, 9, 15, 0.8), rgba(6, 9, 15, 1));
-    background-size: 24px 24px, 100% 100%;
+      radial-gradient(rgba(56, 189, 248, 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(5, 8, 17, 0.85), rgba(5, 8, 17, 1));
+    background-size: 28px 28px, 100% 100%;
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -34,11 +34,11 @@
 
   /* High-contrast tactical selection highlight */
   ::selection {
-    background-color: rgba(56, 189, 248, 0.4);
+    background-color: rgba(56, 189, 248, 0.45);
     color: #ffffff;
   }
   ::-moz-selection {
-    background-color: rgba(56, 189, 248, 0.4);
+    background-color: rgba(56, 189, 248, 0.45);
     color: #ffffff;
   }
 
@@ -49,19 +49,19 @@
   }
 }
 
-/* Asymmetric Operations KPI Grid (Standard NOC HUD Layout) */
+/* Tactical Asymmetric Operations KPI Grid */
 .dash-kpi-grid {
   display: grid;
-  grid-template-columns: minmax(210px, 240px) 1fr minmax(280px, 320px);
-  gap: 10px;
-  margin-bottom: 12px;
+  grid-template-columns: minmax(220px, 250px) 1fr minmax(280px, 320px);
+  gap: 12px;
+  margin-bottom: 14px;
   align-items: stretch;
 }
 
-@media (max-width: 1040px) {
+@media (max-width: 1080px) {
   .dash-kpi-grid {
     grid-template-columns: 1fr 1fr !important;
-    gap: 10px;
+    gap: 12px;
   }
   .dash-kpi-grid #kpi-card-prob {
     grid-column: 1 / -1;
@@ -81,15 +81,16 @@
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #080d16;
+  background: #060a14;
 }
 ::-webkit-scrollbar-thumb {
   background: #1e293b;
   border-radius: 3px;
-  border: 1px solid rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.2);
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #334155;
+  border-color: rgba(56, 189, 248, 0.4);
 }
 
 /* ---------- Selectable Tooltip Engine ---------- */
@@ -101,19 +102,19 @@
   pointer-events: auto;
   max-width: 420px;
   min-width: 40px;
-  background: #0f172a;
+  background: #0b1324;
   color: #f8fafc;
   border: 1px solid rgba(56, 189, 248, 0.5);
   border-radius: 4px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.08);
-  padding: 3px 7px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(56, 189, 248, 0.15);
+  padding: 4px 8px;
   font-family: inherit;
   font-size: 11.5px;
   line-height: 1.35;
   transition: opacity 0.12s cubic-bezier(0.16, 1, 0.3, 1), transform 0.12s cubic-bezier(0.16, 1, 0.3, 1);
   transform: translateY(2px) scale(0.98);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   user-select: text !important;
 }
 .pantau-copy-tooltip.show {
@@ -127,42 +128,66 @@
   user-select: text !important;
 }
 
-/* Tactical HUD Corner Borders */
-.hud-card {
+/* ---------- Tactical Cyber HUD Cards & Panels ---------- */
+.hud-tactical-card {
   position: relative;
-  background-color: #0c121e;
-  border: 1px solid rgba(51, 65, 85, 0.7);
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.6);
+  background: linear-gradient(135deg, rgba(13, 21, 39, 0.95) 0%, rgba(9, 14, 26, 0.95) 100%);
+  border: 1px solid rgba(56, 189, 248, 0.18);
+  box-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
 }
 
-.hud-card::before {
+.hud-tactical-card::before {
   content: '';
   position: absolute;
   top: -1px;
   left: -1px;
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   border-top: 2px solid #38bdf8;
   border-left: 2px solid #38bdf8;
   pointer-events: none;
 }
 
-.hud-card::after {
+.hud-tactical-card::after {
   content: '';
   position: absolute;
   bottom: -1px;
   right: -1px;
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   border-bottom: 2px solid #38bdf8;
   border-right: 2px solid #38bdf8;
   pointer-events: none;
 }
 
-/* Pulse animation for live beacons */
+/* Secondary corner markers for 4-corner HUD brackets */
+.hud-corner-tr {
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  width: 8px;
+  height: 8px;
+  border-top: 2px solid #38bdf8;
+  border-right: 2px solid #38bdf8;
+  pointer-events: none;
+}
+
+.hud-corner-bl {
+  position: absolute;
+  bottom: -1px;
+  left: -1px;
+  width: 8px;
+  height: 8px;
+  border-bottom: 2px solid #38bdf8;
+  border-left: 2px solid #38bdf8;
+  pointer-events: none;
+}
+
+/* Pulsing Beacon Animations */
 @keyframes beacon-pulse {
   0% { transform: scale(0.95); opacity: 0.8; }
-  50% { transform: scale(1.15); opacity: 1; filter: drop-shadow(0 0 4px #10b981); }
+  50% { transform: scale(1.15); opacity: 1; filter: drop-shadow(0 0 5px #10b981); }
   100% { transform: scale(0.95); opacity: 0.8; }
 }
 
@@ -170,13 +195,85 @@
   animation: beacon-pulse 2.2s infinite ease-in-out;
 }
 
+/* High-tech Radar Beacon Ring */
+@keyframes radar-ring {
+  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+.beacon-radar {
+  animation: radar-ring 2s infinite ease-out;
+}
+
 /* Pulse for human SSH intrusion alert */
 @keyframes radar-alert {
-  0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.6); }
+  0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
   70% { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); }
   100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
 }
 
 .radar-warning {
   animation: radar-alert 1.8s infinite;
+}
+
+/* Pulse for critical down/offline node */
+@keyframes critical-alert {
+  0% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.7); }
+  70% { box-shadow: 0 0 0 8px rgba(244, 63, 94, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); }
+}
+
+.radar-critical {
+  animation: critical-alert 1.6s infinite;
+}
+
+/* ---------- Cyber Progress Bars & Gauges ---------- */
+.cyber-bar-track {
+  width: 100%;
+  height: 5px;
+  background: rgba(30, 41, 59, 0.85);
+  border-radius: 9999px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.cyber-bar-fill-cyan {
+  height: 100%;
+  background: linear-gradient(90deg, #0284c7 0%, #38bdf8 100%);
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.5);
+  transition: width 0.3s ease;
+}
+
+.cyber-bar-fill-emerald {
+  height: 100%;
+  background: linear-gradient(90deg, #059669 0%, #10b981 100%);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+  transition: width 0.3s ease;
+}
+
+.cyber-bar-fill-amber {
+  height: 100%;
+  background: linear-gradient(90deg, #d97706 0%, #f59e0b 100%);
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+  transition: width 0.3s ease;
+}
+
+.cyber-bar-fill-crimson {
+  height: 100%;
+  background: linear-gradient(90deg, #e11d48 0%, #f43f5e 100%);
+  box-shadow: 0 0 8px rgba(244, 63, 94, 0.5);
+  transition: width 0.3s ease;
+}
+
+/* Tactical Monospace Tag */
+.tactical-tag {
+  font-family: 'JetBrains Mono', Menlo, Monaco, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 2px 6px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  border: 1px solid transparent;
 }

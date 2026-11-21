@@ -1,38 +1,39 @@
 <template>
-  <header class="bg-[#0c121e] border-b border-gray-800/80 px-5 h-14 flex items-center justify-between sticky top-0 z-40 select-none backdrop-blur-md">
+  <header class="bg-[#080d19]/95 border-b border-cyan-500/20 px-4 sm:px-6 h-14 flex items-center justify-between sticky top-0 z-40 select-none backdrop-blur-md shadow-[0_4px_20px_rgba(0,0,0,0.6)]">
     <!-- LEFT: BRAND & TACTICAL NAVIGATION -->
     <div class="flex items-center gap-6">
-      <!-- Cyber Brand -->
-      <div class="flex items-center gap-3 cursor-pointer" @click="$emit('nav', 'dashboard')">
-        <div class="w-8 h-8 rounded-lg bg-blue-600/20 border border-blue-500/40 flex items-center justify-center font-black text-cyan-400 text-base shadow-[0_0_12px_rgba(56,189,248,0.3)]">
+      <!-- Cyber Brand with Tactical HUD Moniker -->
+      <div class="flex items-center gap-3 cursor-pointer group" @click="$emit('nav', 'dashboard')">
+        <div class="w-8 h-8 rounded bg-cyan-950/60 border border-cyan-400/50 flex items-center justify-center font-black text-cyan-300 text-base shadow-[0_0_12px_rgba(56,189,248,0.35)] group-hover:border-cyan-300 transition-all">
           ⛊
         </div>
         <div>
-          <div class="font-bold text-sm tracking-wide text-gray-100 flex items-center gap-2">
-            <span>{{ t('app_name') }}</span>
-            <span class="text-xs font-mono font-bold px-1.5 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800/60">
+          <div class="font-bold text-sm tracking-wider text-gray-100 flex items-center gap-2 font-mono">
+            <span class="text-cyan-400 font-extrabold">{{ t('app_name') }}</span>
+            <span class="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-800/60 tracking-normal">
               v0.1.0
             </span>
           </div>
-          <div class="text-xs text-gray-400 tracking-wider font-medium">
-            CYBER NOC RECON & COMMAND
+          <div class="text-[10px] text-gray-400 tracking-widest font-mono uppercase flex items-center gap-1.5">
+            <span class="text-cyan-500/80">//</span>
+            <span>TACTICAL CYBER COMMAND ROOM</span>
           </div>
         </div>
       </div>
 
-      <!-- 4-VIEW TACTICAL NAVIGATION LINKS -->
-      <nav class="hidden md:flex items-center gap-1.5 border-l border-gray-800/80 pl-5 text-sm">
+      <!-- 4-VIEW TACTICAL NAVIGATION (Segmented Deck Buttons) -->
+      <nav class="hidden md:flex items-center gap-1 border-l border-gray-800/80 pl-5 text-xs font-mono">
         <!-- 1: DASHBOARD -->
         <button
           @click="$emit('nav', 'dashboard')"
           :class="[
-            'px-3.5 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-2 font-medium',
+            'px-3 py-1.5 rounded transition-all cursor-pointer flex items-center gap-2 font-semibold tracking-wide border',
             activeTab === 'dashboard'
-              ? 'bg-blue-600/25 text-cyan-300 border border-blue-500/50 font-bold shadow-sm'
-              : 'text-gray-400 hover:text-gray-100 hover:bg-gray-800/50'
+              ? 'bg-cyan-950/50 text-cyan-300 border-cyan-500/60 font-bold shadow-[0_0_10px_rgba(56,189,248,0.2)]'
+              : 'text-gray-400 hover:text-gray-100 hover:bg-gray-800/40 border-transparent'
           ]"
         >
-          <span>📊</span>
+          <span class="text-cyan-400/70">01 //</span>
           <span>{{ t('nav_dashboard') }}</span>
         </button>
 
@@ -40,17 +41,17 @@
         <button
           @click="$emit('nav', 'fleet')"
           :class="[
-            'px-3.5 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-2 font-medium',
+            'px-3 py-1.5 rounded transition-all cursor-pointer flex items-center gap-2 font-semibold tracking-wide border',
             activeTab === 'fleet'
-              ? 'bg-blue-600/25 text-cyan-300 border border-blue-500/50 font-bold shadow-sm'
-              : 'text-gray-400 hover:text-gray-100 hover:bg-gray-800/50'
+              ? 'bg-cyan-950/50 text-cyan-300 border-cyan-500/60 font-bold shadow-[0_0_10px_rgba(56,189,248,0.2)]'
+              : 'text-gray-400 hover:text-gray-100 hover:bg-gray-800/40 border-transparent'
           ]"
         >
-          <span>🖥️</span>
+          <span class="text-cyan-400/70">02 //</span>
           <span>{{ t('nav_fleet') }}</span>
           <span
             v-if="serverCount"
-            class="text-xs px-2 py-0.5 rounded-full bg-gray-800 text-gray-300 font-mono font-bold ml-0.5"
+            class="text-[11px] px-1.5 py-0.2 rounded bg-gray-800/90 text-cyan-300 font-bold ml-0.5 border border-cyan-800/40"
           >
             {{ serverCount }}
           </span>
@@ -60,13 +61,13 @@
         <button
           @click="$emit('nav', 'audit')"
           :class="[
-            'px-3.5 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-2 font-medium',
+            'px-3 py-1.5 rounded transition-all cursor-pointer flex items-center gap-2 font-semibold tracking-wide border',
             activeTab === 'audit'
-              ? 'bg-blue-600/25 text-cyan-300 border border-blue-500/50 font-bold shadow-sm'
-              : 'text-gray-400 hover:text-gray-100 hover:bg-gray-800/50'
+              ? 'bg-cyan-950/50 text-cyan-300 border-cyan-500/60 font-bold shadow-[0_0_10px_rgba(56,189,248,0.2)]'
+              : 'text-gray-400 hover:text-gray-100 hover:bg-gray-800/40 border-transparent'
           ]"
         >
-          <span>📋</span>
+          <span class="text-cyan-400/70">03 //</span>
           <span>{{ t('nav_audit') }}</span>
         </button>
 
@@ -74,45 +75,47 @@
         <button
           @click="$emit('nav', 'settings')"
           :class="[
-            'px-3.5 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-2 font-medium',
+            'px-3 py-1.5 rounded transition-all cursor-pointer flex items-center gap-2 font-semibold tracking-wide border',
             activeTab === 'settings'
-              ? 'bg-blue-600/25 text-cyan-300 border border-blue-500/50 font-bold shadow-sm'
-              : 'text-gray-400 hover:text-gray-100 hover:bg-gray-800/50'
+              ? 'bg-cyan-950/50 text-cyan-300 border-cyan-500/60 font-bold shadow-[0_0_10px_rgba(56,189,248,0.2)]'
+              : 'text-gray-400 hover:text-gray-100 hover:bg-gray-800/40 border-transparent'
           ]"
         >
-          <span>⚙️</span>
+          <span class="text-cyan-400/70">04 //</span>
           <span>{{ t('nav_settings') }}</span>
         </button>
       </nav>
     </div>
 
-    <!-- RIGHT: HEARTBEAT WAVE, I18N SWITCHER, OPERATOR PROFILE -->
+    <!-- RIGHT: RADAR STATUS, I18N SWITCHER, OPERATOR PROFILE -->
     <div class="flex items-center gap-3">
-      <!-- Live Heartbeat Waveform Beacon -->
-      <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#070b14] border border-gray-800 text-xs font-mono font-semibold text-emerald-400">
-        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 beacon-live"></span>
-        <span class="tracking-wider">FEED LIVE</span>
+      <!-- Live Heartbeat Radar Beacon -->
+      <div class="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded bg-[#060a14] border border-cyan-900/40 text-xs font-mono font-semibold text-emerald-400">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 beacon-live beacon-radar"></span>
+        <span class="tracking-wider text-[11px]">FEED // LIVE</span>
       </div>
 
       <!-- Multi-Language i18n Switcher Button (EN / ID) -->
       <button
         @click="toggleLocale"
-        class="px-3 py-1.5 rounded-lg bg-[#111a2c] border border-gray-700/80 hover:border-cyan-400/60 text-xs font-bold text-gray-200 hover:text-cyan-300 transition cursor-pointer flex items-center gap-1.5 shadow-sm"
+        class="px-2.5 py-1 rounded bg-[#0e1628] border border-cyan-500/30 hover:border-cyan-400 text-xs font-mono font-bold text-gray-200 hover:text-cyan-300 transition cursor-pointer flex items-center gap-1.5 shadow-sm"
         :title="locale === 'en' ? 'Switch Language (to Bahasa Indonesia)' : 'Ganti Bahasa (ke English)'"
       >
         <span>🌐</span>
-        <span class="tracking-wider">{{ locale.toUpperCase() }}</span>
+        <span class="tracking-widest">{{ locale.toUpperCase() }}</span>
       </button>
 
       <!-- Operator User Badge -->
-      <div v-if="user" class="flex items-center gap-2.5 border-l border-gray-800/80 pl-3.5">
+      <div v-if="user" class="flex items-center gap-2.5 border-l border-gray-800 pl-3.5">
         <div class="text-right">
-          <div class="text-xs font-bold text-gray-100">{{ user.username }}</div>
-          <div class="text-[11px] font-semibold text-cyan-400 font-mono uppercase">{{ user.role }}</div>
+          <div class="text-xs font-bold text-gray-100 font-mono">{{ user.username }}</div>
+          <div class="text-[10px] font-semibold text-cyan-400 font-mono uppercase tracking-wider">
+            OP // {{ user.role }}
+          </div>
         </div>
         <button
           @click="$emit('logout')"
-          class="text-xs p-1.5 rounded-lg border border-gray-800 bg-gray-900/60 text-gray-400 hover:bg-rose-950/40 hover:text-rose-300 hover:border-rose-800/50 transition cursor-pointer"
+          class="text-xs p-1.5 rounded border border-gray-800 bg-gray-900/60 text-gray-400 hover:bg-rose-950/40 hover:text-rose-300 hover:border-rose-800/50 transition cursor-pointer"
           :title="t('nav_logout')"
         >
           <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -126,7 +129,7 @@
       <div v-else>
         <button
           @click="$emit('login-click')"
-          class="text-xs px-3.5 py-1.5 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-500 transition cursor-pointer"
+          class="text-xs px-3 py-1.5 rounded bg-cyan-700 hover:bg-cyan-600 text-white font-mono font-semibold transition cursor-pointer border border-cyan-500/40"
         >
           {{ t('nav_login') }}
         </button>
@@ -136,7 +139,6 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
 import { useI18n } from '../i18n'
 
 const props = defineProps({

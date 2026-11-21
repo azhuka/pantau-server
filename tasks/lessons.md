@@ -127,6 +127,21 @@ Dokumen ini mencatat setiap pembelajaran dari koreksi operator dan temuan teknis
   3. **Kemampuan Seleksi Kursor Alami (Hover-to-Select):** Tooltip memiliki toleransi jeda hover (160ms show / 180ms hide) dan `pointer-events: auto; user-select: text !important;`, sehingga operator dapat secara natural menggerakkan kursor ke dalam tooltip untuk menyorot (*highlight*) dan menyalin (*copy*) teks secara langsung.
   4. **Universal Text Copyability:** Seluruh teks antarmuka (IP, port, log, PID, telemetri, perintah) wajib dapat disorot dan disalin secara bebas (`user-select: text`). Kelas `select-none` HANYA diizinkan untuk tombol kontrol klik murni atau bilah seret (*drag handle*).
 
+---
+
+## Lesson 15: Mandat Estetika Taktis Orisinal (Tactical Cyber Command Room vs Replika Visual Usang)
+- **Konteks:** Meniru secara mentah (*plek ketiplek*) struktur HTML/CSS tabel dan tombol dari aplikasi rujukan lama, sehingga antarmuka tampak generik dan membosankan, alih-alih mewujudkan atmosfer *Tactical Cyber Command Room / Nuansa Mata-Mata* yang telah diamanatkan sejak awal perancangan.
+- **Akar Masalah:** Sikap pasif dalam perancangan visual (*design passivity*) dan kerancuan batas adopsi: Yang diadopsi dari sistem acuan murni hanyalah **alur kerja operasional (*workflow*)**, kepadatan telemetri NOC, pasif dasbor, dan jendela kontrol terisolasi. Menyalin tampilan visual jadulnya adalah sebuah kemunduran rekayasa.
+- **Aturan Pencegahan `[SF, Lead UI/UX, FTO]`:**
+  1. **Kepemilikan Penuh Perancangan Visual (Lead UI/UX Ownership):** Asisten berdiri sebagai Senior Software Engineer & Lead UI/UX Designer sejati yang bertanggung jawab penuh merancang dan mengembangkan antarmuka sistem dari awal hingga akhir dengan estetika berkelas, modern, dan presisi.
+  2. **Penegakan Estetika Tactical Cyber Operations Deck:**
+     - Kanvas *Obsidian Slate* (`#050811`, `#090e1a`) dengan aksen mikro-grid HUD dan aksen sudut laser (*HUD corner brackets*).
+     - Indikator radar berpendar (*pulsing live radar beacons*) untuk node armada dan status anomali.
+     - Pengukur telemetri taktis (*cyber progress bars*) dengan gradien warna semantik (cyan, emerald, amber, crimson) untuk CPU, RAM, dan Storage.
+     - Monospace terstruktur (*JetBrains Mono / tabular figures*) untuk seluruh koordinat IP, port, PID, latensi, dan stempel waktu.
+     - Navigasi dan tindakan berbasis konsol intelijen (`[ 01 // DASHBOARD ]`, `[ ⚡ INVESTIGATE ]`).
+  3. **Larangan Keras Memindahkan Template Visual Usang:** Jangan pernah lagi menyalin layout HTML/CSS usang secara mentah dari aplikasi rujukan. Selalu rancang antarmuka orisinal yang segar, kokoh, dan ergonomis sesuai standar *Tactical Cyber Command Room*.
+
 
 
 

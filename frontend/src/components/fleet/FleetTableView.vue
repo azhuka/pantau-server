@@ -1,27 +1,30 @@
 <template>
   <div class="space-y-4">
     <!-- TOOLBAR ATAS (Search, Filter, Groups) -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 hud-card p-3.5 px-4 rounded-xl">
+    <div class="hud-tactical-card p-3.5 px-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
+      <span class="hud-corner-tr"></span>
+      <span class="hud-corner-bl"></span>
+
       <div>
-        <h2 class="text-base font-bold text-gray-100 uppercase tracking-wide flex items-center gap-2">
-          <span>📡</span>
-          <span>{{ t('fleet_title') }}</span>
-          <span class="text-xs text-blue-400 font-semibold">({{ filteredServers.length }} {{ t('nodes_monitored') }})</span>
+        <h2 class="text-sm font-bold text-gray-100 uppercase tracking-wider font-mono flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-cyan-400 beacon-live"></span>
+          <span>// RECON: FLEET TELEMETRY MATRIX</span>
+          <span class="text-xs text-cyan-400 font-bold">({{ filteredServers.length }} {{ t('nodes_monitored') }})</span>
         </h2>
-        <p class="text-xs text-gray-400 mt-0.5">
+        <p class="text-xs text-gray-400 font-mono mt-0.5">
           {{ t('fleet_subtitle') }}
         </p>
       </div>
 
       <!-- Search & Filters -->
-      <div class="flex items-center gap-2.5 flex-wrap">
+      <div class="flex items-center gap-2.5 flex-wrap font-mono">
         <!-- Quick Status Pills -->
-        <div class="flex items-center bg-[#090d16] border border-gray-800 rounded-lg p-0.5 text-xs">
+        <div class="flex items-center bg-[#060a14] border border-cyan-900/40 rounded p-0.5 text-xs">
           <button
             @click="statusFilter = 'all'"
             :class="[
-              'px-3 py-1.5 rounded-md transition cursor-pointer font-semibold',
-              statusFilter === 'all' ? 'bg-blue-600 text-white font-bold' : 'text-gray-400 hover:text-gray-200'
+              'px-2.5 py-1 rounded transition cursor-pointer font-semibold',
+              statusFilter === 'all' ? 'bg-cyan-950 text-cyan-300 font-bold border border-cyan-500/50' : 'text-gray-400 hover:text-gray-200'
             ]"
           >
             {{ t('all_statuses') }}
@@ -29,21 +32,21 @@
           <button
             @click="statusFilter = 'online'"
             :class="[
-              'px-3 py-1.5 rounded-md transition cursor-pointer flex items-center gap-1.5 font-semibold',
-              statusFilter === 'online' ? 'bg-emerald-600 text-white font-bold' : 'text-gray-400 hover:text-gray-200'
+              'px-2.5 py-1 rounded transition cursor-pointer flex items-center gap-1.5 font-semibold',
+              statusFilter === 'online' ? 'bg-emerald-950 text-emerald-300 font-bold border border-emerald-500/50' : 'text-gray-400 hover:text-gray-200'
             ]"
           >
-            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 beacon-live"></span>
             {{ t('online') }}
           </button>
           <button
             @click="statusFilter = 'offline'"
             :class="[
-              'px-3 py-1.5 rounded-md transition cursor-pointer flex items-center gap-1.5 font-semibold',
-              statusFilter === 'offline' ? 'bg-rose-600 text-white font-bold' : 'text-gray-400 hover:text-gray-200'
+              'px-2.5 py-1 rounded transition cursor-pointer flex items-center gap-1.5 font-semibold',
+              statusFilter === 'offline' ? 'bg-rose-950 text-rose-300 font-bold border border-rose-500/50' : 'text-gray-400 hover:text-gray-200'
             ]"
           >
-            <span class="w-2 h-2 rounded-full bg-rose-400"></span>
+            <span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
             {{ t('offline') }}
           </button>
         </div>
@@ -54,55 +57,58 @@
             v-model="searchQuery"
             type="text"
             :placeholder="t('search_placeholder')"
-            class="bg-[#090d16] border border-gray-800 focus:border-blue-500 rounded-lg px-3.5 py-1.5 text-xs text-gray-100 placeholder-gray-500 w-64 focus:outline-none transition"
+            class="bg-[#060a14] border border-cyan-900/50 focus:border-cyan-400 rounded px-3 py-1 text-xs text-gray-100 placeholder-gray-500 w-64 focus:outline-none transition font-mono"
           />
-          <span class="absolute right-3 top-2 text-xs text-gray-500 pointer-events-none">🔍</span>
+          <span class="absolute right-2.5 top-1.5 text-xs text-gray-500 pointer-events-none">🔍</span>
         </div>
       </div>
     </div>
 
-    <!-- HIGH-DENSITY FLEET INVENTORY TABLE (Replikasi servers.html Lama + Aksi ala Pantau) -->
-    <div class="hud-card rounded-xl overflow-hidden shadow-2xl">
+    <!-- HIGH-DENSITY FLEET TELEMETRY MATRIX TABLE -->
+    <div class="hud-tactical-card rounded-xl overflow-hidden shadow-2xl">
+      <span class="hud-corner-tr"></span>
+      <span class="hud-corner-bl"></span>
+
       <div class="overflow-x-auto">
-        <table class="w-full text-left text-sm border-collapse">
+        <table class="w-full text-left text-xs font-mono border-collapse">
           <thead>
-            <tr class="bg-[#0e1626] border-b border-gray-800 text-xs uppercase font-bold text-gray-400 tracking-wider select-none">
+            <tr class="bg-[#070c18]/90 border-b border-cyan-500/20 text-gray-400 uppercase font-bold tracking-wider select-none">
               <th class="py-2.5 px-3 w-16 text-center">{{ t('col_status') }}</th>
               <th class="py-2.5 px-4 min-w-[180px]">{{ t('col_server') }}</th>
               <th class="py-2.5 px-3 min-w-[130px]">{{ t('col_ip') }}</th>
               <th class="py-2.5 px-3 min-w-[110px]">{{ t('col_platform') }}</th>
               <th class="py-2.5 px-3 min-w-[130px]">{{ t('col_os') }}</th>
-              <th class="py-2.5 px-3 min-w-[120px]">{{ t('col_cpu') }}</th>
-              <th class="py-2.5 px-3 min-w-[130px]">{{ t('col_memory') }}</th>
-              <th class="py-2.5 px-3 min-w-[100px]">{{ t('col_storage') }}</th>
+              <th class="py-2.5 px-3 min-w-[125px]">{{ t('col_cpu') }}</th>
+              <th class="py-2.5 px-3 min-w-[135px]">{{ t('col_memory') }}</th>
+              <th class="py-2.5 px-3 min-w-[105px]">{{ t('col_storage') }}</th>
               <th class="py-2.5 px-3 min-w-[90px]">{{ t('col_uptime') }}</th>
               <th class="py-2.5 px-3 min-w-[95px] text-center">{{ t('col_agent') }}</th>
               <th class="py-2.5 px-3 min-w-[105px]">{{ t('col_last_seen') }}</th>
-              <th class="py-2.5 px-4 text-right min-w-[180px]">{{ t('col_actions') }}</th>
+              <th class="py-2.5 px-4 text-right min-w-[200px]">{{ t('col_actions') }}</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-800/60 bg-[#090d16]/70">
+          <tbody class="divide-y divide-gray-800/40 bg-[#090e1c]/40">
             <tr
               v-for="s in filteredServers"
               :key="s.id"
-              class="hover:bg-[#121c30] transition-colors group"
+              class="hover:bg-cyan-950/20 transition-colors group"
             >
               <!-- 1. STATUS -->
               <td class="py-2.5 px-3 text-center whitespace-nowrap">
                 <span
                   v-if="s.is_online"
-                  class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-bold font-mono bg-emerald-950/70 text-emerald-400 border border-emerald-800/50 cursor-help"
+                  class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-700/60"
                   :title="t('tooltip_node_online')"
                 >
-                  <span class="w-2 h-2 rounded-full bg-emerald-400 beacon-live"></span>
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 beacon-live"></span>
                   LIVE
                 </span>
                 <span
                   v-else
-                  class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-bold font-mono bg-rose-950/70 text-rose-400 border border-rose-800/50 cursor-help"
+                  class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-bold bg-rose-950/80 text-rose-300 border border-rose-700/60"
                   :title="t('tooltip_node_offline')"
                 >
-                  <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                  <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
                   DOWN
                 </span>
               </td>
@@ -110,25 +116,25 @@
               <!-- 2. SERVER (Hostname, Group, Tier) -->
               <td class="py-2.5 px-4 whitespace-nowrap">
                 <div class="flex items-center gap-1.5">
-                  <span class="font-bold text-gray-100 group-hover:text-blue-400 transition text-sm">
+                  <span class="font-bold text-gray-100 group-hover:text-cyan-300 transition text-sm">
                     {{ s.hostname }}
                   </span>
                   <span
                     v-if="s.tier === 1"
-                    class="text-xs px-1.5 py-0.2 rounded font-bold bg-blue-950 text-blue-300 border border-blue-800/50"
+                    class="text-[10px] px-1.5 py-0.2 rounded font-bold bg-cyan-950 text-cyan-300 border border-cyan-800"
                   >
                     T1
                   </span>
                   <span
                     v-else
-                    class="text-xs px-1.5 py-0.2 rounded font-bold bg-purple-950 text-purple-300 border border-purple-800/50"
+                    class="text-[10px] px-1.5 py-0.2 rounded font-bold bg-purple-950 text-purple-300 border border-purple-800"
                   >
                     T2
                   </span>
                 </div>
-                <div class="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
-                  <span>📁 {{ s.group_name || 'Default' }}</span>
-                  <span v-if="s.active_problems_count > 0" class="text-amber-400 font-bold ml-1 font-mono">
+                <div class="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+                  <span>📁 {{ s.group_name || 'DEFAULT' }}</span>
+                  <span v-if="s.active_problems_count > 0" class="text-amber-400 font-bold ml-1 radar-warning px-1 rounded">
                     ● {{ s.active_problems_count }} alert
                   </span>
                 </div>
@@ -137,30 +143,30 @@
               <!-- 3. IP / IFACE -->
               <td class="py-2.5 px-3 whitespace-nowrap">
                 <div
-                  class="text-cyan-300 font-semibold font-mono text-sm cursor-help hover:text-cyan-200"
+                  class="text-cyan-300 font-semibold text-xs cursor-help hover:text-cyan-200"
                   :title="s.ip_address || '127.0.0.1'"
                 >
                   {{ s.ip_address || '-' }}
                 </div>
-                <div class="text-xs text-gray-500 font-mono">ens18 · MTU 1500</div>
+                <div class="text-[11px] text-gray-500 font-mono">ens18 · MTU 1500</div>
               </td>
 
               <!-- 4. PLATFORM -->
-              <td class="py-2.5 px-3 whitespace-nowrap text-gray-200 text-xs">
+              <td class="py-2.5 px-3 whitespace-nowrap text-gray-300 text-xs">
                 <div
                   class="cursor-help"
                   :title="`${s.platform || 'KVM Virtual Machine'} (${s.arch || 'x86_64'})`"
                 >
                   <div>{{ s.platform || 'KVM Virtual' }}</div>
-                  <div class="text-gray-500 font-mono">{{ s.arch || 'x86_64' }}</div>
+                  <div class="text-gray-500 text-[11px]">{{ s.arch || 'x86_64' }}</div>
                 </div>
               </td>
 
               <!-- 5. OS & KERNEL -->
-              <td class="py-2.5 px-3 whitespace-nowrap text-gray-200 text-xs">
+              <td class="py-2.5 px-3 whitespace-nowrap text-gray-300 text-xs">
                 <div class="text-gray-200 font-medium">{{ s.os_label || 'Linux' }}</div>
                 <div
-                  class="text-gray-500 font-mono truncate max-w-[130px] cursor-help hover:text-cyan-300 transition"
+                  class="text-gray-500 text-[11px] truncate max-w-[130px] cursor-help hover:text-cyan-300 transition"
                   :title="s.kernel || 'Kernel 6.1.x'"
                 >
                   {{ s.kernel || 'Kernel 6.1.x' }}
@@ -169,14 +175,13 @@
 
               <!-- 6. CPU & LOAD -->
               <td class="py-2.5 px-3 whitespace-nowrap">
-                <div class="flex items-center justify-between text-xs font-mono mb-1">
+                <div class="flex items-center justify-between text-xs mb-1">
                   <span :class="s.cpu > 80 ? 'text-rose-400 font-bold' : 'text-gray-200 font-medium'">{{ (s.cpu || 0).toFixed(1) }}%</span>
-                  <span class="text-gray-500">L {{ (s.load1 || 0).toFixed(2) }}</span>
+                  <span class="text-gray-500 text-[11px]">L {{ (s.load1 || 0).toFixed(2) }}</span>
                 </div>
-                <div class="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
+                <div class="cyber-bar-track">
                   <div
-                    class="h-full rounded-full transition-all"
-                    :class="s.cpu > 80 ? 'bg-rose-500' : s.cpu > 60 ? 'bg-amber-400' : 'bg-blue-500'"
+                    :class="s.cpu > 80 ? 'cyber-bar-fill-crimson' : s.cpu > 60 ? 'cyber-bar-fill-amber' : 'cyber-bar-fill-cyan'"
                     :style="{ width: `${Math.min(s.cpu || 0, 100)}%` }"
                   ></div>
                 </div>
@@ -184,14 +189,13 @@
 
               <!-- 7. MEMORY (RAM & SWAP) -->
               <td class="py-2.5 px-3 whitespace-nowrap">
-                <div class="flex items-center justify-between text-xs font-mono mb-1">
+                <div class="flex items-center justify-between text-xs mb-1">
                   <span :class="s.mem_pct > 80 ? 'text-rose-400 font-bold' : 'text-gray-200 font-medium'">{{ (s.mem_pct || 0).toFixed(1) }}%</span>
-                  <span class="text-gray-400">{{ formatBytes(s.mem_used) }}</span>
+                  <span class="text-gray-400 text-[11px]">{{ formatBytes(s.mem_used) }}</span>
                 </div>
-                <div class="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
+                <div class="cyber-bar-track">
                   <div
-                    class="h-full rounded-full transition-all"
-                    :class="s.mem_pct > 80 ? 'bg-rose-500' : s.mem_pct > 60 ? 'bg-amber-400' : 'bg-emerald-500'"
+                    :class="s.mem_pct > 80 ? 'cyber-bar-fill-crimson' : s.mem_pct > 60 ? 'cyber-bar-fill-amber' : 'cyber-bar-fill-emerald'"
                     :style="{ width: `${Math.min(s.mem_pct || 0, 100)}%` }"
                   ></div>
                 </div>
@@ -199,89 +203,89 @@
 
               <!-- 8. STORAGE -->
               <td class="py-2.5 px-3 whitespace-nowrap">
-                <div class="text-xs text-gray-300 font-mono mb-1">
+                <div class="text-xs text-gray-300 mb-1">
                   <span :class="(s.disk_pct || 35) > 85 ? 'text-rose-400 font-bold' : 'text-gray-200 font-medium'">
                     {{ s.disk_pct || 35 }}%
                   </span>
-                  <span class="text-gray-500 ml-1">/root</span>
+                  <span class="text-gray-500 ml-1 text-[11px]">/root</span>
                 </div>
-                <div class="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
+                <div class="cyber-bar-track">
                   <div
-                    class="h-full bg-cyan-500 rounded-full"
+                    class="cyber-bar-fill-cyan"
                     :style="{ width: `${s.disk_pct || 35}%` }"
                   ></div>
                 </div>
               </td>
 
               <!-- 9. UPTIME -->
-              <td class="py-2.5 px-3 whitespace-nowrap text-gray-300 text-xs font-mono">
+              <td class="py-2.5 px-3 whitespace-nowrap text-gray-300 text-xs">
                 {{ formatUptime(s.uptime_secs) }}
               </td>
 
               <!-- 10. AGENT & PACKAGES -->
               <td class="py-2.5 px-3 whitespace-nowrap text-center">
-                <span class="px-2 py-0.5 rounded text-xs bg-gray-800/90 text-gray-300 border border-gray-700/60 font-mono font-medium">
+                <span class="px-2 py-0.5 rounded text-[11px] bg-gray-900 text-gray-300 border border-gray-700/80 font-bold">
                   v{{ s.agent_version || '0.1.0' }}
                 </span>
                 <span
                   v-if="s.apt_upgradable > 0"
-                  class="ml-1 px-1.5 py-0.5 rounded text-xs font-bold bg-amber-950 text-amber-300 border border-amber-800 font-mono cursor-help"
+                  class="ml-1 px-1.5 py-0.5 rounded text-[11px] font-bold bg-amber-950 text-amber-300 border border-amber-800 cursor-help"
                   :title="`${s.apt_upgradable} ${t('tooltip_apt_upgradable')}`"
                 >
                   {{ s.apt_upgradable }}
                 </span>
               </td>
 
-              <!-- 11. LAST SEEN -->
-              <td class="py-2.5 px-3 whitespace-nowrap text-gray-400 text-xs font-mono">
+              <!-- 11. LAST SEEN & PING -->
+              <td class="py-2.5 px-3 whitespace-nowrap text-gray-400 text-xs">
                 <div>{{ formatRelativeTime(s.last_seen) }}</div>
-                <div class="text-emerald-400/90 font-semibold">12ms latency</div>
+                <div class="text-emerald-400/90 font-semibold text-[11px]">● 12ms ping</div>
               </td>
 
-              <!-- 12. KLASTER TOMBOL AKSI (POLA APLIKASI PANTAU) -->
+              <!-- 12. KLASTER TOMBOL TINDAKAN (TACTICAL COMMAND CONTROLLER) -->
               <td class="py-2.5 px-4 whitespace-nowrap text-right">
                 <div class="inline-flex items-center gap-1.5">
-                  <!-- Tombol VIEW (Membuka Jendela Kontrol Mengambang) -->
+                  <!-- Tombol INVESTIGATE (Membuka Jendela Kontrol Taktis Mengambang) -->
                   <button
                     @click="$emit('open-workspace', s.id, 'overview')"
-                    class="px-3 py-1.5 rounded-md bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow transition cursor-pointer flex items-center gap-1.5"
-                    :title="t('btn_view')"
+                    class="px-2.5 py-1 rounded bg-cyan-950/80 hover:bg-cyan-700 text-cyan-300 hover:text-white border border-cyan-500/50 text-xs font-bold shadow-[0_0_8px_rgba(56,189,248,0.2)] transition cursor-pointer flex items-center gap-1.5"
+                    :title="t('tooltip_view')"
                   >
-                    <span>📂</span>
-                    <span>{{ t('btn_view') }}</span>
+                    <span>⚡</span>
+                    <span>INVESTIGATE</span>
                   </button>
 
-                  <!-- Tombol Shortcut METRIKS -->
+                  <!-- Shortcut METRIKS -->
                   <button
                     @click="$emit('open-workspace', s.id, 'overview')"
-                    class="w-7 h-7 flex items-center justify-center rounded-md bg-[#131d33] hover:bg-blue-600/30 text-blue-400 border border-gray-700/80 transition cursor-pointer text-xs"
+                    class="w-7 h-7 flex items-center justify-center rounded bg-[#0b1324] hover:bg-cyan-950 text-cyan-400 border border-cyan-800/40 transition cursor-pointer text-xs"
                     :title="t('tooltip_metrics')"
                   >
                     📊
                   </button>
 
-                  <!-- Tombol Shortcut TERMINAL WEB -->
+                  <!-- Shortcut TERMINAL TTY -->
                   <button
                     @click="$emit('open-workspace', s.id, 'terminal')"
-                    class="w-7 h-7 flex items-center justify-center rounded-md bg-[#131d33] hover:bg-blue-600/30 text-blue-400 border border-gray-700/80 transition cursor-pointer text-xs"
+                    class="w-7 h-7 flex items-center justify-center rounded bg-[#0b1324] hover:bg-cyan-950 text-cyan-400 border border-cyan-800/40 transition cursor-pointer text-xs"
                     :title="t('tooltip_terminal')"
                   >
                     🖥️
                   </button>
 
-                  <!-- Tombol SYNC / PROBE INSTAN -->
+                  <!-- Shortcut PROBE INSTAN -->
                   <button
                     @click="$emit('probe-node', s.id)"
-                    class="w-7 h-7 flex items-center justify-center rounded-md bg-[#131d33] hover:bg-emerald-600/30 text-gray-300 hover:text-emerald-400 border border-gray-700/80 transition cursor-pointer text-xs"
+                    class="w-7 h-7 flex items-center justify-center rounded bg-[#0b1324] hover:bg-emerald-950 text-emerald-400 border border-cyan-800/40 transition cursor-pointer text-xs"
                     :title="t('tooltip_sync')"
                   >
                     🔄
                   </button>
 
-                  <!-- Menu DROPDOWN ⋮ (Aksi Tambahan) -->
+                  <!-- Menu DROPDOWN ⋮ -->
                   <button
                     @click="$emit('more-actions', s.id, $event)"
-                    class="w-7 h-7 flex items-center justify-center rounded-md bg-[#131d33] hover:bg-gray-700 text-gray-400 hover:text-white border border-gray-700/80 transition cursor-pointer text-xs font-bold"
+                    class="w-7 h-7 flex items-center justify-center rounded bg-[#0b1324] hover:bg-gray-800 text-gray-400 hover:text-white border border-gray-700/80 transition cursor-pointer text-xs font-bold"
                     :title="t('btn_more')"
                   >
                     ⋮
@@ -292,10 +296,10 @@
 
             <!-- EMPTY STATE ROW (Kondisi Bersih Awal) -->
             <tr v-if="filteredServers.length === 0">
-              <td colspan="12" class="py-12 px-4 text-center">
+              <td colspan="12" class="py-14 px-4 text-center">
                 <div class="flex flex-col items-center justify-center gap-2">
                   <span class="text-3xl text-gray-600">📡</span>
-                  <div class="text-sm font-bold text-gray-200 font-mono tracking-wide">{{ t('fleet_empty_title') }}</div>
+                  <div class="text-sm font-bold text-gray-200 font-mono tracking-wider uppercase">// {{ t('fleet_empty_title') }}</div>
                   <div class="text-xs text-gray-400 font-mono max-w-md">{{ t('fleet_empty_desc') }}</div>
                 </div>
               </td>
@@ -357,7 +361,8 @@ function formatUptime(secs) {
   const h = Math.floor((secs % 86400) / 3600)
   const m = Math.floor((secs % 3600) / 60)
   if (d > 0) return `${d}d ${h}h`
-  return `${h}h ${m}m`
+  if (h > 0) return `${h}h ${m}m`
+  return `${m}m`
 }
 
 function formatRelativeTime(isoStr) {
