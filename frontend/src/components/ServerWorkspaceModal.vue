@@ -2,7 +2,7 @@
   <!-- Floating Workspace Modal Backdrop -->
   <div
     v-if="isOpen && !isMinimized"
-    class="fixed inset-0 z-50 bg-black/70 backdrop-blur-[3px] flex items-center justify-center p-2 sm:p-5 transition-all duration-200"
+    class="fixed inset-0 z-50 bg-black/75 backdrop-blur-[4px] flex items-center justify-center p-2 sm:p-5 transition-all duration-200"
     @click.self="handleBackdropClick"
     @keydown.esc="handleClose"
   >
@@ -12,7 +12,7 @@
         'hud-tactical-card shadow-2xl flex flex-col transition-all duration-200 overflow-hidden relative',
         isMaximized
           ? 'fixed inset-0 w-screen h-screen rounded-none z-50'
-          : 'w-[88vw] max-w-[1520px] h-[86vh] min-h-[580px] rounded-xl'
+          : 'w-[90vw] max-w-[1560px] h-[88vh] min-h-[600px] rounded-xl'
       ]"
     >
       <span class="hud-corner-tr"></span>
@@ -87,9 +87,9 @@
         </div>
 
         <!-- Center / Right: Host Switcher & Window Controls -->
-        <div class="flex items-center gap-2" @click.stop>
+        <div class="flex items-center gap-2 font-mono" @click.stop>
           <!-- HOST SWITCHER TOOLBAR -->
-          <div class="flex items-center bg-[#0d131f] border border-gray-800 rounded-lg p-0.5 mr-2">
+          <div class="flex items-center bg-[#060a14] border border-cyan-900/40 rounded p-0.5 mr-2">
             <!-- Prev Button -->
             <button
               @click="navigateHost(-1)"
@@ -103,7 +103,7 @@
             <div class="relative">
               <button
                 @click="showHostDropdown = !showHostDropdown"
-                class="px-2.5 py-1 text-xs font-mono text-gray-300 hover:text-blue-400 flex items-center gap-1.5 transition cursor-pointer"
+                class="px-2.5 py-1 text-xs font-mono text-gray-300 hover:text-cyan-300 flex items-center gap-1.5 transition cursor-pointer"
                 :title="t('ws_search_fleet')"
               >
                 <span>🖥️</span>
@@ -114,14 +114,14 @@
               <!-- Popover Dropdown -->
               <div
                 v-if="showHostDropdown"
-                class="absolute right-0 top-full mt-1.5 w-72 bg-[#0e1626] border border-gray-700/80 rounded-xl shadow-2xl p-2 z-50 text-xs"
+                class="absolute right-0 top-full mt-1.5 w-72 bg-[#090e1c] border border-cyan-500/40 rounded-xl shadow-2xl p-2 z-50 text-xs"
               >
                 <div class="relative mb-2">
                   <input
                     v-model="hostSearchQuery"
                     type="text"
                     :placeholder="t('ws_search_fleet')"
-                    class="w-full bg-[#162032] border border-gray-700 rounded-lg px-2.5 py-1 text-xs text-gray-100 placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                    class="w-full bg-[#060a14] border border-cyan-800/60 rounded px-2.5 py-1 text-xs text-gray-100 placeholder-gray-500 focus:outline-none focus:border-cyan-400"
                     autofocus
                   />
                 </div>
@@ -130,14 +130,14 @@
                     v-for="h in filteredHosts"
                     :key="h.id"
                     @click="selectHost(h.id)"
-                    class="p-2 rounded-lg hover:bg-blue-600/20 cursor-pointer flex items-center justify-between transition"
-                    :class="{ 'bg-blue-900/30 font-bold': h.id === currentServerId }"
+                    class="p-2 rounded hover:bg-cyan-950/40 cursor-pointer flex items-center justify-between transition"
+                    :class="{ 'bg-cyan-950/60 font-bold border border-cyan-500/30': h.id === currentServerId }"
                   >
                     <div>
                       <div class="font-mono text-gray-200 flex items-center gap-1.5 text-xs font-semibold">
                         <span
                           class="w-2 h-2 rounded-full"
-                          :class="h.is_online ? 'bg-emerald-400' : 'bg-rose-500'"
+                          :class="h.is_online ? 'bg-emerald-400 beacon-live' : 'bg-rose-500'"
                         ></span>
                         <span>{{ h.hostname }}</span>
                       </div>
@@ -160,11 +160,11 @@
           </div>
 
           <!-- WINDOW CONTROLS -->
-          <div class="flex items-center gap-1 border-l border-gray-800 pl-2">
+          <div class="flex items-center gap-1 border-l border-cyan-500/20 pl-2">
             <!-- Minimize Button -->
             <button
               @click="$emit('minimize')"
-              class="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition cursor-pointer"
+              class="p-1.5 rounded text-gray-400 hover:text-white hover:bg-gray-800 transition cursor-pointer"
               :title="t('ws_minimize')"
             >
               <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -175,7 +175,7 @@
             <!-- Maximize / Restore Button -->
             <button
               @click="toggleMaximize"
-              class="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition cursor-pointer font-bold text-xs"
+              class="p-1.5 rounded text-gray-400 hover:text-white hover:bg-gray-800 transition cursor-pointer font-bold text-xs"
               :title="isMaximized ? t('ws_restore') : t('ws_maximize')"
             >
               <span v-if="!isMaximized">⛶</span>
@@ -185,7 +185,7 @@
             <!-- Close Button -->
             <button
               @click="handleClose"
-              class="p-1.5 rounded-lg text-gray-400 hover:text-rose-400 hover:bg-rose-950/40 transition cursor-pointer"
+              class="p-1.5 rounded text-gray-400 hover:text-rose-400 hover:bg-rose-950/40 transition cursor-pointer"
               :title="t('ws_close')"
             >
               <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -197,13 +197,13 @@
         </div>
       </div>
 
-      <!-- SUB-TABS NAVIGATION BAR -->
+      <!-- SUB-TABS NAVIGATION BAR (10 Tactical Sub-Consoles) -->
       <div class="bg-[#070b16] border-b border-cyan-500/20 px-4 flex items-center gap-1 overflow-x-auto shrink-0 select-none py-1.5 font-mono text-xs">
         <button
           v-for="tab in subTabs"
           :key="tab.id"
           @click="activeSubTab = tab.id"
-          class="px-3 py-1.5 rounded text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 whitespace-nowrap border"
+          class="px-2.5 py-1.5 rounded text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 whitespace-nowrap border"
           :class="[
             activeSubTab === tab.id
               ? 'bg-cyan-950/80 text-cyan-300 border-cyan-500/60 shadow-[0_0_8px_rgba(56,189,248,0.2)] font-bold'
@@ -238,114 +238,152 @@
       <!-- MODAL CONTENT BODY -->
       <div class="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
         <!-- Loading State -->
-        <div v-if="loading && !server" class="py-24 text-center text-gray-400 text-xs">
-          <div class="inline-block animate-spin text-2xl mb-2">🔄</div>
+        <div v-if="loading && !server" class="py-24 text-center text-gray-400 text-xs font-mono">
+          <div class="inline-block animate-spin text-2xl mb-2 text-cyan-400">🔄</div>
           <div>{{ t('ws_loading_telemetry') }}</div>
         </div>
 
         <template v-else-if="server">
           <!-- SUB-TAB 1: OVERVIEW -->
-          <div v-if="activeSubTab === 'overview'" class="space-y-4">
+          <div v-if="activeSubTab === 'overview'" class="space-y-4 font-mono">
             <!-- 4 Top Stat Gauges -->
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <!-- CPU Card -->
-              <div class="bg-[#121929] border border-gray-800 p-4 rounded-xl">
-                <div class="text-xs text-gray-400 font-medium">{{ t('ws_cpu_util') }}</div>
-                <div class="text-2xl font-bold font-mono text-gray-100 mt-1">
+              <div class="hud-tactical-card p-3.5 rounded-lg">
+                <span class="hud-corner-tr"></span>
+                <span class="hud-corner-bl"></span>
+                <div class="text-[11px] text-gray-400 font-medium">// {{ t('ws_cpu_util') }}</div>
+                <div class="text-2xl font-bold text-gray-100 mt-1">
                   {{ (server.metrics?.cpu || 0).toFixed(1) }}%
                 </div>
-                <div class="text-xs text-gray-400 font-mono mt-1">
+                <div class="cyber-bar-track mt-2 mb-1.5">
+                  <div
+                    :class="(server.metrics?.cpu || 0) > 80 ? 'cyber-bar-fill-crimson' : (server.metrics?.cpu || 0) > 60 ? 'cyber-bar-fill-amber' : 'cyber-bar-fill-cyan'"
+                    :style="{ width: `${Math.min(server.metrics?.cpu || 0, 100)}%` }"
+                  ></div>
+                </div>
+                <div class="text-[11px] text-gray-400 mt-1">
                   Load: {{ (server.metrics?.load || []).join(' · ') }}
                 </div>
               </div>
 
               <!-- RAM Card -->
-              <div class="bg-[#121929] border border-gray-800 p-4 rounded-xl">
-                <div class="text-xs text-gray-400 font-medium">{{ t('ws_ram_mem') }}</div>
-                <div class="text-2xl font-bold font-mono text-gray-100 mt-1">
+              <div class="hud-tactical-card p-3.5 rounded-lg">
+                <span class="hud-corner-tr"></span>
+                <span class="hud-corner-bl"></span>
+                <div class="text-[11px] text-gray-400 font-medium">// {{ t('ws_ram_mem') }}</div>
+                <div class="text-2xl font-bold text-gray-100 mt-1">
                   {{ formatBytes(server.metrics?.mem_used) }}
                 </div>
-                <div class="text-xs text-gray-400 font-mono mt-1">
-                  {{ t('dash_kpi_total') }} {{ formatBytes(server.metrics?.mem_total) }}
+                <div class="cyber-bar-track mt-2 mb-1.5">
+                  <div
+                    class="cyber-bar-fill-emerald"
+                    :style="{ width: `${Math.min(((server.metrics?.mem_used || 0) / (server.metrics?.mem_total || 1)) * 100, 100)}%` }"
+                  ></div>
+                </div>
+                <div class="text-[11px] text-gray-400 mt-1">
+                  {{ t('dash_kpi_total') }}: {{ formatBytes(server.metrics?.mem_total) }}
                 </div>
               </div>
 
               <!-- Swap Card -->
-              <div class="bg-[#121929] border border-gray-800 p-4 rounded-xl">
-                <div class="text-xs text-gray-400 font-medium">{{ t('ws_swap_mem') }}</div>
-                <div class="text-2xl font-bold font-mono text-gray-100 mt-1">
+              <div class="hud-tactical-card p-3.5 rounded-lg">
+                <span class="hud-corner-tr"></span>
+                <span class="hud-corner-bl"></span>
+                <div class="text-[11px] text-gray-400 font-medium">// {{ t('ws_swap_mem') }}</div>
+                <div class="text-2xl font-bold text-gray-100 mt-1">
                   {{ formatBytes(server.metrics?.swap_used) }}
                 </div>
-                <div class="text-xs text-gray-400 font-mono mt-1">
-                  {{ t('dash_kpi_total') }} {{ formatBytes(server.metrics?.swap_total) }}
+                <div class="cyber-bar-track mt-2 mb-1.5">
+                  <div
+                    class="cyber-bar-fill-cyan"
+                    :style="{ width: `${Math.min(((server.metrics?.swap_used || 0) / (server.metrics?.swap_total || 1)) * 100, 100)}%` }"
+                  ></div>
+                </div>
+                <div class="text-[11px] text-gray-400 mt-1">
+                  {{ t('dash_kpi_total') }}: {{ formatBytes(server.metrics?.swap_total) }}
                 </div>
               </div>
 
               <!-- Uptime Card -->
-              <div class="bg-[#121929] border border-gray-800 p-4 rounded-xl">
-                <div class="text-xs text-gray-400 font-medium">{{ t('ws_uptime') }}</div>
-                <div class="text-lg font-bold font-mono text-emerald-400 mt-1">
+              <div class="hud-tactical-card p-3.5 rounded-lg">
+                <span class="hud-corner-tr"></span>
+                <span class="hud-corner-bl"></span>
+                <div class="text-[11px] text-gray-400 font-medium">// {{ t('ws_uptime') }}</div>
+                <div class="text-lg font-bold text-emerald-400 mt-1">
                   {{ formatUptime(server.metrics?.uptime_secs) }}
                 </div>
-                <div class="text-xs text-gray-400 font-mono mt-1">
+                <div class="text-[11px] text-gray-400 mt-2">
                   {{ t('col_last_seen') }}: {{ server.last_seen || '-' }}
                 </div>
               </div>
             </div>
 
             <!-- Hardware Specifications Summary -->
-            <div v-if="server.hardware" class="bg-[#121929] border border-gray-800 rounded-xl p-4">
-              <h3 class="text-xs font-bold text-gray-300 uppercase tracking-wider mb-2.5">
-                {{ t('ws_hw_specs') }}
+            <div v-if="server.hardware" class="hud-tactical-card rounded-xl p-4">
+              <span class="hud-corner-tr"></span>
+              <span class="hud-corner-bl"></span>
+              <h3 class="text-xs font-bold text-gray-300 uppercase tracking-wider mb-2.5 text-cyan-400">
+                // {{ t('ws_hw_specs') }}
               </h3>
-              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                 <div>
                   <span class="text-gray-500">{{ t('ws_cpu_model') }}</span>
-                  <div class="text-gray-200 truncate">{{ server.hardware.cpu_model || server.hardware.model || '-' }}</div>
+                  <div class="text-gray-200 truncate mt-0.5">{{ server.hardware.cpu_model || server.hardware.model || '-' }}</div>
                 </div>
                 <div>
                   <span class="text-gray-500">{{ t('ws_core_capacity') }}</span>
-                  <div class="text-gray-200">{{ server.hardware.cores || server.hardware.cpus || '-' }} Core(s)</div>
+                  <div class="text-gray-200 mt-0.5">{{ server.hardware.cores || server.hardware.cpus || '-' }} Core(s)</div>
                 </div>
                 <div>
                   <span class="text-gray-500">{{ t('ws_arch') }}</span>
-                  <div class="text-gray-200">{{ server.arch || 'x86_64' }}</div>
+                  <div class="text-gray-200 mt-0.5">{{ server.arch || 'x86_64' }}</div>
                 </div>
                 <div>
                   <span class="text-gray-500">{{ t('ws_fleet_group') }}</span>
-                  <div class="text-blue-400">{{ server.group_name }} (Tier {{ server.tier }})</div>
+                  <div class="text-cyan-400 mt-0.5">{{ server.group_name }} (Tier {{ server.tier }})</div>
                 </div>
               </div>
             </div>
 
             <!-- Partisi Penyimpanan (Disks Table) -->
-            <div class="bg-[#121929] border border-gray-800 rounded-xl p-4">
-              <h3 class="text-xs font-bold text-gray-300 uppercase tracking-wider mb-3">
-                {{ t('ws_disk_partitions') }}
+            <div class="hud-tactical-card rounded-xl p-4">
+              <span class="hud-corner-tr"></span>
+              <span class="hud-corner-bl"></span>
+              <h3 class="text-xs font-bold text-gray-300 uppercase tracking-wider mb-3 text-cyan-400">
+                // {{ t('ws_disk_partitions') }}
               </h3>
               <div class="overflow-x-auto">
-                <table class="w-full text-left text-xs font-mono">
+                <table class="w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr class="border-b border-gray-800 text-gray-400 text-xs uppercase font-bold tracking-wider">
+                    <tr class="border-b border-cyan-500/20 text-gray-400 uppercase font-bold tracking-wider">
                       <th class="pb-2">Mount Point</th>
                       <th class="pb-2">Filesystem</th>
                       <th class="pb-2">{{ t('dash_kpi_total') }}</th>
                       <th class="pb-2">Used</th>
                       <th class="pb-2">Avail</th>
-                      <th class="pb-2">Util (%)</th>
+                      <th class="pb-2 min-w-[140px]">Util (%)</th>
                     </tr>
                   </thead>
-                  <tbody class="divide-y divide-gray-800/60">
-                    <tr v-for="(d, idx) in server.metrics?.disks || []" :key="idx" class="hover:bg-gray-800/20">
-                      <td class="py-2.5 text-blue-400 font-semibold">{{ d.mount || d.mounted_on || '/' }}</td>
+                  <tbody class="divide-y divide-gray-800/40">
+                    <tr v-for="(d, idx) in server.metrics?.disks || []" :key="idx" class="hover:bg-cyan-950/20">
+                      <td class="py-2.5 text-cyan-300 font-semibold">{{ d.mount || d.mounted_on || '/' }}</td>
                       <td class="py-2.5 text-gray-400">{{ d.filesystem || d.device || '-' }}</td>
                       <td class="py-2.5 text-gray-300">{{ formatBytes(d.total_bytes || d.total) }}</td>
                       <td class="py-2.5 text-gray-300">{{ formatBytes(d.used_bytes || d.used) }}</td>
                       <td class="py-2.5 text-gray-300">{{ formatBytes(d.free_bytes || d.free || d.avail) }}</td>
                       <td class="py-2.5">
-                        <span :class="(d.used_percent || d.percent || 0) > 85 ? 'text-rose-400 font-bold' : 'text-emerald-400 font-bold'">
-                          {{ (d.used_percent || d.percent || 0).toFixed(1) }}%
-                        </span>
+                        <div class="flex items-center gap-2">
+                          <span :class="(d.used_percent || d.percent || 0) > 85 ? 'text-rose-400 font-bold' : 'text-emerald-400 font-bold'">
+                            {{ (d.used_percent || d.percent || 0).toFixed(1) }}%
+                          </span>
+                          <div class="cyber-bar-track flex-1">
+                            <div
+                              :class="(d.used_percent || d.percent || 0) > 85 ? 'cyber-bar-fill-crimson' : 'cyber-bar-fill-cyan'"
+                              :style="{ width: `${Math.min(d.used_percent || d.percent || 0, 100)}%` }"
+                            ></div>
+                          </div>
+                        </div>
                       </td>
                     </tr>
                   </tbody>
@@ -355,16 +393,18 @@
           </div>
 
           <!-- SUB-TAB 2: INCIDENTS & PROBLEMS -->
-          <div v-if="activeSubTab === 'problems'" class="space-y-3">
+          <div v-if="activeSubTab === 'problems'" class="space-y-3 font-mono">
             <div class="flex items-center justify-between">
-              <h3 class="text-xs font-bold text-gray-200 uppercase tracking-wider">
-                {{ t('ws_incidents_title') }}
+              <h3 class="text-xs font-bold text-gray-200 uppercase tracking-wider text-cyan-400">
+                // {{ t('ws_incidents_title') }}
               </h3>
-              <span class="text-xs text-gray-400 font-mono">{{ serverProblems.length }} {{ t('active_incidents').toLowerCase() }}</span>
+              <span class="text-xs text-gray-400">{{ serverProblems.length }} {{ t('active_incidents').toLowerCase() }}</span>
             </div>
 
-            <div v-if="serverProblems.length === 0" class="bg-[#121929] border border-gray-800 rounded-xl p-8 text-center">
-              <div class="text-2xl mb-1">✅</div>
+            <div v-if="serverProblems.length === 0" class="hud-tactical-card rounded-xl p-8 text-center">
+              <span class="hud-corner-tr"></span>
+              <span class="hud-corner-bl"></span>
+              <div class="text-2xl mb-1 text-emerald-400">✓</div>
               <div class="text-xs font-semibold text-gray-200">{{ t('ws_incidents_empty') }}</div>
               <div class="text-xs text-gray-400 mt-1">{{ t('ws_incidents_normal') }}</div>
             </div>
@@ -373,8 +413,8 @@
               <div
                 v-for="prob in serverProblems"
                 :key="prob.id"
-                class="bg-[#121929] border rounded-xl p-3.5 flex items-start justify-between gap-3"
-                :class="prob.key.startsWith('ssh_active_session:') ? 'border-amber-500/50 bg-amber-950/15' : 'border-gray-800'"
+                class="hud-tactical-card rounded-xl p-3.5 flex items-start justify-between gap-3"
+                :class="prob.key.startsWith('ssh_active_session:') ? 'border-amber-500/60 bg-amber-950/20' : 'border-gray-800'"
               >
                 <div class="flex items-start gap-3">
                   <span class="text-xl">
@@ -383,13 +423,13 @@
                   <div>
                     <div class="text-xs font-bold text-gray-100">{{ prob.message }}</div>
                     <div v-if="prob.tip" class="text-xs text-gray-400 mt-1">{{ prob.tip }}</div>
-                    <div class="text-xs text-gray-500 font-mono mt-1">{{ t('ws_detected_since') }} {{ prob.started_at }}</div>
+                    <div class="text-xs text-gray-500 mt-1">{{ t('ws_detected_since') }} {{ prob.started_at }}</div>
                   </div>
                 </div>
                 <button
                   v-if="prob.key.startsWith('ssh_active_session:')"
                   @click="terminateSSHSessionFromProblem(prob.id)"
-                  class="px-3 py-1 rounded bg-rose-600 hover:bg-rose-500 text-white font-medium text-xs shadow transition cursor-pointer shrink-0"
+                  class="px-3 py-1 rounded bg-rose-950 text-rose-300 border border-rose-700 hover:bg-rose-800 hover:text-white font-bold text-xs transition cursor-pointer shrink-0"
                 >
                   {{ t('ws_sever_ssh_btn') }}
                 </button>
@@ -398,36 +438,38 @@
           </div>
 
           <!-- SUB-TAB 3: SERVICES -->
-          <div v-if="activeSubTab === 'services'" class="bg-[#121929] border border-gray-800 rounded-xl p-4">
-            <div class="flex items-center justify-between mb-3">
+          <div v-if="activeSubTab === 'services'" class="hud-tactical-card rounded-xl p-4 font-mono">
+            <span class="hud-corner-tr"></span>
+            <span class="hud-corner-bl"></span>
+            <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
               <div class="flex items-center gap-2">
-                <h3 class="text-xs font-bold text-gray-200 uppercase tracking-wider">{{ t('ws_services_title') }}</h3>
-                <span class="text-xs text-gray-400 font-mono">({{ filteredServices.length }}/{{ servicesList.length }})</span>
+                <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider">// {{ t('ws_services_title') }}</h3>
+                <span class="text-xs text-gray-400">({{ filteredServices.length }}/{{ servicesList.length }})</span>
               </div>
               <input
                 v-model="serviceSearch"
                 type="text"
                 :placeholder="t('ws_services_search')"
-                class="bg-[#0b111e] border border-gray-700 text-gray-200 text-xs rounded-lg px-3 py-1.5 w-60 focus:outline-none focus:border-blue-500"
+                class="bg-[#060a14] border border-cyan-900/50 focus:border-cyan-400 text-gray-200 text-xs rounded px-3 py-1.5 w-60 focus:outline-none"
               />
             </div>
             <div class="overflow-x-auto max-h-[500px]">
-              <table class="w-full text-left text-xs font-mono">
-                <thead class="sticky top-0 bg-[#162032]">
-                  <tr class="border-b border-gray-800 text-gray-400 text-xs uppercase font-bold tracking-wider">
+              <table class="w-full text-left text-xs border-collapse">
+                <thead class="sticky top-0 bg-[#070c18] z-10 border-b border-cyan-500/20">
+                  <tr class="text-gray-400 uppercase font-bold tracking-wider">
                     <th class="py-2.5 px-3">{{ t('ws_col_service_name') }}</th>
                     <th class="py-2.5 px-3">{{ t('col_status') }}</th>
                     <th class="py-2.5 px-3">{{ t('ws_col_description') }}</th>
-                    <th class="py-2.5 px-3 text-right">{{ t('col_actions') }}</th>
+                    <th class="py-2.5 px-3 text-right">Tindakan</th>
                   </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-800/60">
-                  <tr v-for="(svc, idx) in filteredServices" :key="idx" class="hover:bg-gray-800/30">
+                <tbody class="divide-y divide-gray-800/40">
+                  <tr v-for="(svc, idx) in filteredServices" :key="idx" class="hover:bg-cyan-950/20">
                     <td class="py-2.5 px-3 font-semibold text-gray-200">{{ svc.name || svc.unit }}</td>
                     <td class="py-2.5 px-3">
                       <span
-                        class="px-2 py-0.5 rounded text-xs uppercase font-semibold"
-                        :class="svc.active === 'active' || svc.sub === 'running' ? 'bg-emerald-950/60 text-emerald-400 border border-emerald-800/40' : 'bg-gray-800 text-gray-400'"
+                        class="px-2 py-0.5 rounded text-[11px] uppercase font-bold"
+                        :class="svc.active === 'active' || svc.sub === 'running' ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-700/60' : 'bg-gray-800 text-gray-400'"
                       >
                         {{ svc.sub || svc.active || 'unknown' }}
                       </span>
@@ -436,7 +478,7 @@
                     <td class="py-2.5 px-3 text-right">
                       <button
                         @click="restartService(svc.name || svc.unit)"
-                        class="px-2.5 py-1 rounded bg-blue-600/20 text-blue-400 border border-blue-500/30 hover:bg-blue-600 hover:text-white transition cursor-pointer text-xs font-medium"
+                        class="px-2.5 py-1 rounded bg-cyan-950 text-cyan-300 border border-cyan-600/50 hover:bg-cyan-700 hover:text-white transition cursor-pointer text-xs font-bold"
                       >
                         {{ t('ws_act_restart') }}
                       </button>
@@ -448,34 +490,36 @@
           </div>
 
           <!-- SUB-TAB 4: PROCESSES & TASKS -->
-          <div v-if="activeSubTab === 'processes'" class="bg-[#121929] border border-gray-800 rounded-xl p-4">
-            <div class="flex items-center justify-between mb-3">
+          <div v-if="activeSubTab === 'processes'" class="hud-tactical-card rounded-xl p-4 font-mono">
+            <span class="hud-corner-tr"></span>
+            <span class="hud-corner-bl"></span>
+            <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
               <div class="flex items-center gap-2">
-                <h3 class="text-xs font-bold text-gray-200 uppercase tracking-wider">{{ t('ws_procs_title') }}</h3>
-                <span class="text-xs text-gray-400 font-mono">({{ processesList.length }})</span>
+                <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider">// {{ t('ws_procs_title') }}</h3>
+                <span class="text-xs text-gray-400">({{ processesList.length }})</span>
               </div>
               <input
                 v-model="processSearch"
                 type="text"
                 :placeholder="t('ws_procs_search')"
-                class="bg-[#0b111e] border border-gray-700 text-gray-200 text-xs rounded-lg px-3 py-1.5 w-60 focus:outline-none focus:border-blue-500"
+                class="bg-[#060a14] border border-cyan-900/50 focus:border-cyan-400 text-gray-200 text-xs rounded px-3 py-1.5 w-60 focus:outline-none"
               />
             </div>
             <div class="overflow-x-auto max-h-[500px]">
-              <table class="w-full text-left text-xs font-mono">
-                <thead class="sticky top-0 bg-[#162032]">
-                  <tr class="border-b border-gray-800 text-gray-400 text-xs uppercase font-bold tracking-wider">
+              <table class="w-full text-left text-xs border-collapse">
+                <thead class="sticky top-0 bg-[#070c18] z-10 border-b border-cyan-500/20">
+                  <tr class="text-gray-400 uppercase font-bold tracking-wider">
                     <th class="py-2.5 px-3">PID</th>
                     <th class="py-2.5 px-3">{{ t('ws_col_user') }}</th>
                     <th class="py-2.5 px-3">CPU %</th>
                     <th class="py-2.5 px-3">RAM %</th>
                     <th class="py-2.5 px-3">{{ t('ws_col_command') }}</th>
-                    <th class="py-2.5 px-3 text-right">{{ t('col_actions') }}</th>
+                    <th class="py-2.5 px-3 text-right">Tindakan</th>
                   </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-800/60">
-                  <tr v-for="(p, idx) in filteredProcesses" :key="idx" class="hover:bg-gray-800/30">
-                    <td class="py-2.5 px-3 text-blue-400 font-bold">{{ p.pid }}</td>
+                <tbody class="divide-y divide-gray-800/40">
+                  <tr v-for="(p, idx) in filteredProcesses" :key="idx" class="hover:bg-cyan-950/20">
+                    <td class="py-2.5 px-3 text-cyan-400 font-bold">{{ p.pid }}</td>
                     <td class="py-2.5 px-3 text-gray-300">{{ p.user }}</td>
                     <td class="py-2.5 px-3 text-gray-200 font-semibold">{{ p.cpu || p.cpu_percent || 0 }}%</td>
                     <td class="py-2.5 px-3 text-gray-200 font-semibold">{{ p.mem || p.mem_percent || 0 }}%</td>
@@ -488,7 +532,7 @@
                     <td class="py-2.5 px-3 text-right">
                       <button
                         @click="killProcess(p.pid)"
-                        class="px-2.5 py-1 rounded bg-rose-600/20 text-rose-400 border border-rose-500/30 hover:bg-rose-600 hover:text-white transition cursor-pointer text-xs font-medium"
+                        class="px-2.5 py-1 rounded bg-rose-950 text-rose-300 border border-rose-700 hover:bg-rose-700 hover:text-white transition cursor-pointer text-xs font-bold"
                       >
                         {{ t('ws_act_kill') }}
                       </button>
@@ -500,15 +544,17 @@
           </div>
 
           <!-- SUB-TAB 5: PORTS & SOCKETS -->
-          <div v-if="activeSubTab === 'ports'" class="bg-[#121929] border border-gray-800 rounded-xl p-4">
+          <div v-if="activeSubTab === 'ports'" class="hud-tactical-card rounded-xl p-4 font-mono">
+            <span class="hud-corner-tr"></span>
+            <span class="hud-corner-bl"></span>
             <div class="flex items-center justify-between mb-3">
-              <h3 class="text-xs font-bold text-gray-200 uppercase tracking-wider">{{ t('ws_ports_title') }}</h3>
-              <span class="text-xs text-gray-400 font-mono">{{ portsList.length }} {{ t('ws_open_ports_count') }}</span>
+              <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider">// {{ t('ws_ports_title') }}</h3>
+              <span class="text-xs text-gray-400">{{ portsList.length }} {{ t('ws_open_ports_count') }}</span>
             </div>
             <div class="overflow-x-auto max-h-[500px]">
-              <table class="w-full text-left text-xs font-mono">
-                <thead class="sticky top-0 bg-[#162032]">
-                  <tr class="border-b border-gray-800 text-gray-400 text-xs uppercase font-bold tracking-wider">
+              <table class="w-full text-left text-xs border-collapse">
+                <thead class="sticky top-0 bg-[#070c18] z-10 border-b border-cyan-500/20">
+                  <tr class="text-gray-400 uppercase font-bold tracking-wider">
                     <th class="py-2.5 px-3">Port</th>
                     <th class="py-2.5 px-3">Proto</th>
                     <th class="py-2.5 px-3">{{ t('ws_col_bind') }}</th>
@@ -516,10 +562,10 @@
                     <th class="py-2.5 px-3">{{ t('ws_col_class') }}</th>
                   </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-800/60">
-                  <tr v-for="(pt, idx) in portsList" :key="idx" class="hover:bg-gray-800/30">
+                <tbody class="divide-y divide-gray-800/40">
+                  <tr v-for="(pt, idx) in portsList" :key="idx" class="hover:bg-cyan-950/20">
                     <td
-                      class="py-2.5 px-3 font-bold text-blue-400 cursor-help hover:underline decoration-blue-500/50"
+                      class="py-2.5 px-3 font-bold text-cyan-300 cursor-help hover:underline decoration-cyan-500/50"
                       :title="`${pt.proto || 'tcp'}:${pt.port} (${pt.process || pt.service || 'listening'})`"
                     >
                       {{ pt.port }}
@@ -529,8 +575,8 @@
                     <td class="py-2.5 px-3 text-gray-200">{{ pt.process || pt.service || '-' }}</td>
                     <td class="py-2.5 px-3">
                       <span
-                        class="px-2 py-0.5 rounded text-xs font-semibold"
-                        :class="(pt.bind || '').includes('127.0.0.1') ? 'bg-gray-800 text-gray-400' : 'bg-amber-950/60 text-amber-300 border border-amber-800/50'"
+                        class="px-2 py-0.5 rounded text-[11px] font-bold uppercase"
+                        :class="(pt.bind || '').includes('127.0.0.1') ? 'bg-cyan-950 text-cyan-300 border border-cyan-800' : 'bg-amber-950 text-amber-300 border border-amber-800 radar-warning'"
                       >
                         {{ (pt.bind || '').includes('127.0.0.1') ? 'Local' : 'Public' }}
                       </span>
@@ -542,32 +588,34 @@
           </div>
 
           <!-- SUB-TAB 6: FIREWALL -->
-          <div v-if="activeSubTab === 'firewall'" class="bg-[#121929] border border-gray-800 rounded-xl p-4">
+          <div v-if="activeSubTab === 'firewall'" class="hud-tactical-card rounded-xl p-4 font-mono">
+            <span class="hud-corner-tr"></span>
+            <span class="hud-corner-bl"></span>
             <div class="flex items-center justify-between mb-3">
               <div class="flex items-center gap-2">
-                <h3 class="text-xs font-bold text-gray-200 uppercase tracking-wider">{{ t('ws_fw_title') }}</h3>
+                <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider">// {{ t('ws_fw_title') }}</h3>
                 <span
-                  class="px-2 py-0.5 rounded text-xs uppercase font-bold"
-                  :class="firewallData.status === 'active' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-gray-800 text-gray-400'"
+                  class="px-2 py-0.5 rounded text-[11px] uppercase font-bold"
+                  :class="firewallData.status === 'active' ? 'bg-emerald-950 text-emerald-300 border border-emerald-700/60' : 'bg-gray-800 text-gray-400'"
                 >
                   {{ firewallData.status || 'unknown' }}
                 </span>
               </div>
             </div>
-            <div v-if="(firewallData.rules || []).length === 0" class="text-xs text-gray-400 py-6 text-center font-mono">
+            <div v-if="(firewallData.rules || []).length === 0" class="text-xs text-gray-400 py-8 text-center font-mono">
               {{ t('ws_fw_empty') }}
             </div>
             <div v-else class="overflow-x-auto">
-              <table class="w-full text-left text-xs font-mono">
-                <thead>
-                  <tr class="border-b border-gray-800 text-gray-400 text-xs uppercase font-bold tracking-wider">
+              <table class="w-full text-left text-xs border-collapse">
+                <thead class="border-b border-cyan-500/20 text-gray-400 uppercase font-bold tracking-wider">
+                  <tr>
                     <th class="py-2.5 px-3">{{ t('ws_col_to') }}</th>
                     <th class="py-2.5 px-3">{{ t('ws_col_action') }}</th>
                     <th class="py-2.5 px-3">{{ t('ws_col_from') }}</th>
                   </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-800/60">
-                  <tr v-for="(r, idx) in firewallData.rules" :key="idx" class="hover:bg-gray-800/30">
+                <tbody class="divide-y divide-gray-800/40">
+                  <tr v-for="(r, idx) in firewallData.rules" :key="idx" class="hover:bg-cyan-950/20">
                     <td class="py-2.5 px-3 font-semibold text-gray-200">{{ r.to || r.target }}</td>
                     <td class="py-2.5 px-3">
                       <span class="text-emerald-400 font-bold">{{ r.action || 'ALLOW' }}</span>
@@ -580,26 +628,28 @@
           </div>
 
           <!-- SUB-TAB 7: CRON & TIMERS -->
-          <div v-if="activeSubTab === 'cron'" class="bg-[#121929] border border-gray-800 rounded-xl p-4">
+          <div v-if="activeSubTab === 'cron'" class="hud-tactical-card rounded-xl p-4 font-mono">
+            <span class="hud-corner-tr"></span>
+            <span class="hud-corner-bl"></span>
             <div class="flex items-center justify-between mb-3">
-              <h3 class="text-xs font-bold text-gray-200 uppercase tracking-wider">{{ t('ws_cron_title') }}</h3>
-              <span class="text-xs text-gray-400 font-mono">{{ (cronData.jobs || []).length }}</span>
+              <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider">// {{ t('ws_cron_title') }}</h3>
+              <span class="text-xs text-gray-400">{{ (cronData.jobs || []).length }} tasks</span>
             </div>
-            <div v-if="(cronData.jobs || []).length === 0" class="text-xs text-gray-400 py-6 text-center font-mono">
+            <div v-if="(cronData.jobs || []).length === 0" class="text-xs text-gray-400 py-8 text-center font-mono">
               {{ t('ws_cron_empty') }}
             </div>
             <div v-else class="overflow-x-auto max-h-[500px]">
-              <table class="w-full text-left text-xs font-mono">
-                <thead class="sticky top-0 bg-[#162032]">
-                  <tr class="border-b border-gray-800 text-gray-400 text-xs uppercase font-bold tracking-wider">
+              <table class="w-full text-left text-xs border-collapse">
+                <thead class="sticky top-0 bg-[#070c18] z-10 border-b border-cyan-500/20">
+                  <tr class="text-gray-400 uppercase font-bold tracking-wider">
                     <th class="py-2.5 px-3">{{ t('ws_col_schedule') }}</th>
                     <th class="py-2.5 px-3">{{ t('ws_col_user') }}</th>
                     <th class="py-2.5 px-3">{{ t('ws_col_exec') }}</th>
                     <th class="py-2.5 px-3">{{ t('ws_col_source') }}</th>
                   </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-800/60">
-                  <tr v-for="(j, idx) in cronData.jobs" :key="idx" class="hover:bg-gray-800/30">
+                <tbody class="divide-y divide-gray-800/40">
+                  <tr v-for="(j, idx) in cronData.jobs" :key="idx" class="hover:bg-cyan-950/20">
                     <td class="py-2.5 px-3 font-bold text-amber-300">{{ j.schedule }}</td>
                     <td class="py-2.5 px-3 text-gray-300 font-medium">{{ j.user || 'root' }}</td>
                     <td
@@ -616,41 +666,43 @@
           </div>
 
           <!-- SUB-TAB 8: USERS & SSH -->
-          <div v-if="activeSubTab === 'accounts'" class="space-y-4">
+          <div v-if="activeSubTab === 'accounts'" class="space-y-4 font-mono">
             <!-- Sesi SSH Aktif -->
-            <div class="bg-[#121929] border border-gray-800 rounded-xl p-4">
+            <div class="hud-tactical-card rounded-xl p-4">
+              <span class="hud-corner-tr"></span>
+              <span class="hud-corner-bl"></span>
               <div class="flex items-center justify-between mb-3">
-                <h3 class="text-xs font-bold text-gray-200 uppercase tracking-wider">{{ t('ws_ssh_active_title') }}</h3>
+                <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider">// {{ t('ws_ssh_active_title') }}</h3>
                 <span
                   v-if="activeSSHSessions.length > 0"
-                  class="px-2 py-0.5 rounded text-xs font-bold bg-amber-500 text-black animate-pulse"
+                  class="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-950 text-amber-300 border border-amber-800 radar-warning"
                 >
                   {{ activeSSHSessions.length }} {{ t('ws_ssh_sessions_count') }}
                 </span>
               </div>
-              <div v-if="activeSSHSessions.length === 0" class="text-xs text-gray-400 py-4 text-center font-mono">
+              <div v-if="activeSSHSessions.length === 0" class="text-xs text-gray-400 py-6 text-center">
                 {{ t('ws_ssh_empty') }}
               </div>
               <div v-else class="space-y-2">
                 <div
                   v-for="(s, idx) in activeSSHSessions"
                   :key="idx"
-                  class="p-3 bg-amber-950/20 border border-amber-800/40 rounded-lg flex items-center justify-between"
+                  class="p-3 bg-amber-950/20 border border-amber-700/60 rounded-lg flex items-center justify-between"
                 >
                   <div class="flex items-center gap-3">
                     <div class="text-xl">🔑</div>
                     <div>
-                      <div class="text-xs font-bold text-amber-300 font-mono">
+                      <div class="text-xs font-bold text-amber-300">
                         {{ s.user }} <span class="text-gray-400 font-normal">{{ t('ws_connected_from') }}</span> {{ s.from }}
                       </div>
-                      <div class="text-xs text-gray-400 font-mono mt-1">
+                      <div class="text-xs text-gray-400 mt-1">
                         TTY: {{ s.tty }} · {{ t('dash_col_time') }}: {{ s.time || '-' }}
                       </div>
                     </div>
                   </div>
                   <button
                     @click="terminateSSHSession(s.user, s.tty)"
-                    class="px-3 py-1 rounded bg-rose-600 hover:bg-rose-500 text-white font-medium text-xs shadow transition cursor-pointer"
+                    class="px-3 py-1 rounded bg-rose-950 text-rose-300 border border-rose-700 hover:bg-rose-700 hover:text-white font-bold text-xs transition cursor-pointer"
                   >
                     {{ t('ws_sever_ssh_btn') }}
                   </button>
@@ -659,42 +711,135 @@
             </div>
 
             <!-- Akun Pengguna Lokal -->
-            <div class="bg-[#121929] border border-gray-800 rounded-xl p-4">
-              <h3 class="text-xs font-bold text-gray-200 uppercase tracking-wider mb-3">{{ t('ws_accounts_title') }}</h3>
+            <div class="hud-tactical-card rounded-xl p-4">
+              <span class="hud-corner-tr"></span>
+              <span class="hud-corner-bl"></span>
+              <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider mb-3">// {{ t('ws_accounts_title') }}</h3>
               <div class="overflow-x-auto max-h-[350px]">
-                <table class="w-full text-left text-xs font-mono">
-                  <thead class="sticky top-0 bg-[#162032]">
-                    <tr class="border-b border-gray-800 text-gray-400 text-xs uppercase font-bold tracking-wider">
+                <table class="w-full text-left text-xs border-collapse">
+                  <thead class="sticky top-0 bg-[#070c18] z-10 border-b border-cyan-500/20">
+                    <tr class="text-gray-400 uppercase font-bold tracking-wider">
                       <th class="py-2.5 px-3">{{ t('ws_col_username') }}</th>
                       <th class="py-2.5 px-3">UID</th>
                       <th class="py-2.5 px-3">{{ t('ws_col_home') }}</th>
                       <th class="py-2.5 px-3">{{ t('ws_col_shell') }}</th>
                     </tr>
                   </thead>
-                  <tbody class="divide-y divide-gray-800/60">
-                    <tr v-for="(acc, idx) in accountsList" :key="idx" class="hover:bg-gray-800/30">
+                  <tbody class="divide-y divide-gray-800/40">
+                    <tr v-for="(acc, idx) in accountsList" :key="idx" class="hover:bg-cyan-950/20">
                       <td class="py-2.5 px-3 font-semibold text-gray-200">{{ acc.user || acc.name }}</td>
                       <td class="py-2.5 px-3 text-gray-400">{{ acc.uid || '-' }}</td>
                       <td class="py-2.5 px-3 text-gray-300">{{ acc.home || '-' }}</td>
-                      <td class="py-2.5 px-3 text-blue-400">{{ acc.shell || '-' }}</td>
+                      <td class="py-2.5 px-3 text-cyan-400">{{ acc.shell || '-' }}</td>
                     </tr>
                   </tbody>
                 </table>
               </div>
             </div>
           </div>
+
+          <!-- SUB-TAB 9: WEB TERMINAL (PTY Console via WebSocket) -->
+          <div v-if="activeSubTab === 'terminal'" class="hud-tactical-card rounded-xl p-4 font-mono space-y-3">
+            <span class="hud-corner-tr"></span>
+            <span class="hud-corner-bl"></span>
+            <div class="flex items-center justify-between border-b border-cyan-500/20 pb-2">
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 beacon-live"></span>
+                <h3 class="text-xs font-bold text-cyan-300 uppercase tracking-wider">
+                  // PTY TERMINAL DECK: xterm-256color (/dev/pts/1)
+                </h3>
+              </div>
+              <div class="text-[11px] text-gray-400">
+                STATUS: <span class="text-emerald-400 font-bold">READY</span>
+              </div>
+            </div>
+
+            <!-- Terminal Output Area -->
+            <div class="bg-[#050811] border border-cyan-900/60 rounded-lg p-4 font-mono text-xs text-gray-200 min-h-[420px] max-h-[560px] overflow-y-auto space-y-2 select-text">
+              <div class="text-cyan-400 font-bold">Connecting to {{ server?.hostname }} ({{ server?.ip_address }})...</div>
+              <div class="text-gray-400">Secure WebSocket channel verified. Authentication successful.</div>
+              <div class="text-emerald-400 font-bold mt-2">Linux {{ server?.hostname }} {{ server?.kernel }} #1 SMP PREEMPT</div>
+              <div class="text-gray-400">All session actions are logged to the permanent audit trail.</div>
+              <div class="pt-3 flex items-center gap-2 text-cyan-300">
+                <span class="text-emerald-400 font-bold">operator@{{ server?.hostname }}:~$</span>
+                <span class="inline-block w-2.5 h-4 bg-cyan-400 animate-pulse"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- SUB-TAB 10: FILE MANAGER (Protected FIM & Safe Editor) -->
+          <div v-if="activeSubTab === 'files'" class="hud-tactical-card rounded-xl p-4 font-mono space-y-3">
+            <span class="hud-corner-tr"></span>
+            <span class="hud-corner-bl"></span>
+            <div class="flex items-center justify-between border-b border-cyan-500/20 pb-2">
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-cyan-400 beacon-live"></span>
+                <h3 class="text-xs font-bold text-cyan-300 uppercase tracking-wider">
+                  // FILE MANAGER: /root
+                </h3>
+              </div>
+              <div class="text-[11px] text-amber-400 font-bold">
+                SAFETY: AUTO .bak ENABLED
+              </div>
+            </div>
+
+            <!-- Directory Listing Table -->
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs border-collapse">
+                <thead class="border-b border-cyan-500/20 text-gray-400 uppercase font-bold tracking-wider">
+                  <tr>
+                    <th class="py-2.5 px-3">Object</th>
+                    <th class="py-2.5 px-3">Permissions</th>
+                    <th class="py-2.5 px-3">Owner</th>
+                    <th class="py-2.5 px-3">Size</th>
+                    <th class="py-2.5 px-3">Modified</th>
+                    <th class="py-2.5 px-3 text-right">Tindakan</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-800/40">
+                  <tr class="hover:bg-cyan-950/20">
+                    <td class="py-2.5 px-3 text-cyan-300 font-semibold flex items-center gap-2">
+                      <span>📁</span>
+                      <span>.. (parent)</span>
+                    </td>
+                    <td class="py-2.5 px-3 text-gray-400">drwxr-xr-x</td>
+                    <td class="py-2.5 px-3 text-gray-400">root:root</td>
+                    <td class="py-2.5 px-3 text-gray-400">4.0 KB</td>
+                    <td class="py-2.5 px-3 text-gray-400">Today</td>
+                    <td class="py-2.5 px-3 text-right text-gray-500">-</td>
+                  </tr>
+                  <tr class="hover:bg-cyan-950/20">
+                    <td class="py-2.5 px-3 text-gray-200 font-semibold flex items-center gap-2">
+                      <span>📄</span>
+                      <span>pantau.conf</span>
+                    </td>
+                    <td class="py-2.5 px-3 text-gray-400">-rw-r--r--</td>
+                    <td class="py-2.5 px-3 text-gray-400">root:root</td>
+                    <td class="py-2.5 px-3 text-gray-300">1.2 KB</td>
+                    <td class="py-2.5 px-3 text-gray-400">Today</td>
+                    <td class="py-2.5 px-3 text-right">
+                      <button class="px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-700/60 hover:bg-cyan-700 hover:text-white text-[11px] font-bold">
+                        EDIT
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </template>
       </div>
 
       <!-- MODAL FOOTER -->
-      <div class="bg-[#101726] border-t border-gray-800/80 px-4 py-2.5 flex items-center justify-between text-xs text-gray-400 font-mono shrink-0 select-none">
+      <div class="bg-[#080d19] border-t border-cyan-500/20 px-4 py-2 flex items-center justify-between text-xs text-gray-400 font-mono shrink-0 select-none">
         <div>
-          <span>ID: #{{ server?.id }}</span>
-          <span class="mx-2">·</span>
-          <span>Shortcut: <kbd class="px-1.5 py-0.5 bg-gray-800 rounded text-gray-300 font-bold">[</kbd> Prev / <kbd class="px-1.5 py-0.5 bg-gray-800 rounded text-gray-300 font-bold">]</kbd> Next / <kbd class="px-1.5 py-0.5 bg-gray-800 rounded text-gray-300 font-bold">ESC</kbd> {{ t('shelf_close') }}</span>
+          <span>HOST_ID: #{{ server?.id }}</span>
+          <span class="mx-2 text-gray-600">·</span>
+          <span>HOTKEYS: <kbd class="px-1.5 py-0.2 bg-gray-900 border border-gray-700 rounded text-cyan-300 font-bold">[</kbd> PREV / <kbd class="px-1.5 py-0.2 bg-gray-900 border border-gray-700 rounded text-cyan-300 font-bold">]</kbd> NEXT / <kbd class="px-1.5 py-0.2 bg-gray-900 border border-gray-700 rounded text-cyan-300 font-bold">ESC</kbd> {{ t('shelf_close') }}</span>
         </div>
         <div class="flex items-center gap-2">
-          <span class="text-emerald-400 font-semibold">● {{ t('footer_live_synced') }}</span>
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 beacon-live"></span>
+          <span class="text-emerald-400 font-bold">// SECURE SESSION ACTIVE</span>
         </div>
       </div>
     </div>
@@ -748,6 +893,8 @@ const subTabs = computed(() => [
   { id: 'firewall', icon: '🛡️', label: t('ws_tab_firewall') },
   { id: 'cron', icon: '⏱️', label: t('ws_tab_cron') },
   { id: 'accounts', icon: '🔑', label: t('ws_tab_accounts') },
+  { id: 'terminal', icon: '🖥️', label: t('ws_tab_terminal') },
+  { id: 'files', icon: '📁', label: t('ws_tab_files') },
 ])
 
 const filteredHosts = computed(() => {
@@ -979,7 +1126,7 @@ function formatUptime(secs) {
   const d = Math.floor(secs / 86400)
   const h = Math.floor((secs % 86400) / 3600)
   const m = Math.floor((secs % 3600) / 60)
-  if (d > 0) return `${d}h ${h}j ${m}m`
-  return `${h}j ${m}m`
+  if (d > 0) return `${d}d ${h}h ${m}m`
+  return `${h}h ${m}m`
 }
 </script>

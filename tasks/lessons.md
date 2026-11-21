@@ -142,6 +142,15 @@ Dokumen ini mencatat setiap pembelajaran dari koreksi operator dan temuan teknis
      - Navigasi dan tindakan berbasis konsol intelijen (`[ 01 // DASHBOARD ]`, `[ ⚡ INVESTIGATE ]`).
   3. **Larangan Keras Memindahkan Template Visual Usang:** Jangan pernah lagi menyalin layout HTML/CSS usang secara mentah dari aplikasi rujukan. Selalu rancang antarmuka orisinal yang segar, kokoh, dan ergonomis sesuai standar *Tactical Cyber Command Room*.
 
+---
+
+## Lesson 16: Larangan Sikap Pasif & Makna Kata "Sekarang" Adalah Eksekusi Berjalan (Action Over Rhetorical Permission)
+- **Konteks:** Memaparkan rencana kerja berikutnya dan berhenti secara pasif menunggu instruksi/persetujuan operator ("saya siap mengeksekusi..."), bukannya langsung melakukan eksekusi nyata.
+- **Akar Masalah:** Pelanggaran prinsip *Action Over Explanation* dan mandat kepemilikan teknis penuh (*Full Technical Ownership*). Jika sebuah tahapan kerja sudah terdefinisi jelas dalam Master Plan dan rencana arsitektur, tugas asisten adalah LANGSUNG mengeksekusi, menguji secara mandiri, dan menyajikan hasilnya yang sudah siap pakai.
+- **Aturan Pencegahan `[FTO, Action Over Explanation, PCF]`:**
+  1. **Larangan Berhenti untuk Meminta Izin Retoris:** Dilarang keras berhenti di tengah jalan untuk bertanya hal-hal retoris atau meminta persetujuan atas langkah yang sudah disepakati dalam arsitektur induk. Langsung eksekusi secara atomik, verifikasi end-to-end, dan laporkan hasil yang sudah tuntas.
+  2. **Makna Kata "Sekarang" Adalah Eksekusi Sedang/Telah Berjalan:** Kata "sekarang" berarti pekerjaan teknis telah dijalankan dan diverifikasi keadaannya, bukan wacana masa depan yang menggantungkan tindakan pada respon operator.
+
 
 
 
