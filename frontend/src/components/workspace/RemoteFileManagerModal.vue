@@ -346,12 +346,12 @@
                   title="Select All"
                 />
               </th>
-              <th class="py-2 px-3">Nama</th>
-              <th class="py-2 px-3">Ukuran</th>
-              <th class="py-2 px-3">Izin</th>
-              <th class="py-2 px-3">Pemilik : Grup</th>
-              <th class="py-2 px-3">Waktu Diubah</th>
-              <th class="py-2 px-3 text-center w-24">Tindakan</th>
+              <th class="py-2 px-3">{{ t('fm_col_name') || 'Name' }}</th>
+              <th class="py-2 px-3">{{ t('fm_col_size') || 'Size' }}</th>
+              <th class="py-2 px-3">{{ t('fm_col_perms') || 'Permissions' }}</th>
+              <th class="py-2 px-3">{{ t('fm_col_owner') || 'Owner : Group' }}</th>
+              <th class="py-2 px-3">{{ t('fm_col_mtime') || 'Modified' }}</th>
+              <th class="py-2 px-3 text-center w-24">{{ t('fm_col_actions') || 'Actions' }}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-800/40">
@@ -366,7 +366,7 @@
                 <svg class="w-4 h-4 text-cyan-500/70 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/>
                 </svg>
-                <span>.. (Parent Directory)</span>
+                <span>{{ t('fm_parent_dir') || '.. (Parent Directory)' }}</span>
               </td>
             </tr>
 
@@ -426,7 +426,7 @@
                     @click="toggleDropdown(item.path)"
                     class="px-2 py-0.5 rounded text-[11px] bg-gray-900 hover:bg-cyan-950 text-gray-300 hover:text-cyan-300 border border-gray-700 hover:border-cyan-800 transition cursor-pointer font-bold inline-flex items-center gap-1"
                   >
-                    <span>Aksi ▾</span>
+                    <span>{{ t('fm_action_btn') || 'Actions ▾' }}</span>
                   </button>
 
                   <!-- Dropdown Menu -->
@@ -446,7 +446,7 @@
                         <svg class="w-3.5 h-3.5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                           <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
                         </svg>
-                        <span>View & Edit</span>
+                        <span>{{ t('fm_view_edit') || 'View & Edit' }}</span>
                       </button>
                       <button
                         type="button"
@@ -458,7 +458,7 @@
                           <polyline points="7 10 12 15 17 10"/>
                           <line x1="12" y1="15" x2="12" y2="3"/>
                         </svg>
-                        <span>Download</span>
+                        <span>{{ t('fm_download') || 'Download' }}</span>
                       </button>
                     </template>
 
@@ -472,7 +472,7 @@
                         <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                         <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                       </svg>
-                      <span>Rename</span>
+                      <span>{{ t('fm_rename') || 'Rename' }}</span>
                     </button>
                     <button
                       type="button"
@@ -483,7 +483,7 @@
                         <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
                         <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                       </svg>
-                      <span>Permissions</span>
+                      <span>{{ t('fm_permissions') || 'Permissions' }}</span>
                     </button>
                     <div class="border-t border-gray-800 my-1"></div>
                     <button
@@ -495,7 +495,7 @@
                         <polyline points="3 6 5 6 21 6"/>
                         <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
                       </svg>
-                      <span>Delete</span>
+                      <span>{{ t('fm_delete') || 'Delete' }}</span>
                     </button>
                   </div>
                 </div>
@@ -505,7 +505,7 @@
             <!-- Empty / No Items row -->
             <tr v-if="filteredItems.length === 0 && !loading">
               <td colspan="7" class="py-8 text-center text-gray-500 italic">
-                {{ searchFilter ? 'No matching files found' : 'This directory is empty.' }}
+                {{ searchFilter ? 'No matching files found' : (t('fm_empty_dir') || 'This directory is empty.') }}
               </td>
             </tr>
           </tbody>
@@ -805,6 +805,9 @@
 
 <script setup>
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import { useI18n } from '../../i18n'
+
+const { t } = useI18n()
 
 const props = defineProps({
   open: { type: Boolean, default: false },

@@ -174,6 +174,13 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.8
+
+- **Penegakan English Default**: Seluruh nama kolom dan tombol File Manager kini baku menggunakan Bahasa Inggris (Name, Size, Permissions, Owner : Group, Modified, Actions, Actions ▾).
+- **Integrasi useI18n()**: Menghapus seluruh hardcode teks lokal dan menggantikannya dengan pemetaan dinamis en.js & id.js.
+- **Uji E2E Puppeteer**: Memperbarui test_file_manager_ui.js untuk memvalidasi kepatuhan teks Bahasa Inggris.
+
+
 ### Versi v0.1.7
 
 - **Eliminasi Tombol Redundant**: Menghapus tombol aksi 'Open Directory' yang tidak perlu; navigasi folder murni melalui klik nama folder atau tautan .. (Parent Directory) persis canon ~/rj45.

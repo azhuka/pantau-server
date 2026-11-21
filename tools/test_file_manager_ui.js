@@ -49,7 +49,7 @@ const puppeteer = require('puppeteer-core');
     const fmInfo = await page.evaluate(() => {
       const allBtns = Array.from(document.querySelectorAll('button'));
       const openDirBtn = allBtns.find(b => b.title === 'Open Directory' || b.textContent.trim() === 'Open Directory');
-      const aksiDropdownBtns = allBtns.filter(b => b.textContent.includes('Aksi ▾'));
+      const aksiDropdownBtns = allBtns.filter(b => b.textContent.includes('Actions ▾') || b.textContent.includes('Aksi ▾'));
       const tableHeaders = Array.from(document.querySelectorAll('thead th')).map(th => th.textContent.trim());
       const tableRows = document.querySelectorAll('tbody tr');
       
@@ -67,12 +67,23 @@ const puppeteer = require('puppeteer-core');
       throw new Error('FAIL: Redundant "Open Directory" button is still present in the UI!');
     }
     if (fmInfo.aksiDropdownCount === 0) {
-      throw new Error('FAIL: Expected uniform "Aksi ▾" dropdown buttons in table rows!');
+      throw new Error('FAIL: Expected uniform "Actions ▾" dropdown buttons in table rows!');
+    }
+
+    // Assert English default headers
+    const requiredHeaders = ['Name', 'Size', 'Permissions', 'Actions'];
+    const hasEnglishHeaders = requiredHeaders.every(h => fmInfo.tableHeaders.includes(h));
+    if (!hasEnglishHeaders) {
+      throw new Error(`FAIL: Expected English table headers ${requiredHeaders.join(', ')}, got: ${fmInfo.tableHeaders.join(' | ')}`);
     }
 
     console.log('\n========================================================');
     console.log('  REMOTE FILE MANAGER UI VERIFICATION PASSED (CANON MATCH)');
-    console.log('  - Zero "Open Directory" button');
+    console.log('  - Strict English default UI strings verified');
+    console.log('  - Zero redundant "Open Directory" button');
+    console.log(`  - ${fmInfo.aksiDropdownCount} uniform "Actions ▾" dropdowns present`);
+    console.log(`  - Headers: ${fmInfo.tableHeaders.join(' | ')}`);
+    console.log('========================================================');
     console.log(`  - ${fmInfo.aksiDropdownCount} uniform "Aksi ▾" dropdowns present`);
     console.log(`  - Headers: ${fmInfo.tableHeaders.join(' | ')}`);
     console.log('========================================================');
