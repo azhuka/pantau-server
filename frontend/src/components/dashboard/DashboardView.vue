@@ -18,7 +18,9 @@
             <span class="w-2 h-2 rounded-full bg-cyan-400 beacon-live"></span>
             <span>// FLEET INFRASTRUCTURE OVERVIEW</span>
           </div>
-          <span class="text-xs text-gray-500 group-hover:text-cyan-400 transition font-mono font-bold">➔</span>
+          <svg class="w-3.5 h-3.5 text-gray-500 group-hover:text-cyan-400 transition" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+          </svg>
         </div>
 
         <div class="flex items-center justify-between gap-2">
@@ -198,7 +200,10 @@
           class="w-4 h-4 rounded-full flex items-center justify-center text-xs font-bold"
           :class="servers.length === 0 ? 'bg-gray-800 text-gray-400' : 'bg-emerald-950 text-emerald-400 border border-emerald-700/60'"
         >
-          {{ servers.length === 0 ? '○' : '✓' }}
+          <svg v-if="servers.length > 0" class="w-2.5 h-2.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          <span v-else class="text-[10px] text-gray-400">○</span>
         </span>
         <span class="text-gray-300">
           {{ servers.length === 0
@@ -287,10 +292,14 @@
               <td class="py-2.5 px-3 text-center whitespace-nowrap">
                 <button
                   @click="$emit('inspect-node', prob.server_id)"
-                  class="px-2.5 py-1 rounded bg-cyan-950/80 hover:bg-cyan-800 text-cyan-300 hover:text-white border border-cyan-600/50 transition cursor-pointer text-[11px] font-bold flex items-center justify-center gap-1 mx-auto"
+                  class="px-2.5 py-1 rounded bg-cyan-950/80 hover:bg-cyan-800 text-cyan-300 hover:text-white border border-cyan-600/50 transition cursor-pointer text-xs font-bold flex items-center justify-center gap-1.5 mx-auto"
+                  title="View incident and asset details"
                 >
-                  <span>INVESTIGATE</span>
-                  <span>➔</span>
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                  <span>View</span>
                 </button>
               </td>
             </tr>
@@ -463,7 +472,12 @@
             <tr v-if="filteredServers.length === 0">
               <td colspan="9" class="py-12 px-4 text-center text-gray-400 font-mono text-xs">
                 <div class="flex flex-col items-center justify-center gap-1.5">
-                  <span class="text-2xl text-gray-600">📡</span>
+                  <svg class="w-8 h-8 text-gray-600 mb-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect width="20" height="8" x="2" y="2" rx="2" ry="2"/>
+                    <rect width="20" height="8" x="2" y="14" rx="2" ry="2"/>
+                    <line x1="6" y1="6" x2="6.01" y2="6"/>
+                    <line x1="6" y1="18" x2="6.01" y2="18"/>
+                  </svg>
                   <div class="font-bold text-gray-200">{{ t('fleet_empty_title') }}</div>
                   <div class="text-gray-400 max-w-sm">{{ t('dash_fleet_empty') }}</div>
                 </div>
@@ -478,7 +492,12 @@
         <!-- Empty State Grid -->
         <div v-if="filteredServers.length === 0" class="col-span-full py-12 text-center text-gray-400 font-mono text-xs">
           <div class="flex flex-col items-center justify-center gap-1.5">
-            <span class="text-2xl text-gray-600">📡</span>
+            <svg class="w-8 h-8 text-gray-600 mb-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="20" height="8" x="2" y="2" rx="2" ry="2"/>
+              <rect width="20" height="8" x="2" y="14" rx="2" ry="2"/>
+              <line x1="6" y1="6" x2="6.01" y2="6"/>
+              <line x1="6" y1="18" x2="6.01" y2="18"/>
+            </svg>
             <div class="font-bold text-gray-200">{{ t('fleet_empty_title') }}</div>
             <div class="text-gray-400 max-w-sm">{{ t('dash_fleet_empty') }}</div>
           </div>

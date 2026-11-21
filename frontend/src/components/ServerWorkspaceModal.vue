@@ -26,7 +26,12 @@
         <!-- Left: Host Info & Status -->
         <div class="flex items-center gap-3 min-w-0">
           <div class="w-7 h-7 rounded bg-cyan-950/80 border border-cyan-400/50 flex items-center justify-center text-cyan-300 font-bold text-sm shadow-[0_0_10px_rgba(56,189,248,0.25)] shrink-0">
-            ⛊
+            <svg class="w-3.5 h-3.5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="20" height="8" x="2" y="2" rx="2" ry="2"/>
+              <rect width="20" height="8" x="2" y="14" rx="2" ry="2"/>
+              <line x1="6" y1="6" x2="6.01" y2="6"/>
+              <line x1="6" y1="18" x2="6.01" y2="18"/>
+            </svg>
           </div>
           <div class="min-w-0">
             <div class="flex items-center gap-2 font-mono flex-wrap sm:flex-nowrap">
@@ -97,10 +102,10 @@
           <div class="flex items-center bg-[#050811] border border-cyan-900/50 rounded p-0.5">
             <button
               @click="navigateHost(-1)"
-              class="px-2 py-1 text-xs text-gray-400 hover:text-white hover:bg-gray-800 rounded transition cursor-pointer"
+              class="px-2 py-1 text-xs text-gray-400 hover:text-white hover:bg-gray-800 rounded transition cursor-pointer flex items-center justify-center"
               title="Previous Server (Hotkeys [ )"
             >
-              ◀
+              <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
             </button>
 
             <!-- Searchable Switcher Dropdown Trigger -->
@@ -110,7 +115,7 @@
                 class="px-2.5 py-1 text-xs font-mono text-gray-200 hover:text-cyan-300 flex items-center gap-1.5 transition cursor-pointer font-semibold"
                 :title="t('ws_search_fleet')"
               >
-                <span>🖥️</span>
+                <svg class="w-3.5 h-3.5 text-cyan-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
                 <span class="max-w-[130px] truncate">{{ server?.hostname }}</span>
                 <span class="text-[10px] text-cyan-400">▾</span>
               </button>
@@ -155,10 +160,10 @@
 
             <button
               @click="navigateHost(1)"
-              class="px-2 py-1 text-xs text-gray-400 hover:text-white hover:bg-gray-800 rounded transition cursor-pointer"
+              class="px-2 py-1 text-xs text-gray-400 hover:text-white hover:bg-gray-800 rounded transition cursor-pointer flex items-center justify-center"
               title="Next Server (Hotkeys ] )"
             >
-              ▶
+              <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
             </button>
           </div>
 
@@ -178,8 +183,14 @@
               class="p-1.5 rounded text-gray-400 hover:text-white hover:bg-gray-800/80 transition cursor-pointer font-bold text-xs"
               :title="isMaximized ? t('ws_restore') : t('ws_maximize')"
             >
-              <span v-if="!isMaximized">⛶</span>
-              <span v-else>🗗</span>
+              <svg v-if="!isMaximized" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="18" height="18" x="3" y="3" rx="2"/>
+                <line x1="3" y1="9" x2="21" y2="9"/>
+              </svg>
+              <svg v-else class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="13" height="13" x="8" y="3" rx="1.5"/>
+                <path d="M4 8H3a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-1"/>
+              </svg>
             </button>
             <button
               @click="handleClose"
@@ -205,7 +216,10 @@
               class="px-2.5 py-1 text-xs text-gray-200 hover:text-cyan-300 hover:bg-cyan-950/60 rounded transition cursor-pointer flex items-center gap-1.5 font-bold"
               :title="t('tooltip_terminal_btn')"
             >
-              <span>🖥️</span>
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="4 17 10 11 4 5"/>
+                <line x1="12" y1="19" x2="20" y2="19"/>
+              </svg>
               <span>{{ t('toolbar_terminal') }}</span>
             </button>
             <span class="w-[1px] h-4 bg-cyan-900/40 mx-0.5"></span>
@@ -214,7 +228,9 @@
               class="px-2.5 py-1 text-xs text-gray-200 hover:text-cyan-300 hover:bg-cyan-950/60 rounded transition cursor-pointer flex items-center gap-1.5 font-bold"
               :title="t('tooltip_fm_btn')"
             >
-              <span>📁</span>
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/>
+              </svg>
               <span>{{ t('toolbar_fm') }}</span>
             </button>
             <span class="w-[1px] h-4 bg-cyan-900/40 mx-0.5"></span>
@@ -224,7 +240,9 @@
               :class="server?.is_maintenance ? 'bg-amber-950 text-amber-300 border border-amber-700/60' : 'text-gray-300 hover:text-amber-300 hover:bg-amber-950/40'"
               :title="t('tooltip_maint_btn')"
             >
-              <span>🛡️</span>
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
               <span>{{ t('toolbar_maint') }}</span>
             </button>
           </div>
@@ -238,7 +256,12 @@
               class="px-2.5 py-1 text-xs text-emerald-400 hover:bg-emerald-950/60 rounded transition cursor-pointer flex items-center gap-1.5 font-bold"
               :title="t('tooltip_update_btn')"
             >
-              <span>🔄</span>
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                <path d="M3 3v5h5"/>
+                <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+                <path d="M16 21h5v-5"/>
+              </svg>
               <span>{{ t('toolbar_update_os') }}</span>
             </button>
             <span class="w-[1px] h-4 bg-cyan-900/40 mx-0.5"></span>
@@ -248,7 +271,11 @@
               :class="(server?.apt_upgradable || 0) > 0 ? 'text-amber-300 bg-amber-950/70 border border-amber-700/60' : 'text-gray-400 hover:text-white'"
               :title="t('tooltip_upgrade_btn')"
             >
-              <span>⬆️</span>
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
               <span>{{ t('toolbar_upgrade_os') }}</span>
               <span v-if="(server?.apt_upgradable || 0) > 0" class="px-1.5 py-0.2 rounded bg-amber-500 text-black text-[10px] font-black">
                 {{ server?.apt_upgradable }}
@@ -260,7 +287,10 @@
               class="px-2.5 py-1 text-xs text-amber-400 hover:bg-amber-950/60 rounded transition cursor-pointer flex items-center gap-1.5 font-bold"
               :title="t('tooltip_reboot_btn')"
             >
-              <span>🔁</span>
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                <path d="M3 3v5h5"/>
+              </svg>
               <span>{{ t('toolbar_reboot') }}</span>
             </button>
             <span class="w-[1px] h-4 bg-cyan-900/40 mx-0.5"></span>
@@ -271,7 +301,10 @@
               class="px-2.5 py-1 text-xs text-gray-500 bg-gray-900/50 rounded cursor-not-allowed opacity-40 border border-dashed border-rose-900 flex items-center gap-1.5 font-bold"
               :title="t('tooltip_poweroff_ha_blocked')"
             >
-              <span>⚡</span>
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
+                <line x1="12" y1="2" x2="12" y2="12"/>
+              </svg>
               <span>{{ t('toolbar_poweroff') }}</span>
             </button>
             <button
@@ -280,7 +313,10 @@
               class="px-2.5 py-1 text-xs text-rose-400 hover:bg-rose-950/60 rounded transition cursor-pointer flex items-center gap-1.5 font-bold"
               :title="t('tooltip_poweroff_btn')"
             >
-              <span>⚡</span>
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
+                <line x1="12" y1="2" x2="12" y2="12"/>
+              </svg>
               <span>{{ t('toolbar_poweroff') }}</span>
             </button>
           </div>
@@ -300,7 +336,18 @@
               : 'text-gray-400 hover:text-gray-100 hover:bg-gray-800/40 border-transparent'
           ]"
         >
-          <span>{{ tab.icon }}</span>
+          <!-- Tab Icon SVG -->
+          <svg v-if="tab.id === 'overview'" class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          <svg v-else-if="tab.id === 'problems'" class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <svg v-else-if="tab.id === 'services_ports'" class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          <svg v-else-if="tab.id === 'processes'" class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="m9 12 2 2 4-4"/></svg>
+          <svg v-else-if="tab.id === 'firewall'" class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <svg v-else-if="tab.id === 'accounts'" class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <svg v-else-if="tab.id === 'cron'" class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <svg v-else-if="tab.id === 'fim'" class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <svg v-else-if="tab.id === 'packages'" class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16.5 9.4-9-5.19M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+          <svg v-else-if="tab.id === 'ssl'" class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <svg v-else-if="tab.id === 'logs'" class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
           <span>{{ tab.label }}</span>
           <!-- Dynamic Badges -->
           <span
@@ -329,7 +376,14 @@
       <div class="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
         <!-- Loading State -->
         <div v-if="loading && !server" class="py-24 text-center text-gray-400 text-xs font-mono">
-          <div class="inline-block animate-spin text-2xl mb-2 text-cyan-400">🔄</div>
+          <div class="mb-3 flex justify-center">
+            <svg class="w-8 h-8 animate-spin text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+              <path d="M3 3v5h5"/>
+              <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+              <path d="M16 21h5v-5"/>
+            </svg>
+          </div>
           <div>{{ t('ws_loading_telemetry') }}</div>
         </div>
 
@@ -517,7 +571,11 @@
             <div v-if="serverProblems.length === 0" class="hud-tactical-card rounded-xl p-8 text-center">
               <span class="hud-corner-tr"></span>
               <span class="hud-corner-bl"></span>
-              <div class="text-2xl mb-1 text-emerald-400">✓</div>
+              <div class="mb-2 flex justify-center">
+                <svg class="w-8 h-8 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 6 9 17l-5-5"/>
+                </svg>
+              </div>
               <div class="text-xs font-semibold text-gray-200">{{ t('ws_incidents_empty') }}</div>
               <div class="text-xs text-gray-400 mt-1">{{ t('ws_incidents_normal') }}</div>
             </div>
@@ -530,9 +588,10 @@
                 :class="prob.key.startsWith('ssh_active_session:') ? 'border-amber-500/60 bg-amber-950/20' : 'border-gray-800'"
               >
                 <div class="flex items-start gap-3">
-                  <span class="text-xl">
-                    {{ prob.key.startsWith('ssh_active_session:') ? '🔑' : '🚨' }}
-                  </span>
+                  <div class="mt-0.5 shrink-0">
+                    <svg v-if="prob.key.startsWith('ssh_active_session:')" class="w-4 h-4 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21 2-2 2m-1.5 1.5L14 9l-2-2-4 4 2 2-3 3-2-2-3 3v4h4l3-3-2-2 3-3 2 2 4-4-2-2 3.5-3.5Z"/></svg>
+                    <svg v-else class="w-4 h-4 text-rose-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                  </div>
                   <div>
                     <div class="text-xs font-bold text-gray-100">{{ prob.message }}</div>
                     <div v-if="prob.tip" class="text-xs text-gray-400 mt-1">{{ prob.tip }}</div>
@@ -560,7 +619,7 @@
                   class="px-3 py-1 rounded transition cursor-pointer font-bold flex items-center gap-1.5"
                   :class="servicesPortsMode === 'services' ? 'bg-cyan-950 text-cyan-300 border border-cyan-500/50' : 'text-gray-400 hover:text-white'"
                 >
-                  <span>⚙️</span>
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                   <span>Systemd Services ({{ filteredServices.length }})</span>
                 </button>
                 <button
@@ -568,7 +627,7 @@
                   class="px-3 py-1 rounded transition cursor-pointer font-bold flex items-center gap-1.5"
                   :class="servicesPortsMode === 'ports' ? 'bg-cyan-950 text-cyan-300 border border-cyan-500/50' : 'text-gray-400 hover:text-white'"
                 >
-                  <span>🌐</span>
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
                   <span>Listening Ports ({{ portsList.length }})</span>
                 </button>
               </div>
@@ -615,7 +674,12 @@
                           class="px-2.5 py-1 rounded bg-cyan-950 text-cyan-300 border border-cyan-600/50 hover:bg-cyan-700 hover:text-white transition cursor-pointer text-xs font-bold inline-flex items-center gap-1.5"
                           :title="`Restart ${svc.name || svc.unit} systemd service`"
                         >
-                          <span>🔄</span>
+                          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                            <path d="M3 3v5h5"/>
+                            <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+                            <path d="M16 21h5v-5"/>
+                          </svg>
                           <span>{{ t('ws_act_restart') }}</span>
                         </button>
                       </td>
@@ -707,7 +771,11 @@
                         class="px-2.5 py-1 rounded bg-rose-950 text-rose-300 border border-rose-700 hover:bg-rose-700 hover:text-white transition cursor-pointer text-xs font-bold inline-flex items-center gap-1.5"
                         :title="`Terminate process PID ${p.pid} (${p.user})`"
                       >
-                        <span>🛑</span>
+                        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <circle cx="12" cy="12" r="10"/>
+                          <line x1="15" y1="9" x2="9" y2="15"/>
+                          <line x1="9" y1="9" x2="15" y2="15"/>
+                        </svg>
                         <span>{{ t('ws_act_kill') }}</span>
                       </button>
                     </td>
@@ -782,7 +850,9 @@
                   class="p-3 bg-amber-950/20 border border-amber-700/60 rounded-lg flex items-center justify-between"
                 >
                   <div class="flex items-center gap-3">
-                    <div class="text-xl">🔑</div>
+                    <svg class="w-5 h-5 text-amber-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="m21 2-2 2m-1.5 1.5L14 9l-2-2-4 4 2 2-3 3-2-2-3 3v4h4l3-3-2-2 3-3 2 2 4-4-2-2 3.5-3.5Z"/>
+                    </svg>
                     <div>
                       <div class="text-xs font-bold text-amber-300">
                         {{ s.user }} <span class="text-gray-400 font-normal">{{ t('ws_connected_from') }}</span> {{ s.from }}
@@ -797,7 +867,9 @@
                     class="px-3 py-1 rounded bg-rose-950 text-rose-300 border border-rose-700 hover:bg-rose-700 hover:text-white font-bold text-xs transition cursor-pointer flex items-center gap-1.5"
                     :title="`Terminate active SSH session for user ${s.user} on ${s.tty}`"
                   >
-                    <span>✂️</span>
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/>
+                    </svg>
                     <span>{{ t('ws_sever_ssh_btn') }}</span>
                   </button>
                 </div>
@@ -1012,7 +1084,9 @@
 
         <div class="flex items-center justify-between border-b border-rose-500/30 pb-2">
           <div class="flex items-center gap-2 text-rose-400 font-bold text-xs uppercase">
-            <span class="text-base">⚠️</span>
+            <svg class="w-4 h-4 text-rose-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
             <span>GUARDRAIL: POWER CONTROL CONFIRMATION</span>
           </div>
           <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950 text-rose-300 border border-rose-700">
@@ -1078,47 +1152,67 @@
             </span>
           </div>
 
-          <div class="flex items-center gap-1.5 text-xs">
-            <!-- Clear Screen: Tier 1 (Icon only + standard tooltip) -->
+          <div class="flex items-center gap-1 text-xs">
+            <!-- Clear Screen -->
             <button
               @click="clearTerminalScreen"
-              class="p-1.5 rounded text-gray-400 hover:text-white hover:bg-gray-800/80 transition cursor-pointer"
+              class="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-white hover:bg-gray-800/80 transition cursor-pointer"
               :title="t('term_clearscreen')"
             >
-              <span>🧹</span>
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+              </svg>
             </button>
-            <!-- Full Window: Tier 1 (Icon only + standard tooltip) -->
+            <!-- Full Window -->
             <button
               @click="isTermFullWindow = !isTermFullWindow"
-              class="p-1.5 rounded text-gray-400 hover:text-cyan-300 hover:bg-gray-800/80 transition cursor-pointer"
+              class="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-cyan-300 hover:bg-gray-800/80 transition cursor-pointer"
               :title="isTermFullWindow ? t('ws_restore') : t('term_fullwindow')"
             >
-              <span>{{ isTermFullWindow ? '🗗' : '🗖' }}</span>
+              <svg v-if="!isTermFullWindow" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="18" height="18" x="3" y="3" rx="2"/>
+                <line x1="3" y1="9" x2="21" y2="9"/>
+              </svg>
+              <svg v-else class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="13" height="13" x="8" y="3" rx="1.5"/>
+                <path d="M4 8H3a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-1"/>
+              </svg>
             </button>
-            <!-- Fullscreen: Tier 1 (Icon only + standard tooltip) -->
+            <!-- Fullscreen -->
             <button
               @click="toggleTermFullscreen"
-              class="p-1.5 rounded text-gray-400 hover:text-cyan-300 hover:bg-gray-800/80 transition cursor-pointer"
+              class="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-cyan-300 hover:bg-gray-800/80 transition cursor-pointer"
               :title="t('term_fullscreen')"
             >
-              <span>⛶</span>
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 3 21 3 21 9"/>
+                <polyline points="9 21 3 21 3 15"/>
+                <line x1="21" y1="3" x2="14" y2="10"/>
+                <line x1="3" y1="21" x2="10" y2="14"/>
+              </svg>
             </button>
-            <!-- Popout Window: Tier 2/4 (Icon + Label + Informative Tooltip) -->
+            <!-- Popout Window (Uniform Icon Button with Tooltip as Label) -->
             <button
               @click="popoutTerminalWindow"
-              class="px-2.5 py-1 rounded text-cyan-300 hover:text-white bg-cyan-950/80 hover:bg-cyan-900 transition flex items-center gap-1 text-[11px] border border-cyan-500/40 cursor-pointer font-bold"
+              class="w-7 h-7 flex items-center justify-center rounded text-cyan-400 hover:text-white bg-cyan-950/60 hover:bg-cyan-900 border border-cyan-800/50 hover:border-cyan-500 transition cursor-pointer"
               :title="t('term_popout')"
             >
-              <span>↗</span>
-              <span>{{ t('term_popout') }}</span>
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                <polyline points="15 3 21 3 21 9"/>
+                <line x1="10" y1="14" x2="21" y2="3"/>
+              </svg>
             </button>
-            <!-- Close: Tier 1 (Icon only + standard tooltip) -->
+            <!-- Close -->
             <button
               @click="showTerminalModal = false"
-              class="p-1.5 rounded text-gray-400 hover:text-rose-400 hover:bg-rose-950/60 transition ml-1 cursor-pointer"
+              class="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-rose-400 hover:bg-rose-950/60 transition cursor-pointer"
               :title="t('ws_close')"
             >
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
             </button>
           </div>
         </div>
@@ -1174,7 +1268,9 @@
         <!-- FM Header -->
         <div class="bg-[#090f20] border-b border-cyan-500/30 px-4 py-2.5 flex items-center justify-between select-none">
           <div class="flex items-center gap-2 min-w-0">
-            <span class="text-base">📁</span>
+            <svg class="w-4 h-4 text-cyan-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/>
+            </svg>
             <span class="text-xs font-bold text-cyan-300 uppercase tracking-wider shrink-0">
               // REMOTE FILE MANAGER · {{ server?.hostname }}
             </span>
@@ -1184,39 +1280,57 @@
             </div>
           </div>
 
-          <div class="flex items-center gap-1.5 text-xs">
-            <!-- Full Window: Tier 1 (Icon only + standard tooltip) -->
+          <div class="flex items-center gap-1 text-xs">
+            <!-- Full Window -->
             <button
               @click="isFMFullWindow = !isFMFullWindow"
-              class="p-1.5 rounded text-gray-400 hover:text-cyan-300 hover:bg-gray-800/80 transition cursor-pointer"
+              class="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-cyan-300 hover:bg-gray-800/80 transition cursor-pointer"
               :title="isFMFullWindow ? t('ws_restore') : t('fm_fullwindow')"
             >
-              <span>{{ isFMFullWindow ? '🗗' : '🗖' }}</span>
+              <svg v-if="!isFMFullWindow" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="18" height="18" x="3" y="3" rx="2"/>
+                <line x1="3" y1="9" x2="21" y2="9"/>
+              </svg>
+              <svg v-else class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="13" height="13" x="8" y="3" rx="1.5"/>
+                <path d="M4 8H3a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-1"/>
+              </svg>
             </button>
-            <!-- Fullscreen: Tier 1 (Icon only + standard tooltip) -->
+            <!-- Fullscreen -->
             <button
               @click="toggleFMFullscreen"
-              class="p-1.5 rounded text-gray-400 hover:text-cyan-300 hover:bg-gray-800/80 transition cursor-pointer"
+              class="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-cyan-300 hover:bg-gray-800/80 transition cursor-pointer"
               :title="t('fm_fullscreen')"
             >
-              <span>⛶</span>
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 3 21 3 21 9"/>
+                <polyline points="9 21 3 21 3 15"/>
+                <line x1="21" y1="3" x2="14" y2="10"/>
+                <line x1="3" y1="21" x2="10" y2="14"/>
+              </svg>
             </button>
-            <!-- Popout Window: Tier 2/4 (Icon + Label + Informative Tooltip) -->
+            <!-- Popout Window -->
             <button
               @click="popoutFileManagerWindow"
-              class="px-2.5 py-1 rounded text-cyan-300 hover:text-white bg-cyan-950/80 hover:bg-cyan-900 transition flex items-center gap-1 text-[11px] border border-cyan-500/40 cursor-pointer font-bold"
+              class="w-7 h-7 flex items-center justify-center rounded text-cyan-400 hover:text-white bg-cyan-950/60 hover:bg-cyan-900 border border-cyan-800/50 hover:border-cyan-500 transition cursor-pointer"
               :title="t('fm_popout')"
             >
-              <span>↗</span>
-              <span>{{ t('fm_popout') }}</span>
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                <polyline points="15 3 21 3 21 9"/>
+                <line x1="10" y1="14" x2="21" y2="3"/>
+              </svg>
             </button>
-            <!-- Close: Tier 1 (Icon only + standard tooltip) -->
+            <!-- Close -->
             <button
               @click="showFileManagerModal = false"
-              class="p-1.5 rounded text-gray-400 hover:text-rose-400 hover:bg-rose-950/60 transition ml-1 cursor-pointer"
+              class="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-rose-400 hover:bg-rose-950/60 transition cursor-pointer"
               :title="t('ws_close')"
             >
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
             </button>
           </div>
         </div>
@@ -1229,7 +1343,9 @@
               class="px-2.5 py-1 rounded bg-gray-900 hover:bg-gray-800 text-gray-200 border border-gray-700 transition flex items-center gap-1.5 cursor-pointer font-bold"
               :title="t('fm_up_dir')"
             >
-              <span>⬆</span>
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m18 15-6-6-6 6"/>
+              </svg>
               <span>{{ t('fm_up_dir') }}</span>
             </button>
             <button
@@ -1237,14 +1353,22 @@
               class="px-2.5 py-1 rounded bg-gray-900 hover:bg-gray-800 text-gray-200 border border-gray-700 transition flex items-center gap-1.5 cursor-pointer"
               :title="t('fm_refresh')"
             >
-              <span>🔄</span>
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                <path d="M3 3v5h5"/>
+                <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+                <path d="M16 21h5v-5"/>
+              </svg>
               <span>{{ t('fm_refresh') }}</span>
             </button>
             <button
               @click="fmNewFilePrompt"
               class="px-2.5 py-1 rounded bg-gray-900 hover:bg-cyan-950 text-cyan-300 border border-cyan-800 transition flex items-center gap-1.5 cursor-pointer font-bold"
             >
-              <span>➕</span>
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
               <span>{{ t('fm_new_file') }}</span>
             </button>
           </div>
@@ -1278,7 +1402,12 @@
             <tbody class="divide-y divide-gray-800/40">
               <tr v-for="item in filteredFmItems" :key="item.name" class="hover:bg-cyan-950/20 transition">
                 <td class="py-2 px-3 font-semibold flex items-center gap-2 cursor-pointer" @click="handleFmItemClick(item)">
-                  <span>{{ item.is_dir ? '📁' : '📄' }}</span>
+                  <svg v-if="item.is_dir" class="w-4 h-4 text-cyan-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/>
+                  </svg>
+                  <svg v-else class="w-4 h-4 text-gray-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                  </svg>
                   <span :class="item.is_dir ? 'text-cyan-300 font-bold' : 'text-gray-200'">{{ item.name }}</span>
                 </td>
                 <td class="py-2 px-3 text-gray-400">{{ item.perms }}</td>
@@ -1290,18 +1419,21 @@
                     <button
                       v-if="!item.is_dir"
                       @click="openFmEditor(item)"
-                      class="px-2 py-0.5 rounded text-[11px] bg-cyan-950 text-cyan-300 border border-cyan-800 hover:bg-cyan-900 cursor-pointer font-bold"
+                      class="px-2 py-0.5 rounded text-[11px] bg-cyan-950 text-cyan-300 border border-cyan-800 hover:bg-cyan-900 cursor-pointer font-bold inline-flex items-center gap-1"
                       title="Edit File"
                     >
-                      ✏️ Edit
+                      <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                      <span>Edit</span>
                     </button>
                     <button
                       v-if="!item.is_dir"
                       @click="downloadFmFile(item)"
-                      class="px-2 py-0.5 rounded text-[11px] bg-gray-900 text-gray-300 border border-gray-700 hover:bg-gray-800 cursor-pointer"
+                      class="w-6 h-6 flex items-center justify-center rounded text-[11px] bg-gray-900 text-gray-300 border border-gray-700 hover:bg-gray-800 cursor-pointer"
                       title="Download File"
                     >
-                      ⬇️
+                      <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                      </svg>
                     </button>
                   </div>
                 </td>
@@ -1314,7 +1446,7 @@
         <div v-if="fmEditingFile" class="absolute inset-0 bg-[#060a15] z-20 flex flex-col p-4 space-y-3">
           <div class="flex items-center justify-between border-b border-cyan-500/30 pb-2">
             <div class="flex items-center gap-2">
-              <span class="text-sm">✏️</span>
+              <svg class="w-4 h-4 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
               <span class="text-xs font-bold text-cyan-300 font-mono">// EDITOR: {{ fmEditingFile.name }}</span>
               <span class="text-[10px] text-emerald-400 font-mono bg-emerald-950 px-2 py-0.5 rounded border border-emerald-800">auto .bak backup</span>
             </div>
@@ -1561,17 +1693,17 @@ const serviceSearch = ref('')
 const processSearch = ref('')
 
 const subTabs = computed(() => [
-  { id: 'overview', icon: '📊', label: t('tab_perf') },
-  { id: 'problems', icon: '🚨', label: t('tab_incidents') },
-  { id: 'services_ports', icon: '⚙️', label: t('tab_services_ports'), badge: servicesList.value.length + portsList.value.length || null },
-  { id: 'processes', icon: '⚡', label: t('tab_tasks'), badge: processesList.value.length || null },
-  { id: 'firewall', icon: '🛡️', label: t('tab_firewall') },
-  { id: 'accounts', icon: '🔑', label: t('tab_users_ssh') },
-  { id: 'cron', icon: '⏱️', label: t('tab_cron') },
-  { id: 'fim', icon: '🔍', label: t('tab_fim') },
-  { id: 'packages', icon: '📦', label: t('tab_packages'), badge: server.value?.apt_upgradable || null },
-  { id: 'ssl', icon: '🔒', label: t('tab_ssl') },
-  { id: 'logs', icon: '📜', label: t('tab_logs') },
+  { id: 'overview', label: t('tab_perf') },
+  { id: 'problems', label: t('tab_incidents') },
+  { id: 'services_ports', label: t('tab_services_ports'), badge: servicesList.value.length + portsList.value.length || null },
+  { id: 'processes', label: t('tab_tasks'), badge: processesList.value.length || null },
+  { id: 'firewall', label: t('tab_firewall') },
+  { id: 'accounts', label: t('tab_users_ssh') },
+  { id: 'cron', label: t('tab_cron') },
+  { id: 'fim', label: t('tab_fim') },
+  { id: 'packages', label: t('tab_packages'), badge: server.value?.apt_upgradable || null },
+  { id: 'ssl', label: t('tab_ssl') },
+  { id: 'logs', label: t('tab_logs') },
 ])
 
 const filteredHosts = computed(() => {

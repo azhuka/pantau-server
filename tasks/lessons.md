@@ -168,24 +168,39 @@ Dokumen ini mencatat setiap pembelajaran dari koreksi operator dan temuan teknis
   Seluruh komponen antarmuka wajib menerapkan **Taksonomi Tombol 4-Tier**:
   1. **Tier 1: Tombol + Ikon Saja (Universal Known Actions):**
      - Untuk fungsi aksi yang sudah dikenal secara universal dan intuitif di seluruh dunia komputer/web.
-     - Contoh: Minimize (`—`), Maximize/Restore (`⛶` / `🗖`), Close (`✕`), Sync/Refresh (`⟳`), Clear Screen (`🧹`), Navigasi panah (`◀` / `▶`), Download (`⬇️`).
+     - Contoh: Minimize, Maximize/Restore, Close, Sync/Refresh, Clear Screen, Navigasi panah, Download.
      - Menggunakan tooltip hover standar (`title="..."`). Dilarang menambahkan label teks yang memboroskan ruang horizontal.
   2. **Tier 2: Tombol + Ikon + Label (Domain Functional Navigation):**
      - Untuk tombol aksi atau tab navigasi yang bukan merupakan fungsi umum komputer biasa, sehingga label teks diperlukan untuk memperjelas konteks domain.
-     - Contoh: Sub-tabs fungsional (`[ 📊 Performance ]`, `[ 🚨 Incidents ]`, `[ ⚙️ Services & Ports ]`), tombol switch mode (`[ 📋 Table ]` / `[ ▦ Grid ]`), tombol aksi utama (`[ ⚡ Investigate ➔ ]`).
+     - Contoh: Sub-tabs fungsional (Performance, Incidents, Services & Ports), tombol switch mode (Table / Grid), tombol aksi pembuka rincian aset (`View` dengan ikon SVG Eye).
   3. **Tier 3: Tombol + Ikon Saja + Tooltip Informatif (Contextual Compact Actions):**
      - Tombol aksi dengan ikon umum namun dieksekusi terhadap objek target spesifik di ruang sempit (seperti baris tabel atau toolbar padat) untuk menghemat ruang kolom, TETAPI wajib dilengkapi tooltip informatif yang menyebutkan target aksi secara presisi.
-     - Contoh: Tombol hapus aset (`🗑️` + tooltip: `"Delete asset web-prod-01"`), tombol probe instan node (`⟳` + tooltip: `"Probe & synchronize telemetry for node db-primary"`), shortcut terminal baris (`🖥️` + tooltip: `"Open interactive Web Terminal"`).
+     - Contoh: Tombol shortcut metrik (SVG chart + tooltip: `"Performance & Metrics"`), shortcut terminal (SVG terminal + tooltip: `"Web Terminal"`), tombol probe (SVG sync + tooltip: `"Probe Telemetry"`), tombol menu more (SVG dots + tooltip: `"More Actions"`).
   4. **Tier 4: Tombol + Ikon + Label + Tooltip Informatif (Critical / System Impact Actions):**
      - Tombol operasional yang memiliki dampak nyata terhadap stabilitas sistem, alur kerja multi-step, atau risiko operasional.
      - Wajib memiliki label teks yang tegas agar operator tidak salah tekan, PLUS tooltip informatif yang merinci fungsi, efek samping, atau informasi prasyarat secara singkat dan padat.
      - Contoh:
-       - `[ 🔄 Update OS ]` (tooltip: "Run 'apt update' to refresh package repositories metadata")
-       - `[ ⬆️ Upgrade OS ]` (tooltip: "Run non-interactive package upgrades for safe dependencies")
-       - `[ 🔁 Reboot ]` (tooltip: "Execute controlled system restart with guardrail verification")
-       - `[ ⚡ Power Off ]` (tooltip: "Initiate system shutdown sequence (blocked on Proxmox HA nodes)")
-       - `[ 🛡️ Maintenance Mode ]` (tooltip: "Toggle maintenance state to silence alert dispatches during work")
-       - `[ ↗ Pop-out ]` (tooltip: "Pop-out console to dedicated browser window")
+       - `Update OS` (tooltip: "Update operating system package index (apt update)")
+       - `Upgrade OS` (tooltip: "Upgrade available OS packages (apt upgrade)")
+       - `Reboot` (tooltip: "Reboot host operating system")
+       - `Power Off` (tooltip: "Power off host machine (Shutdown)")
+       - `Maintenance Mode` (tooltip: "Configure maintenance mode for this host")
+
+---
+
+## Lesson 19: Eliminasi Total Emoji Kartun, Standardisasi Ikon Vektor SVG Halus, dan Larangan Keras Label Berlebih / Fiktif (Investigate -> View & Pop-out Window Uniformity)
+- **Konteks:**
+  1. Header jendela Web Terminal & File Manager menampilkan tombol `[ ↗ Pop-out Window ]` yang memanjang sendirian di antara deretan tombol ikon jendela lainnya, dengan teks tombol yang sama persis dengan isi tooltip (`Pop-out Window` di atas `Pop-out Window`), sehingga cacat ergonomi dan redundan.
+  2. Tombol baris armada dan dasbor diberi label melodramatis `INVESTIGATE` dengan emoji petir `⚡`, padahal fungsinya murni untuk membuka rincian aset (`View`).
+  3. Masih terdapat emoji kartun berwarna bawaan sistem operasi yang mencolok dan merusak atmosfer profesional *Tactical Cyber Command Room*.
+- **Akar Masalah:**
+  1. Kurangnya rasa kepekaan estetika dan ergonomi: mencampur tombol teks memanjang di dalam deretan tombol kontrol jendela yang semestinya seragam berupa ikon persegi.
+  2. Istilah dramatisasi fiktif yang tidak tepat konteks (*Investigate* alih-alih *View*).
+  3. Penggunaan karakter emoji bawaan OS alih-alih vektor SVG tipis monokromatik.
+- **Aturan Pencegahan `[Lead UI/UX, SF, NOC Data Density, Zero-Fictitious]`:**
+  1. **Aksi Rincian Aset Bernama "View" (Bukan "Investigate"):** Seluruh tombol pembuka jendela modal rincian aset di dasbor dan tabel armada menggunakan label baku **"View"** dengan ikon SVG mata (*Eye*), bukan "Investigate" atau emoji petir.
+  2. **Keseragaman Tombol Kontrol Jendela (Icon-Only + Tooltip As Label):** Seluruh tombol pada bilah kontrol jendela (termasuk *Pop-out*, *Clear Screen*, *Full Window*, *Fullscreen*, *Close*) **wajib seragam berupa tombol ikon SVG tanpa label teks horizontal**, di mana *tooltip* (`title="..."`) berfungsi sebagai label penjelas. Dilarang menduplikasi teks label yang sama persis dengan isi tooltip.
+  3. **Larangan Mutlak Emoji Kartun (Zero-Emoji Mandate):** Seluruh elemen UI wajib menggunakan **vektor SVG inline monokromatik/semantik** (stroke 1.5–2px, adaptif terhadap warna tema NOC) dan DILARANG KERAS menggunakan karakter emoji bergambar.
 
 
 

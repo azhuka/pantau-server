@@ -79,7 +79,11 @@
         @click="restoreWorkspace"
         :title="t('tooltip_shelf_open')"
       >
-        <span class="text-base">🖥️</span>
+        <svg class="w-4 h-4 text-cyan-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect width="20" height="14" x="2" y="3" rx="2"/>
+          <line x1="8" y1="21" x2="16" y2="21"/>
+          <line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
         <div>
           <div class="text-xs font-bold text-gray-100 font-mono flex items-center gap-1.5">
             <span
@@ -96,17 +100,24 @@
       <div class="flex items-center gap-1.5 border-l border-gray-700/80 pl-2.5 font-mono">
         <button
           @click="restoreWorkspace"
-          class="p-1 px-2 rounded bg-blue-600/30 text-cyan-300 hover:bg-blue-600 hover:text-white text-xs transition cursor-pointer font-bold"
+          class="p-1 px-2 rounded bg-cyan-950/80 border border-cyan-600/50 text-cyan-300 hover:bg-cyan-800 hover:text-white text-xs transition cursor-pointer font-bold inline-flex items-center gap-1"
           :title="t('shelf_restore')"
         >
-          ⛶ {{ t('shelf_restore') }}
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="18" height="18" x="3" y="3" rx="2"/>
+            <line x1="3" y1="9" x2="21" y2="9"/>
+          </svg>
+          <span>{{ t('shelf_restore') }}</span>
         </button>
         <button
           @click="closeWorkspace"
-          class="p-1 px-2 rounded text-gray-400 hover:text-rose-400 hover:bg-rose-950/40 text-xs transition cursor-pointer font-bold"
+          class="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-rose-400 hover:bg-rose-950/40 text-xs transition cursor-pointer font-bold"
           :title="t('shelf_close')"
         >
-          ✕
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
         </button>
       </div>
     </div>

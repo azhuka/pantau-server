@@ -59,7 +59,11 @@
             :placeholder="t('search_placeholder')"
             class="bg-[#060a14] border border-cyan-900/50 focus:border-cyan-400 rounded px-3 py-1 text-xs text-gray-100 placeholder-gray-500 w-64 focus:outline-none transition font-mono"
           />
-          <span class="absolute right-2.5 top-1.5 text-xs text-gray-500 pointer-events-none">🔍</span>
+          <span class="absolute right-2.5 top-2 text-xs text-gray-500 pointer-events-none">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          </span>
         </div>
       </div>
     </div>
@@ -132,8 +136,13 @@
                     T2
                   </span>
                 </div>
-                <div class="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
-                  <span>📁 {{ s.group_name || 'DEFAULT' }}</span>
+                <div class="text-xs text-gray-500 flex items-center gap-1.5 mt-0.5">
+                  <span class="inline-flex items-center gap-1">
+                    <svg class="w-3 h-3 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/>
+                    </svg>
+                    <span>{{ s.group_name || 'DEFAULT' }}</span>
+                  </span>
                   <span v-if="s.active_problems_count > 0" class="text-amber-400 font-bold ml-1 radar-warning px-1 rounded">
                     ● {{ s.active_problems_count }} alert
                   </span>
@@ -245,50 +254,69 @@
               <!-- 12. KLASTER TOMBOL TINDAKAN (TACTICAL COMMAND CONTROLLER) -->
               <td class="py-2.5 px-4 whitespace-nowrap text-right">
                 <div class="inline-flex items-center gap-1.5">
-                  <!-- Tombol INVESTIGATE (Membuka Jendela Kontrol Taktis Mengambang) -->
+                  <!-- Tombol VIEW (Membuka Jendela Rincian Aset) -->
                   <button
                     @click="$emit('open-workspace', s.id, 'overview')"
                     class="px-2.5 py-1 rounded bg-cyan-950/80 hover:bg-cyan-700 text-cyan-300 hover:text-white border border-cyan-500/50 text-xs font-bold shadow-[0_0_8px_rgba(56,189,248,0.2)] transition cursor-pointer flex items-center gap-1.5"
-                    :title="t('tooltip_view')"
+                    title="View asset details and telemetry"
                   >
-                    <span>⚡</span>
-                    <span>INVESTIGATE</span>
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    <span>View</span>
                   </button>
 
-                  <!-- Shortcut METRIKS -->
+                  <!-- Shortcut METRICS -->
                   <button
                     @click="$emit('open-workspace', s.id, 'overview')"
-                    class="w-7 h-7 flex items-center justify-center rounded bg-[#0b1324] hover:bg-cyan-950 text-cyan-400 border border-cyan-800/40 transition cursor-pointer text-xs"
-                    :title="t('tooltip_metrics')"
+                    class="w-7 h-7 flex items-center justify-center rounded bg-[#0b1324] hover:bg-cyan-950 text-cyan-400 hover:text-cyan-300 border border-cyan-800/40 transition cursor-pointer"
+                    title="Performance & Metrics"
                   >
-                    📊
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="18" y1="20" x2="18" y2="10"/>
+                      <line x1="12" y1="20" x2="12" y2="4"/>
+                      <line x1="6" y1="20" x2="6" y2="14"/>
+                    </svg>
                   </button>
 
-                  <!-- Shortcut TERMINAL TTY -->
+                  <!-- Shortcut TERMINAL -->
                   <button
                     @click="$emit('open-workspace', s.id, 'terminal')"
-                    class="w-7 h-7 flex items-center justify-center rounded bg-[#0b1324] hover:bg-cyan-950 text-cyan-400 border border-cyan-800/40 transition cursor-pointer text-xs"
-                    :title="t('tooltip_terminal')"
+                    class="w-7 h-7 flex items-center justify-center rounded bg-[#0b1324] hover:bg-cyan-950 text-cyan-400 hover:text-cyan-300 border border-cyan-800/40 transition cursor-pointer"
+                    title="Web Terminal"
                   >
-                    🖥️
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="4 17 10 11 4 5"/>
+                      <line x1="12" y1="19" x2="20" y2="19"/>
+                    </svg>
                   </button>
 
                   <!-- Shortcut PROBE INSTAN -->
                   <button
                     @click="$emit('probe-node', s.id)"
-                    class="w-7 h-7 flex items-center justify-center rounded bg-[#0b1324] hover:bg-emerald-950 text-emerald-400 border border-cyan-800/40 transition cursor-pointer text-xs"
-                    :title="t('tooltip_sync')"
+                    class="w-7 h-7 flex items-center justify-center rounded bg-[#0b1324] hover:bg-emerald-950 text-emerald-400 hover:text-emerald-300 border border-cyan-800/40 transition cursor-pointer"
+                    title="Probe Telemetry"
                   >
-                    🔄
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                      <path d="M3 3v5h5"/>
+                      <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+                      <path d="M16 21h5v-5"/>
+                    </svg>
                   </button>
 
                   <!-- Menu DROPDOWN ⋮ -->
                   <button
                     @click="$emit('more-actions', s.id, $event)"
-                    class="w-7 h-7 flex items-center justify-center rounded bg-[#0b1324] hover:bg-gray-800 text-gray-400 hover:text-white border border-gray-700/80 transition cursor-pointer text-xs font-bold"
-                    :title="t('btn_more')"
+                    class="w-7 h-7 flex items-center justify-center rounded bg-[#0b1324] hover:bg-gray-800 text-gray-400 hover:text-white border border-gray-700/80 transition cursor-pointer"
+                    title="More Actions"
                   >
-                    ⋮
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="1"/>
+                      <circle cx="12" cy="5" r="1"/>
+                      <circle cx="12" cy="19" r="1"/>
+                    </svg>
                   </button>
                 </div>
               </td>
@@ -298,7 +326,12 @@
             <tr v-if="filteredServers.length === 0">
               <td colspan="12" class="py-14 px-4 text-center">
                 <div class="flex flex-col items-center justify-center gap-2">
-                  <span class="text-3xl text-gray-600">📡</span>
+                  <svg class="w-8 h-8 text-gray-600 mb-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect width="20" height="8" x="2" y="2" rx="2" ry="2"/>
+                    <rect width="20" height="8" x="2" y="14" rx="2" ry="2"/>
+                    <line x1="6" y1="6" x2="6.01" y2="6"/>
+                    <line x1="6" y1="18" x2="6.01" y2="18"/>
+                  </svg>
                   <div class="text-sm font-bold text-gray-200 font-mono tracking-wider uppercase">// {{ t('fleet_empty_title') }}</div>
                   <div class="text-xs text-gray-400 font-mono max-w-md">{{ t('fleet_empty_desc') }}</div>
                 </div>

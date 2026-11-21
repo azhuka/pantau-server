@@ -4,8 +4,13 @@
     <div class="flex items-center gap-6">
       <!-- Cyber Brand with Tactical HUD Moniker -->
       <div class="flex items-center gap-3 cursor-pointer group" @click="$emit('nav', 'dashboard')">
-        <div class="w-8 h-8 rounded bg-cyan-950/60 border border-cyan-400/50 flex items-center justify-center font-black text-cyan-300 text-base shadow-[0_0_12px_rgba(56,189,248,0.35)] group-hover:border-cyan-300 transition-all">
-          ⛊
+        <div class="w-8 h-8 rounded bg-cyan-950/60 border border-cyan-400/50 flex items-center justify-center text-cyan-300 shadow-[0_0_12px_rgba(56,189,248,0.35)] group-hover:border-cyan-300 transition-all">
+          <svg class="w-4 h-4 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="20" height="8" x="2" y="2" rx="2" ry="2"/>
+            <rect width="20" height="8" x="2" y="14" rx="2" ry="2"/>
+            <line x1="6" y1="6" x2="6.01" y2="6"/>
+            <line x1="6" y1="18" x2="6.01" y2="18"/>
+          </svg>
         </div>
         <div>
           <div class="font-bold text-sm tracking-wider text-gray-100 flex items-center gap-2 font-mono">
