@@ -318,6 +318,8 @@ export default {
   fm_paste_here: 'Tempel di Sini',
   fm_ready_to_paste: 'item siap ditempel',
   fm_cancel: 'Batal',
+  fm_open_terminal: 'Buka di Terminal',
+  fm_terminal_at_path: 'Buka Web Terminal di path ini',
 
   // Tactical Tabs
   tab_perf: 'Performa',

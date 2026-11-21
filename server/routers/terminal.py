@@ -39,7 +39,8 @@ def _get_user_from_token(token: str, db: Session) -> User | None:
 async def websocket_terminal(
     websocket: WebSocket,
     sid: int,
-    token: str = Query(default="")
+    token: str = Query(default=""),
+    cwd: str = Query(default="")
 ):
     await websocket.accept()
 
@@ -77,13 +78,17 @@ async def websocket_terminal(
         server_ip = str(server.ip_address or "127.0.0.1")
         username = str(user.username)
 
+        start_dir = os.path.expanduser("~")
+        if cwd and os.path.isdir(cwd):
+            start_dir = os.path.abspath(cwd)
+
         audit = AuditLog(
             server_id=sid,
             username=username,
             action="terminal_connect",
             target=f"{server_hostname}:{server_ip}",
             result="success",
-            meta=f"Operator {username} initiated Web Terminal PTY session",
+            meta=f"Operator {username} initiated Web Terminal PTY session at {start_dir}",
             created_at=datetime.utcnow()
         )
         db.add(audit)
@@ -113,7 +118,7 @@ async def websocket_terminal(
         stdin=slave_fd,
         stdout=slave_fd,
         stderr=slave_fd,
-        cwd=os.path.expanduser("~"),
+        cwd=start_dir,
         env=env,
         preexec_fn=os.setsid,
         close_fds=True,

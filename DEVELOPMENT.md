@@ -174,6 +174,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.12
+
+Mengintegrasikan aksi 'Open Web Terminal at this path' dan 'Open in Terminal' folder agar mengangkat Terminal Dock ke lapisan teratas dan otomatis mengeksekusi cd ke direktori target.
+
+
 ### Versi v0.1.11
 
 Memperbaiki kalkulasi posisi dropdown menu aksi pada Remote File Manager agar otomatis membuka ke atas (drop-up) jika ruang di bawah terbatas sehingga seluruh aksi tetap utuh di layar.

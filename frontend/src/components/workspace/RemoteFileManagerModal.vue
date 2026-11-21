@@ -213,7 +213,7 @@
             type="button"
             class="text-gray-400 hover:text-cyan-300 p-1 rounded hover:bg-gray-800 transition cursor-pointer shrink-0"
             @click="emitTerminalAtPath"
-            title="Open Web Terminal at this path"
+            :title="t('fm_terminal_at_path') || 'Open Web Terminal at this path'"
           >
             <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="4 17 10 11 4 5"/>
@@ -524,6 +524,22 @@
                           <line x1="12" y1="15" x2="12" y2="3"/>
                         </svg>
                         <span>{{ t('fm_download') || 'Download' }}</span>
+                      </button>
+                      <div class="border-t border-gray-800 my-1"></div>
+                    </template>
+
+                    <!-- Directory-specific Actions: Open in Terminal -->
+                    <template v-else>
+                      <button
+                        type="button"
+                        @click="openTerminalAtFolder(item); closeDropdown()"
+                        class="w-full text-left px-3 py-1.5 hover:bg-cyan-950 text-cyan-200 hover:text-white flex items-center gap-2 cursor-pointer"
+                      >
+                        <svg class="w-3.5 h-3.5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="4 17 10 11 4 5"/>
+                          <line x1="12" y1="19" x2="20" y2="19"/>
+                        </svg>
+                        <span>{{ t('fm_open_terminal') || 'Open in Terminal' }}</span>
                       </button>
                       <div class="border-t border-gray-800 my-1"></div>
                     </template>
@@ -1443,9 +1459,18 @@ function submitManualPath() {
 }
 
 function emitTerminalAtPath() {
+  notify(`Launching Web Terminal at ${currentPath.value}...`, 'success')
   emit('open-terminal', {
     ...props.server,
     workingDirectory: currentPath.value
+  })
+}
+
+function openTerminalAtFolder(item) {
+  notify(`Launching Web Terminal at ${item.path}...`, 'success')
+  emit('open-terminal', {
+    ...props.server,
+    workingDirectory: item.path
   })
 }
 

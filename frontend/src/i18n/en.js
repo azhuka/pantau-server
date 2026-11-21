@@ -318,6 +318,8 @@ export default {
   fm_paste_here: 'Paste Here',
   fm_ready_to_paste: 'item(s) ready to paste',
   fm_cancel: 'Cancel',
+  fm_open_terminal: 'Open in Terminal',
+  fm_terminal_at_path: 'Open Web Terminal at this path',
 
   // Tactical Tabs
   tab_perf: 'Performance',

@@ -1,13 +1,13 @@
 <template>
   <div
     v-show="isOpen && !isMinimized"
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-2 sm:p-4 select-none"
+    class="fixed inset-0 z-[20000] flex items-center justify-center bg-black/60 backdrop-blur-xs p-2 sm:p-4 select-none"
     @click.self="handleBackdropClick"
   >
     <!-- TERMINAL DOCK WINDOW CONTAINER -->
     <div
       class="bg-[#0b0f19] border border-cyan-500/30 rounded-xl shadow-2xl flex flex-col overflow-hidden transition-all duration-150"
-      :class="isMaximized ? 'fixed inset-0 w-screen h-screen rounded-none z-[99999] border-none' : 'w-[90vw] max-w-[1440px] h-[82vh] min-h-[500px]'"
+      :class="isMaximized ? 'fixed inset-0 w-screen h-screen rounded-none z-[30000] border-none' : 'w-[90vw] max-w-[1440px] h-[82vh] min-h-[500px]'"
     >
       <!-- 1. DOCK HEADER WITH TABS & CONTROLS -->
       <div class="bg-[#080d16] border-b border-cyan-500/20 px-3 pt-2 pb-0 flex items-end justify-between gap-3 select-none shrink-0 font-mono">
@@ -262,9 +262,13 @@ function popoutTerminalWindow() {
 
 function openNewTabForServer(server) {
   showNewTabDropdown.value = false
+  const targetDir = server.workingDirectory || ''
   const existing = tabs.value.find(t => t.serverId === server.id)
   if (existing) {
     selectTab(existing.id)
+    if (targetDir) {
+      sendCdToTab(existing, targetDir)
+    }
     return
   }
 
@@ -274,6 +278,7 @@ function openNewTabForServer(server) {
     serverId: server.id,
     hostname: server.hostname,
     ip: server.ip_address || '127.0.0.1',
+    workingDirectory: targetDir,
     status: 'connecting',
     term: null,
     fit: null,
@@ -285,6 +290,21 @@ function openNewTabForServer(server) {
   nextTick(() => {
     initTerminalForTab(newTab)
   })
+}
+
+function sendCdToTab(tab, path) {
+  if (!path) return
+  tab.workingDirectory = path
+  const cleanPath = path.replace(/'/g, "'\\''")
+  const cmd = `cd '${cleanPath}'\n`
+  if (tab.ws && tab.ws.readyState === WebSocket.OPEN) {
+    tab.ws.send(JSON.stringify({ type: 'input', data: cmd }))
+    if (tab.term) {
+      setTimeout(() => {
+        try { tab.term.focus() } catch (e) {}
+      }, 50)
+    }
+  }
 }
 
 function initTerminalForTab(tab) {
@@ -325,7 +345,10 @@ function initTerminalForTab(tab) {
   // Hubungkan ke WebSocket Backend
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
   const token = localStorage.getItem('pantau_token') || ''
-  const wsUrl = `${protocol}//${window.location.host}/ws/servers/${tab.serverId}/terminal?token=${encodeURIComponent(token)}`
+  let wsUrl = `${protocol}//${window.location.host}/ws/servers/${tab.serverId}/terminal?token=${encodeURIComponent(token)}`
+  if (tab.workingDirectory) {
+    wsUrl += `&cwd=${encodeURIComponent(tab.workingDirectory)}`
+  }
 
   const ws = new WebSocket(wsUrl)
   tab.ws = ws
@@ -335,6 +358,15 @@ function initTerminalForTab(tab) {
     fit.fit()
     ws.send(JSON.stringify({ type: 'resize', cols: term.cols, rows: term.rows }))
     term.focus()
+
+    if (tab.workingDirectory) {
+      const cleanPath = tab.workingDirectory.replace(/'/g, "'\\''")
+      setTimeout(() => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'input', data: `cd '${cleanPath}'\n` }))
+        }
+      }, 400)
+    }
   }
 
   ws.onmessage = (event) => {

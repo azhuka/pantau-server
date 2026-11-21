@@ -139,7 +139,7 @@
     <!-- TERMINAL DOCK SHELF (Bilah Rak Mengambang untuk Terminal Dock Diminimalkan) -->
     <div
       v-if="isTerminalDockOpen && isTerminalDockMinimized"
-      class="fixed bottom-10 z-40 bg-[#080d19]/95 border border-cyan-500/50 rounded-xl shadow-2xl p-2 px-4 flex items-center gap-3 backdrop-blur-md transition-all hover:border-cyan-400 group select-none"
+      class="fixed bottom-10 z-[20000] bg-[#080d19]/95 border border-cyan-500/50 rounded-xl shadow-2xl p-2 px-4 flex items-center gap-3 backdrop-blur-md transition-all hover:border-cyan-400 group select-none"
       :style="{ right: (isWorkspaceOpen && isWorkspaceMinimized) ? '340px' : '24px' }"
     >
       <div
