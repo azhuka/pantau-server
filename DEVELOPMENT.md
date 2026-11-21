@@ -18,6 +18,11 @@ Berkas ini adalah **Manifes Rekayasa, Rujukan Arsitektur Utama, dan Peta Jalan P
 3. **Kejujuran Data Mutlak (*Absolute Data Integrity — Zero-Fake Data*):** Sistem hanya menampilkan dan menyimpan fakta fisik yang diukur langsung dari kernel Linux (`/proc`, `/sys`, socket, systemd). Tidak ada tebak-tebakan, manipulasi visual semu, atau data buatan yang menyesatkan operator.
 4. **Kesederhanaan Murni & Anti-Monolit (*Simplicity First & Anti-Monolith*):** Setiap modul perangkat lunak memiliki satu tanggung jawab yang jelas (*Single Responsibility Principle*). Mengharamkan penumpukan belasan ribu baris kode campuran HTML/JS/CSS ke dalam satu berkas raksasa.
 
+### 1.3 Hubungan dengan Aplikasi Lama (~/rj45) & Batasan Evolusi
+- **Kebenaran Workflow & UX Lama:** Konsep dasar, hierarki fitur, alur kerja operasional (*workflow*), dan pengalaman pengguna (*UX*) dari aplikasi pantau lama (`/home/bos/rj45`) adalah **fondasi yang BENAR dan sudah matang**.
+- **Fokus Penyempurnaan:** Masalah pada aplikasi lama murni terletak pada **frontend-nya yang kacau** (monolitik ribuan baris campuran Jinja template, CSS, dan skrip JavaScript mentah). Aplikasi baru (`/home/bos/pantau-server`) adalah **perombakan total dan penyempurnaan dari sisi UI/Frontend** (Vue 3 SPA, komponen kecil terisolasi `<250` baris, reaktivitas modern, Tailwind CSS v4) **ditambah pembenahan serta penguatan backend yang diperlukan**.
+- **Kompas Rekayasa Mutlak:** Seluruh rancangan modul dan alur interaksi operator wajib mereplikasi dan menyempurnakan alur kerja aplikasi lama di `~/rj45`, tanpa mengarang alur kerja baru atau model interaksi asing yang menyimpang.
+
 ---
 
 ## 2. Prinsip Arsitektur: Fondasi Clean Architecture & Pemisahan Tanggung Jawab

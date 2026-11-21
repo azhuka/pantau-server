@@ -1,6 +1,6 @@
 # Project Rules: Pantau Server Application
 
-Berkas ini adalah spesifikasi teknis dan aturan baku permanen (*always-on project rules*) khusus bagi aplikasi **Pantau Server** (`/home/bos/pantau-server`). Seluruh ketentuan di bawah ini wajib dipatuhi secara ketat tanpa pengecualian.
+Berkas ini adalah spesifikasi teknis dan aturan baku permanen (*always-on project rules*) khusus bagi aplikasi **Pantau Server** (`/home/bos/pantau-server`). Untuk panduan ringkas operasional AI agent, baca [`AGENTS.md`](file:///home/bos/pantau-server/AGENTS.md). Seluruh ketentuan di bawah ini wajib dipatuhi secara ketat tanpa pengecualian.
 
 ---
 
@@ -231,4 +231,32 @@ Sebelum asisten AI menyatakan pekerjaan selesai ke operator, wajib memverifikasi
   4. *Kontrol Jendela Standar:* Mendukung minimize ke rak dock bawah (dengan koneksi *keep-alive* tidak terputus), maximize/fullscreen, dan pop-out ke jendela terpisah.
 - **Larangan Keras Terminal Model Baru / Fake Input Box:**
   - Dilarang keras membuat terminal tiruan baru berupa kotak teks `<input>` satu baris dengan tombol submit. Terminal wajib berupa emulator PTY sejati berbasis `xterm.js` yang mendukung interaksi keyboard langsung (TAB completion, Ctrl+C, Ctrl+D, nano/vim, htop).
+
+---
+
+## 18. Prinsip Rekayasa Rekanara (Ponytail, Anti-Bloat & Verifikasi Mandiri)
+- **Prinsip Ponytail (Lazy Senior Dev Mode — Anti-Bloat):**
+  - Selesaikan setiap tugas dengan **diff terkecil yang menuntaskan masalah secara menyeluruh**.
+  - Dilarang keras membuat abstraksi prematur, kelas wrapper spekulatif, atau opsi konfigurasi yang tidak diminta.
+  - Gunakan pustaka standar Python 3.10+ atau utilitas bawaan FastAPI/Vue yang sudah ada sebelum mengusulkan dependensi baru.
+  - Jika membuat simplifikasi yang disengaja demi kecepatan dengan upgrade path yang jelas, beri komentar bertanda:
+    `# ponytail: <alasan simplifikasi>, <kapan harus di-upgrade>` atau `// ponytail: ...`
+- **Pencegahan Kesalahan Runtime (Anti-Hallucination & Root Cause):**
+  - **SQLAlchemy Session Hygiene:** Wajib mencegah `DetachedInstanceError`. Jangan biarkan objek ORM diakses di luar cakupan sesi database yang masih terbuka; gunakan *eager loading* atau petakan langsung ke skema Pydantic.
+  - **Subproses & Sesi PTY:** Wajib memastikan alur pembersihan (*graceful cleanup*) proses child/PTY saat koneksi WebSocket terminal terputus agar tidak memicu proses *zombie*.
+  - Selidiki *root cause* dan periksa seluruh *caller* fungsi yang disentuh sebelum mengubah kode. Dilarang melakukan *trial-and-error* acak.
+- **Mandat Verifikasi Mandiri Sebelum Melapor Selesai:**
+  - Dilarang mengklaim tugas selesai hanya karena kode telah ditulis.
+  - Wajib membuktikan validitas sintaksis backend (`python3 -m py_compile server/**/*.py`) dan kelulusan *build* frontend (`npm run build --prefix frontend`).
+
+---
+
+## 19. Prinsip Supremasi Konsep, Workflow & UX Aplikasi Lama (~/rj45)
+- **Kebenaran Mutlak Workflow Lama:** Konsep dasar, hierarki fitur, alur kerja operasional (*workflow*), dan pengalaman pengguna (*UX*) dari aplikasi pantau lama (`/home/bos/rj45`) adalah **konsep yang BENAR dan sudah matang**.
+- **Hakikat Proyek Pantau Server Baru (~/pantau-server):**
+  - Aplikasi baru ini adalah **perombakan dan penyempurnaan dari sisi UI/Frontend saja** (mengganti monolitik Jinja HTML/JS/CSS yang kacau di aplikasi lama dengan SPA Vue 3 modern, arsitektur modular terstruktur `<250` baris per file, dan komponen bersih) **ditambah perbaikan serta penguatan backend/layanan yang diperlukan**.
+  - **Dilarang Keras Mengarang Alur Kerja Baru:** Dilarang keras mengarang model interaksi asing, mengganti alur kontrol yang sudah terbukti di aplikasi lama, atau membuang workflow yang sudah matang demi alasan spekulatif.
+  - Setiap kali merancang atau membangun komponen antarmuka (Dasbor Pasif, Tabel Armada, Jendela Rincian Aset, Tab Metrik, Tab Services/Ports, Tab Tasks/Proses, Tab Firewall/Cron, Web Terminal Dock, Remote File Manager, Tombol Power/Reboot/Maintenance), **wajib selalu mengacu 100% pada alur kerja dan UX aplikasi lama di `/home/bos/rj45` sebagai sumber kebenaran visual dan fungsional**.
+
+
 
