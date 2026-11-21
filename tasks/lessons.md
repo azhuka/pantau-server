@@ -159,6 +159,34 @@ Dokumen ini mencatat setiap pembelajaran dari koreksi operator dan temuan teknis
   3. **Inspeksi Visual Mandiri Berbasis Alat Otomasi (Anti-Kebutaan Piksel):**
      - Wajib menggunakan alat uji visual otomatis berbasis peramban (`tools/capture_ui_suite.js` via headless Chrome) untuk mengambil dan memverifikasi tangkapan layar antarmuka nyata sebelum menyatakan pekerjaan selesai kepada operator.
 
+---
+
+## Lesson 18: Ergonomi Tombol, Tipologi Ikonografi, Label, dan Tooltip Presisi (4-Tier Button Ergonomics Standard)
+- **Konteks:** Inkonsistensi penggunaan tombol di berbagai seksi antarmuka: sebagian tombol menggunakan label teks panjang yang memboroskan ruang pada fungsi universal (seperti minimize, maximize, close, full window), sementara aksi spesifik pada baris tabel tidak memiliki tooltip informatif mengenai objek target yang akan dieksekusi.
+- **Akar Masalah:** Tidak adanya taksonomi hierarki tombol yang baku untuk membedakan kapan sebuah tombol cukup berupa ikon saja, kapan wajib memiliki label, kapan memerlukan tooltip ringkas, dan kapan wajib memiliki label + tooltip penjelasan mendalam.
+- **Aturan Pencegahan `[SF, Ergonomics, NOC Data Density]`:**
+  Seluruh komponen antarmuka wajib menerapkan **Taksonomi Tombol 4-Tier**:
+  1. **Tier 1: Tombol + Ikon Saja (Universal Known Actions):**
+     - Untuk fungsi aksi yang sudah dikenal secara universal dan intuitif di seluruh dunia komputer/web.
+     - Contoh: Minimize (`—`), Maximize/Restore (`⛶` / `🗖`), Close (`✕`), Sync/Refresh (`⟳`), Clear Screen (`🧹`), Navigasi panah (`◀` / `▶`), Download (`⬇️`).
+     - Menggunakan tooltip hover standar (`title="..."`). Dilarang menambahkan label teks yang memboroskan ruang horizontal.
+  2. **Tier 2: Tombol + Ikon + Label (Domain Functional Navigation):**
+     - Untuk tombol aksi atau tab navigasi yang bukan merupakan fungsi umum komputer biasa, sehingga label teks diperlukan untuk memperjelas konteks domain.
+     - Contoh: Sub-tabs fungsional (`[ 📊 Performance ]`, `[ 🚨 Incidents ]`, `[ ⚙️ Services & Ports ]`), tombol switch mode (`[ 📋 Table ]` / `[ ▦ Grid ]`), tombol aksi utama (`[ ⚡ Investigate ➔ ]`).
+  3. **Tier 3: Tombol + Ikon Saja + Tooltip Informatif (Contextual Compact Actions):**
+     - Tombol aksi dengan ikon umum namun dieksekusi terhadap objek target spesifik di ruang sempit (seperti baris tabel atau toolbar padat) untuk menghemat ruang kolom, TETAPI wajib dilengkapi tooltip informatif yang menyebutkan target aksi secara presisi.
+     - Contoh: Tombol hapus aset (`🗑️` + tooltip: `"Delete asset web-prod-01"`), tombol probe instan node (`⟳` + tooltip: `"Probe & synchronize telemetry for node db-primary"`), shortcut terminal baris (`🖥️` + tooltip: `"Open interactive Web Terminal"`).
+  4. **Tier 4: Tombol + Ikon + Label + Tooltip Informatif (Critical / System Impact Actions):**
+     - Tombol operasional yang memiliki dampak nyata terhadap stabilitas sistem, alur kerja multi-step, atau risiko operasional.
+     - Wajib memiliki label teks yang tegas agar operator tidak salah tekan, PLUS tooltip informatif yang merinci fungsi, efek samping, atau informasi prasyarat secara singkat dan padat.
+     - Contoh:
+       - `[ 🔄 Update OS ]` (tooltip: "Run 'apt update' to refresh package repositories metadata")
+       - `[ ⬆️ Upgrade OS ]` (tooltip: "Run non-interactive package upgrades for safe dependencies")
+       - `[ 🔁 Reboot ]` (tooltip: "Execute controlled system restart with guardrail verification")
+       - `[ ⚡ Power Off ]` (tooltip: "Initiate system shutdown sequence (blocked on Proxmox HA nodes)")
+       - `[ 🛡️ Maintenance Mode ]` (tooltip: "Toggle maintenance state to silence alert dispatches during work")
+       - `[ ↗ Pop-out ]` (tooltip: "Pop-out console to dedicated browser window")
+
 
 
 

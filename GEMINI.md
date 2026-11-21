@@ -41,6 +41,11 @@ Berkas ini adalah spesifikasi teknis dan aturan baku permanen (*always-on projec
   - Setiap menu dropdown "Aksi ▾" wajib memiliki elevasi `z-index: 9999` saat dibuka agar tidak tertutup oleh sel *sticky* atau baris tabel di bawahnya.
 - **Standar Ikon Umum Tanpa Label Teks Boros:**
   - Tombol-tombol aksi umum yang fungsinya telah dikenal luas (seperti Tutup, Hapus, Tambah, Salin, Muat Ulang/Refresh, Kunci, Lepas Kunci) cukup diwakili oleh ikon SVG baku yang bersih dan intuitif dengan tooltip `title="..."` yang informatif, tanpa label teks panjang yang memboroskan ruang tabel.
+- **Standar Ergonomi Tombol & Tipologi 4-Tier (4-Tier Button Ergonomics Standard):**
+  1. *Tier 1 (Ikon Saja + Tooltip Standar):* Khusus aksi universal yang sudah dipahami luas tanpa perlu membaca teks (`—` minimize, `⛶` maximize/restore, `✕` close, `🧹` clear screen, `⟳` refresh, `◀`/`▶` nav, `⬇️` download). Dilarang menyematkan label teks panjang yang memboroskan ruang.
+  2. *Tier 2 (Ikon + Label):* Khusus tab navigasi dan kontrol domain fungsional yang memerlukan kejelasan nama (`[ 🛡️ Maintenance Mode ]`, `[ 📊 Performance ]`, `[ ⚙️ Services & Ports ]`, `[ ⚡ Investigate ➔ ]`).
+  3. *Tier 3 (Ikon Saja + Tooltip Informatif):* Tombol aksi baris tabel atau kontrol padat di mana label disembunyikan demi efisiensi kepadatan data (*NOC Data Density*), namun wajib memiliki atribut `title="..."` informatif yang menyebutkan target objek secara presisi (contoh: `🗑️` dengan tooltip `"Delete asset node-01"`, `🔄` dengan tooltip `"Restart nginx systemd service"`).
+  4. *Tier 4 (Ikon + Label + Tooltip Penjelasan):* Kontrol berkategori kritis atau berdampak sistemik tinggi (`Update OS`, `Upgrade OS`, `Reboot`, `Power Off`, `Pop-out Window`). Wajib memiliki label teks tegas dan tooltip informatif yang menjelaskan konsekuensi/rincian aksi.
 
 ---
 

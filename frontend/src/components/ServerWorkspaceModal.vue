@@ -612,9 +612,11 @@
                       <td class="py-2.5 px-3 text-right">
                         <button
                           @click="restartService(svc.name || svc.unit)"
-                          class="px-2.5 py-1 rounded bg-cyan-950 text-cyan-300 border border-cyan-600/50 hover:bg-cyan-700 hover:text-white transition cursor-pointer text-xs font-bold"
+                          class="px-2.5 py-1 rounded bg-cyan-950 text-cyan-300 border border-cyan-600/50 hover:bg-cyan-700 hover:text-white transition cursor-pointer text-xs font-bold inline-flex items-center gap-1.5"
+                          :title="`Restart ${svc.name || svc.unit} systemd service`"
                         >
-                          {{ t('ws_act_restart') }}
+                          <span>🔄</span>
+                          <span>{{ t('ws_act_restart') }}</span>
                         </button>
                       </td>
                     </tr>
@@ -702,9 +704,11 @@
                     <td class="py-2.5 px-3 text-right">
                       <button
                         @click="killProcess(p.pid)"
-                        class="px-2.5 py-1 rounded bg-rose-950 text-rose-300 border border-rose-700 hover:bg-rose-700 hover:text-white transition cursor-pointer text-xs font-bold"
+                        class="px-2.5 py-1 rounded bg-rose-950 text-rose-300 border border-rose-700 hover:bg-rose-700 hover:text-white transition cursor-pointer text-xs font-bold inline-flex items-center gap-1.5"
+                        :title="`Terminate process PID ${p.pid} (${p.user})`"
                       >
-                        {{ t('ws_act_kill') }}
+                        <span>🛑</span>
+                        <span>{{ t('ws_act_kill') }}</span>
                       </button>
                     </td>
                   </tr>
@@ -790,9 +794,11 @@
                   </div>
                   <button
                     @click="terminateSSHSession(s.user, s.tty)"
-                    class="px-3 py-1 rounded bg-rose-950 text-rose-300 border border-rose-700 hover:bg-rose-700 hover:text-white font-bold text-xs transition cursor-pointer"
+                    class="px-3 py-1 rounded bg-rose-950 text-rose-300 border border-rose-700 hover:bg-rose-700 hover:text-white font-bold text-xs transition cursor-pointer flex items-center gap-1.5"
+                    :title="`Terminate active SSH session for user ${s.user} on ${s.tty}`"
                   >
-                    {{ t('ws_sever_ssh_btn') }}
+                    <span>✂️</span>
+                    <span>{{ t('ws_sever_ssh_btn') }}</span>
                   </button>
                 </div>
               </div>
@@ -1073,43 +1079,40 @@
           </div>
 
           <div class="flex items-center gap-1.5 text-xs">
-            <!-- Clear Screen -->
+            <!-- Clear Screen: Tier 1 (Icon only + standard tooltip) -->
             <button
               @click="clearTerminalScreen"
-              class="px-2 py-1 rounded text-gray-300 hover:text-white hover:bg-gray-800/80 transition flex items-center gap-1 text-[11px] border border-cyan-900/50 cursor-pointer"
+              class="p-1.5 rounded text-gray-400 hover:text-white hover:bg-gray-800/80 transition cursor-pointer"
               :title="t('term_clearscreen')"
             >
               <span>🧹</span>
-              <span class="hidden sm:inline">{{ t('term_clearscreen') }}</span>
             </button>
-            <!-- Full Window -->
+            <!-- Full Window: Tier 1 (Icon only + standard tooltip) -->
             <button
               @click="isTermFullWindow = !isTermFullWindow"
-              class="px-2 py-1 rounded text-gray-300 hover:text-cyan-300 hover:bg-gray-800/80 transition flex items-center gap-1 text-[11px] border border-cyan-900/50 cursor-pointer"
-              :title="t('term_fullwindow')"
+              class="p-1.5 rounded text-gray-400 hover:text-cyan-300 hover:bg-gray-800/80 transition cursor-pointer"
+              :title="isTermFullWindow ? t('ws_restore') : t('term_fullwindow')"
             >
-              <span>🗖</span>
-              <span class="hidden sm:inline">{{ isTermFullWindow ? t('ws_restore') : t('term_fullwindow') }}</span>
+              <span>{{ isTermFullWindow ? '🗗' : '🗖' }}</span>
             </button>
-            <!-- Fullscreen -->
+            <!-- Fullscreen: Tier 1 (Icon only + standard tooltip) -->
             <button
               @click="toggleTermFullscreen"
-              class="px-2 py-1 rounded text-gray-300 hover:text-cyan-300 hover:bg-gray-800/80 transition flex items-center gap-1 text-[11px] border border-cyan-900/50 cursor-pointer"
+              class="p-1.5 rounded text-gray-400 hover:text-cyan-300 hover:bg-gray-800/80 transition cursor-pointer"
               :title="t('term_fullscreen')"
             >
               <span>⛶</span>
-              <span class="hidden sm:inline">{{ t('term_fullscreen') }}</span>
             </button>
-            <!-- Popout Window -->
+            <!-- Popout Window: Tier 2/4 (Icon + Label + Informative Tooltip) -->
             <button
               @click="popoutTerminalWindow"
-              class="px-2 py-1 rounded text-cyan-300 hover:text-white bg-cyan-950/80 hover:bg-cyan-900 transition flex items-center gap-1 text-[11px] border border-cyan-500/40 cursor-pointer"
+              class="px-2.5 py-1 rounded text-cyan-300 hover:text-white bg-cyan-950/80 hover:bg-cyan-900 transition flex items-center gap-1 text-[11px] border border-cyan-500/40 cursor-pointer font-bold"
               :title="t('term_popout')"
             >
               <span>↗</span>
-              <span class="hidden sm:inline">{{ t('term_popout') }}</span>
+              <span>{{ t('term_popout') }}</span>
             </button>
-            <!-- Close -->
+            <!-- Close: Tier 1 (Icon only + standard tooltip) -->
             <button
               @click="showTerminalModal = false"
               class="p-1.5 rounded text-gray-400 hover:text-rose-400 hover:bg-rose-950/60 transition ml-1 cursor-pointer"
@@ -1182,34 +1185,32 @@
           </div>
 
           <div class="flex items-center gap-1.5 text-xs">
-            <!-- Full Window -->
+            <!-- Full Window: Tier 1 (Icon only + standard tooltip) -->
             <button
               @click="isFMFullWindow = !isFMFullWindow"
-              class="px-2 py-1 rounded text-gray-300 hover:text-cyan-300 hover:bg-gray-800/80 transition flex items-center gap-1 text-[11px] border border-cyan-900/50 cursor-pointer"
-              :title="t('fm_fullwindow')"
+              class="p-1.5 rounded text-gray-400 hover:text-cyan-300 hover:bg-gray-800/80 transition cursor-pointer"
+              :title="isFMFullWindow ? t('ws_restore') : t('fm_fullwindow')"
             >
-              <span>🗖</span>
-              <span class="hidden sm:inline">{{ isFMFullWindow ? t('ws_restore') : t('fm_fullwindow') }}</span>
+              <span>{{ isFMFullWindow ? '🗗' : '🗖' }}</span>
             </button>
-            <!-- Fullscreen -->
+            <!-- Fullscreen: Tier 1 (Icon only + standard tooltip) -->
             <button
               @click="toggleFMFullscreen"
-              class="px-2 py-1 rounded text-gray-300 hover:text-cyan-300 hover:bg-gray-800/80 transition flex items-center gap-1 text-[11px] border border-cyan-900/50 cursor-pointer"
+              class="p-1.5 rounded text-gray-400 hover:text-cyan-300 hover:bg-gray-800/80 transition cursor-pointer"
               :title="t('fm_fullscreen')"
             >
               <span>⛶</span>
-              <span class="hidden sm:inline">{{ t('fm_fullscreen') }}</span>
             </button>
-            <!-- Popout Window -->
+            <!-- Popout Window: Tier 2/4 (Icon + Label + Informative Tooltip) -->
             <button
               @click="popoutFileManagerWindow"
-              class="px-2 py-1 rounded text-cyan-300 hover:text-white bg-cyan-950/80 hover:bg-cyan-900 transition flex items-center gap-1 text-[11px] border border-cyan-500/40 cursor-pointer"
+              class="px-2.5 py-1 rounded text-cyan-300 hover:text-white bg-cyan-950/80 hover:bg-cyan-900 transition flex items-center gap-1 text-[11px] border border-cyan-500/40 cursor-pointer font-bold"
               :title="t('fm_popout')"
             >
               <span>↗</span>
-              <span class="hidden sm:inline">{{ t('fm_popout') }}</span>
+              <span>{{ t('fm_popout') }}</span>
             </button>
-            <!-- Close -->
+            <!-- Close: Tier 1 (Icon only + standard tooltip) -->
             <button
               @click="showFileManagerModal = false"
               class="p-1.5 rounded text-gray-400 hover:text-rose-400 hover:bg-rose-950/60 transition ml-1 cursor-pointer"
