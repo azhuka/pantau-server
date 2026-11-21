@@ -103,5 +103,17 @@ Dokumen ini mencatat setiap pembelajaran dari koreksi operator dan temuan teknis
   1. Perintah `/learn` dari operator adalah instruksi mutlak.
   2. Begitu `/learn` diberikan, asisten wajib langsung membukukan, menerapkan, dan mengunci aturan tersebut ke berkas tata kelola sistem seketika tanpa meminta persetujuan ulang.
 
+---
+
+## Lesson 13: Larangan Keras Teks Angka Statis & Klaim Fiktif (Dynamic State Integrity)
+- **Konteks:** Dasbor menampilkan teks *"All 10 fleet servers are operating normally"* padahal aplikasi masih kosong (0 server).
+- **Akar Masalah:** Men-hardcode string statis yang mengasumsikan jumlah server tertentu ke dalam kamus i18n (`dash_incidents_empty`), melanggar prinsip *Zero-Fake Data* dan *Dynamic State*.
+- **Aturan Pencegahan `[Absolute Data Integrity, Universal Zero-Hardcode Standard]`:**
+  1. Dilarang keras men-hardcode angka jumlah host atau klaim status statis di kamus teks maupun template.
+  2. Seluruh status wajib dihitung murni secara dinamis dari `servers.length`:
+     - Jika 0: Tampilkan secara jujur *"No fleet servers connected yet"*.
+     - Jika > 0: Gunakan parameter dinamis `{count: servers.length}` sehingga angka mencerminkan fakta riil.
+
+
 
 
