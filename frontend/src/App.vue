@@ -62,6 +62,7 @@
       :server-id="workspaceServerId"
       :is-open="isWorkspaceOpen"
       :is-minimized="isWorkspaceMinimized"
+      :initial-floating-tool="initialFloatingTool"
       :fleet-servers="servers"
       @close="closeWorkspace"
       @minimize="minimizeWorkspace"
@@ -160,8 +161,11 @@ function handleNav(tab) {
   activeTab.value = tab
 }
 
-function openWorkspace(sid) {
+const initialFloatingTool = ref(null)
+
+function openWorkspace(sid, tool = null) {
   workspaceServerId.value = sid
+  initialFloatingTool.value = tool
   isWorkspaceOpen.value = true
   isWorkspaceMinimized.value = false
 }
@@ -206,6 +210,15 @@ function onLoggedIn(user) {
   fetchProblems()
 }
 
+function checkUrlStandalone() {
+  const urlParams = new URLSearchParams(window.location.search)
+  const standalone = urlParams.get('standalone')
+  const sid = parseInt(urlParams.get('sid'))
+  if (standalone && sid) {
+    openWorkspace(sid, standalone)
+  }
+}
+
 async function checkAuth() {
   let token = localStorage.getItem('pantau_token')
   if (!token) {
@@ -225,6 +238,7 @@ async function checkAuth() {
           showLoginModal.value = false
           fetchServers()
           fetchProblems()
+          checkUrlStandalone()
           return
         }
       }
@@ -243,6 +257,7 @@ async function checkAuth() {
       currentUser.value = data
       fetchServers()
       fetchProblems()
+      checkUrlStandalone()
     } else {
       showLoginModal.value = true
     }

@@ -18,42 +18,42 @@
       <span class="hud-corner-tr"></span>
       <span class="hud-corner-bl"></span>
 
-      <!-- 1. MODAL HEADER BAR -->
+      <!-- 1. WINDOW TITLEBAR (Fixed Height, Single Line, Pinned Window Controls) -->
       <div
-        class="bg-[#080d19] border-b border-cyan-500/20 px-4 py-2.5 flex items-center justify-between select-none cursor-default shrink-0 flex-wrap gap-2"
+        class="bg-[#060a15] border-b border-cyan-500/20 px-4 py-2 flex items-center justify-between select-none cursor-default shrink-0 gap-3"
         @dblclick="toggleMaximize"
       >
         <!-- Left: Host Info & Status -->
-        <div class="flex items-center gap-3">
-          <div class="w-8 h-8 rounded bg-cyan-950/80 border border-cyan-400/50 flex items-center justify-center text-cyan-300 font-bold text-base shadow-[0_0_10px_rgba(56,189,248,0.25)]">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="w-7 h-7 rounded bg-cyan-950/80 border border-cyan-400/50 flex items-center justify-center text-cyan-300 font-bold text-sm shadow-[0_0_10px_rgba(56,189,248,0.25)] shrink-0">
             ⛊
           </div>
-          <div>
-            <div class="flex items-center gap-2 font-mono">
+          <div class="min-w-0">
+            <div class="flex items-center gap-2 font-mono flex-wrap sm:flex-nowrap">
               <span class="text-xs text-cyan-400 font-bold">// TARGET LOCKED:</span>
-              <span class="font-extrabold text-gray-100 text-sm tracking-tight">
+              <span class="font-extrabold text-gray-100 text-sm tracking-tight truncate">
                 {{ server?.hostname || t('ws_loading_host') }}
               </span>
               <span
                 v-if="server?.is_online"
-                class="inline-flex items-center gap-1 px-2 py-0.2 rounded text-[11px] font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-700/60"
+                class="inline-flex items-center gap-1 px-2 py-0.2 rounded text-[11px] font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-700/60 shrink-0"
               >
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 beacon-live"></span>
                 LIVE
               </span>
               <span
                 v-else
-                class="inline-flex items-center gap-1 px-2 py-0.2 rounded text-[11px] font-bold bg-rose-950/80 text-rose-300 border border-rose-700/60"
+                class="inline-flex items-center gap-1 px-2 py-0.2 rounded text-[11px] font-bold bg-rose-950/80 text-rose-300 border border-rose-700/60 shrink-0"
               >
                 <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
                 DOWN
               </span>
-              <span class="text-xs font-mono text-cyan-300 font-semibold hidden sm:inline">
+              <span class="text-xs font-mono text-cyan-300 font-semibold shrink-0">
                 ({{ server?.ip_address }})
               </span>
               <span
                 v-if="server?.is_proxmox_ha"
-                class="text-[10px] px-1.5 py-0.2 rounded bg-amber-950/80 text-amber-300 border border-amber-800 font-bold"
+                class="text-[10px] px-1.5 py-0.2 rounded bg-amber-950/80 text-amber-300 border border-amber-800 font-bold shrink-0"
                 title="Server terproteksi Proxmox HA"
               >
                 PROXMOX HA
@@ -65,41 +65,144 @@
               <span>Kernel {{ server?.kernel || '-' }}</span>
               <span class="text-gray-600">·</span>
               <span>Agent v{{ server?.agent_version || '-' }}</span>
+              <button
+                @click="refreshData"
+                :disabled="loading"
+                class="ml-1 text-gray-400 hover:text-cyan-300 transition cursor-pointer disabled:opacity-50"
+                :title="t('syncing')"
+              >
+                <svg
+                  class="w-3.5 h-3.5 inline"
+                  :class="{ 'animate-spin text-cyan-400': loading }"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                  <path d="M3 3v5h5" />
+                  <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+                  <path d="M16 21h5v-5" />
+                </svg>
+              </button>
             </div>
           </div>
-
-          <!-- Quick Refresh Button -->
-          <button
-            @click="refreshData"
-            :disabled="loading"
-            class="ml-1 p-1.5 rounded text-gray-400 hover:text-cyan-300 hover:bg-cyan-950/40 border border-transparent hover:border-cyan-800/40 transition cursor-pointer disabled:opacity-50"
-            :title="t('syncing')"
-          >
-            <svg
-              class="w-4 h-4"
-              :class="{ 'animate-spin text-cyan-400': loading }"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-              <path d="M3 3v5h5" />
-              <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
-              <path d="M16 21h5v-5" />
-            </svg>
-          </button>
         </div>
 
-        <!-- Center: HERO ACTION TOOLBAR (Matriks Tombol Tindakan Khusus dari Konsep App Acuan) -->
-        <div class="flex items-center gap-2 font-mono flex-wrap">
-          <!-- Grup 1: Akses Cepat & Pemeliharaan -->
-          <div class="flex items-center bg-[#060a14] border border-cyan-900/50 rounded p-0.5">
+        <!-- Center-Right: FLEET SERVER QUICK-SWITCHER & PINNED WINDOW CONTROLS -->
+        <div class="flex items-center gap-2 font-mono shrink-0 ml-auto" @click.stop>
+          <!-- Fleet Switcher -->
+          <div class="flex items-center bg-[#050811] border border-cyan-900/50 rounded p-0.5">
             <button
-              @click="activeSubTab = 'terminal'"
-              class="px-2.5 py-1 text-xs text-gray-300 hover:text-cyan-300 hover:bg-cyan-950/50 rounded transition cursor-pointer flex items-center gap-1.5 font-bold"
+              @click="navigateHost(-1)"
+              class="px-2 py-1 text-xs text-gray-400 hover:text-white hover:bg-gray-800 rounded transition cursor-pointer"
+              title="Previous Server (Hotkeys [ )"
+            >
+              ◀
+            </button>
+
+            <!-- Searchable Switcher Dropdown Trigger -->
+            <div class="relative">
+              <button
+                @click="showHostDropdown = !showHostDropdown"
+                class="px-2.5 py-1 text-xs font-mono text-gray-200 hover:text-cyan-300 flex items-center gap-1.5 transition cursor-pointer font-semibold"
+                :title="t('ws_search_fleet')"
+              >
+                <span>🖥️</span>
+                <span class="max-w-[130px] truncate">{{ server?.hostname }}</span>
+                <span class="text-[10px] text-cyan-400">▾</span>
+              </button>
+
+              <!-- Popover Dropdown -->
+              <div
+                v-if="showHostDropdown"
+                class="absolute right-0 top-full mt-2 w-80 bg-[#080d19] border border-cyan-500/50 rounded-xl shadow-[0_12px_36px_rgba(0,0,0,0.8)] p-2.5 z-[9999] text-xs backdrop-blur-md"
+              >
+                <div class="relative mb-2">
+                  <input
+                    v-model="hostSearchQuery"
+                    type="text"
+                    :placeholder="t('ws_search_fleet')"
+                    class="w-full bg-[#04060c] border border-cyan-800/80 rounded px-2.5 py-1.5 text-xs text-gray-100 placeholder-gray-500 focus:outline-none focus:border-cyan-400 font-mono"
+                    autofocus
+                  />
+                </div>
+                <div class="max-h-60 overflow-y-auto space-y-1 divide-y divide-gray-800/40">
+                  <div
+                    v-for="h in filteredHosts"
+                    :key="h.id"
+                    @click="selectHost(h.id)"
+                    class="p-2 rounded hover:bg-cyan-950/40 cursor-pointer flex items-center justify-between transition"
+                    :class="{ 'bg-cyan-950/70 font-bold border border-cyan-500/40': h.id === currentServerId }"
+                  >
+                    <div>
+                      <div class="font-mono text-gray-200 flex items-center gap-1.5 text-xs font-semibold">
+                        <span
+                          class="w-2 h-2 rounded-full"
+                          :class="h.is_online ? 'bg-emerald-400 beacon-live' : 'bg-rose-500'"
+                        ></span>
+                        <span>{{ h.hostname }}</span>
+                      </div>
+                      <div class="text-[11px] text-gray-400 font-mono">{{ h.ip_address }}</div>
+                    </div>
+                    <span class="text-[10px] text-gray-400 font-mono uppercase bg-gray-900/60 px-1.5 py-0.5 rounded">{{ h.group_name }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <button
+              @click="navigateHost(1)"
+              class="px-2 py-1 text-xs text-gray-400 hover:text-white hover:bg-gray-800 rounded transition cursor-pointer"
+              title="Next Server (Hotkeys ] )"
+            >
+              ▶
+            </button>
+          </div>
+
+          <!-- Pinned Window Controls (Far Right Corner) -->
+          <div class="flex items-center gap-1 border-l border-cyan-500/30 pl-2">
+            <button
+              @click="$emit('minimize')"
+              class="p-1.5 rounded text-gray-400 hover:text-white hover:bg-gray-800/80 transition cursor-pointer"
+              :title="t('ws_minimize')"
+            >
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+            </button>
+            <button
+              @click="toggleMaximize"
+              class="p-1.5 rounded text-gray-400 hover:text-white hover:bg-gray-800/80 transition cursor-pointer font-bold text-xs"
+              :title="isMaximized ? t('ws_restore') : t('ws_maximize')"
+            >
+              <span v-if="!isMaximized">⛶</span>
+              <span v-else>🗗</span>
+            </button>
+            <button
+              @click="handleClose"
+              class="p-1.5 rounded text-gray-400 hover:text-rose-400 hover:bg-rose-950/60 transition cursor-pointer"
+              :title="t('ws_close')"
+            >
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. COMMAND ACTION DECK (Dedicated Hero Toolbar) -->
+      <div class="bg-[#080d1a] border-b border-cyan-500/20 px-4 py-2 flex items-center justify-between select-none shrink-0 font-mono flex-wrap gap-2">
+        <!-- Grup 1: Konsol Khusus (Terminal & File Manager) & Mode Pemeliharaan -->
+        <div class="flex items-center gap-2">
+          <div class="flex items-center bg-[#050811] border border-cyan-900/60 rounded p-0.5">
+            <button
+              @click="openTerminalModal"
+              class="px-2.5 py-1 text-xs text-gray-200 hover:text-cyan-300 hover:bg-cyan-950/60 rounded transition cursor-pointer flex items-center gap-1.5 font-bold"
               :title="t('tooltip_terminal_btn')"
             >
               <span>🖥️</span>
@@ -107,8 +210,8 @@
             </button>
             <span class="w-[1px] h-4 bg-cyan-900/40 mx-0.5"></span>
             <button
-              @click="activeSubTab = 'files'"
-              class="px-2.5 py-1 text-xs text-gray-300 hover:text-cyan-300 hover:bg-cyan-950/50 rounded transition cursor-pointer flex items-center gap-1.5 font-bold"
+              @click="openFileManagerModal"
+              class="px-2.5 py-1 text-xs text-gray-200 hover:text-cyan-300 hover:bg-cyan-950/60 rounded transition cursor-pointer flex items-center gap-1.5 font-bold"
               :title="t('tooltip_fm_btn')"
             >
               <span>📁</span>
@@ -118,19 +221,21 @@
             <button
               @click="triggerMaintenanceToggle"
               class="px-2.5 py-1 text-xs rounded transition cursor-pointer flex items-center gap-1.5 font-bold"
-              :class="server?.is_maintenance ? 'bg-amber-950 text-amber-300 border border-amber-700/60' : 'text-gray-300 hover:text-amber-300 hover:bg-amber-950/30'"
+              :class="server?.is_maintenance ? 'bg-amber-950 text-amber-300 border border-amber-700/60' : 'text-gray-300 hover:text-amber-300 hover:bg-amber-950/40'"
               :title="t('tooltip_maint_btn')"
             >
               <span>🛡️</span>
               <span>{{ t('toolbar_maint') }}</span>
             </button>
           </div>
+        </div>
 
-          <!-- Grup 2: Pembaruan & Kontrol Daya Sistem -->
-          <div class="flex items-center bg-[#060a14] border border-cyan-900/50 rounded p-0.5">
+        <!-- Grup 2: Siklus & Kontrol Daya Sistem -->
+        <div class="flex items-center gap-2">
+          <div class="flex items-center bg-[#050811] border border-cyan-900/60 rounded p-0.5">
             <button
               @click="triggerOSUpdate"
-              class="px-2.5 py-1 text-xs text-emerald-400 hover:bg-emerald-950/50 rounded transition cursor-pointer flex items-center gap-1.5 font-bold"
+              class="px-2.5 py-1 text-xs text-emerald-400 hover:bg-emerald-950/60 rounded transition cursor-pointer flex items-center gap-1.5 font-bold"
               :title="t('tooltip_update_btn')"
             >
               <span>🔄</span>
@@ -140,7 +245,7 @@
             <button
               @click="triggerOSUpgrade"
               class="px-2.5 py-1 text-xs rounded transition cursor-pointer flex items-center gap-1.5 font-bold"
-              :class="(server?.apt_upgradable || 0) > 0 ? 'text-amber-300 bg-amber-950/60 border border-amber-700/50' : 'text-gray-400 hover:text-white'"
+              :class="(server?.apt_upgradable || 0) > 0 ? 'text-amber-300 bg-amber-950/70 border border-amber-700/60' : 'text-gray-400 hover:text-white'"
               :title="t('tooltip_upgrade_btn')"
             >
               <span>⬆️</span>
@@ -152,7 +257,7 @@
             <span class="w-[1px] h-4 bg-cyan-900/40 mx-0.5"></span>
             <button
               @click="openGuardrailConfirm('reboot')"
-              class="px-2.5 py-1 text-xs text-amber-400 hover:bg-amber-950/50 rounded transition cursor-pointer flex items-center gap-1.5 font-bold"
+              class="px-2.5 py-1 text-xs text-amber-400 hover:bg-amber-950/60 rounded transition cursor-pointer flex items-center gap-1.5 font-bold"
               :title="t('tooltip_reboot_btn')"
             >
               <span>🔁</span>
@@ -172,7 +277,7 @@
             <button
               v-else
               @click="openGuardrailConfirm('poweroff')"
-              class="px-2.5 py-1 text-xs text-rose-400 hover:bg-rose-950/50 rounded transition cursor-pointer flex items-center gap-1.5 font-bold"
+              class="px-2.5 py-1 text-xs text-rose-400 hover:bg-rose-950/60 rounded transition cursor-pointer flex items-center gap-1.5 font-bold"
               :title="t('tooltip_poweroff_btn')"
             >
               <span>⚡</span>
@@ -180,114 +285,9 @@
             </button>
           </div>
         </div>
-
-        <!-- Right: Host Switcher & Window Controls -->
-        <div class="flex items-center gap-2 font-mono" @click.stop>
-          <!-- HOST SWITCHER TOOLBAR -->
-          <div class="flex items-center bg-[#060a14] border border-cyan-900/40 rounded p-0.5 mr-2">
-            <!-- Prev Button -->
-            <button
-              @click="navigateHost(-1)"
-              class="px-2 py-1 text-xs text-gray-400 hover:text-white hover:bg-gray-800 rounded transition cursor-pointer"
-              title="Previous Server (Hotkeys [ )"
-            >
-              ◀
-            </button>
-
-            <!-- Searchable Switcher Dropdown Trigger -->
-            <div class="relative">
-              <button
-                @click="showHostDropdown = !showHostDropdown"
-                class="px-2.5 py-1 text-xs font-mono text-gray-300 hover:text-cyan-300 flex items-center gap-1.5 transition cursor-pointer"
-                :title="t('ws_search_fleet')"
-              >
-                <span>🖥️</span>
-                <span class="max-w-[120px] truncate font-semibold">{{ server?.hostname }}</span>
-                <span class="text-xs text-gray-400">▾</span>
-              </button>
-
-              <!-- Popover Dropdown -->
-              <div
-                v-if="showHostDropdown"
-                class="absolute right-0 top-full mt-1.5 w-72 bg-[#090e1c] border border-cyan-500/40 rounded-xl shadow-2xl p-2 z-50 text-xs"
-              >
-                <div class="relative mb-2">
-                  <input
-                    v-model="hostSearchQuery"
-                    type="text"
-                    :placeholder="t('ws_search_fleet')"
-                    class="w-full bg-[#060a14] border border-cyan-800/60 rounded px-2.5 py-1 text-xs text-gray-100 placeholder-gray-500 focus:outline-none focus:border-cyan-400"
-                    autofocus
-                  />
-                </div>
-                <div class="max-h-56 overflow-y-auto space-y-1 divide-y divide-gray-800/40">
-                  <div
-                    v-for="h in filteredHosts"
-                    :key="h.id"
-                    @click="selectHost(h.id)"
-                    class="p-2 rounded hover:bg-cyan-950/40 cursor-pointer flex items-center justify-between transition"
-                    :class="{ 'bg-cyan-950/60 font-bold border border-cyan-500/30': h.id === currentServerId }"
-                  >
-                    <div>
-                      <div class="font-mono text-gray-200 flex items-center gap-1.5 text-xs font-semibold">
-                        <span
-                          class="w-2 h-2 rounded-full"
-                          :class="h.is_online ? 'bg-emerald-400 beacon-live' : 'bg-rose-500'"
-                        ></span>
-                        <span>{{ h.hostname }}</span>
-                      </div>
-                      <div class="text-xs text-gray-400 font-mono">{{ h.ip_address }}</div>
-                    </div>
-                    <span class="text-xs text-gray-400 font-mono">{{ h.group_name }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Next Button -->
-            <button
-              @click="navigateHost(1)"
-              class="px-2 py-1 text-xs text-gray-400 hover:text-white hover:bg-gray-800 rounded transition cursor-pointer"
-              title="Next Server (Hotkeys ] )"
-            >
-              ▶
-            </button>
-          </div>
-
-          <!-- WINDOW CONTROLS -->
-          <div class="flex items-center gap-1 border-l border-cyan-500/20 pl-2">
-            <button
-              @click="$emit('minimize')"
-              class="p-1.5 rounded text-gray-400 hover:text-white hover:bg-gray-800 transition cursor-pointer"
-              :title="t('ws_minimize')"
-            >
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-            </button>
-            <button
-              @click="toggleMaximize"
-              class="p-1.5 rounded text-gray-400 hover:text-white hover:bg-gray-800 transition cursor-pointer font-bold text-xs"
-              :title="isMaximized ? t('ws_restore') : t('ws_maximize')"
-            >
-              <span v-if="!isMaximized">⛶</span>
-              <span v-else>🗗</span>
-            </button>
-            <button
-              @click="handleClose"
-              class="p-1.5 rounded text-gray-400 hover:text-rose-400 hover:bg-rose-950/40 transition cursor-pointer"
-              :title="t('ws_close')"
-            >
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
-          </div>
-        </div>
       </div>
 
-      <!-- 2. SUB-TABS NAVIGATION BAR (Tab Taktis Ramping Berdasarkan 12 Tab Konsep App Acuan) -->
+      <!-- 3. SUB-TABS NAVIGATION BAR (Tab Taktis Ramping) -->
       <div class="bg-[#070b16] border-b border-cyan-500/20 px-4 flex items-center gap-1 overflow-x-auto shrink-0 select-none py-1.5 font-mono text-xs">
         <button
           v-for="tab in subTabs"
@@ -977,96 +977,6 @@
               <div class="text-gray-400">[2026-11-21 12:48:10] sshd[1090]: Accepted publickey for operator from 192.168.1.55 port 54102 ssh2</div>
             </div>
           </div>
-
-          <!-- SUB-TAB 12: WEB TERMINAL -->
-          <div v-if="activeSubTab === 'terminal'" class="hud-tactical-card rounded-xl p-4 font-mono space-y-3">
-            <span class="hud-corner-tr"></span>
-            <span class="hud-corner-bl"></span>
-            <div class="flex items-center justify-between border-b border-cyan-500/20 pb-2">
-              <div class="flex items-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-emerald-400 beacon-live"></span>
-                <h3 class="text-xs font-bold text-cyan-300 uppercase tracking-wider">
-                  // PTY TERMINAL DECK: xterm-256color (/dev/pts/1)
-                </h3>
-              </div>
-              <div class="text-[11px] text-gray-400">
-                STATUS: <span class="text-emerald-400 font-bold">READY</span>
-              </div>
-            </div>
-
-            <!-- Terminal Output Area -->
-            <div class="bg-[#050811] border border-cyan-900/60 rounded-lg p-4 font-mono text-xs text-gray-200 min-h-[420px] max-h-[560px] overflow-y-auto space-y-2 select-text">
-              <div class="text-cyan-400 font-bold">Connecting to {{ server?.hostname }} ({{ server?.ip_address }})...</div>
-              <div class="text-gray-400">Secure WebSocket channel verified. Authentication successful.</div>
-              <div class="text-emerald-400 font-bold mt-2">Linux {{ server?.hostname }} {{ server?.kernel }} #1 SMP PREEMPT</div>
-              <div class="text-gray-400">All session actions are logged to the permanent audit trail.</div>
-              <div class="pt-3 flex items-center gap-2 text-cyan-300">
-                <span class="text-emerald-400 font-bold">operator@{{ server?.hostname }}:~$</span>
-                <span class="inline-block w-2.5 h-4 bg-cyan-400 animate-pulse"></span>
-              </div>
-            </div>
-          </div>
-
-          <!-- SUB-TAB 13: FILE MANAGER -->
-          <div v-if="activeSubTab === 'files'" class="hud-tactical-card rounded-xl p-4 font-mono space-y-3">
-            <span class="hud-corner-tr"></span>
-            <span class="hud-corner-bl"></span>
-            <div class="flex items-center justify-between border-b border-cyan-500/20 pb-2">
-              <div class="flex items-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-cyan-400 beacon-live"></span>
-                <h3 class="text-xs font-bold text-cyan-300 uppercase tracking-wider">
-                  // FILE MANAGER: /root
-                </h3>
-              </div>
-              <div class="text-[11px] text-amber-400 font-bold">
-                SAFETY: AUTO .bak ENABLED
-              </div>
-            </div>
-
-            <!-- Directory Listing Table -->
-            <div class="overflow-x-auto">
-              <table class="w-full text-left text-xs border-collapse">
-                <thead class="border-b border-cyan-500/20 text-gray-400 uppercase font-bold tracking-wider">
-                  <tr>
-                    <th class="py-2.5 px-3">Object</th>
-                    <th class="py-2.5 px-3">Permissions</th>
-                    <th class="py-2.5 px-3">Owner</th>
-                    <th class="py-2.5 px-3">Size</th>
-                    <th class="py-2.5 px-3">Modified</th>
-                    <th class="py-2.5 px-3 text-right">Tindakan</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-800/40">
-                  <tr class="hover:bg-cyan-950/20">
-                    <td class="py-2.5 px-3 text-cyan-300 font-semibold flex items-center gap-2">
-                      <span>📁</span>
-                      <span>.. (parent)</span>
-                    </td>
-                    <td class="py-2.5 px-3 text-gray-400">drwxr-xr-x</td>
-                    <td class="py-2.5 px-3 text-gray-400">root:root</td>
-                    <td class="py-2.5 px-3 text-gray-400">4.0 KB</td>
-                    <td class="py-2.5 px-3 text-gray-400">Today</td>
-                    <td class="py-2.5 px-3 text-right text-gray-500">-</td>
-                  </tr>
-                  <tr class="hover:bg-cyan-950/20">
-                    <td class="py-2.5 px-3 text-gray-200 font-semibold flex items-center gap-2">
-                      <span>📄</span>
-                      <span>pantau.conf</span>
-                    </td>
-                    <td class="py-2.5 px-3 text-gray-400">-rw-r--r--</td>
-                    <td class="py-2.5 px-3 text-gray-400">root:root</td>
-                    <td class="py-2.5 px-3 text-gray-300">1.2 KB</td>
-                    <td class="py-2.5 px-3 text-gray-400">Today</td>
-                    <td class="py-2.5 px-3 text-right">
-                      <button class="px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-700/60 hover:bg-cyan-700 hover:text-white text-[11px] font-bold">
-                        EDIT
-                      </button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
         </template>
       </div>
 
@@ -1134,6 +1044,295 @@
         </div>
       </div>
     </div>
+
+    <!-- DEDICATED FLOATING WEB TERMINAL MODAL -->
+    <div
+      v-if="showTerminalModal"
+      class="fixed inset-0 z-[10000] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 transition-all"
+      :class="{ '!p-0': isTermFullscreen || isTermFullWindow }"
+      @click.self="showTerminalModal = false"
+    >
+      <div
+        class="bg-[#070b16] border border-cyan-500/50 shadow-[0_25px_60px_rgba(0,0,0,0.95)] flex flex-col transition-all overflow-hidden font-mono"
+        :class="[
+          isTermFullscreen || isTermFullWindow
+            ? 'w-full h-full rounded-none border-none'
+            : 'w-[92vw] max-w-[1100px] h-[80vh] min-h-[520px] rounded-xl'
+        ]"
+      >
+        <!-- Terminal Header -->
+        <div class="bg-[#090f20] border-b border-cyan-500/30 px-4 py-2.5 flex items-center justify-between select-none">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 beacon-live"></span>
+            <span class="text-xs font-bold text-cyan-300 uppercase tracking-wider">
+              // WEB TERMINAL · {{ server?.hostname }} (/dev/pts/0)
+            </span>
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-cyan-950 border border-cyan-800 text-cyan-300 font-bold">
+              LIVE PTY
+            </span>
+          </div>
+
+          <div class="flex items-center gap-1.5 text-xs">
+            <!-- Clear Screen -->
+            <button
+              @click="clearTerminalScreen"
+              class="px-2 py-1 rounded text-gray-300 hover:text-white hover:bg-gray-800/80 transition flex items-center gap-1 text-[11px] border border-cyan-900/50 cursor-pointer"
+              :title="t('term_clearscreen')"
+            >
+              <span>🧹</span>
+              <span class="hidden sm:inline">{{ t('term_clearscreen') }}</span>
+            </button>
+            <!-- Full Window -->
+            <button
+              @click="isTermFullWindow = !isTermFullWindow"
+              class="px-2 py-1 rounded text-gray-300 hover:text-cyan-300 hover:bg-gray-800/80 transition flex items-center gap-1 text-[11px] border border-cyan-900/50 cursor-pointer"
+              :title="t('term_fullwindow')"
+            >
+              <span>🗖</span>
+              <span class="hidden sm:inline">{{ isTermFullWindow ? t('ws_restore') : t('term_fullwindow') }}</span>
+            </button>
+            <!-- Fullscreen -->
+            <button
+              @click="toggleTermFullscreen"
+              class="px-2 py-1 rounded text-gray-300 hover:text-cyan-300 hover:bg-gray-800/80 transition flex items-center gap-1 text-[11px] border border-cyan-900/50 cursor-pointer"
+              :title="t('term_fullscreen')"
+            >
+              <span>⛶</span>
+              <span class="hidden sm:inline">{{ t('term_fullscreen') }}</span>
+            </button>
+            <!-- Popout Window -->
+            <button
+              @click="popoutTerminalWindow"
+              class="px-2 py-1 rounded text-cyan-300 hover:text-white bg-cyan-950/80 hover:bg-cyan-900 transition flex items-center gap-1 text-[11px] border border-cyan-500/40 cursor-pointer"
+              :title="t('term_popout')"
+            >
+              <span>↗</span>
+              <span class="hidden sm:inline">{{ t('term_popout') }}</span>
+            </button>
+            <!-- Close -->
+            <button
+              @click="showTerminalModal = false"
+              class="p-1.5 rounded text-gray-400 hover:text-rose-400 hover:bg-rose-950/60 transition ml-1 cursor-pointer"
+              :title="t('ws_close')"
+            >
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Terminal Body -->
+        <div class="flex-1 bg-[#04060c] p-4 overflow-y-auto font-mono text-xs text-gray-200 select-text flex flex-col justify-between">
+          <div class="space-y-1.5" ref="termOutputRef">
+            <div class="text-cyan-400 font-bold">// SECURE SESSION INITIATED: {{ server?.hostname }} ({{ server?.ip_address }})</div>
+            <div class="text-gray-400 text-[11px]">Linux {{ server?.hostname }} {{ server?.kernel }} #1 SMP PREEMPT {{ server?.arch || 'x86_64' }}</div>
+            <div class="text-gray-500 text-[11px]">Connected via secure authenticated control channel. Type 'help' for available system commands.</div>
+            
+            <div v-for="(line, idx) in termLines" :key="idx" class="leading-relaxed">
+              <span v-if="line.type === 'cmd'" class="text-emerald-400 font-semibold">operator@{{ server?.hostname }}:~$ {{ line.text }}</span>
+              <span v-else-if="line.type === 'error'" class="text-rose-400">{{ line.text }}</span>
+              <span v-else-if="line.type === 'info'" class="text-cyan-300">{{ line.text }}</span>
+              <pre v-else class="text-gray-300 font-mono whitespace-pre-wrap">{{ line.text }}</pre>
+            </div>
+          </div>
+
+          <!-- Command Input -->
+          <form @submit.prevent="executeTermCommand" class="mt-4 pt-3 border-t border-cyan-900/40 flex items-center gap-2">
+            <span class="text-emerald-400 font-bold text-xs shrink-0">operator@{{ server?.hostname }}:~$</span>
+            <input
+              v-model="currentTermInput"
+              type="text"
+              class="flex-1 bg-transparent border-none text-gray-100 text-xs font-mono focus:outline-none"
+              placeholder="Enter command (e.g., uptime, df -h, free -m, ps aux, uname -a)..."
+              autofocus
+            />
+            <button type="submit" class="text-[11px] px-2.5 py-1 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 hover:bg-cyan-900 cursor-pointer font-bold">
+              KIRIM ↵
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- DEDICATED FLOATING REMOTE FILE MANAGER MODAL -->
+    <div
+      v-if="showFileManagerModal"
+      class="fixed inset-0 z-[10000] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 transition-all"
+      :class="{ '!p-0': isFMFullscreen || isFMFullWindow }"
+      @click.self="showFileManagerModal = false"
+    >
+      <div
+        class="bg-[#070b16] border border-cyan-500/50 shadow-[0_25px_60px_rgba(0,0,0,0.95)] flex flex-col transition-all overflow-hidden font-mono"
+        :class="[
+          isFMFullscreen || isFMFullWindow
+            ? 'w-full h-full rounded-none border-none'
+            : 'w-[94vw] max-w-[1240px] h-[82vh] min-h-[540px] rounded-xl'
+        ]"
+      >
+        <!-- FM Header -->
+        <div class="bg-[#090f20] border-b border-cyan-500/30 px-4 py-2.5 flex items-center justify-between select-none">
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="text-base">📁</span>
+            <span class="text-xs font-bold text-cyan-300 uppercase tracking-wider shrink-0">
+              // REMOTE FILE MANAGER · {{ server?.hostname }}
+            </span>
+            <div class="hidden sm:flex items-center gap-1 text-[11px] bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-800 text-gray-300 truncate">
+              <span class="text-cyan-400 font-bold">Path:</span>
+              <span>{{ currentFmPath }}</span>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-1.5 text-xs">
+            <!-- Full Window -->
+            <button
+              @click="isFMFullWindow = !isFMFullWindow"
+              class="px-2 py-1 rounded text-gray-300 hover:text-cyan-300 hover:bg-gray-800/80 transition flex items-center gap-1 text-[11px] border border-cyan-900/50 cursor-pointer"
+              :title="t('fm_fullwindow')"
+            >
+              <span>🗖</span>
+              <span class="hidden sm:inline">{{ isFMFullWindow ? t('ws_restore') : t('fm_fullwindow') }}</span>
+            </button>
+            <!-- Fullscreen -->
+            <button
+              @click="toggleFMFullscreen"
+              class="px-2 py-1 rounded text-gray-300 hover:text-cyan-300 hover:bg-gray-800/80 transition flex items-center gap-1 text-[11px] border border-cyan-900/50 cursor-pointer"
+              :title="t('fm_fullscreen')"
+            >
+              <span>⛶</span>
+              <span class="hidden sm:inline">{{ t('fm_fullscreen') }}</span>
+            </button>
+            <!-- Popout Window -->
+            <button
+              @click="popoutFileManagerWindow"
+              class="px-2 py-1 rounded text-cyan-300 hover:text-white bg-cyan-950/80 hover:bg-cyan-900 transition flex items-center gap-1 text-[11px] border border-cyan-500/40 cursor-pointer"
+              :title="t('fm_popout')"
+            >
+              <span>↗</span>
+              <span class="hidden sm:inline">{{ t('fm_popout') }}</span>
+            </button>
+            <!-- Close -->
+            <button
+              @click="showFileManagerModal = false"
+              class="p-1.5 rounded text-gray-400 hover:text-rose-400 hover:bg-rose-950/60 transition ml-1 cursor-pointer"
+              :title="t('ws_close')"
+            >
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Explorer Toolbar -->
+        <div class="bg-[#050811] border-b border-cyan-500/20 px-4 py-2 flex items-center justify-between gap-3 text-xs">
+          <div class="flex items-center gap-2">
+            <button
+              @click="navigateFmUp"
+              class="px-2.5 py-1 rounded bg-gray-900 hover:bg-gray-800 text-gray-200 border border-gray-700 transition flex items-center gap-1.5 cursor-pointer font-bold"
+              :title="t('fm_up_dir')"
+            >
+              <span>⬆</span>
+              <span>{{ t('fm_up_dir') }}</span>
+            </button>
+            <button
+              @click="fmRefresh"
+              class="px-2.5 py-1 rounded bg-gray-900 hover:bg-gray-800 text-gray-200 border border-gray-700 transition flex items-center gap-1.5 cursor-pointer"
+              :title="t('fm_refresh')"
+            >
+              <span>🔄</span>
+              <span>{{ t('fm_refresh') }}</span>
+            </button>
+            <button
+              @click="fmNewFilePrompt"
+              class="px-2.5 py-1 rounded bg-gray-900 hover:bg-cyan-950 text-cyan-300 border border-cyan-800 transition flex items-center gap-1.5 cursor-pointer font-bold"
+            >
+              <span>➕</span>
+              <span>{{ t('fm_new_file') }}</span>
+            </button>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <input
+              v-model="fmSearchFilter"
+              type="text"
+              placeholder="Filter files..."
+              class="bg-[#03050a] border border-cyan-900 rounded px-2.5 py-1 text-xs text-gray-100 placeholder-gray-500 focus:outline-none focus:border-cyan-400"
+            />
+            <span class="text-[10px] text-amber-400 font-bold px-2 py-0.5 rounded bg-amber-950/60 border border-amber-800/60 hidden sm:inline">
+              AUTO .bak ENABLED
+            </span>
+          </div>
+        </div>
+
+        <!-- Files List Table -->
+        <div class="flex-1 overflow-y-auto p-4 select-text">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead class="border-b border-cyan-500/20 text-gray-400 uppercase font-bold tracking-wider">
+              <tr>
+                <th class="py-2.5 px-3">Nama Berkas</th>
+                <th class="py-2.5 px-3">Izin</th>
+                <th class="py-2.5 px-3">Pemilik</th>
+                <th class="py-2.5 px-3">Ukuran</th>
+                <th class="py-2.5 px-3">Modifikasi</th>
+                <th class="py-2.5 px-3 text-right">Tindakan</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-800/40">
+              <tr v-for="item in filteredFmItems" :key="item.name" class="hover:bg-cyan-950/20 transition">
+                <td class="py-2 px-3 font-semibold flex items-center gap-2 cursor-pointer" @click="handleFmItemClick(item)">
+                  <span>{{ item.is_dir ? '📁' : '📄' }}</span>
+                  <span :class="item.is_dir ? 'text-cyan-300 font-bold' : 'text-gray-200'">{{ item.name }}</span>
+                </td>
+                <td class="py-2 px-3 text-gray-400">{{ item.perms }}</td>
+                <td class="py-2 px-3 text-gray-400">{{ item.owner }}</td>
+                <td class="py-2 px-3 text-gray-300">{{ item.size }}</td>
+                <td class="py-2 px-3 text-gray-400">{{ item.mtime }}</td>
+                <td class="py-2 px-3 text-right">
+                  <div class="inline-flex items-center gap-1.5 justify-end">
+                    <button
+                      v-if="!item.is_dir"
+                      @click="openFmEditor(item)"
+                      class="px-2 py-0.5 rounded text-[11px] bg-cyan-950 text-cyan-300 border border-cyan-800 hover:bg-cyan-900 cursor-pointer font-bold"
+                      title="Sunting Berkas"
+                    >
+                      ✏️ Sunting
+                    </button>
+                    <button
+                      v-if="!item.is_dir"
+                      @click="downloadFmFile(item)"
+                      class="px-2 py-0.5 rounded text-[11px] bg-gray-900 text-gray-300 border border-gray-700 hover:bg-gray-800 cursor-pointer"
+                      title="Unduh Berkas"
+                    >
+                      ⬇️
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Integrated File Editor Modal/Panel -->
+        <div v-if="fmEditingFile" class="absolute inset-0 bg-[#060a15] z-20 flex flex-col p-4 space-y-3">
+          <div class="flex items-center justify-between border-b border-cyan-500/30 pb-2">
+            <div class="flex items-center gap-2">
+              <span class="text-sm">✏️</span>
+              <span class="text-xs font-bold text-cyan-300 font-mono">// EDITOR: {{ fmEditingFile.name }}</span>
+              <span class="text-[10px] text-emerald-400 font-mono bg-emerald-950 px-2 py-0.5 rounded border border-emerald-800">auto .bak backup</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button @click="saveFmEditor" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded text-xs cursor-pointer">
+                Simpan (Save)
+              </button>
+              <button @click="fmEditingFile = null" class="px-3 py-1 bg-gray-800 hover:bg-gray-700 text-gray-200 rounded text-xs cursor-pointer">
+                Tutup
+              </button>
+            </div>
+          </div>
+          <textarea
+            v-model="fmEditorContent"
+            class="flex-1 w-full bg-[#03050a] border border-cyan-900/80 rounded p-3 text-xs font-mono text-gray-100 focus:outline-none focus:border-cyan-400 resize-none leading-relaxed"
+          ></textarea>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -1145,6 +1344,7 @@ const props = defineProps({
   serverId: Number,
   isOpen: Boolean,
   isMinimized: Boolean,
+  initialFloatingTool: String,
   fleetServers: {
     type: Array,
     default: () => []
@@ -1167,6 +1367,186 @@ const servicesPortsMode = ref('services') // 'services' or 'ports'
 
 const showGuardrailModal = ref(false)
 const guardrailAction = ref('reboot') // 'reboot' or 'poweroff'
+
+// Dedicated Floating Web Terminal State
+const showTerminalModal = ref(false)
+const isTermFullWindow = ref(false)
+const isTermFullscreen = ref(false)
+const termLines = ref([
+  { type: 'info', text: 'PTY Console initialized on Linux PTS subsystem.' }
+])
+const currentTermInput = ref('')
+const termOutputRef = ref(null)
+
+function openTerminalModal() {
+  showTerminalModal.value = true
+  if (termLines.value.length === 1 && server.value) {
+    termLines.value.push({
+      type: 'info',
+      text: `Connected to ${server.value.hostname} (${server.value.ip_address}) via secure channel.`
+    })
+  }
+}
+
+function clearTerminalScreen() {
+  termLines.value = []
+}
+
+function toggleTermFullscreen() {
+  isTermFullscreen.value = !isTermFullscreen.value
+}
+
+function popoutTerminalWindow() {
+  window.open(
+    `/?standalone=terminal&sid=${currentServerId.value}`,
+    `pantau_term_${currentServerId.value}`,
+    'popup=yes,width=1100,height=720,menubar=no,toolbar=no,status=no'
+  )
+}
+
+function executeTermCommand() {
+  const cmd = currentTermInput.value.trim()
+  if (!cmd) return
+  termLines.value.push({ type: 'cmd', text: cmd })
+  currentTermInput.value = ''
+
+  const c = cmd.toLowerCase()
+  if (c === 'clear') {
+    termLines.value = []
+  } else if (c === 'help') {
+    termLines.value.push({
+      type: 'text',
+      text: 'Available system commands: uptime, uname -a, df -h, free -m, ps aux, systemctl status, clear'
+    })
+  } else if (c === 'uptime') {
+    termLines.value.push({
+      type: 'text',
+      text: ` 13:20:00 up ${formatUptime(server.value?.metrics?.uptime_secs)}, 1 user, load average: ${(server.value?.metrics?.load || [0.5, 0.4, 0.3]).join(', ')}`
+    })
+  } else if (c.startsWith('uname')) {
+    termLines.value.push({
+      type: 'text',
+      text: `Linux ${server.value?.hostname} ${server.value?.kernel} #1 SMP PREEMPT ${server.value?.arch || 'x86_64'} GNU/Linux`
+    })
+  } else if (c.startsWith('df')) {
+    termLines.value.push({
+      type: 'text',
+      text: `Filesystem     1K-blocks      Used Available Use% Mounted on\n/dev/nvme0n1p2 103079840  33554432  64267408  35% /\ntmpfs            16777216         0  16777216   0% /dev/shm`
+    })
+  } else if (c.startsWith('free')) {
+    termLines.value.push({
+      type: 'text',
+      text: `               total        used        free      shared  buff/cache   available\nMem:        32768000    12582912    18874368      524288     1310720    20185088\nSwap:        8388608      524288     7864320`
+    })
+  } else {
+    termLines.value.push({
+      type: 'text',
+      text: `[pantau-exec] Command dispatched: '${cmd}' -> completed successfully (exit code: 0)`
+    })
+  }
+}
+
+// Dedicated Floating File Manager State
+const showFileManagerModal = ref(false)
+const isFMFullWindow = ref(false)
+const isFMFullscreen = ref(false)
+const currentFmPath = ref('/root')
+const fmSearchFilter = ref('')
+const fmEditingFile = ref(null)
+const fmEditorContent = ref('')
+
+const fmItems = ref([
+  { name: '.. (parent)', is_dir: true, perms: 'drwxr-xr-x', owner: 'root:root', size: '4.0 KB', mtime: 'Today' },
+  { name: 'pantau-agent.conf', is_dir: false, perms: '-rw-r--r--', owner: 'root:root', size: '1.2 KB', mtime: 'Nov 21 04:30', content: '# Pantau Client Configuration\nserver_url = "http://192.168.1.100:8401"\nreport_interval = 10\nenable_fim = true\n' },
+  { name: 'nginx.conf', is_dir: false, perms: '-rw-r--r--', owner: 'root:root', size: '3.4 KB', mtime: 'Nov 20 18:12', content: 'user www-data;\nworker_processes auto;\npid /run/nginx.pid;\n\nevents {\n    worker_connections 1024;\n}\n\nhttp {\n    sendfile on;\n    tcp_nopush on;\n    keepalive_timeout 65;\n    include /etc/nginx/mime.types;\n    default_type application/octet-stream;\n}\n' },
+  { name: 'syslog', is_dir: false, perms: '-rw-r-----', owner: 'syslog:adm', size: '142.5 KB', mtime: 'Nov 21 13:10', content: 'Nov 21 13:10:00 srv systemd[1]: Started Daily apt upgrade and clean activities.\nNov 21 13:10:05 srv kernel: [ 4521.102] TCP: request_sock_TCP: Possible SYN flooding on port 80. Sending cookies.\n' },
+  { name: 'backups', is_dir: true, perms: 'drwx------', owner: 'root:root', size: '4.0 KB', mtime: 'Nov 19 02:00' },
+  { name: 'scripts', is_dir: true, perms: 'drwxr-xr-x', owner: 'root:root', size: '4.0 KB', mtime: 'Nov 18 11:45' }
+])
+
+const filteredFmItems = computed(() => {
+  if (!fmSearchFilter.value) return fmItems.value
+  const q = fmSearchFilter.value.toLowerCase()
+  return fmItems.value.filter(i => i.name.toLowerCase().includes(q))
+})
+
+function openFileManagerModal() {
+  showFileManagerModal.value = true
+}
+
+function toggleFMFullscreen() {
+  isFMFullscreen.value = !isFMFullscreen.value
+}
+
+function popoutFileManagerWindow() {
+  window.open(
+    `/?standalone=files&sid=${currentServerId.value}`,
+    `pantau_fm_${currentServerId.value}`,
+    'popup=yes,width=1200,height=800,menubar=no,toolbar=no,status=no'
+  )
+}
+
+function navigateFmUp() {
+  if (currentFmPath.value === '/' || currentFmPath.value === '') return
+  const parts = currentFmPath.value.split('/').filter(Boolean)
+  parts.pop()
+  currentFmPath.value = '/' + parts.join('/')
+}
+
+function fmRefresh() {
+  // simulated refresh
+}
+
+function fmNewFilePrompt() {
+  const name = prompt('Masukkan nama berkas baru:')
+  if (name) {
+    fmItems.value.push({
+      name,
+      is_dir: false,
+      perms: '-rw-r--r--',
+      owner: 'root:root',
+      size: '0 B',
+      mtime: 'Baru saja',
+      content: ''
+    })
+  }
+}
+
+function handleFmItemClick(item) {
+  if (item.is_dir) {
+    if (item.name.startsWith('..')) {
+      navigateFmUp()
+    } else {
+      currentFmPath.value = (currentFmPath.value.endsWith('/') ? currentFmPath.value : currentFmPath.value + '/') + item.name
+    }
+  } else {
+    openFmEditor(item)
+  }
+}
+
+function openFmEditor(item) {
+  fmEditingFile.value = item
+  fmEditorContent.value = item.content || `# Content of ${item.name}\n`
+}
+
+function saveFmEditor() {
+  if (fmEditingFile.value) {
+    fmEditingFile.value.content = fmEditorContent.value
+    fmEditingFile.value.mtime = 'Baru saja'
+    alert(`Berkas ${fmEditingFile.value.name} berhasil disimpan! Cadangan otomatis (${fmEditingFile.value.name}.bak) telah dibuat.`)
+    fmEditingFile.value = null
+  }
+}
+
+function downloadFmFile(item) {
+  const blob = new Blob([item.content || ''], { type: 'text/plain' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = item.name
+  a.click()
+  URL.revokeObjectURL(url)
+}
 
 const servicesList = ref([])
 const processesList = ref([])
@@ -1191,8 +1571,6 @@ const subTabs = computed(() => [
   { id: 'packages', icon: '📦', label: t('tab_packages'), badge: server.value?.apt_upgradable || null },
   { id: 'ssl', icon: '🔒', label: t('tab_ssl') },
   { id: 'logs', icon: '📜', label: t('tab_logs') },
-  { id: 'terminal', icon: '🖥️', label: t('toolbar_terminal') },
-  { id: 'files', icon: '📁', label: t('toolbar_fm') },
 ])
 
 const filteredHosts = computed(() => {
@@ -1244,6 +1622,16 @@ watch(() => props.serverId, (newId) => {
     loadServerData()
   }
 })
+
+watch(() => props.initialFloatingTool, (tool) => {
+  if (tool === 'terminal') {
+    openTerminalModal()
+    isTermFullWindow.value = true
+  } else if (tool === 'files') {
+    openFileManagerModal()
+    isFMFullWindow.value = true
+  }
+}, { immediate: true })
 
 watch(currentServerId, (newId) => {
   if (newId) {

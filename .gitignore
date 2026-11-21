@@ -18,7 +18,10 @@ ENV/
 htmlcov/
 
 # Node & Frontend
+node_modules/
 frontend/node_modules/
+screenshots/debug_*.png
+screenshots/visual_*.png
 frontend/dist/
 frontend/.vite/
 

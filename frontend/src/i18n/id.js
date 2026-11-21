@@ -256,6 +256,20 @@ export default {
   tooltip_poweroff_btn: 'Matikan daya mesin host (Power Off)',
   tooltip_poweroff_ha_blocked: 'Server terproteksi Proxmox HA (Tombol Power Off dinonaktifkan)',
   
+  // Floating Window Controls
+  term_fullwindow: 'Jendela Penuh',
+  term_fullscreen: 'Layar Penuh',
+  term_popout: 'Buka Jendela Terpisah',
+  term_clearscreen: 'Bersihkan Layar',
+  fm_fullwindow: 'Jendela Penuh',
+  fm_fullscreen: 'Layar Penuh',
+  fm_popout: 'Buka Jendela Terpisah',
+  fm_up_dir: 'Naik Satu Tingkat',
+  fm_new_file: 'Berkas Baru',
+  fm_new_dir: 'Folder Baru',
+  fm_upload: 'Unggah',
+  fm_refresh: 'Muat Ulang',
+
   // Tactical Tabs
   tab_perf: 'Performa',
   tab_incidents: 'Insiden',

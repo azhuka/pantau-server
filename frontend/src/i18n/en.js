@@ -256,6 +256,20 @@ export default {
   tooltip_poweroff_btn: 'Power off host machine (Shutdown)',
   tooltip_poweroff_ha_blocked: 'Host is protected by Proxmox HA (Power Off disabled)',
   
+  // Floating Window Controls
+  term_fullwindow: 'Full Window',
+  term_fullscreen: 'Fullscreen',
+  term_popout: 'Pop-out Window',
+  term_clearscreen: 'Clear Screen',
+  fm_fullwindow: 'Full Window',
+  fm_fullscreen: 'Fullscreen',
+  fm_popout: 'Pop-out Window',
+  fm_up_dir: 'Up One Level',
+  fm_new_file: 'New File',
+  fm_new_dir: 'New Folder',
+  fm_upload: 'Upload',
+  fm_refresh: 'Refresh',
+
   // Tactical Tabs
   tab_perf: 'Performance',
   tab_incidents: 'Incidents',
