@@ -203,3 +203,16 @@ Sebelum asisten AI menyatakan pekerjaan selesai ke operator, wajib memverifikasi
 ## 15. Protokol Eksekusi Mandat `/learn` (Eksekusi Instan Tanpa Menunggu Konfirmasi)
 - **Eksekusi Langsung:** Setiap kali operator mengetikkan perintah `/learn`, hal tersebut merupakan **instruksi aturan mutlak** yang wajib langsung dibukukan, diterapkan, dan dikunci secara permanen ke dalam berkas tata kelola (`GEMINI.md`, `AGENTS.md`, `tasks/lessons.md`).
 - **Larangan Meminta Konfirmasi Ulang:** Dilarang keras menunda eksekusi, bersikap pasif, atau meminta konfirmasi/persetujuan berbelit-belit kepada operator saat `/learn` telah diberikan. Catat dan terapkan seketika.
+
+---
+
+## 16. Konsep Aplikasi Lama sebagai Blueprint Murni (Workflow & UX over Legacy Data)
+- **Status Blueprint Konseptual:** Seluruh alur kerja (*workflow*), tata letak kartu, navigasi interaksi, hierarki telemetri NOC, dan konsep pemantauan dari aplikasi lama (`~/rj45` dan benchmark `~/pantau`) wajib dipertahankan dan diwujudkan secara utuh.
+- **Batasan Mutlak (Hanya Konsep, Bukan Data):** Yang diadopsi HANYA konsep dan alur kerjanya saja. Dilarang keras menduplikasi, menyalin, atau mengaitkan data riil, skema inkonsisten, atau data kotor dari basis data lama `pantau_db` ke aplikasi baru ini.
+
+---
+
+## 17. Siklus Pembelajaran Mandiri & Pencatatan Kesalahan Permanen (CDiP)
+- **Pencatatan Kesalahan Wajib:** Setiap kali terjadi kesalahan teknis, anomali logika, atau koreksi keras dari operator, asisten WAJIB mencatatnya secara permanen ke dalam [`tasks/lessons.md`](file:///home/bos/pantau-server/tasks/lessons.md) sebagai pengingat abadi.
+- **Struktur Catatan:** Setiap entri pelajaran wajib memuat secara transparan: Konteks Kejadian, Akar Masalah (Root Cause), dan Aturan Pencegahan Konkret.
+- **Larangan Mengulang Kesalahan:** Asisten dilarang keras mengulang kesalahan yang sudah pernah ditegur dan dicatat di dalam berkas pembelajaran.

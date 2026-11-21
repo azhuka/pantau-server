@@ -28,3 +28,5 @@ Seluruh alur peningkatan versi SemVer, kompilasi sintaksis, verifikasi lapangan 
 8. **Anti-Jalan Praktis (Anti-Shortcut Mandate)**: Dilarang keras mengambil atau mengusulkan jalan pintas kompromis (seperti SQLite untuk sistem NOC). Selalu gunakan arsitektur standar produksi sejati (MySQL InnoDB, konkurensi tinggi, integritas fisik).
 9. **Larangan Mutlak Nomenklatur "v2"**: Aplikasi ini bernama **Pantau Server** dengan baseline **`v0.1.0`**. DILARANG KERAS melabeli atau menamai database/variabel/branch dengan istilah "v2".
 10. **Eksekusi Instan Mandat `/learn`**: Perintah `/learn` dari operator adalah instruksi mutlak; langsung catat dan terapkan ke berkas aturan tanpa menunggu konfirmasi atau persetujuan ulang.
+11. **Konsep Blueprint Murni (Workflow & UX Tetap Diadopsi)**: Konsep fungsionalitas, workflow, kartu dasbor, dan tata letak taktis dari aplikasi lama wajib diadopsi murni; data kotor dan skema inkonsisten lama dilarang disentuh.
+12. **Pencatatan Kesalahan Wajib Tanpa Pengulangan (CDiP)**: Seluruh kesalahan dan koreksi operator wajib dicatat sebagai pengingat di `tasks/lessons.md` agar pantang diulang.
