@@ -51,7 +51,7 @@
               </td>
               <td
                 class="py-2.5 px-4 text-gray-300 font-mono text-xs truncate max-w-xs cursor-help hover:text-cyan-300"
-                v-tooltip="{ title: 'Audit Target', text: log.target || '-', code: true, copyable: true, extra: `Action: ${log.action} · Actor: ${log.username}` }"
+                v-tooltip="log.target"
               >
                 {{ log.target }}
               </td>

@@ -20,27 +20,28 @@ export function positionTooltip(targetEl, options = {}) {
   if (!targetEl || typeof targetEl.getBoundingClientRect !== 'function') return
 
   const rect = targetEl.getBoundingClientRect()
-  const preferredWidth = options.code ? 380 : 300
-  const estimatedHeight = options.text && options.text.length > 80 ? 110 : 70
+  const textLen = (options.text || '').length
+  const preferredWidth = Math.min(340, Math.max(120, textLen * 7.5 + 40))
+  const estimatedHeight = textLen > 60 ? 50 : 32
 
   // Center horizontally relative to target element
   let left = rect.left + rect.width / 2 - preferredWidth / 2
-  // Position above the target by default
-  let top = rect.top - estimatedHeight - 12
+  // Position above the target by default with 6px gap
+  let top = rect.top - estimatedHeight - 6
 
   // Collision handling:
   // If too close to the top of the viewport, position below target
-  if (top < 12) {
-    top = rect.bottom + 10
+  if (top < 8) {
+    top = rect.bottom + 6
   }
 
   // Ensure horizontal bounds stay safely within viewport
-  const maxLeft = Math.max(12, window.innerWidth - preferredWidth - 16)
-  left = Math.max(12, Math.min(left, maxLeft))
+  const maxLeft = Math.max(8, window.innerWidth - preferredWidth - 12)
+  left = Math.max(8, Math.min(left, maxLeft))
 
   // Ensure vertical bounds do not overflow bottom
-  if (top + estimatedHeight > window.innerHeight - 12) {
-    top = Math.max(12, window.innerHeight - estimatedHeight - 16)
+  if (top + estimatedHeight > window.innerHeight - 8) {
+    top = Math.max(8, window.innerHeight - estimatedHeight - 12)
   }
 
   tooltipState.x = Math.round(left)
