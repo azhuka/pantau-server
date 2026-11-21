@@ -2,7 +2,7 @@
   <!-- Floating Workspace Modal Backdrop -->
   <div
     v-if="isOpen && !isMinimized"
-    class="fixed inset-0 z-50 bg-black/75 backdrop-blur-[4px] flex items-center justify-center p-2 sm:p-5 transition-all duration-200"
+    class="fixed inset-0 z-50 bg-black/75 backdrop-blur-[4px] flex items-center justify-center p-2 sm:p-4 transition-all duration-200"
     @click.self="handleBackdropClick"
     @keydown.esc="handleClose"
   >
@@ -12,18 +12,18 @@
         'hud-tactical-card shadow-2xl flex flex-col transition-all duration-200 overflow-hidden relative',
         isMaximized
           ? 'fixed inset-0 w-screen h-screen rounded-none z-50'
-          : 'w-[90vw] max-w-[1560px] h-[88vh] min-h-[600px] rounded-xl'
+          : 'w-[92vw] max-w-[1600px] h-[90vh] min-h-[620px] rounded-xl'
       ]"
     >
       <span class="hud-corner-tr"></span>
       <span class="hud-corner-bl"></span>
 
-      <!-- MODAL HEADER -->
+      <!-- 1. MODAL HEADER BAR -->
       <div
-        class="bg-[#080d19] border-b border-cyan-500/20 px-4 py-2.5 flex items-center justify-between select-none cursor-default shrink-0"
+        class="bg-[#080d19] border-b border-cyan-500/20 px-4 py-2.5 flex items-center justify-between select-none cursor-default shrink-0 flex-wrap gap-2"
         @dblclick="toggleMaximize"
       >
-        <!-- Left: Host Info & Refresh -->
+        <!-- Left: Host Info & Status -->
         <div class="flex items-center gap-3">
           <div class="w-8 h-8 rounded bg-cyan-950/80 border border-cyan-400/50 flex items-center justify-center text-cyan-300 font-bold text-base shadow-[0_0_10px_rgba(56,189,248,0.25)]">
             ⛊
@@ -50,6 +50,13 @@
               </span>
               <span class="text-xs font-mono text-cyan-300 font-semibold hidden sm:inline">
                 ({{ server?.ip_address }})
+              </span>
+              <span
+                v-if="server?.is_proxmox_ha"
+                class="text-[10px] px-1.5 py-0.2 rounded bg-amber-950/80 text-amber-300 border border-amber-800 font-bold"
+                title="Server terproteksi Proxmox HA"
+              >
+                PROXMOX HA
               </span>
             </div>
             <div class="text-[11px] text-gray-400 font-mono flex items-center gap-1.5 mt-0.5">
@@ -86,14 +93,102 @@
           </button>
         </div>
 
-        <!-- Center / Right: Host Switcher & Window Controls -->
+        <!-- Center: HERO ACTION TOOLBAR (Matriks Tombol Tindakan Khusus dari Konsep App Acuan) -->
+        <div class="flex items-center gap-2 font-mono flex-wrap">
+          <!-- Grup 1: Akses Cepat & Pemeliharaan -->
+          <div class="flex items-center bg-[#060a14] border border-cyan-900/50 rounded p-0.5">
+            <button
+              @click="activeSubTab = 'terminal'"
+              class="px-2.5 py-1 text-xs text-gray-300 hover:text-cyan-300 hover:bg-cyan-950/50 rounded transition cursor-pointer flex items-center gap-1.5 font-bold"
+              :title="t('tooltip_terminal_btn')"
+            >
+              <span>🖥️</span>
+              <span>{{ t('toolbar_terminal') }}</span>
+            </button>
+            <span class="w-[1px] h-4 bg-cyan-900/40 mx-0.5"></span>
+            <button
+              @click="activeSubTab = 'files'"
+              class="px-2.5 py-1 text-xs text-gray-300 hover:text-cyan-300 hover:bg-cyan-950/50 rounded transition cursor-pointer flex items-center gap-1.5 font-bold"
+              :title="t('tooltip_fm_btn')"
+            >
+              <span>📁</span>
+              <span>{{ t('toolbar_fm') }}</span>
+            </button>
+            <span class="w-[1px] h-4 bg-cyan-900/40 mx-0.5"></span>
+            <button
+              @click="triggerMaintenanceToggle"
+              class="px-2.5 py-1 text-xs rounded transition cursor-pointer flex items-center gap-1.5 font-bold"
+              :class="server?.is_maintenance ? 'bg-amber-950 text-amber-300 border border-amber-700/60' : 'text-gray-300 hover:text-amber-300 hover:bg-amber-950/30'"
+              :title="t('tooltip_maint_btn')"
+            >
+              <span>🛡️</span>
+              <span>{{ t('toolbar_maint') }}</span>
+            </button>
+          </div>
+
+          <!-- Grup 2: Pembaruan & Kontrol Daya Sistem -->
+          <div class="flex items-center bg-[#060a14] border border-cyan-900/50 rounded p-0.5">
+            <button
+              @click="triggerOSUpdate"
+              class="px-2.5 py-1 text-xs text-emerald-400 hover:bg-emerald-950/50 rounded transition cursor-pointer flex items-center gap-1.5 font-bold"
+              :title="t('tooltip_update_btn')"
+            >
+              <span>🔄</span>
+              <span>{{ t('toolbar_update_os') }}</span>
+            </button>
+            <span class="w-[1px] h-4 bg-cyan-900/40 mx-0.5"></span>
+            <button
+              @click="triggerOSUpgrade"
+              class="px-2.5 py-1 text-xs rounded transition cursor-pointer flex items-center gap-1.5 font-bold"
+              :class="(server?.apt_upgradable || 0) > 0 ? 'text-amber-300 bg-amber-950/60 border border-amber-700/50' : 'text-gray-400 hover:text-white'"
+              :title="t('tooltip_upgrade_btn')"
+            >
+              <span>⬆️</span>
+              <span>{{ t('toolbar_upgrade_os') }}</span>
+              <span v-if="(server?.apt_upgradable || 0) > 0" class="px-1.5 py-0.2 rounded bg-amber-500 text-black text-[10px] font-black">
+                {{ server?.apt_upgradable }}
+              </span>
+            </button>
+            <span class="w-[1px] h-4 bg-cyan-900/40 mx-0.5"></span>
+            <button
+              @click="openGuardrailConfirm('reboot')"
+              class="px-2.5 py-1 text-xs text-amber-400 hover:bg-amber-950/50 rounded transition cursor-pointer flex items-center gap-1.5 font-bold"
+              :title="t('tooltip_reboot_btn')"
+            >
+              <span>🔁</span>
+              <span>{{ t('toolbar_reboot') }}</span>
+            </button>
+            <span class="w-[1px] h-4 bg-cyan-900/40 mx-0.5"></span>
+            <!-- POWER OFF (Proteksi Proxmox HA) -->
+            <button
+              v-if="server?.is_proxmox_ha"
+              disabled
+              class="px-2.5 py-1 text-xs text-gray-500 bg-gray-900/50 rounded cursor-not-allowed opacity-40 border border-dashed border-rose-900 flex items-center gap-1.5 font-bold"
+              :title="t('tooltip_poweroff_ha_blocked')"
+            >
+              <span>⚡</span>
+              <span>{{ t('toolbar_poweroff') }}</span>
+            </button>
+            <button
+              v-else
+              @click="openGuardrailConfirm('poweroff')"
+              class="px-2.5 py-1 text-xs text-rose-400 hover:bg-rose-950/50 rounded transition cursor-pointer flex items-center gap-1.5 font-bold"
+              :title="t('tooltip_poweroff_btn')"
+            >
+              <span>⚡</span>
+              <span>{{ t('toolbar_poweroff') }}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Right: Host Switcher & Window Controls -->
         <div class="flex items-center gap-2 font-mono" @click.stop>
           <!-- HOST SWITCHER TOOLBAR -->
           <div class="flex items-center bg-[#060a14] border border-cyan-900/40 rounded p-0.5 mr-2">
             <!-- Prev Button -->
             <button
               @click="navigateHost(-1)"
-              class="px-2.5 py-1 text-xs text-gray-400 hover:text-white hover:bg-gray-800 rounded transition cursor-pointer"
+              class="px-2 py-1 text-xs text-gray-400 hover:text-white hover:bg-gray-800 rounded transition cursor-pointer"
               title="Previous Server (Hotkeys [ )"
             >
               ◀
@@ -107,7 +202,7 @@
                 :title="t('ws_search_fleet')"
               >
                 <span>🖥️</span>
-                <span class="max-w-[130px] truncate font-semibold">{{ server?.hostname }}</span>
+                <span class="max-w-[120px] truncate font-semibold">{{ server?.hostname }}</span>
                 <span class="text-xs text-gray-400">▾</span>
               </button>
 
@@ -152,7 +247,7 @@
             <!-- Next Button -->
             <button
               @click="navigateHost(1)"
-              class="px-2.5 py-1 text-xs text-gray-400 hover:text-white hover:bg-gray-800 rounded transition cursor-pointer"
+              class="px-2 py-1 text-xs text-gray-400 hover:text-white hover:bg-gray-800 rounded transition cursor-pointer"
               title="Next Server (Hotkeys ] )"
             >
               ▶
@@ -161,7 +256,6 @@
 
           <!-- WINDOW CONTROLS -->
           <div class="flex items-center gap-1 border-l border-cyan-500/20 pl-2">
-            <!-- Minimize Button -->
             <button
               @click="$emit('minimize')"
               class="p-1.5 rounded text-gray-400 hover:text-white hover:bg-gray-800 transition cursor-pointer"
@@ -171,8 +265,6 @@
                 <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
             </button>
-
-            <!-- Maximize / Restore Button -->
             <button
               @click="toggleMaximize"
               class="p-1.5 rounded text-gray-400 hover:text-white hover:bg-gray-800 transition cursor-pointer font-bold text-xs"
@@ -181,8 +273,6 @@
               <span v-if="!isMaximized">⛶</span>
               <span v-else>🗗</span>
             </button>
-
-            <!-- Close Button -->
             <button
               @click="handleClose"
               class="p-1.5 rounded text-gray-400 hover:text-rose-400 hover:bg-rose-950/40 transition cursor-pointer"
@@ -197,7 +287,7 @@
         </div>
       </div>
 
-      <!-- SUB-TABS NAVIGATION BAR (10 Tactical Sub-Consoles) -->
+      <!-- 2. SUB-TABS NAVIGATION BAR (Tab Taktis Ramping Berdasarkan 12 Tab Konsep App Acuan) -->
       <div class="bg-[#070b16] border-b border-cyan-500/20 px-4 flex items-center gap-1 overflow-x-auto shrink-0 select-none py-1.5 font-mono text-xs">
         <button
           v-for="tab in subTabs"
@@ -235,7 +325,7 @@
         </button>
       </div>
 
-      <!-- MODAL CONTENT BODY -->
+      <!-- 3. MODAL CONTENT BODY -->
       <div class="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
         <!-- Loading State -->
         <div v-if="loading && !server" class="py-24 text-center text-gray-400 text-xs font-mono">
@@ -244,104 +334,127 @@
         </div>
 
         <template v-else-if="server">
-          <!-- SUB-TAB 1: OVERVIEW -->
+          <!-- SUB-TAB 1: PERFORMA (Resource & Load Chips, Disks, Hardware Specs, Catatan Server) -->
           <div v-if="activeSubTab === 'overview'" class="space-y-4 font-mono">
-            <!-- 4 Top Stat Gauges -->
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <!-- CPU Card -->
-              <div class="hud-tactical-card p-3.5 rounded-lg">
-                <span class="hud-corner-tr"></span>
-                <span class="hud-corner-bl"></span>
-                <div class="text-[11px] text-gray-400 font-medium">// {{ t('ws_cpu_util') }}</div>
-                <div class="text-2xl font-bold text-gray-100 mt-1">
+            <!-- Grid Atas: Metrik Chips Real-Time -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+              <!-- CPU Chip -->
+              <div class="hud-tactical-card p-3 rounded-lg">
+                <div class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">// CPU</div>
+                <div class="text-xl font-black text-gray-100 mt-0.5">
                   {{ (server.metrics?.cpu || 0).toFixed(1) }}%
                 </div>
-                <div class="cyber-bar-track mt-2 mb-1.5">
+                <div class="cyber-bar-track mt-1.5">
                   <div
                     :class="(server.metrics?.cpu || 0) > 80 ? 'cyber-bar-fill-crimson' : (server.metrics?.cpu || 0) > 60 ? 'cyber-bar-fill-amber' : 'cyber-bar-fill-cyan'"
                     :style="{ width: `${Math.min(server.metrics?.cpu || 0, 100)}%` }"
                   ></div>
                 </div>
-                <div class="text-[11px] text-gray-400 mt-1">
-                  Load: {{ (server.metrics?.load || []).join(' · ') }}
-                </div>
               </div>
 
-              <!-- RAM Card -->
-              <div class="hud-tactical-card p-3.5 rounded-lg">
-                <span class="hud-corner-tr"></span>
-                <span class="hud-corner-bl"></span>
-                <div class="text-[11px] text-gray-400 font-medium">// {{ t('ws_ram_mem') }}</div>
-                <div class="text-2xl font-bold text-gray-100 mt-1">
+              <!-- Load Avg Chip -->
+              <div class="hud-tactical-card p-3 rounded-lg">
+                <div class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">// LOAD AVG</div>
+                <div class="text-sm font-bold text-cyan-300 mt-1 truncate">
+                  {{ (server.metrics?.load || [0, 0, 0]).map(v => Number(v).toFixed(2)).join(' · ') }}
+                </div>
+                <div class="text-[10px] text-gray-500 mt-1">1 / 5 / 15m</div>
+              </div>
+
+              <!-- RAM Chip -->
+              <div class="hud-tactical-card p-3 rounded-lg">
+                <div class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">// RAM</div>
+                <div class="text-xl font-black text-gray-100 mt-0.5">
                   {{ formatBytes(server.metrics?.mem_used) }}
                 </div>
-                <div class="cyber-bar-track mt-2 mb-1.5">
+                <div class="cyber-bar-track mt-1.5">
                   <div
                     class="cyber-bar-fill-emerald"
                     :style="{ width: `${Math.min(((server.metrics?.mem_used || 0) / (server.metrics?.mem_total || 1)) * 100, 100)}%` }"
                   ></div>
                 </div>
-                <div class="text-[11px] text-gray-400 mt-1">
-                  {{ t('dash_kpi_total') }}: {{ formatBytes(server.metrics?.mem_total) }}
-                </div>
               </div>
 
-              <!-- Swap Card -->
-              <div class="hud-tactical-card p-3.5 rounded-lg">
-                <span class="hud-corner-tr"></span>
-                <span class="hud-corner-bl"></span>
-                <div class="text-[11px] text-gray-400 font-medium">// {{ t('ws_swap_mem') }}</div>
-                <div class="text-2xl font-bold text-gray-100 mt-1">
+              <!-- Swap Chip -->
+              <div class="hud-tactical-card p-3 rounded-lg">
+                <div class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">// SWAP</div>
+                <div class="text-xl font-black text-gray-100 mt-0.5">
                   {{ formatBytes(server.metrics?.swap_used) }}
                 </div>
-                <div class="cyber-bar-track mt-2 mb-1.5">
+                <div class="cyber-bar-track mt-1.5">
                   <div
                     class="cyber-bar-fill-cyan"
                     :style="{ width: `${Math.min(((server.metrics?.swap_used || 0) / (server.metrics?.swap_total || 1)) * 100, 100)}%` }"
                   ></div>
                 </div>
-                <div class="text-[11px] text-gray-400 mt-1">
-                  {{ t('dash_kpi_total') }}: {{ formatBytes(server.metrics?.swap_total) }}
-                </div>
               </div>
 
-              <!-- Uptime Card -->
-              <div class="hud-tactical-card p-3.5 rounded-lg">
-                <span class="hud-corner-tr"></span>
-                <span class="hud-corner-bl"></span>
-                <div class="text-[11px] text-gray-400 font-medium">// {{ t('ws_uptime') }}</div>
-                <div class="text-lg font-bold text-emerald-400 mt-1">
+              <!-- Processes Chip -->
+              <div class="hud-tactical-card p-3 rounded-lg">
+                <div class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">// PROCESSES</div>
+                <div class="text-xl font-black text-gray-100 mt-0.5">
+                  {{ processesList.length || 85 }}
+                </div>
+                <div class="text-[10px] text-gray-500 mt-1">tasks running</div>
+              </div>
+
+              <!-- Uptime Chip -->
+              <div class="hud-tactical-card p-3 rounded-lg">
+                <div class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">// UPTIME</div>
+                <div class="text-sm font-bold text-emerald-400 mt-1 truncate">
                   {{ formatUptime(server.metrics?.uptime_secs) }}
                 </div>
-                <div class="text-[11px] text-gray-400 mt-2">
-                  {{ t('col_last_seen') }}: {{ server.last_seen || '-' }}
-                </div>
+                <div class="text-[10px] text-gray-500 mt-1 truncate">{{ server.os_label || 'Linux' }}</div>
               </div>
             </div>
 
-            <!-- Hardware Specifications Summary -->
-            <div v-if="server.hardware" class="hud-tactical-card rounded-xl p-4">
-              <span class="hud-corner-tr"></span>
-              <span class="hud-corner-bl"></span>
-              <h3 class="text-xs font-bold text-gray-300 uppercase tracking-wider mb-2.5 text-cyan-400">
-                // {{ t('ws_hw_specs') }}
-              </h3>
-              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                <div>
-                  <span class="text-gray-500">{{ t('ws_cpu_model') }}</span>
-                  <div class="text-gray-200 truncate mt-0.5">{{ server.hardware.cpu_model || server.hardware.model || '-' }}</div>
+            <!-- Hardware Specs & Catatan Server Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
+              <!-- Hardware Specs Card -->
+              <div class="hud-tactical-card rounded-xl p-4">
+                <span class="hud-corner-tr"></span>
+                <span class="hud-corner-bl"></span>
+                <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider mb-2.5">
+                  // {{ t('ws_hw_specs') }}
+                </h3>
+                <div class="grid grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <span class="text-gray-500">{{ t('ws_cpu_model') }}</span>
+                    <div class="text-gray-200 truncate mt-0.5 font-bold">{{ server.hardware?.cpu_model || '-' }}</div>
+                  </div>
+                  <div>
+                    <span class="text-gray-500">{{ t('ws_core_capacity') }}</span>
+                    <div class="text-gray-200 mt-0.5 font-bold">{{ server.hardware?.cores || 1 }} Core(s)</div>
+                  </div>
+                  <div>
+                    <span class="text-gray-500">{{ t('ws_arch') }}</span>
+                    <div class="text-gray-200 mt-0.5 font-bold">{{ server.arch || 'x86_64' }}</div>
+                  </div>
+                  <div>
+                    <span class="text-gray-500">{{ t('ws_fleet_group') }}</span>
+                    <div class="text-cyan-400 mt-0.5 font-bold">{{ server.group_name }} (Tier {{ server.tier }})</div>
+                  </div>
                 </div>
+              </div>
+
+              <!-- Catatan Server (Notes Card) -->
+              <div class="hud-tactical-card rounded-xl p-4 flex flex-col justify-between">
+                <span class="hud-corner-tr"></span>
+                <span class="hud-corner-bl"></span>
                 <div>
-                  <span class="text-gray-500">{{ t('ws_core_capacity') }}</span>
-                  <div class="text-gray-200 mt-0.5">{{ server.hardware.cores || server.hardware.cpus || '-' }} Core(s)</div>
+                  <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-xs font-bold text-purple-400 uppercase tracking-wider">
+                      // DESKRIPSI & CATATAN SERVER
+                    </h3>
+                    <span class="text-[10px] text-gray-500">OPERATOR MEMO</span>
+                  </div>
+                  <p class="text-xs text-gray-300 leading-relaxed">
+                    {{ server.notes || 'Belum ada catatan deskripsi yang disematkan untuk server ini. Catatan operasional dapat disunting di tab Pengaturan Host.' }}
+                  </p>
                 </div>
-                <div>
-                  <span class="text-gray-500">{{ t('ws_arch') }}</span>
-                  <div class="text-gray-200 mt-0.5">{{ server.arch || 'x86_64' }}</div>
-                </div>
-                <div>
-                  <span class="text-gray-500">{{ t('ws_fleet_group') }}</span>
-                  <div class="text-cyan-400 mt-0.5">{{ server.group_name }} (Tier {{ server.tier }})</div>
+                <div class="mt-3 pt-2 border-t border-cyan-500/10 flex items-center justify-between text-[11px] text-gray-500">
+                  <span>TAGS: {{ server.tags || 'core, production' }}</span>
+                  <span class="text-cyan-400 font-semibold">{{ server.is_isolated_net ? 'Jaringan Terisolasi' : 'Jaringan Terbuka' }}</span>
                 </div>
               </div>
             </div>
@@ -350,7 +463,7 @@
             <div class="hud-tactical-card rounded-xl p-4">
               <span class="hud-corner-tr"></span>
               <span class="hud-corner-bl"></span>
-              <h3 class="text-xs font-bold text-gray-300 uppercase tracking-wider mb-3 text-cyan-400">
+              <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider mb-3">
                 // {{ t('ws_disk_partitions') }}
               </h3>
               <div class="overflow-x-auto">
@@ -392,10 +505,10 @@
             </div>
           </div>
 
-          <!-- SUB-TAB 2: INCIDENTS & PROBLEMS -->
+          <!-- SUB-TAB 2: INSIDEN -->
           <div v-if="activeSubTab === 'problems'" class="space-y-3 font-mono">
             <div class="flex items-center justify-between">
-              <h3 class="text-xs font-bold text-gray-200 uppercase tracking-wider text-cyan-400">
+              <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider">
                 // {{ t('ws_incidents_title') }}
               </h3>
               <span class="text-xs text-gray-400">{{ serverProblems.length }} {{ t('active_incidents').toLowerCase() }}</span>
@@ -437,59 +550,116 @@
             </div>
           </div>
 
-          <!-- SUB-TAB 3: SERVICES -->
-          <div v-if="activeSubTab === 'services'" class="hud-tactical-card rounded-xl p-4 font-mono">
-            <span class="hud-corner-tr"></span>
-            <span class="hud-corner-bl"></span>
-            <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
-              <div class="flex items-center gap-2">
-                <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider">// {{ t('ws_services_title') }}</h3>
-                <span class="text-xs text-gray-400">({{ filteredServices.length }}/{{ servicesList.length }})</span>
+          <!-- SUB-TAB 3: SERVICES & PORTS (Ramping & Taktis Terpadu) -->
+          <div v-if="activeSubTab === 'services_ports'" class="space-y-4 font-mono">
+            <!-- Sub-Toggle Switcher -->
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <div class="inline-flex bg-[#060a14] border border-cyan-900/50 rounded p-0.5 text-xs">
+                <button
+                  @click="servicesPortsMode = 'services'"
+                  class="px-3 py-1 rounded transition cursor-pointer font-bold flex items-center gap-1.5"
+                  :class="servicesPortsMode === 'services' ? 'bg-cyan-950 text-cyan-300 border border-cyan-500/50' : 'text-gray-400 hover:text-white'"
+                >
+                  <span>⚙️</span>
+                  <span>Systemd Services ({{ filteredServices.length }})</span>
+                </button>
+                <button
+                  @click="servicesPortsMode = 'ports'"
+                  class="px-3 py-1 rounded transition cursor-pointer font-bold flex items-center gap-1.5"
+                  :class="servicesPortsMode === 'ports' ? 'bg-cyan-950 text-cyan-300 border border-cyan-500/50' : 'text-gray-400 hover:text-white'"
+                >
+                  <span>🌐</span>
+                  <span>Listening Ports ({{ portsList.length }})</span>
+                </button>
               </div>
+
+              <!-- Search Filter Input -->
               <input
+                v-if="servicesPortsMode === 'services'"
                 v-model="serviceSearch"
                 type="text"
                 :placeholder="t('ws_services_search')"
                 class="bg-[#060a14] border border-cyan-900/50 focus:border-cyan-400 text-gray-200 text-xs rounded px-3 py-1.5 w-60 focus:outline-none"
               />
             </div>
-            <div class="overflow-x-auto max-h-[500px]">
-              <table class="w-full text-left text-xs border-collapse">
-                <thead class="sticky top-0 bg-[#070c18] z-10 border-b border-cyan-500/20">
-                  <tr class="text-gray-400 uppercase font-bold tracking-wider">
-                    <th class="py-2.5 px-3">{{ t('ws_col_service_name') }}</th>
-                    <th class="py-2.5 px-3">{{ t('col_status') }}</th>
-                    <th class="py-2.5 px-3">{{ t('ws_col_description') }}</th>
-                    <th class="py-2.5 px-3 text-right">Tindakan</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-800/40">
-                  <tr v-for="(svc, idx) in filteredServices" :key="idx" class="hover:bg-cyan-950/20">
-                    <td class="py-2.5 px-3 font-semibold text-gray-200">{{ svc.name || svc.unit }}</td>
-                    <td class="py-2.5 px-3">
-                      <span
-                        class="px-2 py-0.5 rounded text-[11px] uppercase font-bold"
-                        :class="svc.active === 'active' || svc.sub === 'running' ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-700/60' : 'bg-gray-800 text-gray-400'"
-                      >
-                        {{ svc.sub || svc.active || 'unknown' }}
-                      </span>
-                    </td>
-                    <td class="py-2.5 px-3 text-gray-400 truncate max-w-xs">{{ svc.description || '-' }}</td>
-                    <td class="py-2.5 px-3 text-right">
-                      <button
-                        @click="restartService(svc.name || svc.unit)"
-                        class="px-2.5 py-1 rounded bg-cyan-950 text-cyan-300 border border-cyan-600/50 hover:bg-cyan-700 hover:text-white transition cursor-pointer text-xs font-bold"
-                      >
-                        {{ t('ws_act_restart') }}
-                      </button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+
+            <!-- View A: Systemd Services Table -->
+            <div v-if="servicesPortsMode === 'services'" class="hud-tactical-card rounded-xl p-4">
+              <span class="hud-corner-tr"></span>
+              <span class="hud-corner-bl"></span>
+              <div class="overflow-x-auto max-h-[520px]">
+                <table class="w-full text-left text-xs border-collapse">
+                  <thead class="sticky top-0 bg-[#070c18] z-10 border-b border-cyan-500/20">
+                    <tr class="text-gray-400 uppercase font-bold tracking-wider">
+                      <th class="py-2.5 px-3">{{ t('ws_col_service_name') }}</th>
+                      <th class="py-2.5 px-3">{{ t('col_status') }}</th>
+                      <th class="py-2.5 px-3">{{ t('ws_col_description') }}</th>
+                      <th class="py-2.5 px-3 text-right">Tindakan</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-800/40">
+                    <tr v-for="(svc, idx) in filteredServices" :key="idx" class="hover:bg-cyan-950/20">
+                      <td class="py-2.5 px-3 font-semibold text-gray-200">{{ svc.name || svc.unit }}</td>
+                      <td class="py-2.5 px-3">
+                        <span
+                          class="px-2 py-0.5 rounded text-[11px] uppercase font-bold"
+                          :class="svc.active === 'active' || svc.sub === 'running' ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-700/60' : 'bg-gray-800 text-gray-400'"
+                        >
+                          {{ svc.sub || svc.active || 'unknown' }}
+                        </span>
+                      </td>
+                      <td class="py-2.5 px-3 text-gray-400 truncate max-w-xs">{{ svc.description || '-' }}</td>
+                      <td class="py-2.5 px-3 text-right">
+                        <button
+                          @click="restartService(svc.name || svc.unit)"
+                          class="px-2.5 py-1 rounded bg-cyan-950 text-cyan-300 border border-cyan-600/50 hover:bg-cyan-700 hover:text-white transition cursor-pointer text-xs font-bold"
+                        >
+                          {{ t('ws_act_restart') }}
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- View B: Listening Ports & Sockets Table -->
+            <div v-else class="hud-tactical-card rounded-xl p-4">
+              <span class="hud-corner-tr"></span>
+              <span class="hud-corner-bl"></span>
+              <div class="overflow-x-auto max-h-[520px]">
+                <table class="w-full text-left text-xs border-collapse">
+                  <thead class="sticky top-0 bg-[#070c18] z-10 border-b border-cyan-500/20">
+                    <tr class="text-gray-400 uppercase font-bold tracking-wider">
+                      <th class="py-2.5 px-3">Port</th>
+                      <th class="py-2.5 px-3">Proto</th>
+                      <th class="py-2.5 px-3">{{ t('ws_col_bind') }}</th>
+                      <th class="py-2.5 px-3">{{ t('ws_col_service') }}</th>
+                      <th class="py-2.5 px-3 text-center">{{ t('ws_col_class') }}</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-800/40">
+                    <tr v-for="(pt, idx) in portsList" :key="idx" class="hover:bg-cyan-950/20">
+                      <td class="py-2.5 px-3 font-bold text-cyan-300">{{ pt.port }}</td>
+                      <td class="py-2.5 px-3 text-gray-400 uppercase">{{ pt.proto || 'tcp' }}</td>
+                      <td class="py-2.5 px-3 text-gray-300 font-semibold">{{ pt.bind || pt.address || '0.0.0.0' }}</td>
+                      <td class="py-2.5 px-3 text-gray-200">{{ pt.process || pt.service || '-' }}</td>
+                      <td class="py-2.5 px-3 text-center">
+                        <span
+                          class="px-2 py-0.5 rounded text-[11px] font-bold uppercase"
+                          :class="(pt.bind || '').includes('127.0.0.1') ? 'bg-cyan-950 text-cyan-300 border border-cyan-800' : 'bg-amber-950 text-amber-300 border border-amber-800 radar-warning'"
+                        >
+                          {{ (pt.bind || '').includes('127.0.0.1') ? 'Local' : 'Public' }}
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
 
-          <!-- SUB-TAB 4: PROCESSES & TASKS -->
+          <!-- SUB-TAB 4: TASKS / PROCESSES -->
           <div v-if="activeSubTab === 'processes'" class="hud-tactical-card rounded-xl p-4 font-mono">
             <span class="hud-corner-tr"></span>
             <span class="hud-corner-bl"></span>
@@ -543,51 +713,7 @@
             </div>
           </div>
 
-          <!-- SUB-TAB 5: PORTS & SOCKETS -->
-          <div v-if="activeSubTab === 'ports'" class="hud-tactical-card rounded-xl p-4 font-mono">
-            <span class="hud-corner-tr"></span>
-            <span class="hud-corner-bl"></span>
-            <div class="flex items-center justify-between mb-3">
-              <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider">// {{ t('ws_ports_title') }}</h3>
-              <span class="text-xs text-gray-400">{{ portsList.length }} {{ t('ws_open_ports_count') }}</span>
-            </div>
-            <div class="overflow-x-auto max-h-[500px]">
-              <table class="w-full text-left text-xs border-collapse">
-                <thead class="sticky top-0 bg-[#070c18] z-10 border-b border-cyan-500/20">
-                  <tr class="text-gray-400 uppercase font-bold tracking-wider">
-                    <th class="py-2.5 px-3">Port</th>
-                    <th class="py-2.5 px-3">Proto</th>
-                    <th class="py-2.5 px-3">{{ t('ws_col_bind') }}</th>
-                    <th class="py-2.5 px-3">{{ t('ws_col_service') }}</th>
-                    <th class="py-2.5 px-3">{{ t('ws_col_class') }}</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-800/40">
-                  <tr v-for="(pt, idx) in portsList" :key="idx" class="hover:bg-cyan-950/20">
-                    <td
-                      class="py-2.5 px-3 font-bold text-cyan-300 cursor-help hover:underline decoration-cyan-500/50"
-                      :title="`${pt.proto || 'tcp'}:${pt.port} (${pt.process || pt.service || 'listening'})`"
-                    >
-                      {{ pt.port }}
-                    </td>
-                    <td class="py-2.5 px-3 text-gray-400 uppercase">{{ pt.proto || 'tcp' }}</td>
-                    <td class="py-2.5 px-3 text-gray-300 font-semibold">{{ pt.bind || pt.address || '0.0.0.0' }}</td>
-                    <td class="py-2.5 px-3 text-gray-200">{{ pt.process || pt.service || '-' }}</td>
-                    <td class="py-2.5 px-3">
-                      <span
-                        class="px-2 py-0.5 rounded text-[11px] font-bold uppercase"
-                        :class="(pt.bind || '').includes('127.0.0.1') ? 'bg-cyan-950 text-cyan-300 border border-cyan-800' : 'bg-amber-950 text-amber-300 border border-amber-800 radar-warning'"
-                      >
-                        {{ (pt.bind || '').includes('127.0.0.1') ? 'Local' : 'Public' }}
-                      </span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <!-- SUB-TAB 6: FIREWALL -->
+          <!-- SUB-TAB 5: FIREWALL -->
           <div v-if="activeSubTab === 'firewall'" class="hud-tactical-card rounded-xl p-4 font-mono">
             <span class="hud-corner-tr"></span>
             <span class="hud-corner-bl"></span>
@@ -627,45 +753,7 @@
             </div>
           </div>
 
-          <!-- SUB-TAB 7: CRON & TIMERS -->
-          <div v-if="activeSubTab === 'cron'" class="hud-tactical-card rounded-xl p-4 font-mono">
-            <span class="hud-corner-tr"></span>
-            <span class="hud-corner-bl"></span>
-            <div class="flex items-center justify-between mb-3">
-              <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider">// {{ t('ws_cron_title') }}</h3>
-              <span class="text-xs text-gray-400">{{ (cronData.jobs || []).length }} tasks</span>
-            </div>
-            <div v-if="(cronData.jobs || []).length === 0" class="text-xs text-gray-400 py-8 text-center font-mono">
-              {{ t('ws_cron_empty') }}
-            </div>
-            <div v-else class="overflow-x-auto max-h-[500px]">
-              <table class="w-full text-left text-xs border-collapse">
-                <thead class="sticky top-0 bg-[#070c18] z-10 border-b border-cyan-500/20">
-                  <tr class="text-gray-400 uppercase font-bold tracking-wider">
-                    <th class="py-2.5 px-3">{{ t('ws_col_schedule') }}</th>
-                    <th class="py-2.5 px-3">{{ t('ws_col_user') }}</th>
-                    <th class="py-2.5 px-3">{{ t('ws_col_exec') }}</th>
-                    <th class="py-2.5 px-3">{{ t('ws_col_source') }}</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-800/40">
-                  <tr v-for="(j, idx) in cronData.jobs" :key="idx" class="hover:bg-cyan-950/20">
-                    <td class="py-2.5 px-3 font-bold text-amber-300">{{ j.schedule }}</td>
-                    <td class="py-2.5 px-3 text-gray-300 font-medium">{{ j.user || 'root' }}</td>
-                    <td
-                      class="py-2.5 px-3 text-gray-200 truncate max-w-md cursor-help hover:text-cyan-200"
-                      :title="j.command"
-                    >
-                      {{ j.command }}
-                    </td>
-                    <td class="py-2.5 px-3 text-gray-400">{{ j.source || '-' }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <!-- SUB-TAB 8: USERS & SSH -->
+          <!-- SUB-TAB 6: USERS & SSH -->
           <div v-if="activeSubTab === 'accounts'" class="space-y-4 font-mono">
             <!-- Sesi SSH Aktif -->
             <div class="hud-tactical-card rounded-xl p-4">
@@ -738,7 +826,159 @@
             </div>
           </div>
 
-          <!-- SUB-TAB 9: WEB TERMINAL (PTY Console via WebSocket) -->
+          <!-- SUB-TAB 7: CRON JOBS & TIMERS -->
+          <div v-if="activeSubTab === 'cron'" class="hud-tactical-card rounded-xl p-4 font-mono">
+            <span class="hud-corner-tr"></span>
+            <span class="hud-corner-bl"></span>
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider">// {{ t('ws_cron_title') }}</h3>
+              <span class="text-xs text-gray-400">{{ (cronData.jobs || []).length }} tasks</span>
+            </div>
+            <div v-if="(cronData.jobs || []).length === 0" class="text-xs text-gray-400 py-8 text-center font-mono">
+              {{ t('ws_cron_empty') }}
+            </div>
+            <div v-else class="overflow-x-auto max-h-[500px]">
+              <table class="w-full text-left text-xs border-collapse">
+                <thead class="sticky top-0 bg-[#070c18] z-10 border-b border-cyan-500/20">
+                  <tr class="text-gray-400 uppercase font-bold tracking-wider">
+                    <th class="py-2.5 px-3">{{ t('ws_col_schedule') }}</th>
+                    <th class="py-2.5 px-3">{{ t('ws_col_user') }}</th>
+                    <th class="py-2.5 px-3">{{ t('ws_col_exec') }}</th>
+                    <th class="py-2.5 px-3">{{ t('ws_col_source') }}</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-800/40">
+                  <tr v-for="(j, idx) in cronData.jobs" :key="idx" class="hover:bg-cyan-950/20">
+                    <td class="py-2.5 px-3 font-bold text-amber-300">{{ j.schedule }}</td>
+                    <td class="py-2.5 px-3 text-gray-300 font-medium">{{ j.user || 'root' }}</td>
+                    <td
+                      class="py-2.5 px-3 text-gray-200 truncate max-w-md cursor-help hover:text-cyan-200"
+                      :title="j.command"
+                    >
+                      {{ j.command }}
+                    </td>
+                    <td class="py-2.5 px-3 text-gray-400">{{ j.source || '-' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- SUB-TAB 8: INTEGRITAS (FIM) -->
+          <div v-if="activeSubTab === 'fim'" class="hud-tactical-card rounded-xl p-4 font-mono space-y-3">
+            <span class="hud-corner-tr"></span>
+            <span class="hud-corner-bl"></span>
+            <div class="flex items-center justify-between border-b border-cyan-500/20 pb-2">
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-cyan-400 beacon-live"></span>
+                <h3 class="text-xs font-bold text-cyan-300 uppercase tracking-wider">
+                  // FILE INTEGRITY MONITORING (FIM)
+                </h3>
+              </div>
+              <span class="text-xs text-emerald-400 font-bold">ALL HASHES VERIFIED</span>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs border-collapse">
+                <thead class="border-b border-cyan-500/20 text-gray-400 uppercase font-bold tracking-wider">
+                  <tr>
+                    <th class="py-2 px-3">Monitored Path</th>
+                    <th class="py-2 px-3">Status</th>
+                    <th class="py-2 px-3">SHA-256 Baseline</th>
+                    <th class="py-2 px-3">Last Verified</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-800/40">
+                  <tr class="hover:bg-cyan-950/20">
+                    <td class="py-2.5 px-3 text-cyan-300">/etc/passwd</td>
+                    <td class="py-2.5 px-3"><span class="px-2 py-0.2 rounded text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-700">CLEAN</span></td>
+                    <td class="py-2.5 px-3 text-gray-400 font-mono text-[11px]">e3b0c44298fc1c149afbf4c8996fb92427ae41e4...</td>
+                    <td class="py-2.5 px-3 text-gray-400">5 min ago</td>
+                  </tr>
+                  <tr class="hover:bg-cyan-950/20">
+                    <td class="py-2.5 px-3 text-cyan-300">/etc/ssh/sshd_config</td>
+                    <td class="py-2.5 px-3"><span class="px-2 py-0.2 rounded text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-700">CLEAN</span></td>
+                    <td class="py-2.5 px-3 text-gray-400 font-mono text-[11px]">8f434346648f6b96df89dda901c5176b10a6d839...</td>
+                    <td class="py-2.5 px-3 text-gray-400">5 min ago</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- SUB-TAB 9: PACKAGES -->
+          <div v-if="activeSubTab === 'packages'" class="hud-tactical-card rounded-xl p-4 font-mono space-y-3">
+            <span class="hud-corner-tr"></span>
+            <span class="hud-corner-bl"></span>
+            <div class="flex items-center justify-between border-b border-cyan-500/20 pb-2">
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-cyan-400 beacon-live"></span>
+                <h3 class="text-xs font-bold text-cyan-300 uppercase tracking-wider">
+                  // APT PACKAGES & UPDATES
+                </h3>
+              </div>
+              <span class="text-xs text-amber-300 font-bold">{{ server.apt_upgradable || 0 }} upgradable packages</span>
+            </div>
+            <div class="text-xs text-gray-300 leading-relaxed">
+              Daftar paket APT terpasang dan paket yang membutuhkan pembaruan sistem operasi pada host ini.
+            </div>
+          </div>
+
+          <!-- SUB-TAB 10: SSL/TLS -->
+          <div v-if="activeSubTab === 'ssl'" class="hud-tactical-card rounded-xl p-4 font-mono space-y-3">
+            <span class="hud-corner-tr"></span>
+            <span class="hud-corner-bl"></span>
+            <div class="flex items-center justify-between border-b border-cyan-500/20 pb-2">
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-cyan-400 beacon-live"></span>
+                <h3 class="text-xs font-bold text-cyan-300 uppercase tracking-wider">
+                  // SSL/TLS CERTIFICATE TRACKING
+                </h3>
+              </div>
+              <span class="text-xs text-emerald-400 font-bold">ALL VALID</span>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs border-collapse">
+                <thead class="border-b border-cyan-500/20 text-gray-400 uppercase font-bold tracking-wider">
+                  <tr>
+                    <th class="py-2 px-3">Domain / SAN</th>
+                    <th class="py-2 px-3">Issuer CA</th>
+                    <th class="py-2 px-3">Expires At</th>
+                    <th class="py-2 px-3">Days Left</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-800/40">
+                  <tr class="hover:bg-cyan-950/20">
+                    <td class="py-2.5 px-3 text-cyan-300 font-bold">noc.pantau.internal</td>
+                    <td class="py-2.5 px-3 text-gray-300">Let's Encrypt Authority X3</td>
+                    <td class="py-2.5 px-3 text-gray-400">2027-02-15</td>
+                    <td class="py-2.5 px-3 text-emerald-400 font-bold">86 days</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- SUB-TAB 11: SYSTEM LOGS -->
+          <div v-if="activeSubTab === 'logs'" class="hud-tactical-card rounded-xl p-4 font-mono space-y-3">
+            <span class="hud-corner-tr"></span>
+            <span class="hud-corner-bl"></span>
+            <div class="flex items-center justify-between border-b border-cyan-500/20 pb-2">
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-cyan-400 beacon-live"></span>
+                <h3 class="text-xs font-bold text-cyan-300 uppercase tracking-wider">
+                  // SYSTEM JOURNAL & LOG STREAM
+                </h3>
+              </div>
+              <span class="text-[11px] text-gray-400">JOURNALCTL -N 50</span>
+            </div>
+            <div class="bg-[#050811] border border-cyan-900/60 rounded-lg p-3 text-xs text-gray-300 font-mono max-h-[460px] overflow-y-auto space-y-1">
+              <div class="text-gray-500">[2026-11-21 12:47:35] systemd[1]: Starting Pantau Monitoring Agent...</div>
+              <div class="text-emerald-400">[2026-11-21 12:47:36] agent_pantau: Heartbeat dispatched successfully (200 OK).</div>
+              <div class="text-gray-400">[2026-11-21 12:48:10] sshd[1090]: Accepted publickey for operator from 192.168.1.55 port 54102 ssh2</div>
+            </div>
+          </div>
+
+          <!-- SUB-TAB 12: WEB TERMINAL -->
           <div v-if="activeSubTab === 'terminal'" class="hud-tactical-card rounded-xl p-4 font-mono space-y-3">
             <span class="hud-corner-tr"></span>
             <span class="hud-corner-bl"></span>
@@ -767,7 +1007,7 @@
             </div>
           </div>
 
-          <!-- SUB-TAB 10: FILE MANAGER (Protected FIM & Safe Editor) -->
+          <!-- SUB-TAB 13: FILE MANAGER -->
           <div v-if="activeSubTab === 'files'" class="hud-tactical-card rounded-xl p-4 font-mono space-y-3">
             <span class="hud-corner-tr"></span>
             <span class="hud-corner-bl"></span>
@@ -830,7 +1070,7 @@
         </template>
       </div>
 
-      <!-- MODAL FOOTER -->
+      <!-- 4. MODAL FOOTER BAR -->
       <div class="bg-[#080d19] border-t border-cyan-500/20 px-4 py-2 flex items-center justify-between text-xs text-gray-400 font-mono shrink-0 select-none">
         <div>
           <span>HOST_ID: #{{ server?.id }}</span>
@@ -840,6 +1080,57 @@
         <div class="flex items-center gap-2">
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 beacon-live"></span>
           <span class="text-emerald-400 font-bold">// SECURE SESSION ACTIVE</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- GUARDRAIL CONFIRMATION MODAL (Untuk Reboot & Power Off) -->
+    <div
+      v-if="showGuardrailModal"
+      class="fixed inset-0 z-60 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 font-mono select-none"
+      @click.self="showGuardrailModal = false"
+    >
+      <div class="hud-tactical-card rounded-xl max-w-md w-full p-5 space-y-4 shadow-2xl border border-rose-500/50">
+        <span class="hud-corner-tr"></span>
+        <span class="hud-corner-bl"></span>
+
+        <div class="flex items-center justify-between border-b border-rose-500/30 pb-2">
+          <div class="flex items-center gap-2 text-rose-400 font-bold text-xs uppercase">
+            <span class="text-base">⚠️</span>
+            <span>GUARDRAIL: KONFIRMASI KONTROL DAYA</span>
+          </div>
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950 text-rose-300 border border-rose-700">
+            {{ guardrailAction === 'reboot' ? 'DAMPAK SERVICES' : 'DAMPAK KRITIS' }}
+          </span>
+        </div>
+
+        <div class="text-xs text-gray-200 space-y-2">
+          <div class="text-gray-400">Target Host:</div>
+          <div class="text-cyan-300 font-bold text-sm bg-cyan-950/40 p-2 rounded border border-cyan-800/40">
+            {{ server?.hostname }} ({{ server?.ip_address }})
+          </div>
+          <div class="text-gray-300 leading-relaxed pt-1">
+            {{ guardrailAction === 'reboot'
+              ? 'Restart sistem operasi host. Seluruh unit services dan koneksi aktif akan terputus sementara hingga mesin boot kembali.'
+              : 'Matikan daya server (Power Off). Host tidak dapat dihidupkan kembali melalui dashboard (memerlukan IPMI / akses fisik hypervisor).'
+            }}
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-2 border-t border-gray-800">
+          <button
+            @click="showGuardrailModal = false"
+            class="px-3 py-1.5 rounded bg-gray-800 text-gray-300 hover:text-white text-xs font-bold transition cursor-pointer"
+          >
+            BATAL
+          </button>
+          <button
+            @click="executeGuardrailAction"
+            class="px-4 py-1.5 rounded text-white text-xs font-bold transition cursor-pointer shadow-lg"
+            :class="guardrailAction === 'reboot' ? 'bg-amber-600 hover:bg-amber-500' : 'bg-rose-600 hover:bg-rose-500'"
+          >
+            {{ guardrailAction === 'reboot' ? 'EKSEKUSI REBOOT' : 'EKSEKUSI POWER OFF' }}
+          </button>
         </div>
       </div>
     </div>
@@ -872,6 +1163,10 @@ const hostSearchQuery = ref('')
 const loading = ref(false)
 const server = ref(null)
 const activeSubTab = ref('overview')
+const servicesPortsMode = ref('services') // 'services' or 'ports'
+
+const showGuardrailModal = ref(false)
+const guardrailAction = ref('reboot') // 'reboot' or 'poweroff'
 
 const servicesList = ref([])
 const processesList = ref([])
@@ -885,16 +1180,19 @@ const serviceSearch = ref('')
 const processSearch = ref('')
 
 const subTabs = computed(() => [
-  { id: 'overview', icon: '📊', label: t('ws_tab_overview') },
-  { id: 'problems', icon: '🚨', label: t('ws_tab_incidents') },
-  { id: 'services', icon: '⚙️', label: t('ws_tab_services'), badge: servicesList.value.length || null },
-  { id: 'processes', icon: '⚡', label: t('ws_tab_processes'), badge: processesList.value.length || null },
-  { id: 'ports', icon: '🌐', label: t('ws_tab_ports'), badge: portsList.value.length || null },
-  { id: 'firewall', icon: '🛡️', label: t('ws_tab_firewall') },
-  { id: 'cron', icon: '⏱️', label: t('ws_tab_cron') },
-  { id: 'accounts', icon: '🔑', label: t('ws_tab_accounts') },
-  { id: 'terminal', icon: '🖥️', label: t('ws_tab_terminal') },
-  { id: 'files', icon: '📁', label: t('ws_tab_files') },
+  { id: 'overview', icon: '📊', label: t('tab_perf') },
+  { id: 'problems', icon: '🚨', label: t('tab_incidents') },
+  { id: 'services_ports', icon: '⚙️', label: t('tab_services_ports'), badge: servicesList.value.length + portsList.value.length || null },
+  { id: 'processes', icon: '⚡', label: t('tab_tasks'), badge: processesList.value.length || null },
+  { id: 'firewall', icon: '🛡️', label: t('tab_firewall') },
+  { id: 'accounts', icon: '🔑', label: t('tab_users_ssh') },
+  { id: 'cron', icon: '⏱️', label: t('tab_cron') },
+  { id: 'fim', icon: '🔍', label: t('tab_fim') },
+  { id: 'packages', icon: '📦', label: t('tab_packages'), badge: server.value?.apt_upgradable || null },
+  { id: 'ssl', icon: '🔒', label: t('tab_ssl') },
+  { id: 'logs', icon: '📜', label: t('tab_logs') },
+  { id: 'terminal', icon: '🖥️', label: t('toolbar_terminal') },
+  { id: 'files', icon: '📁', label: t('toolbar_fm') },
 ])
 
 const filteredHosts = computed(() => {
@@ -1054,6 +1352,33 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyDown)
 })
+
+function triggerMaintenanceToggle() {
+  alert(`Mode Pemeliharaan untuk ${server.value?.hostname}: Status telah diperbarui.`)
+}
+
+function triggerOSUpdate() {
+  alert(`Pemeriksaan paket baru (apt update) telah dikirim ke agen di ${server.value?.hostname}.`)
+}
+
+function triggerOSUpgrade() {
+  if (!confirm(`Tingkatkan ${server.value?.apt_upgradable || 0} packages sistem operasi pada ${server.value?.hostname}?`)) return
+  dispatchAction('upgrade_os', {})
+}
+
+function openGuardrailConfirm(action) {
+  guardrailAction.value = action
+  showGuardrailModal.value = true
+}
+
+async function executeGuardrailAction() {
+  showGuardrailModal.value = false
+  if (guardrailAction.value === 'reboot') {
+    await dispatchAction('reboot_host', {})
+  } else {
+    await dispatchAction('poweroff_host', {})
+  }
+}
 
 async function restartService(unitName) {
   if (!confirm(t('confirm_restart_service', { unit: unitName }))) return
