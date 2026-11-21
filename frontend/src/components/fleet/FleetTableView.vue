@@ -92,7 +92,7 @@
                 <span
                   v-if="s.is_online"
                   class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-bold font-mono bg-emerald-950/70 text-emerald-400 border border-emerald-800/50 cursor-help"
-                  v-tooltip="t('tooltip_node_online')"
+                  :title="t('tooltip_node_online')"
                 >
                   <span class="w-2 h-2 rounded-full bg-emerald-400 beacon-live"></span>
                   LIVE
@@ -100,7 +100,7 @@
                 <span
                   v-else
                   class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-bold font-mono bg-rose-950/70 text-rose-400 border border-rose-800/50 cursor-help"
-                  v-tooltip="t('tooltip_node_offline')"
+                  :title="t('tooltip_node_offline')"
                 >
                   <span class="w-2 h-2 rounded-full bg-rose-500"></span>
                   DOWN
@@ -138,7 +138,7 @@
               <td class="py-2.5 px-3 whitespace-nowrap">
                 <div
                   class="text-cyan-300 font-semibold font-mono text-sm cursor-help hover:text-cyan-200"
-                  v-tooltip="s.ip_address || '127.0.0.1'"
+                  :title="s.ip_address || '127.0.0.1'"
                 >
                   {{ s.ip_address || '-' }}
                 </div>
@@ -149,7 +149,7 @@
               <td class="py-2.5 px-3 whitespace-nowrap text-gray-200 text-xs">
                 <div
                   class="cursor-help"
-                  v-tooltip="`${s.platform || 'KVM Virtual Machine'} (${s.arch || 'x86_64'})`"
+                  :title="`${s.platform || 'KVM Virtual Machine'} (${s.arch || 'x86_64'})`"
                 >
                   <div>{{ s.platform || 'KVM Virtual' }}</div>
                   <div class="text-gray-500 font-mono">{{ s.arch || 'x86_64' }}</div>
@@ -161,7 +161,7 @@
                 <div class="text-gray-200 font-medium">{{ s.os_label || 'Linux' }}</div>
                 <div
                   class="text-gray-500 font-mono truncate max-w-[130px] cursor-help hover:text-cyan-300 transition"
-                  v-tooltip="s.kernel || 'Kernel 6.1.x'"
+                  :title="s.kernel || 'Kernel 6.1.x'"
                 >
                   {{ s.kernel || 'Kernel 6.1.x' }}
                 </div>
@@ -226,7 +226,7 @@
                 <span
                   v-if="s.apt_upgradable > 0"
                   class="ml-1 px-1.5 py-0.5 rounded text-xs font-bold bg-amber-950 text-amber-300 border border-amber-800 font-mono cursor-help"
-                  v-tooltip="`${s.apt_upgradable} ${t('tooltip_apt_upgradable')}`"
+                  :title="`${s.apt_upgradable} ${t('tooltip_apt_upgradable')}`"
                 >
                   {{ s.apt_upgradable }}
                 </span>
@@ -245,7 +245,7 @@
                   <button
                     @click="$emit('open-workspace', s.id, 'overview')"
                     class="px-3 py-1.5 rounded-md bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow transition cursor-pointer flex items-center gap-1.5"
-                    v-tooltip="t('btn_view')"
+                    :title="t('btn_view')"
                   >
                     <span>📂</span>
                     <span>{{ t('btn_view') }}</span>
@@ -255,7 +255,7 @@
                   <button
                     @click="$emit('open-workspace', s.id, 'overview')"
                     class="w-7 h-7 flex items-center justify-center rounded-md bg-[#131d33] hover:bg-blue-600/30 text-blue-400 border border-gray-700/80 transition cursor-pointer text-xs"
-                    v-tooltip="t('tooltip_metrics')"
+                    :title="t('tooltip_metrics')"
                   >
                     📊
                   </button>
@@ -264,7 +264,7 @@
                   <button
                     @click="$emit('open-workspace', s.id, 'terminal')"
                     class="w-7 h-7 flex items-center justify-center rounded-md bg-[#131d33] hover:bg-blue-600/30 text-blue-400 border border-gray-700/80 transition cursor-pointer text-xs"
-                    v-tooltip="t('tooltip_terminal')"
+                    :title="t('tooltip_terminal')"
                   >
                     🖥️
                   </button>
@@ -273,7 +273,7 @@
                   <button
                     @click="$emit('probe-node', s.id)"
                     class="w-7 h-7 flex items-center justify-center rounded-md bg-[#131d33] hover:bg-emerald-600/30 text-gray-300 hover:text-emerald-400 border border-gray-700/80 transition cursor-pointer text-xs"
-                    v-tooltip="t('tooltip_sync')"
+                    :title="t('tooltip_sync')"
                   >
                     🔄
                   </button>
@@ -282,7 +282,7 @@
                   <button
                     @click="$emit('more-actions', s.id, $event)"
                     class="w-7 h-7 flex items-center justify-center rounded-md bg-[#131d33] hover:bg-gray-700 text-gray-400 hover:text-white border border-gray-700/80 transition cursor-pointer text-xs font-bold"
-                    v-tooltip="t('btn_more')"
+                    :title="t('btn_more')"
                   >
                     ⋮
                   </button>

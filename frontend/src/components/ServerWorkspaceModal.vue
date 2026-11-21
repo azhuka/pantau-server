@@ -477,7 +477,7 @@
                     <td class="py-2.5 px-3 text-gray-200 font-semibold">{{ p.mem || p.mem_percent || 0 }}%</td>
                     <td
                       class="py-2.5 px-3 text-gray-400 truncate max-w-sm cursor-help hover:text-cyan-200"
-                      v-tooltip="p.cmd || p.command"
+                      :title="p.cmd || p.command"
                     >
                       {{ p.cmd || p.command }}
                     </td>
@@ -516,7 +516,7 @@
                   <tr v-for="(pt, idx) in portsList" :key="idx" class="hover:bg-gray-800/30">
                     <td
                       class="py-2.5 px-3 font-bold text-blue-400 cursor-help hover:underline decoration-blue-500/50"
-                      v-tooltip="`${pt.proto || 'tcp'}:${pt.port} (${pt.process || pt.service || 'listening'})`"
+                      :title="`${pt.proto || 'tcp'}:${pt.port} (${pt.process || pt.service || 'listening'})`"
                     >
                       {{ pt.port }}
                     </td>
@@ -600,7 +600,7 @@
                     <td class="py-2.5 px-3 text-gray-300 font-medium">{{ j.user || 'root' }}</td>
                     <td
                       class="py-2.5 px-3 text-gray-200 truncate max-w-md cursor-help hover:text-cyan-200"
-                      v-tooltip="j.command"
+                      :title="j.command"
                     >
                       {{ j.command }}
                     </td>

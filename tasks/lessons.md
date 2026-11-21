@@ -116,14 +116,16 @@ Dokumen ini mencatat setiap pembelajaran dari koreksi operator dan temuan teknis
 
 ---
 
-## Lesson 14: Keterbukaan Seleksi Teks & Ergonomi Tooltip Salin-Tempel (Copyable Text & Tactical Tooltip Standard)
-- **Konteks:** Teks pada antarmuka sempat tidak bisa disorot atau disalin karena kelas CSS `select-none` diletakkan di root container (`App.vue`), serta informasi rincian pada tooltip native browser (`title="..."`) tidak dapat disorot maupun disalin oleh operator.
+## Lesson 14: Seleksi Teks Universal & Larangan Over-Engineering Tooltip (Standard Selectable Tooltip Engine)
+- **Konteks:** Sempat membuat tooltip yang berlebihan (*over-engineered*) berupa jendela/kartu mengambang dengan banner header "INFORMASI", tombol salin, dan footer petunjuk shortcut, yang merusak estetika dan mengotori antarmuka. Selain itu, kelas `select-none` sempat diletakkan di root container (`App.vue`) sehingga teks antarmuka tidak bisa disalin.
 - **Akar Masalah:**
-  1. Penggunaan `select-none` secara ceroboh pada container induk aplikasi membuat seluruh teks anak (telemetri, IP, hostname, status, log) terkunci dari seleksi kursor.
-  2. Tooltip bawaan browser (`title`) tidak mendukung seleksi teks (langsung tertutup saat kursor digerakkan) dan tidak memiliki tombol salin cepat.
-- **Aturan Pencegahan `[RP, Ergonomics, Systems Thinking]`:**
-  1. **Seleksi Teks Bebas Secara Universal:** Dilarang meletakkan `select-none` pada container induk (`body`, `#app`, `App.vue`). Seluruh data fakta fisik (IP, port, perintah, PID, nama host, kernel, log, metrik) wajib dapat disorot (`user-select: text`) dan disalin secara bebas oleh kursor mouse. Kelas `select-none` hanya dikhususkan bagi elemen tombol murni, ikon kontrol klik, atau bilah seret (*drag bar*).
-  2. **Standar Tooltip Taktis Terpadu & Bisa Disalin:** Seluruh tooltip informatif wajib menggunakan komponen tooltip taktis (`v-tooltip` / `TacticalTooltip.vue`) yang mempertahankan keadaan terbuka saat kursor diarahkan ke dalam tooltip (`pointer-events: auto` dengan jeda *hover bridge* 250ms), teks di dalamnya dapat disorot bebas, serta dilengkapi tombol aksi `[ 📋 Copy / Salin ]` dengan umpan balik instan.
+  1. *Over-engineering* dan kegagalan memahami ergonomi antarmuka sysadmin/NOC: Tooltip profesional bukanlah jendela modal/kartu melayang dengan tombol, melainkan bubble tooltip ringkas dan presisi yang menempel langsung pada atribut standar HTML (`title` atau `data-tooltip`).
+  2. Penempatan kelas CSS `select-none` di root aplikasi mengunci seleksi kursor pada data fakta fisik.
+- **Aturan Pencegahan `[SF, Ergonomics, Anti-Overengineering]`:**
+  1. **Larangan Mutlak Widget Modal/Tombol untuk Tooltip:** Dilarang keras membuat komponen kartu mengambang, banner kategori, atau menyematkan tombol salin di dalam tooltip. Tooltip harus tetap berupa bubble tooltip standar yang bersih, ringkas, dan tidak mengganggu.
+  2. **Mesin Tooltip Global Berbasis Atribut Standar:** Gunakan satu mesin listener DOM global (`initTooltipEngine`) yang secara otomatis mengintersepsi atribut native HTML `title="..."` atau `data-tooltip="..."` di seluruh aplikasi tanpa memerlukan komponen pembungkus tambahan.
+  3. **Kemampuan Seleksi Kursor Alami (Hover-to-Select):** Tooltip memiliki toleransi jeda hover (160ms show / 180ms hide) dan `pointer-events: auto; user-select: text !important;`, sehingga operator dapat secara natural menggerakkan kursor ke dalam tooltip untuk menyorot (*highlight*) dan menyalin (*copy*) teks secara langsung.
+  4. **Universal Text Copyability:** Seluruh teks antarmuka (IP, port, log, PID, telemetri, perintah) wajib dapat disorot dan disalin secara bebas (`user-select: text`). Kelas `select-none` HANYA diizinkan untuk tombol kontrol klik murni atau bilah seret (*drag handle*).
 
 
 

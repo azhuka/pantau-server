@@ -8,7 +8,7 @@
         @click.prevent="$emit('nav', 'fleet')"
         id="kpi-card-total"
         class="bg-[#0c121e] border border-gray-800 border-l-[3px] border-l-[#38bdf8] p-3 px-4 rounded-lg flex flex-col justify-between hover:bg-[#111a2d] transition cursor-pointer group shadow-md"
-        v-tooltip="t('dash_open_fleet')"
+        :title="t('dash_open_fleet')"
       >
         <div class="flex items-center justify-between mb-1">
           <div class="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-2">
@@ -111,7 +111,7 @@
       <div
         id="dashClockWidget"
         class="bg-[#0c121e] border border-gray-800 border-l-[3px] border-l-[#10b981] p-3 px-4 rounded-lg flex flex-col justify-between shadow-md cursor-help"
-        v-tooltip="`${currentTime} (UTC: ${currentUtcTime})`"
+        :title="`${currentTime} (UTC: ${currentUtcTime})`"
       >
         <div class="flex items-center justify-between mb-1">
           <div class="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-2">
@@ -212,7 +212,7 @@
               :key="prob.id"
               @click="$emit('inspect-node', prob.server_id)"
               class="hover:bg-blue-600/10 transition-colors cursor-pointer group"
-              v-tooltip="prob.description || 'Active incident'"
+              :title="prob.description || 'Active incident'"
             >
               <!-- TIME -->
               <td class="py-2.5 px-4 text-gray-400 whitespace-nowrap text-xs">

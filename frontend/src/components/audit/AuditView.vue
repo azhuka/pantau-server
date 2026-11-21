@@ -51,7 +51,7 @@
               </td>
               <td
                 class="py-2.5 px-4 text-gray-300 font-mono text-xs truncate max-w-xs cursor-help hover:text-cyan-300"
-                v-tooltip="log.target"
+                :title="log.target"
               >
                 {{ log.target }}
               </td>
