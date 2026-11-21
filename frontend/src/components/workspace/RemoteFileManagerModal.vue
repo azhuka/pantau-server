@@ -479,7 +479,7 @@
 
               <!-- Tindakan: Sleek 3-Dots Dropdown Menu -->
               <td class="py-2 px-3 text-center" @click.stop>
-                <div class="relative inline-block text-left">
+                <div class="relative inline-block text-left noc-act-dropdown">
                   <button
                     type="button"
                     @click.stop="toggleDropdown(item.path, $event)"
@@ -494,10 +494,10 @@
                     </svg>
                   </button>
 
-                  <!-- Dropdown Menu -->
+                  <!-- Dropdown Menu with Smart Drop-Up/Drop-Down -->
                   <div
                     v-if="activeDropdownPath === item.path"
-                    class="fixed z-[99999] bg-[#0c1328] border border-cyan-500/50 rounded shadow-2xl py-1 text-xs w-44 font-sans"
+                    class="noc-act-dropdown-menu fixed z-[99999] bg-[#0c1328] border border-cyan-500/50 rounded shadow-2xl py-1 text-xs w-44 font-sans overflow-y-auto scrollbar-thin"
                     :style="dropdownPositionStyle"
                     @click.stop
                   >
@@ -1166,7 +1166,7 @@ function clearSelection() {
   selectedPaths.value = []
 }
 
-// Dropdown Action Menu
+// Dropdown Action Menu with Dynamic Drop-Up / Drop-Down
 function toggleDropdown(path, event) {
   if (activeDropdownPath.value === path) {
     closeDropdown()
@@ -1175,9 +1175,23 @@ function toggleDropdown(path, event) {
   activeDropdownPath.value = path
   if (event && event.currentTarget) {
     const rect = event.currentTarget.getBoundingClientRect()
-    dropdownPositionStyle.value = {
-      top: `${rect.bottom + 4}px`,
-      right: `${window.innerWidth - rect.right}px`
+    const spaceBelow = window.innerHeight - rect.bottom
+    const spaceAbove = rect.top
+    const estimatedMenuHeight = 310
+
+    // If space below is insufficient and space above has more room, open upwards!
+    if (spaceBelow < estimatedMenuHeight && spaceAbove > spaceBelow) {
+      dropdownPositionStyle.value = {
+        bottom: `${window.innerHeight - rect.top + 4}px`,
+        right: `${Math.max(8, window.innerWidth - rect.right)}px`,
+        maxHeight: `${Math.min(420, spaceAbove - 16)}px`
+      }
+    } else {
+      dropdownPositionStyle.value = {
+        top: `${rect.bottom + 4}px`,
+        right: `${Math.max(8, window.innerWidth - rect.right)}px`,
+        maxHeight: `${Math.min(420, spaceBelow - 16)}px`
+      }
     }
   }
 }
@@ -1187,7 +1201,7 @@ function closeDropdown() {
 }
 
 function handleClickOutside(e) {
-  if (activeDropdownPath.value && !e.target.closest('.noc-act-dropdown')) {
+  if (activeDropdownPath.value && !e.target.closest('.noc-act-dropdown') && !e.target.closest('.noc-act-dropdown-menu')) {
     closeDropdown()
   }
 }
@@ -1344,10 +1358,12 @@ async function submitUpload() {
 
 onMounted(() => {
   window.addEventListener('click', handleClickOutside)
+  window.addEventListener('scroll', closeDropdown, true)
 })
 
 onUnmounted(() => {
   window.removeEventListener('click', handleClickOutside)
+  window.removeEventListener('scroll', closeDropdown, true)
 })
 
 async function loadDirectory(path = currentPath.value, pushToHistory = true) {

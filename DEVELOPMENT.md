@@ -174,6 +174,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.11
+
+Memperbaiki kalkulasi posisi dropdown menu aksi pada Remote File Manager agar otomatis membuka ke atas (drop-up) jika ruang di bawah terbatas sehingga seluruh aksi tetap utuh di layar.
+
+
 ### Versi v0.1.10
 
 ### v0.1.10 — Dynamic Bookmarks Discovery & Modern 3-Dots Action Dropdown File Manager
