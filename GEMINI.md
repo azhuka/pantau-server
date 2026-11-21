@@ -210,7 +210,7 @@ Sebelum asisten AI menyatakan pekerjaan selesai ke operator, wajib memverifikasi
 ---
 
 ## 15. Protokol Eksekusi Mandat `/learn` (Eksekusi Instan Tanpa Menunggu Konfirmasi)
-- **Eksekusi Langsung:** Setiap kali operator mengetikkan perintah `/learn`, hal tersebut merupakan **instruksi aturan mutlak** yang wajib langsung dibukukan, diterapkan, dan dikunci secara permanen ke dalam berkas tata kelola (`GEMINI.md`, `AGENTS.md`, `tasks/lessons.md`).
+- **Eksekusi Langsung:** Setiap kali operator mengetikkan perintah `/learn`, hal tersebut merupakan **instruksi aturan mutlak** yang wajib langsung dibukukan, diterapkan, dan dikunci secara permanen ke dalam `GEMINI.md`.
 - **Larangan Meminta Konfirmasi Ulang:** Dilarang keras menunda eksekusi, bersikap pasif, atau meminta konfirmasi/persetujuan berbelit-belit kepada operator saat `/learn` telah diberikan. Catat dan terapkan seketika.
 
 ---
@@ -221,7 +221,13 @@ Sebelum asisten AI menyatakan pekerjaan selesai ke operator, wajib memverifikasi
 
 ---
 
-## 17. Siklus Pembelajaran Mandiri & Pencatatan Kesalahan Permanen (CDiP)
-- **Pencatatan Kesalahan Wajib:** Setiap kali terjadi kesalahan teknis, anomali logika, atau koreksi keras dari operator, asisten WAJIB mencatatnya secara permanen ke dalam [`tasks/lessons.md`](file:///home/bos/pantau-server/tasks/lessons.md) sebagai pengingat abadi.
-- **Struktur Catatan:** Setiap entri pelajaran wajib memuat secara transparan: Konteks Kejadian, Akar Masalah (Root Cause), dan Aturan Pencegahan Konkret.
-- **Larangan Mengulang Kesalahan:** Asisten dilarang keras mengulang kesalahan yang sudah pernah ditegur dan dicatat di dalam berkas pembelajaran.
+## 17. Standar Mutlak Web Terminal: Mandat Global Multi-Tab Terminal Dock (xterm.js)
+- **Kepatuhan Konsep Aplikasi Lama:** Web Terminal wajib mengadopsi 100% konsep dan arsitektur UX unggul dari aplikasi pantau lama berupa **Global Multi-Tab Terminal Dock** berbasis `xterm.js` dan `xterm-addon-fit.js`.
+- **Fitur Utama Dock:**
+  1. *Multi-Tab Fleet Management:* Pengguna dapat membuka banyak tab terminal lintas server secara simultan dalam satu jendela dock.
+  2. *Tab Switcher & Status Dot:* Setiap tab menampilkan nama host server, indikator status koneksi (dot hijau = terhubung, dot merah = terputus), serta tombol tutup tab `✕`.
+  3. *Tombol Tambah Tab (`+`):* Dilengkapi menu dropdown pencarian host untuk membuka koneksi terminal ke server armada lain secara langsung.
+  4. *Kontrol Jendela Standar:* Mendukung minimize ke rak dock bawah (dengan koneksi *keep-alive* tidak terputus), maximize/fullscreen, dan pop-out ke jendela terpisah.
+- **Larangan Keras Terminal Model Baru / Fake Input Box:**
+  - Dilarang keras membuat terminal tiruan baru berupa kotak teks `<input>` satu baris dengan tombol submit. Terminal wajib berupa emulator PTY sejati berbasis `xterm.js` yang mendukung interaksi keyboard langsung (TAB completion, Ctrl+C, Ctrl+D, nano/vim, htop).
+
