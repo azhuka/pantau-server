@@ -154,10 +154,10 @@
         <div>
           <div class="text-xs font-bold text-gray-100 font-mono flex items-center gap-1.5">
             <span class="w-2 h-2 rounded-full bg-emerald-400 beacon-live"></span>
-            <span>TERMINAL DOCK</span>
+            <span>{{ t('term_dock_title') || 'TERMINAL DOCK' }}</span>
             <span class="text-xs text-cyan-300 font-semibold">({{ terminalTabsCount }} active)</span>
           </div>
-          <div class="text-[11px] text-gray-400 font-medium">Keep-Alive Session</div>
+          <div class="text-[11px] text-gray-400 font-medium">{{ t('term_keep_alive') || 'Keep-Alive Session' }}</div>
         </div>
       </div>
 
@@ -171,7 +171,7 @@
             <rect width="18" height="18" x="3" y="3" rx="2"/>
             <line x1="3" y1="9" x2="21" y2="9"/>
           </svg>
-          <span>Restore</span>
+          <span>{{ t('term_restore') || 'Restore' }}</span>
         </button>
         <button
           @click="closeTerminalDock"

@@ -163,17 +163,19 @@ def main():
     for mf in mod_files:
         print(f"  -> Diperbarui: {mf}")
 
-    # 2. Uji Kompilasi & Sintaksis
-    print("\n[2/4] Menjalankan uji kompilasi Python backend dan build Vue frontend...")
+    # 2. Uji Kompilasi & Sintaksis & Quality Gate
+    print("\n[2/4] Menjalankan uji anti-hardcode, kompilasi Python backend dan build Vue frontend...")
     py_exec = ROOT_DIR / "env" / "bin" / "python3"
     if not py_exec.exists():
         py_exec = "python3"
     else:
         py_exec = str(py_exec)
 
+    # Automated Anti-Hardcode Quality Gate
+    run_cmd(f"{py_exec} tools/lint_i18n.py", cwd=ROOT_DIR)
     run_cmd(f"{py_exec} -m py_compile server/config.py server/main.py")
     run_cmd("npm run build", cwd=ROOT_DIR / "frontend")
-    print("  -> Seluruh sintaks dan build produksi lulus verifikasi 100%.")
+    print("  -> Seluruh sintaks, anti-hardcode gate, dan build produksi lulus verifikasi 100%.")
 
     if args.skip_git:
         print("\n[*] Flag --skip-git aktif: Proses selesai tanpa Git commit/push/release.")

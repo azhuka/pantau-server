@@ -174,6 +174,13 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.9
+
+- **Automated Quality Gate Anti-Hardcode**: Mengintegrasikan tools/lint_i18n.py ke dalam sop_release.py untuk memblokir rilis jika ditemukan string teks statis di template Vue.
+- **Pembersihan Total Teks Mentah**: Menyelaraskan seluruh label tabel dan elemen UI ke kamus reaktif useI18n().
+- **Verifikasi Pipa Otomatis**: Uji kompilasi, linter i18n, API lifecycle, dan UI Headless Chrome lulus 100%.
+
+
 ### Versi v0.1.8
 
 - **Penegakan English Default**: Seluruh nama kolom dan tombol File Manager kini baku menggunakan Bahasa Inggris (Name, Size, Permissions, Owner : Group, Modified, Actions, Actions ▾).

@@ -524,12 +524,12 @@
                 <table class="w-full text-left text-xs border-collapse">
                   <thead>
                     <tr class="border-b border-cyan-500/20 text-gray-400 uppercase font-bold tracking-wider">
-                      <th class="pb-2">Mount Point</th>
-                      <th class="pb-2">Filesystem</th>
+                      <th class="pb-2">{{ t('ws_col_mount') || 'Mount Point' }}</th>
+                      <th class="pb-2">{{ t('ws_col_fs') || 'Filesystem' }}</th>
                       <th class="pb-2">{{ t('dash_kpi_total') }}</th>
-                      <th class="pb-2">Used</th>
-                      <th class="pb-2">Avail</th>
-                      <th class="pb-2 min-w-[140px]">Util (%)</th>
+                      <th class="pb-2">{{ t('ws_col_used') || 'Used' }}</th>
+                      <th class="pb-2">{{ t('ws_col_avail') || 'Avail' }}</th>
+                      <th class="pb-2 min-w-[140px]">{{ t('col_util_pct') || 'Util (%)' }}</th>
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-gray-800/40">
@@ -697,8 +697,8 @@
                 <table class="w-full text-left text-xs border-collapse">
                   <thead class="sticky top-0 bg-[#070c18] z-10 border-b border-cyan-500/20">
                     <tr class="text-gray-400 uppercase font-bold tracking-wider">
-                      <th class="py-2.5 px-3">Port</th>
-                      <th class="py-2.5 px-3">Proto</th>
+                      <th class="py-2.5 px-3">{{ t('ws_col_port') || 'Port' }}</th>
+                      <th class="py-2.5 px-3">{{ t('ws_col_proto') || 'Proto' }}</th>
                       <th class="py-2.5 px-3">{{ t('ws_col_bind') }}</th>
                       <th class="py-2.5 px-3">{{ t('ws_col_service') }}</th>
                       <th class="py-2.5 px-3 text-center">{{ t('ws_col_class') }}</th>
@@ -745,10 +745,10 @@
               <table class="w-full text-left text-xs border-collapse">
                 <thead class="sticky top-0 bg-[#070c18] z-10 border-b border-cyan-500/20">
                   <tr class="text-gray-400 uppercase font-bold tracking-wider">
-                    <th class="py-2.5 px-3">PID</th>
+                    <th class="py-2.5 px-3">{{ t('ws_col_pid') || 'PID' }}</th>
                     <th class="py-2.5 px-3">{{ t('ws_col_user') }}</th>
-                    <th class="py-2.5 px-3">CPU %</th>
-                    <th class="py-2.5 px-3">RAM %</th>
+                    <th class="py-2.5 px-3">{{ t('col_cpu_pct') || 'CPU %' }}</th>
+                    <th class="py-2.5 px-3">{{ t('col_ram_pct') || 'RAM %' }}</th>
                     <th class="py-2.5 px-3">{{ t('ws_col_command') }}</th>
                     <th class="py-2.5 px-3 text-right">{{ t('col_actions') }}</th>
                   </tr>
@@ -886,7 +886,7 @@
                   <thead class="sticky top-0 bg-[#070c18] z-10 border-b border-cyan-500/20">
                     <tr class="text-gray-400 uppercase font-bold tracking-wider">
                       <th class="py-2.5 px-3">{{ t('ws_col_username') }}</th>
-                      <th class="py-2.5 px-3">UID</th>
+                      <th class="py-2.5 px-3">{{ t('ws_col_uid') || 'UID' }}</th>
                       <th class="py-2.5 px-3">{{ t('ws_col_home') }}</th>
                       <th class="py-2.5 px-3">{{ t('ws_col_shell') }}</th>
                     </tr>
@@ -959,10 +959,10 @@
               <table class="w-full text-left text-xs border-collapse">
                 <thead class="border-b border-cyan-500/20 text-gray-400 uppercase font-bold tracking-wider">
                   <tr>
-                    <th class="py-2 px-3">Monitored Path</th>
-                    <th class="py-2 px-3">Status</th>
-                    <th class="py-2 px-3">SHA-256 Baseline</th>
-                    <th class="py-2 px-3">Last Verified</th>
+                    <th class="py-2 px-3">{{ t('fim_col_path') || 'Monitored Path' }}</th>
+                    <th class="py-2 px-3">{{ t('fim_col_status') || 'Status' }}</th>
+                    <th class="py-2 px-3">{{ t('fim_col_hash') || 'SHA-256 Baseline' }}</th>
+                    <th class="py-2 px-3">{{ t('fim_col_mtime') || 'Last Verified' }}</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-800/40">
@@ -1018,10 +1018,10 @@
               <table class="w-full text-left text-xs border-collapse">
                 <thead class="border-b border-cyan-500/20 text-gray-400 uppercase font-bold tracking-wider">
                   <tr>
-                    <th class="py-2 px-3">Domain / SAN</th>
-                    <th class="py-2 px-3">Issuer CA</th>
-                    <th class="py-2 px-3">Expires At</th>
-                    <th class="py-2 px-3">Days Left</th>
+                    <th class="py-2 px-3">{{ t('ssl_col_domain') || 'Domain / SAN' }}</th>
+                    <th class="py-2 px-3">{{ t('ssl_col_issuer') || 'Issuer CA' }}</th>
+                    <th class="py-2 px-3">{{ t('ssl_col_expires') || 'Expires At' }}</th>
+                    <th class="py-2 px-3">{{ t('ssl_col_days_left') || 'Days Left' }}</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-800/40">
