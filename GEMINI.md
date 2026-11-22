@@ -258,5 +258,29 @@ Sebelum asisten AI menyatakan pekerjaan selesai ke operator, wajib memverifikasi
   - **Dilarang Keras Mengarang Alur Kerja Baru:** Dilarang keras mengarang model interaksi asing, mengganti alur kontrol yang sudah terbukti di aplikasi lama, atau membuang workflow yang sudah matang demi alasan spekulatif.
   - Setiap kali merancang atau membangun komponen antarmuka (Dasbor Pasif, Tabel Armada, Jendela Rincian Aset, Tab Metrik, Tab Services/Ports, Tab Tasks/Proses, Tab Firewall/Cron, Web Terminal Dock, Remote File Manager, Tombol Power/Reboot/Maintenance), **wajib selalu mengacu 100% pada alur kerja dan UX aplikasi lama di `/home/bos/rj45` sebagai sumber kebenaran visual dan fungsional**.
 
+---
+
+## 20. Glosarium Baku, Taksonomi Insiden & Hierarki Pengguna (Definisi Resmi)
+Seluruh penamaan modul, variabel, teks antarmuka, dokumentasi, dan logika sistem wajib tunduk pada definisi resmi berikut:
+1. **Identitas Sistem & Komponen:**
+   - **`pantau-server`**: Nama resmi aplikasi platform pusat kendali operasional NOC (*backend* FastAPI, *frontend* Vue 3 SPA, basis data, dan orkestrasi armada).
+   - **`pantau-agent`**: Nama resmi agen telemetri yang terpasang pada node/aset klien Linux (`agent_pantau.py`).
+2. **Terminologi Kejadian Sistem:**
+   - **`insiden` (`incident`)**: Masalah, gangguan, anomali, kejadian, atau peristiwa yang terdeteksi pada sistem/aset.
+   - **`insiden aktif` (`active incident`)**: Masalah/gangguan/anomali/kejadian/peristiwa yang sedang terjadi dan masih aktif (anomali fisik sedang berlangsung). **Dilarang keras menggunakan istilah "insiden terbuka"**.
+3. **Taksonomi & Visualisasi Tingkat Keparahan (`severity`):**
+   Tingkat, ukuran, atau level keparahan sebuah insiden/kejadian diatur sebagai berikut:
+   - **`info` (Biru / Blue):** Tingkat paling rendah dalam sebuah insiden dan tidak dikategorikan sebagai ancaman. Bersifat pemberitahuan insiden normal namun sangat layak dan penting disampaikan ke operator (contoh: informasi paket pembaruan OS / *package update* yang tersedia).
+   - **`warning` / Peringatan (Kuning / Yellow):** Insiden yang berpotensi menjadi sebuah ancaman atau sudah menjadi gangguan, namun **tidak menyebabkan layanan utama berhenti beroperasi** (contoh: sesi remote SSH aktif dari pengguna legal, penggunaan memori/disk yang mendekati batas awal).
+   - **`critical` / Gawat atau Kritis (Oranye Pekat / Deep Orange):** Insiden yang menyebabkan layanan utama menjadi terganggu atau berhenti beroperasi (contoh: service Nginx mati, database MySQL down, percobaan login SSH brute-force / akses dari user ilegal).
+   - **`danger` / Bahaya (Merah / Red):** Insiden besar yang menyebabkan **lumpuhnya sebuah sistem utama** (contoh: server mati / offline tidak melapor, filesystem beralih ke *read-only*, kernel panic, storage I/O physical error).
+4. **Hierarki & Otoritas Akun Pengguna (RBAC Structure):**
+   - **`master-admin`**: Akun administrator utama (*root*), satu-satunya pemegang otoritas absolut sistem. Keberadaannya terlindungi mutlak: tidak dapat dihapus, tidak dapat di-lock, dan keberadaannya diisolasi dari penglihatan operator biasa.
+   - **`operator`**: Akun pengguna dan pengelola harian sistem aplikasi:
+     - **`operator utama`**: Akun operasional tingkat tinggi yang dibuat langsung oleh `master-admin` dengan peran luas (memiliki hak delegasi sudo penuh) untuk mengelola armada dan pengguna harian, namun **dilarang keras dan tidak bisa menggantikan atau menghapus akun `master-admin`**.
+     - **`operator pembantu`**: Akun operasional yang dibuat oleh `operator utama` dengan hak akses terbatas (*least privilege*) sesuai matriks tugas dan fungsi spesifiknya (contoh: hanya melihat metrik, atau hanya mengelola service tertentu).
+   - **`tamu` (`guest` / `viewer`)**: Akun pengunjung dengan peran sebagai peninjau murni (*read-only*) yang hanya dapat melihat metrik/status tanpa memiliki hak akses mutasi, kontrol daya, eksekusi terminal, atau perubahan konfigurasi apa pun.
+
+
 
 

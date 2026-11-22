@@ -18,11 +18,33 @@ def process_telemetry_report(db: Session, api_key: str, report_dict: dict) -> di
     if client_ip and client_ip != "127.0.0.1":
         srv.ip_address = client_ip
 
-    # 1. Snapshot metrik sistem
-    load = report_dict.get("load") or [0.0, 0.0, 0.0]
-    mem = report_dict.get("mem") or {}
-    swap = report_dict.get("swap") or {}
+    # 1. Snapshot metrik sistem (Mendukung payload mandiri pantau-agent)
+    sysd = report_dict.get("system") if isinstance(report_dict.get("system"), dict) else report_dict
     
+    cpu_val = float(sysd.get("cpu") if sysd.get("cpu") is not None else (report_dict.get("cpu") or 0.0))
+
+    load = report_dict.get("load")
+    if isinstance(load, list) and len(load) >= 3:
+        l1, l5, l15 = float(load[0] or 0.0), float(load[1] or 0.0), float(load[2] or 0.0)
+    else:
+        l1 = float(sysd.get("load1") or 0.0)
+        l5 = float(sysd.get("load5") or 0.0)
+        l15 = float(sysd.get("load15") or 0.0)
+
+    mem = report_dict.get("mem") if isinstance(report_dict.get("mem"), dict) else {}
+    mem_total = int(sysd.get("mem_total") or mem.get("total") or 0)
+    mem_used = int(sysd.get("mem_used") or mem.get("used") or 0)
+    mem_avail = int(sysd.get("mem_avail") or mem.get("available") or mem.get("free") or 0)
+
+    swap = report_dict.get("swap") if isinstance(report_dict.get("swap"), dict) else {}
+    swap_total = int(sysd.get("swap_total") or swap.get("total") or 0)
+    swap_used = int(sysd.get("swap_used") or swap.get("used") or 0)
+
+    procs = int(sysd.get("procs") or report_dict.get("procs") or 0)
+    uptime_secs = int(sysd.get("uptime") or report_dict.get("uptime") or 0)
+    disks_val = sysd.get("disks") if sysd.get("disks") is not None else report_dict.get("disk")
+    net_val = sysd.get("net") if sysd.get("net") is not None else report_dict.get("net")
+
     def _to_json(val):
         if val is None:
             return None
@@ -33,19 +55,19 @@ def process_telemetry_report(db: Session, api_key: str, report_dict: dict) -> di
     snap = SystemSnapshot(
         server_id=srv.id,
         timestamp=now,
-        cpu=float(report_dict.get("cpu") or 0.0),
-        load1=float(load[0]) if len(load) > 0 else 0.0,
-        load5=float(load[1]) if len(load) > 1 else 0.0,
-        load15=float(load[2]) if len(load) > 2 else 0.0,
-        mem_total=int(mem.get("total") or 0),
-        mem_used=int(mem.get("used") or 0),
-        mem_avail=int(mem.get("available") or mem.get("free") or 0),
-        swap_total=int(swap.get("total") or 0),
-        swap_used=int(swap.get("used") or 0),
-        procs=int(report_dict.get("procs") or 0),
-        uptime_secs=int(report_dict.get("uptime") or 0),
-        disks=_to_json(report_dict.get("disk")),
-        net=_to_json(report_dict.get("net")),
+        cpu=cpu_val,
+        load1=l1,
+        load5=l5,
+        load15=l15,
+        mem_total=mem_total,
+        mem_used=mem_used,
+        mem_avail=mem_avail,
+        swap_total=swap_total,
+        swap_used=swap_used,
+        procs=procs,
+        uptime_secs=uptime_secs,
+        disks=_to_json(disks_val),
+        net=_to_json(net_val),
     )
     db.add(snap)
 
@@ -58,8 +80,8 @@ def process_telemetry_report(db: Session, api_key: str, report_dict: dict) -> di
     extras.updated_at = now
     if "kernel" in report_dict:
         extras.kernel = str(report_dict.get("kernel") or "")[:100]
-    if "os" in report_dict:
-        extras.os_label = str(report_dict.get("os") or "")[:120]
+    if "os_label" in report_dict or "os" in report_dict:
+        extras.os_label = str(report_dict.get("os_label") or report_dict.get("os") or "")[:120]
     if "arch" in report_dict:
         extras.arch = str(report_dict.get("arch") or "")[:24]
     if "agent_version" in report_dict:
@@ -69,10 +91,17 @@ def process_telemetry_report(db: Session, api_key: str, report_dict: dict) -> di
         extras.accounts = _to_json(report_dict["accounts"])
     if "security" in report_dict:
         extras.security = _to_json(report_dict["security"])
-    if "top_procs" in report_dict:
-        extras.top_procs = _to_json(report_dict["top_procs"])
-    if "systemd_units" in report_dict:
-        extras.systemd_units = _to_json(report_dict["systemd_units"])
+
+    top_procs = sysd.get("top_procs") if sysd.get("top_procs") is not None else report_dict.get("top_procs")
+    if top_procs is not None:
+        extras.top_procs = _to_json(top_procs)
+
+    units_raw = report_dict.get("systemd_units") or report_dict.get("services") or report_dict.get("units")
+    if units_raw is not None:
+        extras.systemd_units = _to_json(units_raw)
+    if "units" in report_dict:
+        extras.units = _to_json(report_dict["units"])
+
     if "cron_jobs" in report_dict:
         extras.cron_jobs = _to_json(report_dict["cron_jobs"])
     if "firewall" in report_dict:
@@ -81,10 +110,17 @@ def process_telemetry_report(db: Session, api_key: str, report_dict: dict) -> di
         extras.listening_ports = _to_json(report_dict["listening_ports"])
     if "ssl_certs" in report_dict:
         extras.ssl_certs = _to_json(report_dict["ssl_certs"])
-    if "hardware" in report_dict:
-        extras.hardware_specs = _to_json(report_dict["hardware"])
+
+    hw_specs = report_dict.get("hardware_specs") or report_dict.get("hardware")
+    if hw_specs is not None:
+        extras.hardware_specs = _to_json(hw_specs)
+
     if "kernel_events" in report_dict:
         extras.kernel_events = _to_json(report_dict["kernel_events"])
+    if "system_logs" in report_dict:
+        extras.system_logs = _to_json(report_dict["system_logs"])
+    if "available_logs" in report_dict:
+        extras.available_logs = _to_json(report_dict["available_logs"])
 
     # 3. Evaluasi insiden (termasuk Sesi Remote SSH Aktif)
     evaluate_server_problems(db, srv, report_dict, extras)

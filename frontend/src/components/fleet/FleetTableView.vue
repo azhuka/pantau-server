@@ -221,15 +221,15 @@
               <!-- 8. STORAGE -->
               <td class="py-2.5 px-3 whitespace-nowrap">
                 <div class="text-xs text-gray-300 mb-1">
-                  <span :class="(s.disk_pct || 35) > 85 ? 'text-rose-400 font-bold' : 'text-gray-200 font-medium'">
-                    {{ s.disk_pct || 35 }}%
+                  <span :class="(s.disk_pct || 0) > 85 ? 'text-rose-400 font-bold' : 'text-gray-200 font-medium'">
+                    {{ s.disk_pct || 0 }}%
                   </span>
                   <span class="text-gray-500 ml-1 text-[11px]">/root</span>
                 </div>
                 <div class="cyber-bar-track">
                   <div
                     class="cyber-bar-fill-cyan"
-                    :style="{ width: `${s.disk_pct || 35}%` }"
+                    :style="{ width: `${s.disk_pct || 0}%` }"
                   ></div>
                 </div>
               </td>

@@ -49,6 +49,17 @@ def list_servers(user: User = Depends(get_current_user), db: Session = Depends(g
         if latest_snap and latest_snap.mem_total and latest_snap.mem_total > 0:
             mem_pct = round((latest_snap.mem_used / latest_snap.mem_total) * 100, 1)
 
+        disk_pct = 0.0
+        if latest_snap and latest_snap.disks:
+            try:
+                disks_data = json.loads(latest_snap.disks) if isinstance(latest_snap.disks, str) else latest_snap.disks
+                if isinstance(disks_data, list) and disks_data:
+                    root_d = next((d for d in disks_data if isinstance(d, dict) and d.get("mount") == "/"), disks_data[0])
+                    if isinstance(root_d, dict):
+                        disk_pct = float(root_d.get("pct") or root_d.get("used_percent") or root_d.get("percent") or 0.0)
+            except Exception:
+                disk_pct = 0.0
+
         # Hitung masalah aktif
         active_problems_count = (
             db.query(ServerProblem)
@@ -73,6 +84,7 @@ def list_servers(user: User = Depends(get_current_user), db: Session = Depends(g
             "last_seen": s.last_seen.isoformat() if s.last_seen else None,
             "cpu": cpu,
             "mem_pct": mem_pct,
+            "disk_pct": disk_pct,
             "uptime_secs": latest_snap.uptime_secs if latest_snap else 0,
             "active_problems_count": active_problems_count,
             "is_maintenance": bool(s.is_maintenance),
@@ -115,6 +127,23 @@ def get_server_detail(sid: int, user: User = Depends(get_current_user), db: Sess
         except Exception:
             return val
 
+    raw_disks = _parse(latest_snap.disks) if latest_snap else []
+    normalized_disks = []
+    if isinstance(raw_disks, list):
+        for d in raw_disks:
+            if isinstance(d, dict):
+                d_copy = dict(d)
+                pct = d_copy.get("percent") if d_copy.get("percent") is not None else (d_copy.get("pct") if d_copy.get("pct") is not None else d_copy.get("used_percent"))
+                if pct is None and d_copy.get("total") and d_copy.get("used"):
+                    try:
+                        pct = round((d_copy["used"] / d_copy["total"]) * 100, 1)
+                    except ZeroDivisionError:
+                        pct = 0.0
+                d_copy["percent"] = pct
+                d_copy["used_percent"] = pct
+                d_copy["pct"] = pct
+                normalized_disks.append(d_copy)
+
     return {
         "ok": True,
         "server": {
@@ -140,8 +169,9 @@ def get_server_detail(sid: int, user: User = Depends(get_current_user), db: Sess
                 "mem_avail": latest_snap.mem_avail if latest_snap else 0,
                 "swap_total": latest_snap.swap_total if latest_snap else 0,
                 "swap_used": latest_snap.swap_used if latest_snap else 0,
+                "procs": latest_snap.procs if latest_snap else 0,
                 "uptime_secs": latest_snap.uptime_secs if latest_snap else 0,
-                "disks": _parse(latest_snap.disks) if latest_snap else [],
+                "disks": normalized_disks,
                 "net": _parse(latest_snap.net) if latest_snap else {},
             }
         }
@@ -154,7 +184,31 @@ def get_server_services(sid: int, user: User = Depends(get_current_user), db: Se
         return {"ok": True, "services": []}
     try:
         data = json.loads(extras.systemd_units)
-        return {"ok": True, "services": data}
+        normalized = []
+        if isinstance(data, list):
+            for s in data:
+                if isinstance(s, dict):
+                    name = s.get("name") or s.get("service_name") or s.get("unit") or "service"
+                    is_up = (s.get("status") == "up") or (s.get("active") == "active") or (s.get("sub") == "running")
+                    active = "active" if is_up else (s.get("active") or "inactive")
+                    sub = "running" if is_up else (s.get("sub") or "stopped")
+                    desc = s.get("description") or (f"Port {s.get('port')}" if s.get("port") else "-")
+                    normalized.append({
+                        "name": name,
+                        "active": active,
+                        "sub": sub,
+                        "description": desc,
+                        "port": s.get("port")
+                    })
+                elif isinstance(s, str):
+                    normalized.append({
+                        "name": s,
+                        "active": "active",
+                        "sub": "running",
+                        "description": "System service unit",
+                        "port": None
+                    })
+        return {"ok": True, "services": normalized}
     except Exception:
         return {"ok": True, "services": []}
 
@@ -165,7 +219,24 @@ def get_server_processes(sid: int, user: User = Depends(get_current_user), db: S
         return {"ok": True, "processes": []}
     try:
         data = json.loads(extras.top_procs)
-        return {"ok": True, "processes": data}
+        if isinstance(data, dict):
+            merged = []
+            seen_pids = set()
+            for p in (data.get("cpu") or []) + (data.get("mem") or []):
+                pid = p.get("pid")
+                if pid and pid not in seen_pids:
+                    seen_pids.add(pid)
+                    merged.append({
+                        "pid": pid,
+                        "user": p.get("user") or "unknown",
+                        "cpu": p.get("cpu", 0.0),
+                        "mem": p.get("mem", 0.0),
+                        "cmd": p.get("comm") or p.get("cmd") or "-",
+                    })
+            return {"ok": True, "processes": merged}
+        elif isinstance(data, list):
+            return {"ok": True, "processes": data}
+        return {"ok": True, "processes": []}
     except Exception:
         return {"ok": True, "processes": []}
 

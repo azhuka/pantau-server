@@ -458,7 +458,7 @@
               <div class="hud-tactical-card p-3 rounded-lg">
                 <div class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">// PROCESSES</div>
                 <div class="text-xl font-black text-gray-100 mt-0.5">
-                  {{ processesList.length || 85 }}
+                  {{ server.metrics?.procs || processesList.length || 0 }}
                 </div>
                 <div class="text-[10px] text-gray-500 mt-1">tasks running</div>
               </div>
@@ -552,13 +552,13 @@
                       <td class="py-2.5 text-gray-300">{{ formatBytes(d.free_bytes || d.free || d.avail) }}</td>
                       <td class="py-2.5">
                         <div class="flex items-center gap-2">
-                          <span :class="(d.used_percent || d.percent || 0) > 85 ? 'text-rose-400 font-bold' : 'text-emerald-400 font-bold'">
-                            {{ (d.used_percent || d.percent || 0).toFixed(1) }}%
+                          <span :class="(d.used_percent || d.percent || d.pct || 0) > 85 ? 'text-rose-400 font-bold' : 'text-emerald-400 font-bold'">
+                            {{ (d.used_percent || d.percent || d.pct || 0).toFixed(1) }}%
                           </span>
                           <div class="cyber-bar-track flex-1">
                             <div
-                              :class="(d.used_percent || d.percent || 0) > 85 ? 'cyber-bar-fill-crimson' : 'cyber-bar-fill-cyan'"
-                              :style="{ width: `${Math.min(d.used_percent || d.percent || 0, 100)}%` }"
+                              :class="(d.used_percent || d.percent || d.pct || 0) > 85 ? 'cyber-bar-fill-crimson' : 'cyber-bar-fill-cyan'"
+                              :style="{ width: `${Math.min(d.used_percent || d.percent || d.pct || 0, 100)}%` }"
                             ></div>
                           </div>
                         </div>

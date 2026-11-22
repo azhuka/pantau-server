@@ -174,6 +174,15 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.14
+
+### v0.1.14 - Pure Live Telemetry Ingestion & Official Glossary Enforcement
+- Menghapus seluruh aset dummy dari database (hanya menyisakan node rj45 aktif nyata).
+- Memperbaiki parsing telemetri di telemetry_service.py dan servers.py agar membaca payload system, disks, procs, services, dan top_procs dari pantau-agent.
+- Membersihkan fallback dummy 35% dan 85 procs di frontend Vue SPA.
+- Membukukan glosarium resmi taksonomi insiden dan hierarki pengguna di GEMINI.md dan AGENTS.md.
+
+
 ### Versi v0.1.13
 
 - Dialog taktis durasi pemeliharaan terukur (30m, 1h rekomendasi, 4h, 24h, atau manual).\n- Input alasan pemeliharaan dan pencatatan audit log.\n- Auto-expiry di basis data saat batas waktu tercapai.\n- Peredaman evaluasi insiden/alarm baru di problem_service saat mode pemeliharaan aktif.\n- Indikator status amber di header workspace, toolbar, tabel armada, dan dasbor makro pasif.

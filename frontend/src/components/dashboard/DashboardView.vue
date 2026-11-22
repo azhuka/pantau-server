@@ -448,12 +448,12 @@
               <!-- Storage (%) -->
               <td class="py-2.5 px-4 whitespace-nowrap">
                 <div class="flex items-center justify-between gap-2 mb-1">
-                  <span :class="(s.disk_pct || 35) > 85 ? 'text-rose-400 font-bold' : 'text-gray-200'">{{ s.disk_pct || 35 }}%</span>
+                  <span :class="(s.disk_pct || 0) > 85 ? 'text-rose-400 font-bold' : 'text-gray-200'">{{ s.disk_pct || 0 }}%</span>
                 </div>
                 <div class="cyber-bar-track">
                   <div
                     class="cyber-bar-fill-cyan"
-                    :style="{ width: `${s.disk_pct || 35}%` }"
+                    :style="{ width: `${s.disk_pct || 0}%` }"
                   ></div>
                 </div>
               </td>

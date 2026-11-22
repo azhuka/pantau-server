@@ -80,6 +80,13 @@ tools/                  # Otomasi rilis (sop_release.py), test_terminal_dock.js,
    - Konsep, alur kerja (*workflow*), dan UX dari aplikasi lama (`/home/bos/rj45`) adalah **konsep yang BENAR dan sudah matang**.
    - Hakikat repositori baru ini (`/home/bos/pantau-server`) murni adalah **penyempurnaan dan modernisasi dari sisi UI/Frontend** (mengganti frontend monolitik lama yang kacau dengan Vue 3 SPA bersih & rapi) **plus pembenahan/penguatan backend yang dibutuhkan**.
    - Dilarang keras mengarang alur kerja baru atau model interaksi asing. Setiap fitur wajib mencontoh alur kerja aplikasi lama di `~/rj45` sebagai sumber kebenaran fungsional dan visual.
+10. **Definisi Baku & Taksonomi Insiden/Akun (Glosarium Resmi):**
+   - `pantau-server`: Nama resmi aplikasi platform pusat kendali operasional NOC.
+   - `pantau-agent`: Nama resmi agen klien telemetri di node Linux.
+   - `insiden`: Masalah/gangguan/anomali/kejadian/peristiwa pada aset.
+   - `insiden aktif` (*bukan insiden terbuka*): Insiden yang sedang terjadi dan masih aktif secara fisik.
+   - *Severity 4-Tingkat:* `info` (biru, non-ancaman, info update package), `warning` (kuning, potensi ancaman/gangguan, layanan utama tetap jalan), `critical` (oranye pekat, layanan utama terganggu/mati, SSH ilegal), `danger` (merah, kelumpuhan sistem utama, host offline/down, disk read-only, kernel panic).
+   - *Hierarki Pengguna:* `master-admin` (root absolut), `operator utama` (dibuat master-admin, hak kelola penuh harian, tak bisa hapus master-admin), `operator pembantu` (dibuat operator utama, izin granular terbatas), `tamu`/`guest` (peninjau murni / read-only).
 
 ---
 

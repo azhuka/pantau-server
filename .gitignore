@@ -20,8 +20,8 @@ htmlcov/
 # Node & Frontend
 node_modules/
 frontend/node_modules/
-screenshots/debug_*.png
-screenshots/visual_*.png
+screenshots/*.png
+screenshots/*.jpg
 frontend/dist/
 frontend/.vite/
 
