@@ -9,6 +9,7 @@ from models.problem import ServerProblem
 from models.server import Server
 from models.command import Command
 from models.misc import AuditLog
+from services.problem_service import check_all_servers_stale
 
 router = APIRouter(prefix="/api/problems", tags=["Problems & Alerts"])
 
@@ -19,6 +20,7 @@ def list_problems(
     db: Session = Depends(get_db)
 ):
     """Mengambil daftar insiden / masalah operasional & keamanan NOC."""
+    check_all_servers_stale(db)
     query = db.query(ServerProblem, Server.hostname).join(Server, Server.id == ServerProblem.server_id)
     if active_only:
         query = query.filter(ServerProblem.resolved_at == None)

@@ -39,7 +39,7 @@ frontend/               # Frontend Vue 3 SPA
   │    └── i18n/        # Bilingual dictionary (EN default, ID selectable)
 agent/                  # Klien telemetri node armada (agent_pantau.py)
 tools/                  # Otomasi rilis (sop_release.py), test_terminal_dock.js, seed scripts
-.agents/skills/         # Panduan per domain (sop-pantau, ponytail, moli-*)
+.agents/skills/         # Panduan per domain (sop-pantau, ponytail, moli-*, antislop-*)
 ```
 
 ---
@@ -127,3 +127,17 @@ Sebelum menyatakan tugas perbaikan bug atau fitur selesai:
            print(f'Server {r[0]} ({r[1]}): ver={r[2]} | last_seen={r[3]}')
    "
    ```
+
+---
+
+## 6. Integrasi Skill anti-slop (Filter Kebersihan UI, Copy & Kode)
+
+Koleksi skill `anti-slop` dipasang lokal di `.agents/skills/antislop*` sebagai filter mutu pembantu:
+- **Hierarki Otoritas:** `GEMINI.md` dan `AGENTS.md` adalah hukum tertinggi. `anti-slop` berposisi sebagai filter pembantu (*auxiliary filter*) untuk menolak artefak generik buatan AI. Jika terjadi perbedaan penafsiran, aturan Pantau Server selalu menang.
+- **Mode Eksekusi Otomatis:** Mode terkunci pada `during` (aktif otomatis tanpa menanyakan opsi 1/2 kepada operator).
+- **Pilar Penerapan di Pantau Server:**
+  - **UI (`antislop-ui`):** Tolak gradien biru-ungu klise, larang rounded pill berlebihan pada tabel/tombol kontrol, tolak glassmorphism/glow mengambang yang merusak *NOC Data Density*.
+  - **Kode (`antislop-code`):** Tolak komentar narasi sepele (`// Step 1: ...`), tolak JSDoc pengulang signature, hapus emoji dekoratif di kode, pertahankan komentar esensial (aturan kernel, keamanan, arsitektur).
+  - **Teks (`antislop-copywriting`):** Tolak istilah hiperbolis/hype palsu (*"Unlock next-gen..."*), gunakan bahasa baku NOC ringkas.
+  - **Aksesibilitas & Keterbacaan (`antislop-human`):** Penegakan kontras tajam dark/light mode dan tap target minimal 44px.
+

@@ -1,3 +1,4 @@
+import asyncio
 import json
 from datetime import datetime
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, Body
@@ -125,3 +126,31 @@ def api_log_result(
     req.updated_at = datetime.utcnow()
     db.commit()
     return {"ok": True}
+
+@router.get("/api/agent/file-requests")
+async def api_agent_file_requests(
+    x_api_key: str = Header(alias="X-Api-Key", default=""),
+    db: Session = Depends(get_db)
+):
+    """Long-poll handler (5s) untuk penjelajahan file agar loop agen tenang dan tidak membanjiri I/O server."""
+    await asyncio.sleep(5.0)
+    return {"requests": []}
+
+@router.post("/api/agent/file-requests/{req_id}/result")
+def api_agent_file_result(
+    req_id: str,
+    body: dict = Body(...),
+    server: Server = Depends(get_server_by_agent_key),
+    db: Session = Depends(get_db)
+):
+    """Penerimaan hasil eksekusi operasi file agen."""
+    return {"ok": True}
+
+@router.get("/api/agent/terminal-requests")
+async def api_agent_terminal_requests(
+    x_api_key: str = Header(alias="X-Api-Key", default=""),
+    db: Session = Depends(get_db)
+):
+    """Long-poll handler (5s) untuk permintaan terminal sesi agar agen beroperasi tenang."""
+    await asyncio.sleep(5.0)
+    return {"session_id": None}

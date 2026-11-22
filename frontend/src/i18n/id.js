@@ -37,6 +37,7 @@ export default {
   dash_kpi_host: 'host',
   dash_kpi_up: 'up',
   dash_kpi_down: 'down',
+  sev_danger: 'Bahaya',
   sev_critical: 'Kritis',
   sev_high: 'Gawat',
   sev_warning: 'Peringatan',

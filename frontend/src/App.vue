@@ -224,14 +224,26 @@ const terminalTabsCount = computed(() => {
   return terminalDockRef.value?.tabs?.length || 0
 })
 
-function openTerminalDock(server = null) {
+function openTerminalDock(target = null) {
   isTerminalDockOpen.value = true
   isTerminalDockMinimized.value = false
-  const targetServer = server || (servers.value.length > 0 ? servers.value[0] : null)
-  if (targetServer) {
-    terminalDockInitialServer.value = targetServer
+  let srv = null
+  let initialPath = ''
+  if (target && target.server) {
+    srv = target.server
+    initialPath = target.initialPath || target.workingDirectory || ''
+  } else if (target) {
+    srv = target
+    initialPath = target.workingDirectory || ''
+  } else {
+    srv = servers.value.length > 0 ? servers.value[0] : null
+  }
+
+  if (srv) {
+    const srvWithDir = { ...srv, workingDirectory: initialPath }
+    terminalDockInitialServer.value = srvWithDir
     if (terminalDockRef.value) {
-      terminalDockRef.value.openNewTabForServer(targetServer)
+      terminalDockRef.value.openNewTabForServer(srvWithDir)
     }
   }
 }

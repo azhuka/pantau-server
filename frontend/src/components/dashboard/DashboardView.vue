@@ -57,7 +57,7 @@
           <div class="text-xs font-bold uppercase tracking-wider text-gray-400 font-mono flex items-center gap-2">
             <span
               class="w-2 h-2 rounded-full"
-              :class="dangerCount > 0 ? 'bg-rose-400 radar-critical' : (warnCount > 0 ? 'bg-amber-400 radar-warning' : 'bg-emerald-400 beacon-live')"
+              :class="dangerCount > 0 ? 'bg-rose-400 radar-critical' : (criticalCount > 0 ? 'bg-orange-400 radar-critical' : (warnCount > 0 ? 'bg-amber-400 radar-warning' : 'bg-emerald-400 beacon-live'))"
             ></span>
             <span>// INCIDENT & ANOMALY MATRIX</span>
           </div>
@@ -66,29 +66,29 @@
           </div>
         </div>
 
-        <!-- Severity Tiles Strip (Zabbix Severity Strip 5 Kotak Terbaca Jelas & Proporsional) -->
-        <div class="grid grid-cols-5 gap-2 text-center font-mono">
-          <!-- Critical -->
+        <!-- Severity Tiles Strip (Glosarium Baku 4-Tingkat Terbaca Jelas & Proporsional) -->
+        <div class="grid grid-cols-4 gap-2 text-center font-mono">
+          <!-- Danger (Merah - Bahaya) -->
           <div
             class="py-1 px-2 rounded border transition cursor-default"
             :class="dangerCount > 0 ? 'bg-rose-950/90 border-rose-500 text-rose-300 font-bold shadow-[0_0_8px_rgba(244,63,94,0.3)]' : 'bg-gray-900/40 border-gray-800/80 text-gray-500'"
-            :title="t('sev_critical')"
+            :title="t('sev_danger')"
           >
             <span class="text-base font-extrabold leading-tight block">{{ dangerCount }}</span>
+            <span class="text-[10px] uppercase font-bold block mt-0.5 tracking-wider">{{ t('sev_danger') }}</span>
+          </div>
+
+          <!-- Critical (Oranye Pekat - Kritis) -->
+          <div
+            class="py-1 px-2 rounded border transition cursor-default"
+            :class="criticalCount > 0 ? 'bg-orange-950/90 border-orange-500 text-orange-300 font-bold shadow-[0_0_8px_rgba(249,115,22,0.3)]' : 'bg-gray-900/40 border-gray-800/80 text-gray-500'"
+            :title="t('sev_critical')"
+          >
+            <span class="text-base font-extrabold leading-tight block">{{ criticalCount }}</span>
             <span class="text-[10px] uppercase font-bold block mt-0.5 tracking-wider">{{ t('sev_critical') }}</span>
           </div>
 
-          <!-- High -->
-          <div
-            class="py-1 px-2 rounded border transition cursor-default"
-            :class="avgCount > 0 ? 'bg-orange-950/90 border-orange-500 text-orange-300 font-bold shadow-[0_0_8px_rgba(249,115,22,0.3)]' : 'bg-gray-900/40 border-gray-800/80 text-gray-500'"
-            :title="t('sev_high')"
-          >
-            <span class="text-base font-extrabold leading-tight block">{{ avgCount }}</span>
-            <span class="text-[10px] uppercase font-bold block mt-0.5 tracking-wider">{{ t('sev_high') }}</span>
-          </div>
-
-          <!-- Warning -->
+          <!-- Warning (Kuning - Peringatan) -->
           <div
             class="py-1 px-2 rounded border transition cursor-default"
             :class="warnCount > 0 ? 'bg-amber-950/90 border-amber-500 text-amber-300 font-bold shadow-[0_0_8px_rgba(245,158,11,0.3)]' : 'bg-gray-900/40 border-gray-800/80 text-gray-500'"
@@ -98,7 +98,7 @@
             <span class="text-[10px] uppercase font-bold block mt-0.5 tracking-wider">{{ t('sev_warning') }}</span>
           </div>
 
-          <!-- Info -->
+          <!-- Info (Biru - Info) -->
           <div
             class="py-1 px-2 rounded border transition cursor-default"
             :class="infoCount > 0 ? 'bg-cyan-950/90 border-cyan-500 text-cyan-300 font-bold shadow-[0_0_8px_rgba(56,189,248,0.3)]' : 'bg-gray-900/40 border-gray-800/80 text-gray-500'"
@@ -106,15 +106,6 @@
           >
             <span class="text-base font-extrabold leading-tight block">{{ infoCount }}</span>
             <span class="text-[10px] uppercase font-bold block mt-0.5 tracking-wider">{{ t('sev_info') }}</span>
-          </div>
-
-          <!-- Ignored -->
-          <div
-            class="py-1 px-2 rounded border bg-gray-900/40 border-gray-800/80 text-gray-500 cursor-default"
-            :title="t('sev_ignored')"
-          >
-            <span class="text-base font-extrabold leading-tight block">0</span>
-            <span class="text-[10px] uppercase font-bold block mt-0.5 tracking-wider">{{ t('sev_ignored') }}</span>
           </div>
         </div>
       </div>
@@ -170,7 +161,7 @@
         <div class="flex items-center gap-2.5 font-mono">
           <span
             class="w-2.5 h-2.5 rounded-full"
-            :class="dangerCount > 0 ? 'bg-rose-400 radar-critical' : (warnCount > 0 ? 'bg-amber-400 radar-warning' : 'bg-emerald-400 beacon-live')"
+            :class="dangerCount > 0 ? 'bg-rose-400 radar-critical' : (criticalCount > 0 ? 'bg-orange-400 radar-critical' : (warnCount > 0 ? 'bg-amber-400 radar-warning' : 'bg-emerald-400 beacon-live'))"
           ></span>
           <h3 class="text-xs font-bold text-gray-100 tracking-wider uppercase">
             // ACTIVE INCIDENTS & ALERTS QUEUE
@@ -253,13 +244,13 @@
                   v-if="prob.severity === 'danger'"
                   class="px-2 py-0.5 rounded text-[11px] font-bold bg-rose-950 text-rose-300 border border-rose-700/80 uppercase shadow-[0_0_6px_rgba(244,63,94,0.3)]"
                 >
-                  {{ t('sev_critical').toUpperCase() }}
+                  {{ t('sev_danger').toUpperCase() }}
                 </span>
                 <span
-                  v-else-if="prob.severity === 'average'"
+                  v-else-if="prob.severity === 'critical' || prob.severity === 'average'"
                   class="px-2 py-0.5 rounded text-[11px] font-bold bg-orange-950 text-orange-300 border border-orange-700/80 uppercase shadow-[0_0_6px_rgba(249,115,22,0.3)]"
                 >
-                  {{ t('sev_high').toUpperCase() }}
+                  {{ t('sev_critical').toUpperCase() }}
                 </span>
                 <span
                   v-else-if="prob.severity === 'warning'"
@@ -271,7 +262,7 @@
                   v-else
                   class="px-2 py-0.5 rounded text-[11px] font-bold bg-blue-950 text-blue-300 border border-blue-700/80 uppercase shadow-[0_0_6px_rgba(56,189,248,0.3)]"
                 >
-                  {{ prob.severity || t('sev_info').toUpperCase() }}
+                  {{ t('sev_info').toUpperCase() }}
                 </span>
               </td>
 
@@ -623,7 +614,7 @@ const downCount = computed(() => props.servers.filter(s => !s.is_online && s.las
 const activeProblems = computed(() => props.problems.filter(p => p.is_active))
 
 const dangerCount = computed(() => activeProblems.value.filter(p => p.severity === 'danger').length)
-const avgCount = computed(() => activeProblems.value.filter(p => p.severity === 'average').length)
+const criticalCount = computed(() => activeProblems.value.filter(p => p.severity === 'critical' || p.severity === 'average').length)
 const warnCount = computed(() => activeProblems.value.filter(p => p.severity === 'warning').length)
 const infoCount = computed(() => activeProblems.value.filter(p => !p.severity || p.severity === 'info').length)
 

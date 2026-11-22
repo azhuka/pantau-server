@@ -174,6 +174,18 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.15
+
+### v0.1.15 - Algorithmic Hardening, Tier-Aware Triaging & Performance Optimization
+- Memperbaiki taksonomi insiden 4-tingkat keparahan (info, warning, critical, danger) dan menerapkannya pada matrix kartu KPI dasbor serta badge baris tabel.
+- Menerapkan proteksi keparahan berbasis tier aset (Server Produksi vs Non-Produksi) dengan eskalasi danger hanya untuk produksi vital.
+- Menerapkan deteksi server offline (agent_stale) otomatis dengan pemulihan seketika saat agen melapor kembali.
+- Mengeliminasi N+1 query pada list_servers() dengan teknik agregasi batch loading (Zero N+1 Query).
+- Memperbaiki penanganan peluncuran Web Terminal pada path direktori tertentu dari Remote File Manager.
+- Menambahkan penanganan long-poll pada endpoint file-requests dan terminal-requests agen klien untuk efisiensi CPU dan I/O daemon.
+- Mengintegrasikan koleksi skill anti-slop lokal dan test suite integritas sistem.
+
+
 ### Versi v0.1.14
 
 ### v0.1.14 - Pure Live Telemetry Ingestion & Official Glossary Enforcement

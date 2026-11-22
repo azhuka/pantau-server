@@ -9,6 +9,7 @@ import subprocess
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Body, Form, File, UploadFile
 from fastapi.responses import FileResponse
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from core.database import get_db
 from routers.auth import get_current_user
@@ -17,15 +18,40 @@ from models.server import Server, ServerExtras, SystemSnapshot
 from models.problem import ServerProblem
 from models.command import Command
 from models.misc import AuditLog
+from services.problem_service import check_all_servers_stale
 
 router = APIRouter(prefix="/api/servers", tags=["Servers"])
 
 @router.get("")
 def list_servers(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Daftar seluruh server armada NOC beserta ringkasan status real-time."""
+    check_all_servers_stale(db)
     servers = db.query(Server).filter(Server.is_active == 1).order_by(Server.id.asc()).all()
     now = datetime.utcnow()
     result = []
+
+    # Optimasi konkurensi & performa (Zero N+1 Query Batch Loading):
+    # 1. Agregasi jumlah insiden aktif seluruh server dalam 1 kueri
+    prob_counts = dict(
+        db.query(ServerProblem.server_id, func.count(ServerProblem.id))
+        .filter(ServerProblem.resolved_at == None)
+        .group_by(ServerProblem.server_id)
+        .all()
+    )
+
+    # 2. Ambil snapshot ID terbaru seluruh armada dalam 1 kueri batch
+    server_ids = [s.id for s in servers]
+    latest_snaps_map = {}
+    if server_ids:
+        latest_snap_ids = [
+            sid for (sid,) in db.query(func.max(SystemSnapshot.id))
+            .filter(SystemSnapshot.server_id.in_(server_ids))
+            .group_by(SystemSnapshot.server_id)
+            .all()
+        ]
+        if latest_snap_ids:
+            snaps = db.query(SystemSnapshot).filter(SystemSnapshot.id.in_(latest_snap_ids)).all()
+            latest_snaps_map = {sn.server_id: sn for sn in snaps}
 
     for s in servers:
         if not user.can_access_server(s.id):
@@ -36,13 +62,8 @@ def list_servers(user: User = Depends(get_current_user), db: Session = Depends(g
             diff_secs = (now - s.last_seen).total_seconds()
             is_online = diff_secs <= 60
 
-        # Snapshot metrik terbaru
-        latest_snap = (
-            db.query(SystemSnapshot)
-            .filter(SystemSnapshot.server_id == s.id)
-            .order_by(SystemSnapshot.id.desc())
-            .first()
-        )
+        # Snapshot metrik terbaru dari map batch
+        latest_snap = latest_snaps_map.get(s.id)
 
         cpu = latest_snap.cpu if latest_snap else 0.0
         mem_pct = 0.0
@@ -60,12 +81,8 @@ def list_servers(user: User = Depends(get_current_user), db: Session = Depends(g
             except Exception:
                 disk_pct = 0.0
 
-        # Hitung masalah aktif
-        active_problems_count = (
-            db.query(ServerProblem)
-            .filter(ServerProblem.server_id == s.id, ServerProblem.resolved_at == None)
-            .count()
-        )
+        # Hitung masalah aktif dari agregat batch
+        active_problems_count = prob_counts.get(s.id, 0)
 
         # Auto-expire maintenance mode jika batas waktu terlewati
         if s.is_maintenance and s.maintenance_until and s.maintenance_until < now:

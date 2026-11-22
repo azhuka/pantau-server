@@ -122,6 +122,13 @@ def process_telemetry_report(db: Session, api_key: str, report_dict: dict) -> di
     if "available_logs" in report_dict:
         extras.available_logs = _to_json(report_dict["available_logs"])
 
+    if "apt" in report_dict and isinstance(report_dict["apt"], dict):
+        apt_data = report_dict["apt"]
+        extras.apt_upgradable = int(apt_data.get("upgradable") or 0)
+        if "packages" in apt_data:
+            extras.apt_packages = _to_json(apt_data["packages"])
+        extras.apt_last_update = now
+
     # 3. Evaluasi insiden (termasuk Sesi Remote SSH Aktif)
     evaluate_server_problems(db, srv, report_dict, extras)
 
