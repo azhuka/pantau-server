@@ -122,6 +122,7 @@ def get_server_detail(sid: int, user: User = Depends(get_current_user), db: Sess
         raise HTTPException(status_code=404, detail="Server not found")
 
     now = datetime.utcnow()
+    is_online = bool(server.last_seen and (now - server.last_seen).total_seconds() <= 60)
     if server.is_maintenance and server.maintenance_until and server.maintenance_until < now:
         server.is_maintenance = 0
         server.maintenance_until = None
@@ -167,16 +168,22 @@ def get_server_detail(sid: int, user: User = Depends(get_current_user), db: Sess
             "id": server.id,
             "hostname": server.hostname,
             "ip_address": server.ip_address,
-            "group_name": server.group_name,
+            "group_name": server.group_name or "Default",
             "tier": server.tier,
+            "is_online": is_online,
             "last_seen": server.last_seen.isoformat() if server.last_seen else None,
             "is_maintenance": bool(server.is_maintenance),
             "maintenance_until": server.maintenance_until.isoformat() if server.maintenance_until else None,
             "maintenance_reason": server.maintenance_reason,
+            "is_proxmox_ha": bool(server.is_proxmox_ha),
+            "is_isolated_net": bool(server.is_isolated_net),
+            "tags": server.tags,
+            "notes": server.notes,
             "kernel": extras.kernel if extras else None,
             "os_label": extras.os_label if extras else None,
             "arch": extras.arch if extras else None,
             "agent_version": extras.agent_version if extras else None,
+            "apt_upgradable": extras.apt_upgradable if extras else 0,
             "hardware": _parse(extras.hardware_specs) if extras else None,
             "metrics": {
                 "cpu": latest_snap.cpu if latest_snap else 0.0,
@@ -406,6 +413,7 @@ def execute_terminal_command(
         raise HTTPException(status_code=404, detail="Server not found")
 
     now = datetime.utcnow()
+    is_online = bool(server.last_seen and (now - server.last_seen).total_seconds() <= 60)
     if server.is_maintenance and server.maintenance_until and server.maintenance_until < now:
         server.is_maintenance = 0
         server.maintenance_until = None
@@ -1049,6 +1057,7 @@ def toggle_server_maintenance(
         raise HTTPException(status_code=404, detail="Server not found")
 
     now = datetime.utcnow()
+    is_online = bool(server.last_seen and (now - server.last_seen).total_seconds() <= 60)
     if server.is_maintenance and server.maintenance_until and server.maintenance_until < now:
         server.is_maintenance = 0
         server.maintenance_until = None

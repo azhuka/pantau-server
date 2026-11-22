@@ -39,7 +39,7 @@ frontend/               # Frontend Vue 3 SPA
   │    └── i18n/        # Bilingual dictionary (EN default, ID selectable)
 agent/                  # Klien telemetri node armada (agent_pantau.py)
 tools/                  # Otomasi rilis (sop_release.py), test_terminal_dock.js, seed scripts
-.agents/skills/         # Panduan per domain (sop-pantau, ponytail, moli-*, antislop-*)
+.agents/skills/         # Panduan per domain (sop-pantau, ponytail, moli-*, antislop-*, security-audit)
 ```
 
 ---
@@ -140,4 +140,16 @@ Koleksi skill `anti-slop` dipasang lokal di `.agents/skills/antislop*` sebagai f
   - **Kode (`antislop-code`):** Tolak komentar narasi sepele (`// Step 1: ...`), tolak JSDoc pengulang signature, hapus emoji dekoratif di kode, pertahankan komentar esensial (aturan kernel, keamanan, arsitektur).
   - **Teks (`antislop-copywriting`):** Tolak istilah hiperbolis/hype palsu (*"Unlock next-gen..."*), gunakan bahasa baku NOC ringkas.
   - **Aksesibilitas & Keterbacaan (`antislop-human`):** Penegakan kontras tajam dark/light mode dan tap target minimal 44px.
+
+---
+
+## 7. Integrasi Skill security-audit (Audit Keamanan Multi-Tahap Cloudflare)
+
+Skill `security-audit` dipasang lokal di `.agents/skills/security-audit/` untuk audit celah keamanan, review API, dan penetration testing berbasis bukti:
+- **Hierarki Otoritas:** `GEMINI.md` dan `AGENTS.md` tetap menjadi hukum tertinggi.
+- **Keselamatan Eksekusi (Zero-Production Probing):** Dilarang keras menembak IP publik node armada, melakukan DoS, atau mengganggu daemon aktif (`pantau-server.service`, `agent_pantau.service`). Audit murni melalui inspeksi kode sumber lokal atau sandbox tertutup (`127.0.0.1`).
+- **Verifikasi Adversarial:** Setiap kandidat temuan wajib diverifikasi oleh verifikator independen yang mencoba menyangkal hipotesis (*refute*) untuk membasmi *false positives*.
+- **Vonis 3-Tingkat Baku:** Hasil audit diklasifikasikan ke `confirmed` (terbukti dengan trace kode dan dampak nyata), `needs_validation` (butuh validasi runtime khusus tanpa mengarang tingkat keparahan), atau `rejected` (terbantahkan).
+- **Mode Operasi:** Secara *default* berstatus *Guidance Mode* (hanya menjawab konsultasi atau review terarah) dan hanya menjalankan alur 6 fase penuh jika ada permintaan audit eksplisit (*"security audit"*, *"pen-test"*).
+
 

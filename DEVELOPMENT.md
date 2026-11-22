@@ -174,6 +174,14 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.16
+
+### v0.1.16 - Fix Workspace Detail is_online State & Live Badge Parity
+- Memperbaiki endpoint get_server_detail di server/routers/servers.py agar menghitung dan menyertakan atribut is_online, is_proxmox_ha, is_isolated_net, tags, dan notes.
+- Menambahkan fungsi pengaman isServerOnline() pada ServerWorkspaceModal.vue sehingga status node LIVE atau DOWN selalu teruji akurat secara matematis dari last_seen.
+- Mengonfirmasi badge rj45 tampil hijau [● LIVE] 100% sinkron antara dasbor, tabel armada, dan modal rincian aset.
+
+
 ### Versi v0.1.15
 
 ### v0.1.15 - Algorithmic Hardening, Tier-Aware Triaging & Performance Optimization

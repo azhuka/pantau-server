@@ -50,7 +50,7 @@
                 <span class="text-[10px] text-amber-200 underline font-semibold">{{ t('btn_view') || 'View' }}</span>
               </span>
               <span
-                v-else-if="server?.is_online"
+                v-else-if="isServerOnline(server)"
                 class="inline-flex items-center gap-1 px-2 py-0.2 rounded text-[11px] font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-700/60 shrink-0"
               >
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 beacon-live"></span>
@@ -1684,5 +1684,15 @@ function formatUptime(secs) {
   const m = Math.floor((secs % 3600) / 60)
   if (d > 0) return `${d}d ${h}h ${m}m`
   return `${h}h ${m}m`
+}
+
+function isServerOnline(s) {
+  if (!s) return false
+  if (s.is_online !== undefined) return Boolean(s.is_online)
+  if (s.last_seen) {
+    const diff = (Date.now() - new Date(s.last_seen).getTime()) / 1000
+    return diff <= 60
+  }
+  return false
 }
 </script>
