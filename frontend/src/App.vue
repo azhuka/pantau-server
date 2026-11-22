@@ -22,6 +22,7 @@
         :problems="problems"
         @inspect-node="openWorkspace"
         @nav="handleNav"
+        @refresh-problems="fetchProblems"
       />
 
       <!-- HALAMAN 2: FLEET INVENTORY TABLE (Tabel Rincian Armada Lengkap + Tombol Aksi ala Pantau) -->
@@ -278,11 +279,11 @@ const problems = ref([])
 let pollTimer = null
 
 const activeProblemsCount = computed(() => {
-  return problems.value.filter((p) => p.is_active).length
+  return problems.value.filter((p) => p.is_active && !p.is_ignored).length
 })
 
 const activeSSHCount = computed(() => {
-  return problems.value.filter((p) => p.is_active && p.key.startsWith('ssh_active_session:')).length
+  return problems.value.filter((p) => p.is_active && !p.is_ignored && p.key.startsWith('ssh_active_session:')).length
 })
 
 const workspaceHost = computed(() => {

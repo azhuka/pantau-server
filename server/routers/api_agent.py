@@ -66,6 +66,22 @@ def api_commands_pending(
         })
     return {"ok": True, "commands": result}
 
+@router.post("/api/commands/{cmd_id}/status")
+def api_command_status(
+    cmd_id: int,
+    body: dict = Body(...),
+    server: Server = Depends(get_server_by_agent_key),
+    db: Session = Depends(get_db),
+):
+    """Agent menandai status eksekusi command (misal: 'executing')."""
+    cmd = db.query(Command).filter(Command.id == cmd_id, Command.server_id == server.id).first()
+    if not cmd:
+        raise HTTPException(status_code=404, detail="Command not found")
+
+    cmd.status = body.get("status", "executing")
+    db.commit()
+    return {"ok": True}
+
 @router.post("/api/commands/{cmd_id}/result")
 def api_command_result(
     cmd_id: int,
@@ -108,6 +124,31 @@ def api_logs_pending(
             for req in pending
         ]
     }
+
+@router.post("/api/logs/{req_id}/status")
+def api_log_status(
+    req_id: int,
+    body: dict = Body(...),
+    server: Server = Depends(get_server_by_agent_key),
+    db: Session = Depends(get_db),
+):
+    """Agent menandai permintaan log sedang dieksekusi."""
+    req = db.query(LogRequest).filter(LogRequest.id == req_id, LogRequest.server_id == server.id).first()
+    if not req:
+        raise HTTPException(status_code=404, detail="Log request not found")
+    req.status = body.get("status", "executing")
+    db.commit()
+    return {"ok": True}
+
+@router.post("/api/logs/{req_id}/progress")
+def api_log_progress(req_id: int, body: dict = Body(default={})):
+    """Penerimaan stream progres log."""
+    return {"ok": True}
+
+@router.get("/api/logs/{req_id}/input")
+def api_log_input(req_id: int):
+    """Polling input interaktif untuk eksekusi log."""
+    return {"ok": True, "input": None}
 
 @router.post("/api/logs/{req_id}/result")
 def api_log_result(
@@ -154,3 +195,8 @@ async def api_agent_terminal_requests(
     """Long-poll handler (5s) untuk permintaan terminal sesi agar agen beroperasi tenang."""
     await asyncio.sleep(5.0)
     return {"session_id": None}
+
+@router.post("/api/agent/terminal/{session_id}/close")
+def api_terminal_close(session_id: str):
+    """Pemberitahuan penutupan sesi terminal dari agen."""
+    return {"ok": True}

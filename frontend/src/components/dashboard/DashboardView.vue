@@ -66,46 +66,61 @@
           </div>
         </div>
 
-        <!-- Severity Tiles Strip (Glosarium Baku 4-Tingkat Terbaca Jelas & Proporsional) -->
-        <div class="grid grid-cols-4 gap-2 text-center font-mono">
+        <!-- Severity Tiles Strip (Glosarium Baku 5-Tingkat Terbaca Jelas & Proporsional) -->
+        <div class="grid grid-cols-5 gap-1.5 text-center font-mono">
           <!-- Danger (Merah - Bahaya) -->
           <div
-            class="py-1 px-2 rounded border transition cursor-default"
+            @click="openSevModal('danger')"
+            class="py-1 px-1 rounded border transition cursor-pointer hover:brightness-125 active:scale-95"
             :class="dangerCount > 0 ? 'bg-rose-950/90 border-rose-500 text-rose-300 font-bold shadow-[0_0_8px_rgba(244,63,94,0.3)]' : 'bg-gray-900/40 border-gray-800/80 text-gray-500'"
             :title="t('sev_danger')"
           >
             <span class="text-base font-extrabold leading-tight block">{{ dangerCount }}</span>
-            <span class="text-[10px] uppercase font-bold block mt-0.5 tracking-wider">{{ t('sev_danger') }}</span>
+            <span class="text-[9.5px] uppercase font-bold block mt-0.5 tracking-wider">{{ t('sev_danger') }}</span>
           </div>
 
           <!-- Critical (Oranye Pekat - Kritis) -->
           <div
-            class="py-1 px-2 rounded border transition cursor-default"
+            @click="openSevModal('critical')"
+            class="py-1 px-1 rounded border transition cursor-pointer hover:brightness-125 active:scale-95"
             :class="criticalCount > 0 ? 'bg-orange-950/90 border-orange-500 text-orange-300 font-bold shadow-[0_0_8px_rgba(249,115,22,0.3)]' : 'bg-gray-900/40 border-gray-800/80 text-gray-500'"
             :title="t('sev_critical')"
           >
             <span class="text-base font-extrabold leading-tight block">{{ criticalCount }}</span>
-            <span class="text-[10px] uppercase font-bold block mt-0.5 tracking-wider">{{ t('sev_critical') }}</span>
+            <span class="text-[9.5px] uppercase font-bold block mt-0.5 tracking-wider">{{ t('sev_critical') }}</span>
           </div>
 
           <!-- Warning (Kuning - Peringatan) -->
           <div
-            class="py-1 px-2 rounded border transition cursor-default"
+            @click="openSevModal('warning')"
+            class="py-1 px-1 rounded border transition cursor-pointer hover:brightness-125 active:scale-95"
             :class="warnCount > 0 ? 'bg-amber-950/90 border-amber-500 text-amber-300 font-bold shadow-[0_0_8px_rgba(245,158,11,0.3)]' : 'bg-gray-900/40 border-gray-800/80 text-gray-500'"
             :title="t('sev_warning')"
           >
             <span class="text-base font-extrabold leading-tight block">{{ warnCount }}</span>
-            <span class="text-[10px] uppercase font-bold block mt-0.5 tracking-wider">{{ t('sev_warning') }}</span>
+            <span class="text-[9.5px] uppercase font-bold block mt-0.5 tracking-wider">{{ t('sev_warning') }}</span>
           </div>
 
           <!-- Info (Biru - Info) -->
           <div
-            class="py-1 px-2 rounded border transition cursor-default"
+            @click="openSevModal('info')"
+            class="py-1 px-1 rounded border transition cursor-pointer hover:brightness-125 active:scale-95"
             :class="infoCount > 0 ? 'bg-cyan-950/90 border-cyan-500 text-cyan-300 font-bold shadow-[0_0_8px_rgba(56,189,248,0.3)]' : 'bg-gray-900/40 border-gray-800/80 text-gray-500'"
             :title="t('sev_info')"
           >
             <span class="text-base font-extrabold leading-tight block">{{ infoCount }}</span>
-            <span class="text-[10px] uppercase font-bold block mt-0.5 tracking-wider">{{ t('sev_info') }}</span>
+            <span class="text-[9.5px] uppercase font-bold block mt-0.5 tracking-wider">{{ t('sev_info') }}</span>
+          </div>
+
+          <!-- Ignored (Abu-abu / Netral - Diabaikan) -->
+          <div
+            @click="openSevModal('ignored')"
+            class="py-1 px-1 rounded border transition cursor-pointer hover:brightness-125 active:scale-95"
+            :class="ignoredCount > 0 ? 'bg-slate-900/90 border-slate-500 text-slate-300 font-bold shadow-[0_0_8px_rgba(148,163,184,0.3)]' : 'bg-gray-900/40 border-gray-800/80 text-gray-500'"
+            :title="t('sev_ignored')"
+          >
+            <span class="text-base font-extrabold leading-tight block">{{ ignoredCount }}</span>
+            <span class="text-[9.5px] uppercase font-bold block mt-0.5 tracking-wider">{{ t('sev_ignored') }}</span>
           </div>
         </div>
       </div>
@@ -221,8 +236,10 @@
             <tr
               v-for="prob in activeProblems"
               :key="prob.id"
-              @click="$emit('inspect-node', prob.server_id)"
+              @click="openProblemDetail(prob)"
               class="hover:bg-cyan-950/30 transition-colors group cursor-pointer"
+              title="Klik untuk diagnosa dan penanganan insiden"
+            >
               :title="`Open details for ${prob.hostname}`"
             >
               <!-- TIME -->
@@ -545,12 +562,45 @@
         </div>
       </div>
     </div>
+
+    <!-- SEVERITY DETAIL MODAL -->
+    <SevDetailModal
+      :is-open="showSevModal"
+      :severity="activeSev"
+      :problems="problems"
+      @close="showSevModal = false"
+      @open-problem-detail="openProblemDetail"
+      @open-server="openHostFromModal"
+      @unignore-problem="unignoreProblem"
+      @ignore-problem="openIgnoreDialog"
+    />
+
+    <!-- PROBLEM DETAIL & DIAGNOSTICS MODAL -->
+    <ProblemDetailModal
+      :is-open="showProblemDetailModal"
+      :problem="selectedProblem"
+      @close="showProblemDetailModal = false"
+      @open-server="openHostFromModal"
+      @ignore-problem="openIgnoreDialog"
+      @terminate-ssh="terminateSshSession"
+    />
+
+    <!-- IGNORE PROBLEM MODAL -->
+    <IgnoreProblemModal
+      :is-open="showIgnoreModal"
+      :problem="problemToIgnore"
+      @close="showIgnoreModal = false"
+      @ignored="handleIgnored"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from '../../i18n'
+import SevDetailModal from './SevDetailModal.vue'
+import ProblemDetailModal from './ProblemDetailModal.vue'
+import IgnoreProblemModal from './IgnoreProblemModal.vue'
 
 const props = defineProps({
   servers: {
@@ -563,9 +613,82 @@ const props = defineProps({
   }
 })
 
-defineEmits(['inspect-node', 'nav'])
+const emit = defineEmits(['inspect-node', 'nav', 'refresh-problems'])
 
 const { t, locale } = useI18n()
+
+const showSevModal = ref(false)
+const activeSev = ref('danger')
+
+const showProblemDetailModal = ref(false)
+const selectedProblem = ref(null)
+
+const showIgnoreModal = ref(false)
+const problemToIgnore = ref(null)
+
+function openSevModal(sev) {
+  activeSev.value = sev
+  showSevModal.value = true
+}
+
+function openProblemDetail(p) {
+  selectedProblem.value = p
+  showProblemDetailModal.value = true
+}
+
+function openIgnoreDialog(p) {
+  problemToIgnore.value = p
+  showIgnoreModal.value = true
+}
+
+async function unignoreProblem(pid) {
+  const token = localStorage.getItem('pantau_token')
+  try {
+    const res = await fetch(`/api/problems/${pid}/unignore`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    const data = await res.json()
+    if (data.ok) {
+      emit('refresh-problems')
+    } else {
+      alert(data.detail || 'Gagal memulihkan pemantauan')
+    }
+  } catch (err) {
+    console.error('Failed to unignore problem:', err)
+  }
+}
+
+async function terminateSshSession(prob) {
+  if (!confirm('Putus paksa sesi SSH ini sekarang?')) return
+  const token = localStorage.getItem('pantau_token')
+  try {
+    const res = await fetch(`/api/problems/${prob.id}/terminate-ssh`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    const data = await res.json()
+    if (data.ok) {
+      alert(data.message || 'SSH session termination signal sent.')
+      showProblemDetailModal.value = false
+      emit('refresh-problems')
+    } else {
+      alert(data.detail || 'Failed to terminate SSH session.')
+    }
+  } catch (err) {
+    console.error('Failed to terminate SSH session:', err)
+  }
+}
+
+function handleIgnored() {
+  emit('refresh-problems')
+}
+
+function openHostFromModal(sid) {
+  showSevModal.value = false
+  showProblemDetailModal.value = false
+  emit('inspect-node', sid)
+}
 
 const fleetViewMode = ref('table') // 'table' or 'grid'
 const fleetFilter = ref('')
@@ -611,12 +734,13 @@ onUnmounted(() => {
 const upCount = computed(() => props.servers.filter(s => s.is_online).length)
 const downCount = computed(() => props.servers.filter(s => !s.is_online && s.last_seen).length)
 
-const activeProblems = computed(() => props.problems.filter(p => p.is_active))
+const activeProblems = computed(() => props.problems.filter(p => p.is_active && !p.is_ignored))
 
 const dangerCount = computed(() => activeProblems.value.filter(p => p.severity === 'danger').length)
 const criticalCount = computed(() => activeProblems.value.filter(p => p.severity === 'critical' || p.severity === 'average').length)
 const warnCount = computed(() => activeProblems.value.filter(p => p.severity === 'warning').length)
 const infoCount = computed(() => activeProblems.value.filter(p => !p.severity || p.severity === 'info').length)
+const ignoredCount = computed(() => props.problems.filter(p => p.is_ignored).length)
 
 const filteredServers = computed(() => {
   if (!fleetFilter.value) return props.servers

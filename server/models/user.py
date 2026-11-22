@@ -22,19 +22,74 @@ class User(Base):
 
     @property
     def is_master_admin(self) -> bool:
-        return self.role == "master_admin"
+        return self.role in ("master_admin", "master-admin")
 
-    def can_access_server(self, server_id: int) -> bool:
-        if self.is_master_admin:
-            return True
-        if not self.allowed_server_ids:
-            return True
+    @property
+    def is_operator(self) -> bool:
+        return self.role in ("operator", "operator_utama", "operator-utama", "operator_pembantu", "operator-pembantu")
+
+    @property
+    def is_viewer(self) -> bool:
+        return self.role in ("viewer", "guest", "tamu")
+
+    def get_permissions(self) -> dict:
+        """Kembalikan dictionary izin aktif untuk operator."""
+        if self.is_master_admin or self.role in ("operator_utama", "operator-utama"):
+            # Master Admin dan Operator Utama memiliki seluruh 16 izin penuh
+            from security_auth import OPERATOR_PERMISSIONS
+            return {k: True for k in OPERATOR_PERMISSIONS.keys()}
+        if self.is_viewer:
+            return {}
+        if not self.permissions:
+            return {}
         try:
             import json
-            ids = json.loads(self.allowed_server_ids)
-            return server_id in ids
+            parsed = json.loads(self.permissions)
+            return parsed if isinstance(parsed, dict) else {}
         except Exception:
+            return {}
+
+    def has_perm(self, perm: str) -> bool:
+        """Evaluasi apakah pengguna memiliki hak izin granular tertentu."""
+        if not self.is_active:
+            return False
+        if self.is_master_admin or self.role in ("operator_utama", "operator-utama"):
             return True
+        if self.is_viewer:
+            return False
+        perms = self.get_permissions()
+        if perm == "can_manage_viewers" and perms.get("can_manage_users"):
+            return True
+        return bool(perms.get(perm, False))
+
+    def get_allowed_server_ids(self) -> list[int] | None:
+        """Mengembalikan list ID server yang diizinkan, atau None jika akses global."""
+        if self.is_master_admin or self.role in ("operator_utama", "operator-utama"):
+            return None
+        if not self.allowed_server_ids:
+            return []
+        try:
+            import json
+            parsed = json.loads(self.allowed_server_ids)
+            if isinstance(parsed, list):
+                return [int(x) for x in parsed]
+        except Exception:
+            pass
+        try:
+            return [int(x.strip()) for x in str(self.allowed_server_ids).split(",") if x.strip().isdigit()]
+        except Exception:
+            return []
+
+    def can_access_server(self, server_id: int) -> bool:
+        # master-admin dan operator utama memiliki akses penuh global ke seluruh armada
+        if not self.is_active:
+            return False
+        if self.is_master_admin or self.role in ("operator_utama", "operator-utama"):
+            return True
+        allowed = self.get_allowed_server_ids()
+        if allowed is None:
+            return True
+        return server_id in allowed
 
 class LoginAttempt(Base):
     __tablename__ = "login_attempts"

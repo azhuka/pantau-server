@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Body
 from sqlalchemy.orm import Session
 from core.database import get_db
@@ -27,10 +27,24 @@ def list_problems(
     
     problems = query.order_by(ServerProblem.id.desc()).limit(100).all()
     result = []
+    now = datetime.utcnow()
     
     for prob, hostname in problems:
         if not user.can_access_server(prob.server_id):
             continue
+
+        # Cek kedaluwarsa pengabaian berbatas waktu
+        is_ign = bool(prob.is_ignored)
+        if is_ign and prob.ignored_until and prob.ignored_until < now:
+            prob.is_ignored = 0
+            prob.ignored_until = None
+            prob.ignored_reason = None
+            prob.ignore_mode = None
+            is_ign = False
+            try:
+                db.commit()
+            except Exception:
+                db.rollback()
 
         context_obj = None
         if prob.context:
@@ -58,11 +72,137 @@ def list_problems(
             "resolved_at": prob.resolved_at.isoformat() if prob.resolved_at else None,
             "resolved_note": prob.resolved_note,
             "is_active": prob.is_active,
+            "is_ignored": is_ign,
+            "ignored_until": prob.ignored_until.isoformat() if prob.ignored_until else None,
+            "ignored_by": prob.ignored_by,
+            "ignored_reason": prob.ignored_reason,
+            "ignore_mode": prob.ignore_mode,
             "action": action,
             "context": context_obj
         })
 
     return {"ok": True, "problems": result}
+
+
+@router.post("/{pid}/ignore")
+def ignore_problem_action(
+    pid: int,
+    body: dict = Body(default={}),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Abaikan insiden (tunda alarm dan sembunyikan dari daftar aktif)."""
+    if user.is_viewer:
+        raise HTTPException(status_code=403, detail="Akses ditolak: Akun Viewer tidak memiliki izin mengabaikan insiden")
+
+    prob = db.query(ServerProblem).filter(ServerProblem.id == pid, ServerProblem.resolved_at == None).first()
+    if not prob:
+        raise HTTPException(status_code=404, detail="Insiden aktif tidak ditemukan")
+
+    if prob.server_id and not user.can_access_server(prob.server_id):
+        raise HTTPException(status_code=403, detail="Akses ditolak: Anda tidak memiliki wewenang atas server ini")
+
+    duration = str(body.get("duration", "24h")).lower().strip()
+    reason = str(body.get("reason", "")).strip()[:255] or None
+
+    now = datetime.utcnow()
+    until = None
+    ignore_mode = "duration"
+
+    if duration == "2h":
+        until = now + timedelta(hours=2)
+    elif duration == "24h":
+        until = now + timedelta(hours=24)
+    elif duration == "7d":
+        until = now + timedelta(days=7)
+    elif duration == "30d":
+        until = now + timedelta(days=30)
+    elif duration in ("0", "perm", "permanent", "forever"):
+        until = None
+        ignore_mode = "permanent"
+    elif duration == "incident":
+        until = None
+        ignore_mode = "incident"
+    else:
+        until = now + timedelta(hours=24)
+
+    prob.is_ignored = 1
+    prob.ignored_until = until
+    prob.ignored_by = user.username
+    prob.ignored_reason = reason
+    prob.ignore_mode = ignore_mode
+    prob.updated_at = now
+
+    audit = AuditLog(
+        server_id=prob.server_id,
+        username=user.username,
+        action="problem_ignore",
+        target=prob.message[:100],
+        result="berhasil",
+        meta=f"Diabaikan ({duration}) oleh {user.username}: {reason or 'tanpa alasan'}",
+        created_at=now
+    )
+    db.add(audit)
+    db.commit()
+
+    return {
+        "ok": True,
+        "id": pid,
+        "is_ignored": True,
+        "ignored_until": until.isoformat() if until else None,
+        "ignore_mode": ignore_mode,
+        "ignored_by": user.username,
+        "ignored_reason": reason,
+        "message": f"Insiden berhasil diabaikan ({duration})"
+    }
+
+
+@router.post("/{pid}/unignore")
+def unignore_problem_action(
+    pid: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Batalkan pengabaian / aktifkan kembali pemantauan insiden."""
+    if user.is_viewer:
+        raise HTTPException(status_code=403, detail="Akses ditolak: Akun Viewer tidak memiliki izin memulihkan pengabaian")
+
+    prob = db.query(ServerProblem).filter(ServerProblem.id == pid, ServerProblem.resolved_at == None).first()
+    if not prob:
+        raise HTTPException(status_code=404, detail="Insiden tidak ditemukan")
+
+    if prob.server_id and not user.can_access_server(prob.server_id):
+        raise HTTPException(status_code=403, detail="Akses ditolak: Anda tidak memiliki wewenang atas server ini")
+
+    now = datetime.utcnow()
+    # Bersihkan seluruh riwayat pengabaian pada masalah ini dan key terkait di server ini
+    db.query(ServerProblem).filter(
+        ServerProblem.server_id == prob.server_id,
+        ServerProblem.key == prob.key,
+    ).update(
+        {
+            ServerProblem.is_ignored: 0,
+            ServerProblem.ignored_until: None,
+            ServerProblem.ignored_reason: None,
+            ServerProblem.ignore_mode: None,
+            ServerProblem.updated_at: now
+        },
+        synchronize_session=False,
+    )
+
+    audit = AuditLog(
+        server_id=prob.server_id,
+        username=user.username,
+        action="problem_unignore",
+        target=prob.message[:100],
+        result="berhasil",
+        meta=f"Pemantauan diaktifkan kembali oleh {user.username}",
+        created_at=now
+    )
+    db.add(audit)
+    db.commit()
+
+    return {"ok": True, "id": pid, "is_ignored": False, "message": "Pemantauan insiden berhasil diaktifkan kembali"}
 
 @router.post("/{pid}/terminate-ssh")
 def terminate_ssh_session_action(
