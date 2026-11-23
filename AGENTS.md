@@ -158,4 +158,13 @@ Skill `security-audit` dipasang lokal di `.agents/skills/security-audit/` untuk 
 - **Vonis 3-Tingkat Baku:** Hasil audit diklasifikasikan ke `confirmed` (terbukti dengan trace kode dan dampak nyata), `needs_validation` (butuh validasi runtime khusus tanpa mengarang tingkat keparahan), atau `rejected` (terbantahkan).
 - **Mode Operasi:** Secara *default* berstatus *Guidance Mode* (hanya menjawab konsultasi atau review terarah) dan hanya menjalankan alur 6 fase penuh jika ada permintaan audit eksplisit (*"security audit"*, *"pen-test"*).
 
+---
+
+## 8. Mandat Standar Rekayasa Hakiki (Zero-Hack, Zero-Workaround & Pure Architecture)
+
+- **Larangan Mutlak Hardcoding & Workaround:** Dilarang keras menggunakan jalan pintas praktis (*lazy shortcuts*), akal-akalan, tambal sulam, regex substring hack yang rapuh di UI, data dummy, atau hardcoding nilai statis pada seluruh lapisan (backend FastAPI, routers, services, frontend Vue, script, agent).
+- **Penanganan Akar Masalah (*Root Cause First*):** Perbaikan wajib menyentuh akar masalah. Jika data kurang di antarmuka, perbaiki skema & domain servis di backend, alirkan melalui Pydantic response envelope resmi, lalu sajikan di Vue secara bersih dan terstruktur.
+- **Standar Rekayasa Tinggi:** Mengharuskan data fisik terukur tingkat kernel Linux (`/proc`, `/sys`, socket, systemd), konkurensi InnoDB murni, pemisahan lapisan yang disiplin, dan verifikasi nyata berbasis bukti.
+
+
 

@@ -295,6 +295,23 @@ Seluruh penamaan modul, variabel, teks antarmuka, dokumentasi, dan logika sistem
 - **Integritas Riwayat Perkembangan:**
   - Setiap kali merilis versi baru, `DEVELOPMENT.md` **WAJIB diperbarui** dengan blok catatan teknis changelog yang lengkap dan rapi sebagai rekam jejak evolusi sistem yang dapat dipelajari di masa depan.
 
+---
+
+## 22. Mandat Standar Rekayasa Hakiki: Larangan Mutlak Hardcoding, Workaround, Hack Solution, Akal-Akalan, dan Tambal Sulam (Zero-Hack & Pure Architecture Mandate)
+- **Larangan Mutlak Hardcoding (Zero-Hardcode Invariant):**
+  - Dilarang keras menaruh nilai statis hardcode, mapping ID buatan, kamus layanan tiruan, path berkas lokal pengembang, atau asumsi sepihak pada seluruh lapisan kode (backend FastAPI, routers, services, database queries, frontend Vue, script utilitas, maupun agen klien).
+  - Seluruh data (layanan, metrik, platform, hardware, proses, jaringan, log, versi) **WAJIB bersumber dari penemuan dinamis (*dynamic discovery*) kondisi fisik nyata kernel Linux** (`/proc`, `/sys`, socket, systemd) dan skema basis data operasional resmi.
+- **Larangan Mutlak Solusi Tambal Sulam / "Akal-Akalan" / Workaround:**
+  - Dilarang keras menerapkan perbaikan kosmetik cepat yang hanya menutupi gejala di permukaan (*patching symptoms*) alih-alih membereskan akar masalah arsitektural (*root cause*).
+  - Dilarang memanipulasi teks/string secara rapuh di frontend (seperti regex substring hack untuk menebak status atau memotong data yang seharusnya dikirim terstruktur via Pydantic schema dari backend).
+  - Dilarang membuat opsi dummy, wrapper kosong tak terpakai, manipulasi DOM spekulatif, mock data sementara di lingkungan operasional, atau monkey-patching fungsi pustaka.
+- **Integritas Aliran Data Antar-Lapisan (True Layering & Clean Contract):**
+  - **Lapisan Servis Backend (`services/`):** Seluruh kalkulasi status, triase insiden, klasifikasi platform, dan agregasi metrik berada di lapisan servis dengan penanganan pengecualian terstruktur.
+  - **Lapisan Transport (`routers/`):** Hanya bertindak sebagai pengantar (*transport layer*), memvalidasi skema input/output Pydantic, menginjeksi dependensi sesi DB, dan mengembalikan HTTP envelope resmi. Dilarang menaruh logika bisnis yang rumit atau kalkulasi ad-hoc di router.
+  - **Lapisan Penyaji Frontend (`components/`):** Bertindak murni sebagai penyaji (*presentation layer*) yang reaktif. UI menerima kontrak data bersih dari API backend dan menyajikannya secara proporsional sesuai standar kepadatan data NOC dan sistem i18n dwibahasa reaktif. Dilarang keras melakukan komputasi berat, tebak-tebakan data, atau manipulasi spekulatif di dalam komponen Vue.
+- **Prinsip Refaktor Tanpa Kompromi (Eradicate Legacy Hacks):**
+  - Setiap kali menemukan pola workaround, solusi tambal sulam, atau akal-akalan warisan di modul apa pun yang sedang disentuh, asisten **WAJIB segera membersihkan dan merefaktornya ke fondasi arsitektur yang benar, bersih, dan tangguh** sebelum menyatakan pekerjaan selesai.
+
 
 
 
