@@ -298,26 +298,26 @@
               </td>
 
               <!-- 12. KLASTER TOMBOL TINDAKAN (TACTICAL COMMAND CONTROLLER) -->
-              <td class="py-2.5 px-4 whitespace-nowrap text-right">
-                <div class="inline-flex items-center gap-1.5">
+              <td class="py-2.5 px-4 whitespace-nowrap text-right" @click.stop>
+                <div class="inline-flex items-center gap-1.5 noc-action-dropdown-container relative">
                   <!-- Tombol VIEW (Membuka Jendela Rincian Aset) -->
                   <button
                     @click="$emit('open-workspace', s.id, 'overview')"
                     class="px-2.5 py-1 rounded bg-cyan-950/80 hover:bg-cyan-700 text-cyan-300 hover:text-white border border-cyan-500/50 text-xs font-bold shadow-[0_0_8px_rgba(56,189,248,0.2)] transition cursor-pointer flex items-center gap-1.5"
-                    title="View asset details and telemetry"
+                    :title="t('tooltip_view')"
                   >
                     <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
                       <circle cx="12" cy="12" r="3"/>
                     </svg>
-                    <span>{{ t('action_view') || 'View' }}</span>
+                    <span>{{ t('btn_view') || 'View' }}</span>
                   </button>
 
                   <!-- Shortcut METRICS -->
                   <button
                     @click="$emit('open-workspace', s.id, 'overview')"
                     class="w-7 h-7 flex items-center justify-center rounded bg-[#0b1324] hover:bg-cyan-950 text-cyan-400 hover:text-cyan-300 border border-cyan-800/40 transition cursor-pointer"
-                    title="Performance & Metrics"
+                    :title="t('tooltip_metrics')"
                   >
                     <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <line x1="18" y1="20" x2="18" y2="10"/>
@@ -326,25 +326,23 @@
                     </svg>
                   </button>
 
-                  <!-- Shortcut TERMINAL -->
-                  <button
-                    @click="$emit('open-terminal', s)"
-                    class="w-7 h-7 flex items-center justify-center rounded bg-[#0b1324] hover:bg-cyan-950 text-cyan-400 hover:text-cyan-300 border border-cyan-800/40 transition cursor-pointer"
-                    title="Web Terminal"
-                  >
-                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <polyline points="4 17 10 11 4 5"/>
-                      <line x1="12" y1="19" x2="20" y2="19"/>
-                    </svg>
-                  </button>
-
                   <!-- Shortcut PROBE INSTAN -->
                   <button
-                    @click="$emit('probe-node', s.id)"
-                    class="w-7 h-7 flex items-center justify-center rounded bg-[#0b1324] hover:bg-emerald-950 text-emerald-400 hover:text-emerald-300 border border-cyan-800/40 transition cursor-pointer"
-                    title="Probe Telemetry"
+                    @click="onProbeClick(s.id)"
+                    :disabled="probingServerId === s.id"
+                    class="w-7 h-7 flex items-center justify-center rounded bg-[#0b1324] hover:bg-emerald-950 text-emerald-400 hover:text-emerald-300 border border-cyan-800/40 transition cursor-pointer disabled:opacity-60"
+                    :title="t('tooltip_sync')"
                   >
-                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg
+                      class="w-3.5 h-3.5"
+                      :class="{ 'animate-spin text-cyan-300': probingServerId === s.id }"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
                       <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
                       <path d="M3 3v5h5"/>
                       <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
@@ -353,17 +351,93 @@
                   </button>
 
                   <!-- Menu DROPDOWN ⋮ -->
-                  <button
-                    @click="$emit('more-actions', s.id, $event)"
-                    class="w-7 h-7 flex items-center justify-center rounded bg-[#0b1324] hover:bg-gray-800 text-gray-400 hover:text-white border border-gray-700/80 transition cursor-pointer"
-                    title="More Actions"
-                  >
-                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <circle cx="12" cy="12" r="1"/>
-                      <circle cx="12" cy="5" r="1"/>
-                      <circle cx="12" cy="19" r="1"/>
-                    </svg>
-                  </button>
+                  <div class="relative inline-block text-left">
+                    <button
+                      @click="toggleDropdown(s.id)"
+                      class="w-7 h-7 flex items-center justify-center rounded transition cursor-pointer border"
+                      :class="activeDropdownId === s.id ? 'bg-cyan-950 text-cyan-300 border-cyan-500/60 shadow-[0_0_8px_rgba(56,189,248,0.25)]' : 'bg-[#0b1324] hover:bg-gray-800 text-gray-400 hover:text-white border-gray-700/80'"
+                      :title="t('btn_more') || 'More Actions'"
+                    >
+                      <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="1"/>
+                        <circle cx="12" cy="5" r="1"/>
+                        <circle cx="12" cy="19" r="1"/>
+                      </svg>
+                    </button>
+
+                    <!-- Tactical Dropdown Menu Floating Popover -->
+                    <div
+                      v-if="activeDropdownId === s.id"
+                      class="absolute right-0 top-full mt-1.5 w-52 bg-[#080d19] border border-cyan-500/50 rounded-xl shadow-[0_12px_36px_rgba(0,0,0,0.85)] p-1.5 z-[9999] text-xs font-mono backdrop-blur-md text-left"
+                    >
+                      <div class="px-2.5 py-1 text-[10px] text-gray-400 font-bold uppercase tracking-wider border-b border-cyan-950/80 pb-1 mb-1">
+                        // {{ s.hostname }}
+                      </div>
+
+                      <button
+                        @click="handleSelectAction(s.id, 'services_ports')"
+                        class="w-full px-2.5 py-1.5 rounded hover:bg-cyan-950/70 text-gray-200 hover:text-cyan-300 flex items-center gap-2 transition cursor-pointer"
+                      >
+                        <svg class="w-3.5 h-3.5 text-cyan-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <circle cx="12" cy="12" r="3"/>
+                          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                        </svg>
+                        <span>{{ t('tab_services_ports') }}</span>
+                      </button>
+
+                      <button
+                        @click="handleSelectAction(s.id, 'processes')"
+                        class="w-full px-2.5 py-1.5 rounded hover:bg-cyan-950/70 text-gray-200 hover:text-cyan-300 flex items-center gap-2 transition cursor-pointer"
+                      >
+                        <svg class="w-3.5 h-3.5 text-cyan-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <rect width="18" height="18" x="3" y="3" rx="2"/>
+                          <path d="m9 12 2 2 4-4"/>
+                        </svg>
+                        <span>{{ t('tab_tasks') }}</span>
+                      </button>
+
+                      <button
+                        @click="handleSelectAction(s.id, 'firewall')"
+                        class="w-full px-2.5 py-1.5 rounded hover:bg-cyan-950/70 text-gray-200 hover:text-cyan-300 flex items-center gap-2 transition cursor-pointer"
+                      >
+                        <svg class="w-3.5 h-3.5 text-cyan-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        </svg>
+                        <span>{{ t('tab_firewall') }}</span>
+                      </button>
+
+                      <button
+                        @click="handleSelectAction(s.id, 'maintenance')"
+                        class="w-full px-2.5 py-1.5 rounded hover:bg-amber-950/70 text-amber-300 flex items-center gap-2 transition cursor-pointer"
+                      >
+                        <svg class="w-3.5 h-3.5 text-amber-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        </svg>
+                        <span>{{ t('toolbar_maint') }}</span>
+                      </button>
+
+                      <div class="border-t border-cyan-950/80 my-1"></div>
+
+                      <button
+                        @click="copyServerIp(s.ip_address, s.id)"
+                        class="w-full px-2.5 py-1.5 rounded hover:bg-cyan-950/70 text-gray-300 hover:text-cyan-300 flex items-center justify-between transition cursor-pointer"
+                      >
+                        <span class="flex items-center gap-2">
+                          <svg class="w-3.5 h-3.5 text-gray-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
+                            <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+                          </svg>
+                          <span>{{ s.ip_address }}</span>
+                        </span>
+                        <span v-if="copiedServerId === s.id" class="text-[10px] text-emerald-400 font-bold">
+                          {{ t('dash_copied_ip') }}
+                        </span>
+                        <span v-else class="text-[10px] text-gray-400">
+                          {{ t('btn_copy') }}
+                        </span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </td>
             </tr>
@@ -391,22 +465,80 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from '../../i18n'
 
 const props = defineProps({
   servers: {
     type: Array,
     default: () => []
+  },
+  probingServerId: {
+    type: Number,
+    default: null
   }
 })
 
-defineEmits(['open-workspace', 'probe-node', 'more-actions', 'open-terminal'])
+const emit = defineEmits(['open-workspace', 'probe-node'])
 
 const { t } = useI18n()
 
 const searchQuery = ref('')
 const statusFilter = ref('all') // all, online, offline
+const activeDropdownId = ref(null)
+const copiedServerId = ref(null)
+
+function toggleDropdown(sid) {
+  activeDropdownId.value = activeDropdownId.value === sid ? null : sid
+}
+
+function closeDropdown() {
+  activeDropdownId.value = null
+}
+
+function handleSelectAction(sid, tool) {
+  closeDropdown()
+  emit('open-workspace', sid, tool)
+}
+
+function onProbeClick(sid) {
+  closeDropdown()
+  emit('probe-node', sid)
+}
+
+function copyServerIp(ip, sid) {
+  if (!ip) return
+  navigator.clipboard.writeText(ip).then(() => {
+    copiedServerId.value = sid
+    setTimeout(() => {
+      if (copiedServerId.value === sid) {
+        copiedServerId.value = null
+      }
+    }, 1500)
+  }).catch(() => {})
+}
+
+function handleDocumentClick(e) {
+  if (!e.target.closest('.noc-action-dropdown-container')) {
+    closeDropdown()
+  }
+}
+
+function handleKeydown(e) {
+  if (e.key === 'Escape') {
+    closeDropdown()
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('click', handleDocumentClick)
+  window.addEventListener('keydown', handleKeydown)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('click', handleDocumentClick)
+  window.removeEventListener('keydown', handleKeydown)
+})
 
 const filteredServers = computed(() => {
   let list = props.servers || []

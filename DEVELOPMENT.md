@@ -174,6 +174,14 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.28
+
+- **Inventaris Aset**: Menghapus tombol terminal pada kolom Tindakan demi keamanan dan etika operasional shell terpusat.
+- **Aksi Tabel**: Mengaktifkan tombol View, Metrics, Probe telemetri dengan animasi live spinner, dan dropdown taktis 'Aksi Lainnya ⋮' (Services, Tasks, Firewall, Mode Pemeliharaan, Salin IP).
+- **Dasbor**: Mengonfirmasi dan mempertahankan status halaman dasbor murni pasif tanpa tombol tindakan atau pemicu terminal.
+- **Modal Kontrol**: Mendukung deep-linking subtab dan pemicu dialog mode pemeliharaan via initialFloatingTool.
+
+
 ### Versi v0.1.27
 
 ### v0.1.27 (2026-11-24) — Dasbor Standar Baku NOC 10-Kolom, Gauge Baterai LED 10-Segmen & Badge Platform Real-Time

@@ -29,10 +29,9 @@
       <AssetTableView
         v-else-if="activeTab === 'assets'"
         :servers="servers"
+        :probing-server-id="probingNodeId"
         @open-workspace="openWorkspace"
-        @open-terminal="openTerminalDock"
         @probe-node="handleProbeNode"
-        @more-actions="handleMoreActions"
       />
 
       <!-- HALAMAN 3: AUDIT TRAIL (Log Akuntabilitas Aksi Operator) -->
@@ -293,6 +292,14 @@ const workspaceHost = computed(() => {
 
 function handleNav(tab) {
   activeTab.value = tab
+  window.location.hash = tab
+}
+
+function syncTabFromHash() {
+  const hash = window.location.hash.replace(/^#/, '')
+  if (['dashboard', 'assets', 'audit', 'settings'].includes(hash)) {
+    activeTab.value = hash
+  }
 }
 
 const initialFloatingTool = ref(null)
@@ -322,12 +329,25 @@ function onWorkspaceSwitchServer(sid) {
   workspaceServerId.value = sid
 }
 
-function handleProbeNode(sid) {
-  fetchServers()
-}
+const probingNodeId = ref(null)
 
-function handleMoreActions(sid, event) {
-  openWorkspace(sid)
+async function handleProbeNode(sid) {
+  probingNodeId.value = sid
+  const token = localStorage.getItem('pantau_token')
+  const headers = token ? { Authorization: `Bearer ${token}` } : {}
+  try {
+    await Promise.all([
+      fetch(`/api/servers/${sid}`, { headers }),
+      fetchServers(),
+      fetchProblems()
+    ])
+  } catch (err) {
+    console.error('Probe node error:', err)
+  } finally {
+    setTimeout(() => {
+      probingNodeId.value = null
+    }, 600)
+  }
 }
 
 function handleLogout() {
@@ -454,6 +474,8 @@ function handleGlobalKeydown(e) {
 }
 
 onMounted(() => {
+  syncTabFromHash()
+  window.addEventListener('hashchange', syncTabFromHash)
   checkAuth()
   window.addEventListener('keydown', handleGlobalKeydown)
   pollTimer = setInterval(() => {
@@ -465,6 +487,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  window.removeEventListener('hashchange', syncTabFromHash)
   window.removeEventListener('keydown', handleGlobalKeydown)
   if (pollTimer) clearInterval(pollTimer)
 })

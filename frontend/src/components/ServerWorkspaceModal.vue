@@ -807,6 +807,10 @@ watch(() => props.initialFloatingTool, (tool) => {
     openTerminalModal()
   } else if (tool === 'files') {
     openFileManagerModal()
+  } else if (tool === 'maintenance') {
+    openMaintenanceModal()
+  } else if (tool && ['overview', 'problems', 'services_ports', 'processes', 'firewall', 'accounts', 'cron', 'fim', 'packages', 'ssl', 'logs'].includes(tool)) {
+    activeSubTab.value = tool
   }
 }, { immediate: true })
 

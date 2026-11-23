@@ -116,6 +116,7 @@ export default {
   btn_terminal: 'Terminal',
   btn_sync: 'Sync',
   btn_more: 'More',
+  btn_copy: 'Copy',
   tooltip_view: 'Open Tactical Workspace Controller',
   tooltip_metrics: 'Open Telemetry Metrics & Charts',
   tooltip_terminal: 'Launch Web Terminal Console',

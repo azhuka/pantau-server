@@ -116,6 +116,7 @@ export default {
   btn_terminal: 'Terminal',
   btn_sync: 'Sync',
   btn_more: 'Lainnya',
+  btn_copy: 'Salin',
   tooltip_view: 'Buka Jendela Kerja Kontrol Taktis',
   tooltip_metrics: 'Buka Grafik Metrik Telemetri',
   tooltip_terminal: 'Buka Konsol Terminal Web',
