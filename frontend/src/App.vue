@@ -104,7 +104,7 @@
           <div class="text-xs font-bold text-gray-100 font-mono flex items-center gap-1.5">
             <span
               class="w-2 h-2 rounded-full"
-              :class="workspaceHost?.is_online ? 'bg-emerald-400 beacon-live' : 'bg-rose-500'"
+              :class="workspaceHost?.is_online ? 'bg-emerald-400 beacon-live' : 'bg-rose-500 radar-critical'"
             ></span>
             <span>{{ workspaceHost?.hostname || 'Server' }}</span>
             <span class="text-xs text-cyan-300 font-semibold">({{ workspaceHost?.ip_address }})</span>

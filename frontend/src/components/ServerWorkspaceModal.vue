@@ -60,7 +60,7 @@
                 v-else
                 class="inline-flex items-center gap-1 px-2 py-0.2 rounded text-[11px] font-bold bg-rose-950/80 text-rose-300 border border-rose-700/60 shrink-0"
               >
-                <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                <span class="w-1.5 h-1.5 rounded-full bg-rose-500 radar-critical"></span>
                 DOWN
               </span>
               <span class="text-xs font-mono text-cyan-300 font-semibold shrink-0">
@@ -156,7 +156,7 @@
                       <div class="font-mono text-gray-200 flex items-center gap-1.5 text-xs font-semibold">
                         <span
                           class="w-2 h-2 rounded-full"
-                          :class="h.is_online ? 'bg-emerald-400 beacon-live' : 'bg-rose-500'"
+                          :class="h.is_online ? 'bg-emerald-400 beacon-live' : 'bg-rose-500 radar-critical'"
                         ></span>
                         <span>{{ h.hostname }}</span>
                       </div>

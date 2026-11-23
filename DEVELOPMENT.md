@@ -174,6 +174,16 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.22
+
+- **Pemulihan Efek Kedip Pelan Radar Pulse (.radar-warning, .radar-critical, .beacon-live)**:
+  - Memastikan seluruh indikator titik status node aset dan badge insiden menerapkan denyut visual radar yang presisi.
+  - Normal online: .beacon-live (denyut hijau lembut 2.2s).
+  - Insiden Warning (Kuning): .radar-warning (denyut amber 1.8s) menandakan peringatan waspada/anomali.
+  - Insiden Critical & Danger (Oranye & Merah) serta Status Node Offline: .radar-critical (denyut merah 1.6s) menandakan kondisi kritis/darurat.
+  - Insiden Info (Biru) & Ignored (Abu-abu): Tetap statis tanpa animasi kedip untuk mencegah visual fatigue pada pemantauan makro.
+
+
 ### Versi v0.1.21
 
 ### [v0.1.21] - 2026-11-23

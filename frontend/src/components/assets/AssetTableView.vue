@@ -109,10 +109,14 @@
                 </span>
                 <span
                   v-else-if="s.is_online"
-                  class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-700/60"
+                  class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-bold"
+                  :class="s.danger_count > 0 ? 'bg-rose-950/80 text-rose-300 border border-rose-700/60' : (s.critical_count > 0 ? 'bg-orange-950/80 text-orange-300 border border-orange-700/60' : (s.warning_count > 0 ? 'bg-amber-950/80 text-amber-300 border border-amber-700/60' : 'bg-emerald-950/80 text-emerald-300 border border-emerald-700/60'))"
                   :title="t('tooltip_node_online')"
                 >
-                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 beacon-live"></span>
+                  <span
+                    class="w-1.5 h-1.5 rounded-full"
+                    :class="s.danger_count > 0 ? 'bg-rose-400 radar-critical' : (s.critical_count > 0 ? 'bg-orange-400 radar-critical' : (s.warning_count > 0 ? 'bg-amber-400 radar-warning' : 'bg-emerald-400 beacon-live'))"
+                  ></span>
                   LIVE
                 </span>
                 <span
@@ -120,7 +124,7 @@
                   class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-bold bg-rose-950/80 text-rose-300 border border-rose-700/60"
                   :title="t('tooltip_node_offline')"
                 >
-                  <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                  <span class="w-1.5 h-1.5 rounded-full bg-rose-500 radar-critical"></span>
                   DOWN
                 </span>
               </td>
@@ -153,21 +157,21 @@
                   </span>
                   <span
                     v-if="s.danger_count > 0"
-                    class="text-rose-400 font-bold ml-1 px-1 rounded bg-rose-950/80 border border-rose-700/60"
+                    class="text-rose-400 font-bold ml-1 px-1 rounded bg-rose-950/80 border border-rose-700/60 radar-critical"
                     :title="s.danger_msgs || 'Danger'"
                   >
                     ● {{ s.danger_count }} danger
                   </span>
                   <span
                     v-else-if="s.critical_count > 0"
-                    class="text-orange-400 font-bold ml-1 px-1 rounded bg-orange-950/80 border border-orange-700/60"
+                    class="text-orange-400 font-bold ml-1 px-1 rounded bg-orange-950/80 border border-orange-700/60 radar-critical"
                     :title="s.critical_msgs || 'Critical'"
                   >
                     ● {{ s.critical_count }} critical
                   </span>
                   <span
                     v-else-if="s.warning_count > 0"
-                    class="text-amber-400 font-bold ml-1 px-1 rounded bg-amber-950/80 border border-amber-700/60"
+                    class="text-amber-400 font-bold ml-1 px-1 rounded bg-amber-950/80 border border-amber-700/60 radar-warning"
                     :title="s.warning_msgs || 'Warning'"
                   >
                     ● {{ s.warning_count }} warning

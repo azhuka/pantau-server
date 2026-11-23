@@ -27,7 +27,7 @@
             <!-- Status Dot (Connected / Disconnected) -->
             <span
               class="w-2 h-2 rounded-full shrink-0 transition"
-              :class="t.status === 'connected' ? 'bg-emerald-400 beacon-live' : (t.status === 'connecting' ? 'bg-amber-400 animate-pulse' : 'bg-rose-500')"
+              :class="t.status === 'connected' ? 'bg-emerald-400 beacon-live' : (t.status === 'connecting' ? 'bg-amber-400 animate-pulse' : 'bg-rose-500 radar-critical')"
             ></span>
 
             <!-- Hostname Label -->

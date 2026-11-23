@@ -381,7 +381,10 @@
               <!-- Server -->
               <td class="py-2.5 px-4 whitespace-nowrap">
                 <div class="flex items-center gap-2">
-                  <span class="w-2 h-2 rounded-full" :class="s.is_online ? 'bg-emerald-400 beacon-live' : 'bg-rose-500'"></span>
+                  <span
+                    class="w-2 h-2 rounded-full"
+                    :class="!s.is_online ? 'bg-rose-500 radar-critical' : (s.is_maintenance ? 'bg-amber-400 animate-pulse' : (s.danger_count > 0 ? 'bg-rose-400 radar-critical' : (s.critical_count > 0 ? 'bg-orange-400 radar-critical' : (s.warning_count > 0 ? 'bg-amber-400 radar-warning' : 'bg-emerald-400 beacon-live'))))"
+                  ></span>
                   <span class="font-bold text-gray-100 group-hover:text-cyan-300 transition text-sm">{{ s.hostname }}</span>
                   <span class="text-xs text-gray-500 font-normal">({{ s.group_name || 'Default' }})</span>
                 </div>
@@ -481,21 +484,21 @@
                 <div v-else class="inline-flex items-center justify-center gap-1.5 flex-wrap">
                   <span
                     v-if="s.danger_count > 0"
-                    class="px-1.5 py-0.2 rounded text-[11px] font-bold bg-rose-950 text-rose-300 border border-rose-700 shadow-sm"
+                    class="px-1.5 py-0.2 rounded text-[11px] font-bold bg-rose-950 text-rose-300 border border-rose-700 shadow-sm radar-critical"
                     :title="s.danger_msgs || t('sev_danger')"
                   >
                     {{ s.danger_count }}
                   </span>
                   <span
                     v-if="s.critical_count > 0"
-                    class="px-1.5 py-0.2 rounded text-[11px] font-bold bg-orange-950 text-orange-300 border border-orange-700 shadow-sm"
+                    class="px-1.5 py-0.2 rounded text-[11px] font-bold bg-orange-950 text-orange-300 border border-orange-700 shadow-sm radar-critical"
                     :title="s.critical_msgs || t('sev_critical')"
                   >
                     {{ s.critical_count }}
                   </span>
                   <span
                     v-if="s.warning_count > 0"
-                    class="px-1.5 py-0.2 rounded text-[11px] font-bold bg-amber-950 text-amber-300 border border-amber-700 shadow-sm"
+                    class="px-1.5 py-0.2 rounded text-[11px] font-bold bg-amber-950 text-amber-300 border border-amber-700 shadow-sm radar-warning"
                     :title="s.warning_msgs || t('sev_warning')"
                   >
                     {{ s.warning_count }}
@@ -565,7 +568,7 @@
           <div>
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2 truncate">
-                <span class="w-2 h-2 rounded-full shrink-0" :class="s.is_maintenance ? 'bg-amber-400 animate-pulse' : (s.is_online ? 'bg-emerald-400 beacon-live' : 'bg-rose-500')"></span>
+                <span class="w-2 h-2 rounded-full shrink-0" :class="!s.is_online ? 'bg-rose-500 radar-critical' : (s.is_maintenance ? 'bg-amber-400 animate-pulse' : (s.danger_count > 0 ? 'bg-rose-400 radar-critical' : (s.critical_count > 0 ? 'bg-orange-400 radar-critical' : (s.warning_count > 0 ? 'bg-amber-400 radar-warning' : 'bg-emerald-400 beacon-live'))))"></span>
                 <span class="font-bold text-gray-100 text-sm truncate group-hover:text-cyan-300 transition font-mono">{{ s.hostname }}</span>
               </div>
               <span class="text-[10px] font-mono text-gray-500 uppercase">{{ s.group_name || 'DEFAULT' }}</span>
@@ -598,9 +601,9 @@
           <div class="mt-3 pt-2 border-t border-cyan-500/10 flex items-center justify-between text-[11px] font-mono text-gray-400">
             <span>UP // {{ formatUptime(s.uptime_secs) }}</span>
             <div v-if="s.active_problems_count > 0" class="inline-flex items-center gap-1">
-              <span v-if="s.danger_count > 0" class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-rose-950 text-rose-300 border border-rose-700" :title="s.danger_msgs">{{ s.danger_count }}</span>
-              <span v-if="s.critical_count > 0" class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-orange-950 text-orange-300 border border-orange-700" :title="s.critical_msgs">{{ s.critical_count }}</span>
-              <span v-if="s.warning_count > 0" class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-950 text-amber-300 border border-amber-700" :title="s.warning_msgs">{{ s.warning_count }}</span>
+              <span v-if="s.danger_count > 0" class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-rose-950 text-rose-300 border border-rose-700 radar-critical" :title="s.danger_msgs">{{ s.danger_count }}</span>
+              <span v-if="s.critical_count > 0" class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-orange-950 text-orange-300 border border-orange-700 radar-critical" :title="s.critical_msgs">{{ s.critical_count }}</span>
+              <span v-if="s.warning_count > 0" class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-950 text-amber-300 border border-amber-700 radar-warning" :title="s.warning_msgs">{{ s.warning_count }}</span>
               <span v-if="s.info_count > 0" class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-sky-950 text-sky-300 border border-sky-700" :title="s.info_msgs">{{ s.info_count }}</span>
             </div>
           </div>
