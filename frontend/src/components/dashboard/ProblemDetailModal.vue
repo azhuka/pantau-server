@@ -19,7 +19,7 @@
           </h2>
         </div>
         <span class="text-[10px] px-2 py-0.5 rounded font-bold uppercase" :class="sevBadgeClass">
-          {{ problem.severity }}
+          {{ t(`sev_${problem.severity || 'info'}`) || problem.severity || 'INFO' }}
         </span>
       </div>
 

@@ -38,7 +38,7 @@
               :class="downCount > 0 ? 'bg-rose-950/80 text-rose-300 border border-rose-700/70 radar-critical' : 'bg-gray-800/80 text-gray-400 border border-gray-700'"
               :title="t('offline')"
             >
-              <span class="w-1.5 h-1.5 rounded-full" :class="downCount > 0 ? 'bg-rose-400' : 'bg-gray-500'"></span>
+              <span class="w-1.5 h-1.5 rounded-full" :class="downCount > 0 ? 'bg-rose-400 radar-critical' : 'bg-gray-500'"></span>
               {{ downCount }} {{ t('dash_kpi_down') }}
             </span>
           </div>
@@ -223,7 +223,7 @@
       <div v-else class="overflow-x-auto">
         <table class="w-full text-left text-xs font-mono border-collapse">
           <thead>
-            <tr class="border-b border-cyan-500/20 text-gray-400 bg-[#070c18]/80 uppercase font-bold tracking-wider select-none">
+            <tr class="border-b border-cyan-500/20 text-gray-400 bg-[#070c18]/80 font-bold tracking-wider select-none">
               <th class="py-2.5 px-4 w-28">{{ t('dash_col_time') }}</th>
               <th class="py-2.5 px-4 w-44">{{ t('dash_col_server') }}</th>
               <th class="py-2.5 px-3 w-32 text-center">{{ t('dash_col_severity') }}</th>
@@ -241,14 +241,20 @@
               :title="`Open details for ${prob.hostname}`"
             >
               <!-- TIME -->
-              <td class="py-2.5 px-4 text-gray-400 whitespace-nowrap">
+              <td
+                class="py-2.5 px-4 text-gray-400 whitespace-nowrap cursor-help hover:text-cyan-300 transition"
+                :title="formatFullTime(prob.started_at)"
+              >
                 {{ formatTime(prob.started_at) }}
               </td>
 
               <!-- SERVER -->
               <td class="py-2.5 px-4 whitespace-nowrap">
                 <div class="flex items-center gap-2 font-bold text-gray-100 group-hover:text-cyan-300 transition">
-                  <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+                  <span
+                    class="w-2 h-2 rounded-full shrink-0"
+                    :class="prob.severity === 'danger' ? 'bg-rose-400 radar-critical' : (prob.severity === 'critical' || prob.severity === 'average' ? 'bg-orange-400 radar-critical' : (prob.severity === 'warning' ? 'bg-amber-400 radar-warning' : 'bg-cyan-400'))"
+                  ></span>
                   <span>{{ prob.hostname }}</span>
                 </div>
               </td>
@@ -257,25 +263,25 @@
               <td class="py-2.5 px-3 text-center whitespace-nowrap">
                 <span
                   v-if="prob.severity === 'danger'"
-                  class="px-2 py-0.5 rounded text-[11px] font-bold bg-rose-950 text-rose-300 border border-rose-700/80 uppercase shadow-[0_0_6px_rgba(244,63,94,0.3)]"
+                  class="px-2 py-0.5 rounded text-[11px] font-bold bg-rose-950 text-rose-300 border border-rose-700/80 uppercase shadow-[0_0_6px_rgba(244,63,94,0.3)] radar-critical"
                 >
                   {{ t('sev_danger').toUpperCase() }}
                 </span>
                 <span
                   v-else-if="prob.severity === 'critical' || prob.severity === 'average'"
-                  class="px-2 py-0.5 rounded text-[11px] font-bold bg-orange-950 text-orange-300 border border-orange-700/80 uppercase shadow-[0_0_6px_rgba(249,115,22,0.3)]"
+                  class="px-2 py-0.5 rounded text-[11px] font-bold bg-orange-950 text-orange-300 border border-orange-700/80 uppercase shadow-[0_0_6px_rgba(249,115,22,0.3)] radar-critical"
                 >
                   {{ t('sev_critical').toUpperCase() }}
                 </span>
                 <span
                   v-else-if="prob.severity === 'warning'"
-                  class="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-950 text-amber-300 border border-amber-700/80 uppercase shadow-[0_0_6px_rgba(245,158,11,0.3)]"
+                  class="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-950 text-amber-300 border border-amber-700/80 uppercase shadow-[0_0_6px_rgba(245,158,11,0.3)] radar-warning"
                 >
                   {{ t('sev_warning').toUpperCase() }}
                 </span>
                 <span
                   v-else
-                  class="px-2 py-0.5 rounded text-[11px] font-bold bg-blue-950 text-blue-300 border border-blue-700/80 uppercase shadow-[0_0_6px_rgba(56,189,248,0.3)]"
+                  class="px-2 py-0.5 rounded text-[11px] font-bold bg-cyan-950 text-cyan-300 border border-cyan-700/80 uppercase"
                 >
                   {{ t('sev_info').toUpperCase() }}
                 </span>
@@ -359,7 +365,7 @@
       <div v-if="assetViewMode === 'table'" class="overflow-x-auto">
         <table class="w-full text-left text-xs font-mono border-collapse">
           <thead>
-            <tr class="border-b border-cyan-500/20 uppercase font-bold text-gray-400 bg-[#070c18]/80 select-none tracking-wider">
+            <tr class="border-b border-cyan-500/20 font-bold text-gray-400 bg-[#070c18]/80 select-none tracking-wider">
               <th class="py-2.5 px-4">{{ t('col_server') }}</th>
               <th class="py-2.5 px-3 text-center">{{ t('col_status') }}</th>
               <th class="py-2.5 px-3 text-center">{{ t('dash_col_env') }}</th>
@@ -770,13 +776,27 @@ function updateClock() {
   currentUtcTime.value = now.toUTCString()
 }
 
+function handleKeyDown(e) {
+  if (e.key === 'Escape') {
+    if (showIgnoreModal.value) {
+      showIgnoreModal.value = false
+    } else if (showProblemDetailModal.value) {
+      showProblemDetailModal.value = false
+    } else if (showSevModal.value) {
+      showSevModal.value = false
+    }
+  }
+}
+
 onMounted(() => {
   updateClock()
   clockTimer = setInterval(updateClock, 1000)
+  window.addEventListener('keydown', handleKeyDown)
 })
 
 onUnmounted(() => {
   if (clockTimer) clearInterval(clockTimer)
+  window.removeEventListener('keydown', handleKeyDown)
 })
 
 const upCount = computed(() => props.servers.filter(s => s.is_online).length)
@@ -804,7 +824,17 @@ function formatTime(isoStr) {
   if (!isoStr) return '-'
   try {
     const d = new Date(isoStr)
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  } catch {
+    return isoStr
+  }
+}
+
+function formatFullTime(isoStr) {
+  if (!isoStr) return '-'
+  try {
+    const d = new Date(isoStr)
+    return d.toLocaleString()
   } catch {
     return isoStr
   }
@@ -817,7 +847,11 @@ function calcDuration(startedAt) {
     const diff = Math.max(0, Math.floor((Date.now() - start) / 1000))
     if (diff < 60) return `${diff}s`
     if (diff < 3600) return `${Math.floor(diff / 60)}m`
-    return `${Math.floor(diff / 3600)}h ${Math.floor((diff % 3600) / 60)}m`
+    const d = Math.floor(diff / 86400)
+    const h = Math.floor((diff % 86400) / 3600)
+    const m = Math.floor((diff % 3600) / 60)
+    if (d > 0) return `${d}d ${h}h`
+    return `${h}h ${m}m`
   } catch {
     return '-'
   }

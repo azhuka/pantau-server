@@ -174,6 +174,16 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.23
+
+- **Penyempurnaan Maturitas Dasbor & Integrasi Modal Terpadu**:
+  - Menyelaraskan kapitalisasi nama kolom seluruh tabel (Time, Server, Severity, Incident Description, Duration / Waktu, Server, Keparahan, Deskripsi Insiden, Durasi) ke standar Title Case baku sesuai GEMINI.md.
+  - Menerapkan format waktu ringkas %H:%M pada tabel insiden dasbor dan rincian severity, dengan rincian lengkap tanggal dan detik dialihkan ke tooltip hover title="..." (formatFullTime).
+  - Menambahkan penangan tombol global Escape pada DashboardView.vue yang menutup modal mengambang secara berurutan dan aman (Ignore Modal -> Diagnostic Modal -> Severity Detail Modal).
+  - Memperkaya styling status ignored pada SevDetailModal.vue dengan tactical slate semantik (border-slate-500/50, bg-slate-900) dan menyelaraskan filter kueri severity fallback untuk info.
+  - Mengintegrasikan denyut radar (radar-critical / radar-warning) pada dot dan badge baris insiden di dasbor agar hierarki urgensi visual konsisten.
+
+
 ### Versi v0.1.22
 
 - **Pemulihan Efek Kedip Pelan Radar Pulse (.radar-warning, .radar-critical, .beacon-live)**:

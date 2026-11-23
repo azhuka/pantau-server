@@ -57,7 +57,7 @@
           </thead>
           <tbody class="divide-y divide-gray-800/60">
             <tr v-for="p in paginatedList" :key="p.id" class="hover:bg-cyan-950/20 transition">
-              <td class="py-2.5 px-3 text-gray-400 whitespace-nowrap">
+              <td class="py-2.5 px-3 text-gray-400 whitespace-nowrap cursor-help hover:text-cyan-300 transition" :title="formatFullTime(p.started_at)">
                 {{ formatTime(p.started_at) }}
               </td>
               <td class="py-2.5 px-3 whitespace-nowrap">
@@ -169,13 +169,31 @@ const pageSize = 10
 const TITLES = { danger: 'sdm_title_danger', critical: 'sdm_title_critical', warning: 'sdm_title_warning', info: 'sdm_title_info', ignored: 'sdm_title_ignored' }
 const modalTitle = computed(() => t(TITLES[props.severity] || 'sdm_title_default'))
 
-const DOTS = { danger: 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]', critical: 'bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.6)]', warning: 'bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.6)]', info: 'bg-cyan-400 shadow-[0_0_8px_rgba(56,189,248,0.6)]' }
+const DOTS = {
+  danger: 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)] radar-critical',
+  critical: 'bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.6)] radar-critical',
+  warning: 'bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.6)] radar-warning',
+  info: 'bg-cyan-400 shadow-[0_0_8px_rgba(56,189,248,0.6)]',
+  ignored: 'bg-slate-400 shadow-[0_0_8px_rgba(148,163,184,0.6)]'
+}
 const dotClass = computed(() => DOTS[props.severity] || 'bg-gray-400')
 
-const BADGES = { danger: 'bg-rose-950 text-rose-300 border border-rose-800', critical: 'bg-orange-950 text-orange-300 border border-orange-800', warning: 'bg-amber-950 text-amber-300 border border-amber-800', info: 'bg-cyan-950 text-cyan-300 border border-cyan-800' }
+const BADGES = {
+  danger: 'bg-rose-950 text-rose-300 border border-rose-800',
+  critical: 'bg-orange-950 text-orange-300 border border-orange-800',
+  warning: 'bg-amber-950 text-amber-300 border border-amber-800',
+  info: 'bg-cyan-950 text-cyan-300 border border-cyan-800',
+  ignored: 'bg-slate-900 text-slate-300 border border-slate-700'
+}
 const badgeClass = computed(() => BADGES[props.severity] || 'bg-gray-900 text-gray-300 border border-gray-700')
 
-const BORDERS = { danger: 'border-rose-500/50', critical: 'border-orange-500/50', warning: 'border-amber-500/50', info: 'border-cyan-500/50' }
+const BORDERS = {
+  danger: 'border-rose-500/50',
+  critical: 'border-orange-500/50',
+  warning: 'border-amber-500/50',
+  info: 'border-cyan-500/50',
+  ignored: 'border-slate-500/50'
+}
 const cardBorderClass = computed(() => BORDERS[props.severity] || 'border-gray-700')
 
 const filteredList = computed(() => {
@@ -183,7 +201,11 @@ const filteredList = computed(() => {
   if (props.severity === 'ignored') {
     list = list.filter(p => p.is_ignored)
   } else {
-    list = list.filter(p => !p.is_ignored && (p.severity === props.severity || (props.severity === 'critical' && p.severity === 'average')))
+    list = list.filter(p => !p.is_ignored && (
+      p.severity === props.severity ||
+      (props.severity === 'critical' && p.severity === 'average') ||
+      (props.severity === 'info' && (!p.severity || p.severity === 'info'))
+    ))
   }
   if (!search.value) return list
   const q = search.value.toLowerCase()
@@ -206,6 +228,16 @@ function formatTime(isoStr) {
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
+function formatFullTime(isoStr) {
+  if (!isoStr) return '—'
+  try {
+    const d = new Date(isoStr)
+    return d.toLocaleString()
+  } catch {
+    return isoStr
+  }
+}
+
 function calcDuration(startedAt) {
   if (!startedAt) return '—'
   try {
@@ -213,8 +245,10 @@ function calcDuration(startedAt) {
     const diff = Math.max(0, Math.floor((Date.now() - start) / 1000))
     if (diff < 60) return `${diff}s`
     if (diff < 3600) return `${Math.floor(diff / 60)}m`
-    const h = Math.floor(diff / 3600)
+    const d = Math.floor(diff / 86400)
+    const h = Math.floor((diff % 86400) / 3600)
     const m = Math.floor((diff % 3600) / 60)
+    if (d > 0) return `${d}d ${h}h`
     return `${h}h ${m}m`
   } catch {
     return '—'
