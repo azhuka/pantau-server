@@ -32,8 +32,8 @@
             <svg v-else class="w-4 h-4 text-rose-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
           </div>
           <div>
-            <div class="text-xs font-bold text-gray-100">{{ prob.message }}</div>
-            <div v-if="prob.tip" class="text-xs text-gray-400 mt-1">{{ prob.tip }}</div>
+            <div class="text-xs font-bold text-gray-100">{{ formatIncidentMessage(prob, locale) }}</div>
+            <div v-if="formatIncidentTip(prob, locale)" class="text-xs text-gray-400 mt-1">{{ formatIncidentTip(prob, locale) }}</div>
             <div class="text-xs text-gray-500 mt-1">{{ t('ws_detected_since') }} {{ prob.started_at }}</div>
           </div>
         </div>
@@ -51,8 +51,9 @@
 
 <script setup>
 import { useI18n } from '../../../i18n'
+import { formatIncidentMessage, formatIncidentTip } from '../../../utils/formatters'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 defineProps({
   problems: { type: Array, default: () => [] }

@@ -129,23 +129,11 @@
                 </span>
               </td>
 
-              <!-- 2. SERVER (Hostname, Group, Tier) -->
+              <!-- 2. SERVER (Hostname, Group) -->
               <td class="py-2.5 px-4 whitespace-nowrap">
                 <div class="flex items-center gap-1.5">
                   <span class="font-bold text-gray-100 group-hover:text-cyan-300 transition text-sm">
                     {{ s.hostname }}
-                  </span>
-                  <span
-                    v-if="s.tier === 1"
-                    class="text-[10px] px-1.5 py-0.2 rounded font-bold bg-cyan-950 text-cyan-300 border border-cyan-800"
-                  >
-                    T1
-                  </span>
-                  <span
-                    v-else
-                    class="text-[10px] px-1.5 py-0.2 rounded font-bold bg-purple-950 text-purple-300 border border-purple-800"
-                  >
-                    T2
                   </span>
                 </div>
                 <div class="text-xs text-gray-500 flex items-center gap-1.5 mt-0.5">

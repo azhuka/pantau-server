@@ -289,9 +289,9 @@
 
               <!-- DESCRIPTION -->
               <td class="py-2.5 px-4 text-gray-200 font-medium leading-snug">
-                <div>{{ prob.message }}</div>
-                <div v-if="prob.tip" class="text-[11px] text-gray-400 font-normal mt-0.5 truncate max-w-xl">
-                  {{ prob.tip }}
+                <div>{{ formatIncidentMessage(prob, locale) }}</div>
+                <div v-if="formatIncidentTip(prob, locale)" class="text-[11px] text-gray-400 font-normal mt-0.5 truncate max-w-xl">
+                  {{ formatIncidentTip(prob, locale) }}
                 </div>
               </td>
 
@@ -368,7 +368,6 @@
             <tr class="border-b border-cyan-500/20 font-bold text-gray-400 bg-[#070c18]/80 select-none tracking-wider">
               <th class="py-2.5 px-4">{{ t('col_server') }}</th>
               <th class="py-2.5 px-3 text-center">{{ t('col_status') }}</th>
-              <th class="py-2.5 px-3 text-center">{{ t('dash_col_env') }}</th>
               <th class="py-2.5 px-4">{{ t('dash_col_platform_ip') }}</th>
               <th class="py-2.5 px-4 text-center">{{ t('col_uptime') }}</th>
               <th class="py-2.5 px-4 text-center">{{ t('col_cpu') }}</th>
@@ -411,16 +410,6 @@
                   :class="s.is_online ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-700/60' : 'bg-rose-950/80 text-rose-300 border border-rose-700/60'"
                 >
                   {{ s.is_online ? t('online').toUpperCase() : t('offline').toUpperCase() }}
-                </span>
-              </td>
-
-              <!-- Environment (Tier 1 / Tier 2) -->
-              <td class="py-2.5 px-3 text-center whitespace-nowrap">
-                <span
-                  class="px-1.5 py-0.2 rounded text-[10px] font-bold"
-                  :class="s.tier === 1 ? 'bg-cyan-950 text-cyan-300 border border-cyan-800' : 'bg-purple-950 text-purple-300 border border-purple-800'"
-                >
-                  {{ s.tier === 1 ? 'TIER 1' : 'TIER 2' }}
                 </span>
               </td>
 
@@ -529,7 +518,7 @@
 
             <!-- Empty State Baris -->
             <tr v-if="filteredServers.length === 0">
-              <td colspan="9" class="py-12 px-4 text-center text-gray-400 font-mono text-xs">
+              <td colspan="8" class="py-12 px-4 text-center text-gray-400 font-mono text-xs">
                 <div class="flex flex-col items-center justify-center gap-1.5">
                   <svg class="w-8 h-8 text-gray-600 mb-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                     <rect width="20" height="8" x="2" y="2" rx="2" ry="2"/>
@@ -652,6 +641,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from '../../i18n'
+import { formatIncidentMessage, formatIncidentTip } from '../../utils/formatters'
 import SevDetailModal from './SevDetailModal.vue'
 import ProblemDetailModal from './ProblemDetailModal.vue'
 import IgnoreProblemModal from './IgnoreProblemModal.vue'

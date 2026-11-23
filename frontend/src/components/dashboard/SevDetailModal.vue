@@ -71,7 +71,7 @@
               </td>
               <td class="py-2.5 px-3">
                 <div class="text-gray-200 font-medium leading-relaxed">
-                  {{ p.message }}
+                  {{ formatIncidentMessage(p, locale) }}
                 </div>
                 <div v-if="p.is_ignored" class="text-[11px] text-amber-400/90 mt-0.5">
                   ({{ t('sdm_ignored_by', { user: p.ignored_by || 'operator' }) }}{{ p.ignored_reason ? ': ' + p.ignored_reason : '' }})
@@ -151,8 +151,9 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useI18n } from '../../i18n'
+import { formatIncidentMessage } from '../../utils/formatters'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const props = defineProps({
   isOpen: Boolean,
@@ -210,7 +211,7 @@ const filteredList = computed(() => {
   if (!search.value) return list
   const q = search.value.toLowerCase()
   return list.filter(p =>
-    (p.message || '').toLowerCase().includes(q) ||
+    (formatIncidentMessage(p, locale) || p.message || '').toLowerCase().includes(q) ||
     (p.hostname || '').toLowerCase().includes(q)
   )
 })

@@ -174,6 +174,15 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.25
+
+### Perubahan v0.1.25:
+- **Standardisasi Terminologi Tunggal Aset (Aset / Asset):** Menyeragamkan seluruh header kolom entitas yang dipantau menjadi Aset (ID) dan Asset (EN), mematuhi glosarium resmi sistem NOC Pantau Server.
+- **Eliminasi Kolom Spekulatif Lingkungan / Tier:** Menghapus kolom Environment dan badge TIER 1 / TIER 2 / T1 / T2 yang spekulatif dan ambigu pada dasbor serta tabel inventaris aset.
+- **Lokalisasi Bilingual Reaktif Insiden (formatIncidentMessage & formatIncidentTip):** Memastikan ketika antarmuka dalam mode Bahasa Inggris (en), 100% deskripsi insiden dan tip penanganan tampil dalam bahasa Inggris baku tanpa kebocoran teks lokal, serta sebaliknya dalam mode Bahasa Indonesia (id).
+- **Perbaikan Reaktivitas Sakelar Bahasa (i18n):** Memperbaiki reaktivitas setLocale dan inisialisasi urutan kamus translations agar sakelar EN/ID berfungsi dinamis dan persistensinya tersimpan di localStorage.
+
+
 ### Versi v0.1.24
 
 - **Perbaikan Layout Wrapping Kartu KPI Dasbor & Ergonomi Badge Telemetri**:

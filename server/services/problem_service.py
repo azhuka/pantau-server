@@ -165,8 +165,9 @@ def evaluate_server_problems(db: Session, srv: Server, report_dict: dict, extras
         apt_up = int(report_dict["apt"].get("upgradable") or 0)
 
     if apt_up > 0:
-        k = "pkg_updates"
+        k = "apt_updates"
         active_keys.add(k)
+        active_keys.add("pkg_updates")
         active_instances.append({
             "key": k,
             "severity": "info",
@@ -429,7 +430,7 @@ def evaluate_server_problems(db: Session, srv: Server, report_dict: dict, extras
                 prob.resolved_note = "session_closed"
             elif k.startswith("service_down:"):
                 prob.resolved_note = "service_up"
-            elif k == "pkg_updates":
+            elif k in ("pkg_updates", "apt_updates"):
                 prob.resolved_note = "packages_updated"
             elif k.startswith(("cpu_", "ram_", "disk_")):
                 prob.resolved_note = "auto"

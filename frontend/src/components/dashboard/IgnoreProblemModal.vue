@@ -28,7 +28,7 @@
         <div class="text-gray-400">{{ t('ipm_target_incident') }}</div>
         <div class="bg-[#060a14] p-2.5 rounded border border-gray-800 text-gray-200">
           <div class="font-bold text-cyan-300">{{ problem.hostname || `Server #${problem.server_id}` }}</div>
-          <div class="text-xs text-gray-300 mt-0.5 line-clamp-2">{{ problem.message }}</div>
+          <div class="text-xs text-gray-300 mt-0.5 line-clamp-2">{{ formatIncidentMessage(problem, locale) }}</div>
         </div>
       </div>
 
@@ -84,8 +84,9 @@
 <script setup>
 import { ref } from 'vue'
 import { useI18n } from '../../i18n'
+import { formatIncidentMessage } from '../../utils/formatters'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const props = defineProps({
   isOpen: Boolean,

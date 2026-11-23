@@ -32,7 +32,7 @@
             {{ problem.hostname || `Server #${problem.server_id}` }}
           </div>
           <div class="text-xs text-gray-200 mt-1 font-medium leading-relaxed">
-            {{ problem.message }}
+            {{ formatIncidentMessage(problem, locale) }}
           </div>
         </div>
 
@@ -72,7 +72,7 @@
           </div>
           <div class="bg-[#060a14] p-3 rounded border border-gray-800 space-y-2">
             <p class="text-gray-300 leading-relaxed">
-              {{ problem.tip || recommendationText }}
+              {{ formatIncidentTip(problem, locale) || recommendationText }}
             </p>
             <div v-if="cliCommand" class="mt-2">
               <div class="flex items-center justify-between text-[10px] text-gray-500 mb-1">
@@ -135,8 +135,9 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useI18n } from '../../i18n'
+import { formatIncidentMessage, formatIncidentTip } from '../../utils/formatters'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const props = defineProps({
   isOpen: Boolean,
@@ -156,46 +157,84 @@ const sevBadgeClass = computed(() => {
 })
 
 const rootCauseText = computed(() => {
+  const isId = locale.value === 'id'
   const k = props.problem?.key || ''
   if (k.startsWith('ssh_active_session:')) {
-    return 'Active remote interactive SSH login session detected on host system.'
-  }
-  if (k.startsWith('service_down:')) {
-    return `System service unit (${k.split(':')[1]}) is reported dead, inactive, or failed.`
-  }
-  if (k.includes('pkg_updates')) {
-    return 'Linux package repository indicates new security updates or system packages are pending.'
-  }
-  if (k.includes('cpu')) return 'CPU computing load exceeded designated operational threshold limit.'
-  if (k.includes('ram')) return 'Physical RAM memory usage approached designated operational threshold.'
-  if (k.includes('disk')) return 'Filesystem storage volume utilization exceeded safe operating quota.'
-  return 'Anomaly detected by Pantau Server telemetry evaluation engine.'
-})
-
-const impactText = computed(() => {
-  const k = props.problem?.key || ''
-  if (k.startsWith('ssh_active_session:')) {
-    return 'Risk of unauthorized access if origin IP is unrecognized or outside scheduled operations.'
-  }
-  if (k.startsWith('service_down:')) {
-    return 'Associated services, web endpoints, or socket ports are unavailable to clients.'
-  }
-  if (k.includes('disk')) {
-    return 'Full storage volumes lead to write failures, database panics, and unexpected host lockups.'
-  }
-  return 'May cause performance degradation and infrastructure instability if unmitigated.'
-})
-
-const recommendationText = computed(() => {
-  const k = props.problem?.key || ''
-  if (k.startsWith('ssh_active_session:')) {
-    return 'Verify origin IP and user. If unapproved, terminate active session immediately.'
+    return isId
+      ? 'Sesi login terminal remote SSH aktif terdeteksi pada host.'
+      : 'Active remote interactive SSH login session detected on host system.'
   }
   if (k.startsWith('service_down:')) {
     const sName = k.split(':')[1] || 'service'
-    return `Restart unit via: sudo systemctl restart ${sName}`
+    return isId
+      ? `Unit layanan sistem (${sName}) dilaporkan mati atau gagal berjalan.`
+      : `System service unit (${sName}) is reported dead, inactive, or failed.`
   }
-  return 'Inspect top processes in Workspace Tasks tab to locate offending processes.'
+  if (k.includes('pkg_updates') || k.includes('apt_updates')) {
+    return isId
+      ? 'Repositori paket Linux mendeteksi pembaruan keamanan atau paket OS tersedia.'
+      : 'Linux package repository indicates new security updates or system packages are pending.'
+  }
+  if (k.includes('cpu')) {
+    return isId
+      ? 'Beban komputasi CPU melampaui batas ambang operasional yang ditentukan.'
+      : 'CPU computing load exceeded designated operational threshold limit.'
+  }
+  if (k.includes('ram')) {
+    return isId
+      ? 'Utilisasi memori RAM fisik mendekati batas ambang kapasitas operasional.'
+      : 'Physical RAM memory usage approached designated operational threshold.'
+  }
+  if (k.includes('disk')) {
+    return isId
+      ? 'Kapasitas penyimpanan volume filesystem melampaui kuota aman operasional.'
+      : 'Filesystem storage volume utilization exceeded safe operating quota.'
+  }
+  return isId
+    ? 'Anomali terdeteksi oleh mesin evaluasi telemetri Pantau Server.'
+    : 'Anomaly detected by Pantau Server telemetry evaluation engine.'
+})
+
+const impactText = computed(() => {
+  const isId = locale.value === 'id'
+  const k = props.problem?.key || ''
+  if (k.startsWith('ssh_active_session:')) {
+    return isId
+      ? 'Risiko akses tidak sah apabila IP asal tidak dikenali atau di luar jadwal operasional.'
+      : 'Risk of unauthorized access if origin IP is unrecognized or outside scheduled operations.'
+  }
+  if (k.startsWith('service_down:')) {
+    return isId
+      ? 'Layanan terkait, endpoint web, atau port soket tidak dapat diakses oleh klien.'
+      : 'Associated services, web endpoints, or socket ports are unavailable to clients.'
+  }
+  if (k.includes('disk')) {
+    return isId
+      ? 'Penyimpanan penuh dapat memicu kegagalan tulis data, database panic, dan host terkunci.'
+      : 'Full storage volumes lead to write failures, database panics, and unexpected host lockups.'
+  }
+  return isId
+    ? 'Dapat memicu penurunan performa dan instabilitas infrastruktur jika tidak segera ditangani.'
+    : 'May cause performance degradation and infrastructure instability if unmitigated.'
+})
+
+const recommendationText = computed(() => {
+  const isId = locale.value === 'id'
+  const k = props.problem?.key || ''
+  if (k.startsWith('ssh_active_session:')) {
+    return isId
+      ? 'Verifikasi IP dan akun asal. Jika tidak sah, putus sesi aktif seketika.'
+      : 'Verify origin IP and user. If unapproved, terminate active session immediately.'
+  }
+  if (k.startsWith('service_down:')) {
+    const sName = k.split(':')[1] || 'service'
+    return isId
+      ? `Mulai ulang unit layanan via: sudo systemctl restart ${sName}`
+      : `Restart unit via: sudo systemctl restart ${sName}`
+  }
+  return isId
+    ? 'Inspeksi proses teratas pada tab Tasks Workspace untuk identifikasi proses anomali.'
+    : 'Inspect top processes in Workspace Tasks tab to locate offending processes.'
 })
 
 const cliCommand = computed(() => {
