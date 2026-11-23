@@ -27,6 +27,7 @@ export default {
   online: 'Online',
   offline: 'Offline',
   stale: 'Siaga',
+  status_clear: 'Nihil',
   search_placeholder: 'Cari nama host, IP, grup...',
   all_groups: 'Semua Grup',
   all_statuses: 'Semua Status',

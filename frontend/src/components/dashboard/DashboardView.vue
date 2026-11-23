@@ -467,12 +467,54 @@
               <!-- Incidents -->
               <td class="py-2.5 px-3 text-center whitespace-nowrap">
                 <span
-                  v-if="s.active_problems_count > 0"
-                  class="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-950 text-amber-300 border border-amber-800 radar-warning"
+                  v-if="!s.is_online"
+                  class="px-2 py-0.5 rounded text-[10.5px] font-bold bg-rose-950/80 text-rose-300 border border-rose-700/60"
                 >
-                  ● {{ s.active_problems_count }}
+                  {{ t('offline').toUpperCase() }}
                 </span>
-                <span v-else class="text-gray-500 text-xs">-</span>
+                <span
+                  v-else-if="(!s.active_problems_count || s.active_problems_count === 0) && (!s.ignored_count || s.ignored_count === 0)"
+                  class="px-2 py-0.5 rounded text-[10.5px] font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-700/60"
+                >
+                  {{ t('status_clear').toUpperCase() }}
+                </span>
+                <div v-else class="inline-flex items-center justify-center gap-1.5 flex-wrap">
+                  <span
+                    v-if="s.danger_count > 0"
+                    class="px-1.5 py-0.2 rounded text-[11px] font-bold bg-rose-950 text-rose-300 border border-rose-700 shadow-sm"
+                    :title="s.danger_msgs || t('sev_danger')"
+                  >
+                    {{ s.danger_count }}
+                  </span>
+                  <span
+                    v-if="s.critical_count > 0"
+                    class="px-1.5 py-0.2 rounded text-[11px] font-bold bg-orange-950 text-orange-300 border border-orange-700 shadow-sm"
+                    :title="s.critical_msgs || t('sev_critical')"
+                  >
+                    {{ s.critical_count }}
+                  </span>
+                  <span
+                    v-if="s.warning_count > 0"
+                    class="px-1.5 py-0.2 rounded text-[11px] font-bold bg-amber-950 text-amber-300 border border-amber-700 shadow-sm"
+                    :title="s.warning_msgs || t('sev_warning')"
+                  >
+                    {{ s.warning_count }}
+                  </span>
+                  <span
+                    v-if="s.info_count > 0"
+                    class="px-1.5 py-0.2 rounded text-[11px] font-bold bg-sky-950 text-sky-300 border border-sky-700 shadow-sm"
+                    :title="s.info_msgs || t('sev_info')"
+                  >
+                    {{ s.info_count }}
+                  </span>
+                  <span
+                    v-if="s.ignored_count > 0"
+                    class="px-1.5 py-0.2 rounded text-[11px] font-bold bg-slate-900 text-slate-400 border border-slate-700 shadow-sm"
+                    :title="s.ignored_msgs || t('sev_ignored')"
+                  >
+                    {{ s.ignored_count }}
+                  </span>
+                </div>
               </td>
             </tr>
 
@@ -555,7 +597,12 @@
 
           <div class="mt-3 pt-2 border-t border-cyan-500/10 flex items-center justify-between text-[11px] font-mono text-gray-400">
             <span>UP // {{ formatUptime(s.uptime_secs) }}</span>
-            <span v-if="s.active_problems_count > 0" class="text-amber-400 font-bold radar-warning px-1 rounded">● {{ s.active_problems_count }}</span>
+            <div v-if="s.active_problems_count > 0" class="inline-flex items-center gap-1">
+              <span v-if="s.danger_count > 0" class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-rose-950 text-rose-300 border border-rose-700" :title="s.danger_msgs">{{ s.danger_count }}</span>
+              <span v-if="s.critical_count > 0" class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-orange-950 text-orange-300 border border-orange-700" :title="s.critical_msgs">{{ s.critical_count }}</span>
+              <span v-if="s.warning_count > 0" class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-950 text-amber-300 border border-amber-700" :title="s.warning_msgs">{{ s.warning_count }}</span>
+              <span v-if="s.info_count > 0" class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-sky-950 text-sky-300 border border-sky-700" :title="s.info_msgs">{{ s.info_count }}</span>
+            </div>
           </div>
         </div>
       </div>

@@ -27,6 +27,7 @@ export default {
   online: 'Online',
   offline: 'Offline',
   stale: 'Stale',
+  status_clear: 'None',
   search_placeholder: 'Search hostname, IP, group...',
   all_groups: 'All Groups',
   all_statuses: 'All Statuses',

@@ -174,6 +174,15 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.20
+
+### [v0.1.20] - 2026-11-23
+#### Diperbaiki (Fixed)
+- **Breakdown Semantik Kolom Insiden:** Mengeliminasi hardcode badge warna kuning di dasbor dan tabel aset. Seluruh insiden kini dirender dengan warna semantik baku: Biru untuk Info (update paket), Kuning untuk Peringatan, Oranye untuk Kritis, Merah untuk Bahaya, dan Hijau untuk status Nihil.
+- **Penyelarasan Agregasi API:** Memperbarui endpoint /api/servers untuk mengirim rincian jumlah insiden per severity dan pesan terkait secara efisien.
+- **Logika Severity Produksi vs Non-Produksi:** Menegakkan pembatasan level keparahan maksimal ke tingkat warning untuk aset Tier 2 (Non-Produksi).
+
+
 ### Versi v0.1.19
 
 ### [v0.1.19] - 2026-11-23

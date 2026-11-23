@@ -31,15 +31,19 @@ def list_servers(user: User = Depends(get_current_user), db: Session = Depends(g
     result = []
 
     # Optimasi konkurensi & performa (Zero N+1 Query Batch Loading):
-    # 1. Agregasi jumlah insiden aktif seluruh server dalam 1 kueri
-    prob_counts = dict(
-        db.query(ServerProblem.server_id, func.count(ServerProblem.id))
-        .filter(ServerProblem.resolved_at == None)
-        .group_by(ServerProblem.server_id)
+    # 1. Agregasi rincian insiden aktif seluruh aset dalam 1 kueri batch
+    active_problems = (
+        db.query(ServerProblem)
+        .filter(ServerProblem.resolved_at.is_(None))
         .all()
     )
+    problems_by_server = {}
+    for p in active_problems:
+        if p.server_id not in problems_by_server:
+            problems_by_server[p.server_id] = []
+        problems_by_server[p.server_id].append(p)
 
-    # 2. Ambil snapshot ID terbaru seluruh armada dalam 1 kueri batch
+    # 2. Ambil snapshot ID terbaru seluruh aset dalam 1 kueri batch
     server_ids = [s.id for s in servers]
     latest_snaps_map = {}
     if server_ids:
@@ -81,8 +85,50 @@ def list_servers(user: User = Depends(get_current_user), db: Session = Depends(g
             except Exception:
                 disk_pct = 0.0
 
-        # Hitung masalah aktif dari agregat batch
-        active_problems_count = prob_counts.get(s.id, 0)
+        # Hitung masalah aktif & breakdown per tingkat keparahan (severity) sesuai Blueprint Asli
+        s_tier = getattr(s, "tier", 2) or 2
+        s_probs = problems_by_server.get(s.id, [])
+        danger_p = []
+        critical_p = []
+        warning_p = []
+        info_p = []
+        ignored_p = []
+
+        for p in s_probs:
+            if getattr(p, "is_ignored", 0):
+                ignored_p.append(p)
+                continue
+
+            # Workflow Severity: Aset Non-Produksi (Tier != 1) dibatasi (cap) maksimal ke level warning
+            raw_sev = (p.severity or "warning").lower()
+            if s_tier != 1 and raw_sev in ("danger", "critical", "average"):
+                eff_sev = "warning"
+            else:
+                eff_sev = raw_sev
+
+            if eff_sev == "danger":
+                danger_p.append(p)
+            elif eff_sev in ("critical", "average"):
+                critical_p.append(p)
+            elif eff_sev == "warning":
+                warning_p.append(p)
+            elif eff_sev == "info":
+                info_p.append(p)
+            else:
+                warning_p.append(p)
+
+        danger_count = len(danger_p)
+        critical_count = len(critical_p)
+        warning_count = len(warning_p)
+        info_count = len(info_p)
+        ignored_count = len(ignored_p)
+        active_problems_count = danger_count + critical_count + warning_count + info_count
+
+        danger_msgs = " • ".join(p.message for p in danger_p if p.message)
+        critical_msgs = " • ".join(p.message for p in critical_p if p.message)
+        warning_msgs = " • ".join(p.message for p in warning_p if p.message)
+        info_msgs = " • ".join(p.message for p in info_p if p.message)
+        ignored_msgs = " • ".join(p.message for p in ignored_p if p.message)
 
         # Auto-expire maintenance mode jika batas waktu terlewati
         if s.is_maintenance and s.maintenance_until and s.maintenance_until < now:
@@ -104,6 +150,16 @@ def list_servers(user: User = Depends(get_current_user), db: Session = Depends(g
             "disk_pct": disk_pct,
             "uptime_secs": latest_snap.uptime_secs if latest_snap else 0,
             "active_problems_count": active_problems_count,
+            "danger_count": danger_count,
+            "critical_count": critical_count,
+            "warning_count": warning_count,
+            "info_count": info_count,
+            "ignored_count": ignored_count,
+            "danger_msgs": danger_msgs,
+            "critical_msgs": critical_msgs,
+            "warning_msgs": warning_msgs,
+            "info_msgs": info_msgs,
+            "ignored_msgs": ignored_msgs,
             "is_maintenance": bool(s.is_maintenance),
             "maintenance_until": s.maintenance_until.isoformat() if s.maintenance_until else None,
             "maintenance_reason": s.maintenance_reason,

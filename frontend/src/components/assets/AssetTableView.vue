@@ -151,8 +151,33 @@
                     </svg>
                     <span>{{ s.group_name || 'DEFAULT' }}</span>
                   </span>
-                  <span v-if="s.active_problems_count > 0" class="text-amber-400 font-bold ml-1 radar-warning px-1 rounded">
-                    ● {{ s.active_problems_count }} alert
+                  <span
+                    v-if="s.danger_count > 0"
+                    class="text-rose-400 font-bold ml-1 px-1 rounded bg-rose-950/80 border border-rose-700/60"
+                    :title="s.danger_msgs || 'Danger'"
+                  >
+                    ● {{ s.danger_count }} danger
+                  </span>
+                  <span
+                    v-else-if="s.critical_count > 0"
+                    class="text-orange-400 font-bold ml-1 px-1 rounded bg-orange-950/80 border border-orange-700/60"
+                    :title="s.critical_msgs || 'Critical'"
+                  >
+                    ● {{ s.critical_count }} critical
+                  </span>
+                  <span
+                    v-else-if="s.warning_count > 0"
+                    class="text-amber-400 font-bold ml-1 px-1 rounded bg-amber-950/80 border border-amber-700/60"
+                    :title="s.warning_msgs || 'Warning'"
+                  >
+                    ● {{ s.warning_count }} warning
+                  </span>
+                  <span
+                    v-else-if="s.info_count > 0"
+                    class="text-sky-400 font-bold ml-1 px-1 rounded bg-sky-950/80 border border-sky-700/60"
+                    :title="s.info_msgs || 'Info'"
+                  >
+                    ● {{ s.info_count }} info
                   </span>
                 </div>
               </td>
