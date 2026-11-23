@@ -168,17 +168,6 @@ export function formatIncidentMessage(prob, locale = 'en') {
     return isDanger ? `Kapasitas penyimpanan hampir habis pada ${mount}: ${pct}` : `Kapasitas penyimpanan tinggi pada ${mount}: ${pct}`
   }
 
-  if (isEn) {
-    let msg = rawMsg
-    msg = msg.replace(/dimatikan oleh operator/gi, 'Powered off by operator')
-    msg = msg.replace(/dihentikan oleh operator/gi, 'Stopped by operator')
-    msg = msg.replace(/di-reboot oleh operator/gi, 'Rebooted by operator')
-    msg = msg.replace(/oleh operator/gi, 'by operator')
-    msg = msg.replace(/paket pembaruan sistem OS tersedia/gi, 'packages pending upgrade')
-    msg = msg.replace(/menunggu upgrade/gi, 'pending upgrade')
-    return msg
-  }
-
   return rawMsg
 }
 
@@ -188,7 +177,7 @@ export function formatIncidentTip(prob, locale = 'en') {
   const key = prob.key || ''
   const rawTip = prob.tip || ''
 
-  if (key === 'apt_updates' || key === 'pkg_updates' || rawTip.toLowerCase().includes('apt upgrade') || rawTip.toLowerCase().includes('buka rincian')) {
+  if (key === 'apt_updates' || key === 'pkg_updates') {
     if (isEn) {
       return 'Open asset workspace and select Update OS or Upgrade. Manual: sudo apt update && sudo apt upgrade'
     }
@@ -236,15 +225,6 @@ export function formatIncidentTip(prob, locale = 'en') {
     const mount = key.split(':')[1] || '/'
     if (isEn) return `Partition ${mount} storage capacity threshold reached. Perform log cleanup or disk expansion.`
     return `Partisi ${mount} melampaui batas aman. Segera lakukan pembersihan log atau ekspansi disk.`
-  }
-
-  if (isEn) {
-    let tip = rawTip
-    tip = tip.replace(/Cek status:/gi, 'Check status:')
-    tip = tip.replace(/Mulai ulang:/gi, 'Restart:')
-    tip = tip.replace(/Log:/gi, 'Logs:')
-    tip = tip.replace(/Periksa /gi, 'Check ')
-    return tip
   }
 
   return rawTip
