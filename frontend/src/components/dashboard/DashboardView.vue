@@ -14,32 +14,32 @@
         <span class="hud-corner-bl"></span>
         
         <div class="flex items-center justify-between mb-1.5">
-          <div class="text-xs font-bold uppercase tracking-wider text-gray-400 font-mono flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-cyan-400 beacon-live"></span>
-            <span>// ASSET INFRASTRUCTURE OVERVIEW</span>
+          <div class="text-xs font-bold uppercase tracking-wider text-gray-400 font-mono flex items-center gap-2 whitespace-nowrap">
+            <span class="w-2 h-2 rounded-full bg-cyan-400 beacon-live shrink-0"></span>
+            <span>// {{ t('dash_kpi_total_servers').toUpperCase() }}</span>
           </div>
-          <svg class="w-3.5 h-3.5 text-gray-500 group-hover:text-cyan-400 transition" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg class="w-3.5 h-3.5 text-gray-500 group-hover:text-cyan-400 transition shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
           </svg>
         </div>
 
-        <div class="flex items-center justify-between gap-2">
-          <div class="flex items-baseline gap-1.5 font-mono">
-            <span class="text-3xl font-extrabold text-gray-100 leading-none tracking-tight">{{ servers.length }}</span>
+        <div class="flex items-center justify-between gap-3">
+          <div class="flex items-baseline gap-1.5 font-mono shrink-0">
+            <span class="text-2xl font-black text-gray-100 leading-none tracking-tight">{{ servers.length }}</span>
             <span class="text-[11px] text-cyan-400 font-bold uppercase tracking-wider">{{ t('dash_kpi_host') }}</span>
           </div>
-          <div class="flex items-center gap-1.5 font-mono text-xs">
-            <span class="px-2 py-0.5 rounded font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-700/60 flex items-center gap-1" :title="t('online')">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 beacon-live"></span>
-              {{ upCount }} {{ t('dash_kpi_up') }}
+          <div class="flex items-center gap-1.5 font-mono text-xs shrink-0 whitespace-nowrap">
+            <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded font-bold whitespace-nowrap shrink-0 bg-emerald-950/80 text-emerald-300 border border-emerald-700/60" :title="t('online')">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 beacon-live shrink-0"></span>
+              <span>{{ upCount }} {{ t('dash_kpi_up') }}</span>
             </span>
             <span
-              class="px-2 py-0.5 rounded font-bold flex items-center gap-1"
+              class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded font-bold whitespace-nowrap shrink-0"
               :class="downCount > 0 ? 'bg-rose-950/80 text-rose-300 border border-rose-700/70 radar-critical' : 'bg-gray-800/80 text-gray-400 border border-gray-700'"
               :title="t('offline')"
             >
-              <span class="w-1.5 h-1.5 rounded-full" :class="downCount > 0 ? 'bg-rose-400 radar-critical' : 'bg-gray-500'"></span>
-              {{ downCount }} {{ t('dash_kpi_down') }}
+              <span class="w-1.5 h-1.5 rounded-full shrink-0" :class="downCount > 0 ? 'bg-rose-400 radar-critical' : 'bg-gray-500'"></span>
+              <span>{{ downCount }} {{ t('dash_kpi_down') }}</span>
             </span>
           </div>
         </div>
@@ -54,14 +54,14 @@
         <span class="hud-corner-bl"></span>
 
         <div class="flex items-center justify-between mb-2">
-          <div class="text-xs font-bold uppercase tracking-wider text-gray-400 font-mono flex items-center gap-2">
+          <div class="text-xs font-bold uppercase tracking-wider text-gray-400 font-mono flex items-center gap-2 whitespace-nowrap">
             <span
-              class="w-2 h-2 rounded-full"
+              class="w-2 h-2 rounded-full shrink-0"
               :class="dangerCount > 0 ? 'bg-rose-400 radar-critical' : (criticalCount > 0 ? 'bg-orange-400 radar-critical' : (warnCount > 0 ? 'bg-amber-400 radar-warning' : 'bg-emerald-400 beacon-live'))"
             ></span>
-            <span>// INCIDENT & ANOMALY MATRIX</span>
+            <span>// {{ t('dash_kpi_active_incidents').toUpperCase() }}</span>
           </div>
-          <div class="text-xs text-gray-400 font-mono">
+          <div class="text-xs text-gray-400 font-mono whitespace-nowrap">
             {{ t('dash_kpi_total') }}: <strong class="text-cyan-300 font-bold text-sm">{{ activeProblems.length }}</strong>
           </div>
         </div>
@@ -135,11 +135,11 @@
         <span class="hud-corner-bl"></span>
 
         <div class="flex items-center justify-between mb-1">
-          <div class="text-xs font-bold uppercase tracking-wider text-gray-400 font-mono flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-emerald-400 beacon-live"></span>
-            <span>// SYSTEM CLOCK & TIME SYNC</span>
+          <div class="text-xs font-bold uppercase tracking-wider text-gray-400 font-mono flex items-center gap-2 whitespace-nowrap">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 beacon-live shrink-0"></span>
+            <span>// {{ t('dash_kpi_system_clock').toUpperCase() }}</span>
           </div>
-          <span class="text-[10px] px-1.5 py-0.2 rounded bg-cyan-950/80 text-cyan-300 font-mono font-bold border border-cyan-800/50">
+          <span class="text-[10px] px-1.5 py-0.2 rounded bg-cyan-950/80 text-cyan-300 font-mono font-bold border border-cyan-800/50 shrink-0">
             NOC-CLOCK
           </span>
         </div>

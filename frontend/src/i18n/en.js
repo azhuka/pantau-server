@@ -33,7 +33,7 @@ export default {
   all_statuses: 'All Statuses',
 
   // Dashboard View (Passive)
-  dash_kpi_total_servers: 'Total Servers',
+  dash_kpi_total_servers: 'Total Assets',
   dash_kpi_active_incidents: 'Active Incidents',
   dash_kpi_system_clock: 'System Clock',
   dash_kpi_total: 'Total',

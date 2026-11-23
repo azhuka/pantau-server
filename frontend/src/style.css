@@ -52,7 +52,7 @@
 /* Tactical Asymmetric Operations KPI Grid */
 .dash-kpi-grid {
   display: grid;
-  grid-template-columns: minmax(220px, 250px) 1fr minmax(280px, 320px);
+  grid-template-columns: minmax(260px, 300px) 1fr minmax(280px, 320px);
   gap: 12px;
   margin-bottom: 14px;
   align-items: stretch;

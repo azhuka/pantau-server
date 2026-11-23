@@ -174,6 +174,14 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.24
+
+- **Perbaikan Layout Wrapping Kartu KPI Dasbor & Ergonomi Badge Telemetri**:
+  - Memperbaiki judul kartu KPI yang sebelumnya terlalu panjang sehingga terlipat menjadi 2 baris (// ASSET INFRASTRUCTURE OVERVIEW -> // TOTAL ASET / // TOTAL ASSETS).
+  - Menyelaraskan ukuran angka host ke text-2xl font-black dan membungkus badge up/down dengan inline-flex whitespace-nowrap shrink-0 agar angka dan teks tidak pernah terlipat vertikal.
+  - Memperlebar kolom grid kartu KPI pertama menjadi minmax(260px, 300px) pada style.css untuk memastikan tata letak seimbang dan lega di berbagai resolusi layar.
+
+
 ### Versi v0.1.23
 
 - **Penyempurnaan Maturitas Dasbor & Integrasi Modal Terpadu**:

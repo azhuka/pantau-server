@@ -33,7 +33,7 @@ export default {
   all_statuses: 'Semua Status',
 
   // Dasbor (Pasif)
-  dash_kpi_total_servers: 'Total Server',
+  dash_kpi_total_servers: 'Total Aset',
   dash_kpi_active_incidents: 'Insiden Aktif',
   dash_kpi_system_clock: 'Waktu Sistem',
   dash_kpi_total: 'Total',
