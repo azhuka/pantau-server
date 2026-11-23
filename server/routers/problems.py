@@ -21,7 +21,7 @@ def list_problems(
 ):
     """Mengambil daftar insiden / masalah operasional & keamanan NOC."""
     check_all_servers_stale(db)
-    query = db.query(ServerProblem, Server.hostname).join(Server, Server.id == ServerProblem.server_id)
+    query = db.query(ServerProblem, Server.hostname, Server.group_name).join(Server, Server.id == ServerProblem.server_id)
     if active_only:
         query = query.filter(ServerProblem.resolved_at == None)
     
@@ -29,7 +29,7 @@ def list_problems(
     result = []
     now = datetime.utcnow()
     
-    for prob, hostname in problems:
+    for prob, hostname, group_name in problems:
         if not user.can_access_server(prob.server_id):
             continue
 
@@ -64,6 +64,7 @@ def list_problems(
             "id": prob.id,
             "server_id": prob.server_id,
             "hostname": hostname,
+            "group_name": group_name or "Default",
             "key": prob.key,
             "severity": prob.severity,
             "message": prob.message,

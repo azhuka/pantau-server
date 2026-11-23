@@ -14,13 +14,57 @@ from sqlalchemy.orm import Session
 from core.database import get_db
 from routers.auth import get_current_user
 from models.user import User
-from models.server import Server, ServerExtras, SystemSnapshot
+from models.server import Server, ServerExtras, SystemSnapshot, Service
 from models.problem import ServerProblem
 from models.command import Command
 from models.misc import AuditLog
 from services.problem_service import check_all_servers_stale
 
 router = APIRouter(prefix="/api/servers", tags=["Servers"])
+
+def _classify_platform(platform_dict: dict | None, override: str | None = None) -> dict:
+    """Klasifikasi tipe platform host: LXC Container, VM (KVM/dll), atau Baremetal."""
+    if override in ("baremetal", "vm", "lxc"):
+        if override == "baremetal":
+            return {"type": "baremetal", "label": "Baremetal", "short_label": "BAREMETAL"}
+        elif override == "vm":
+            return {"type": "vm", "label": "Mesin Virtual (VM)", "short_label": "VM"}
+        elif override == "lxc":
+            return {"type": "lxc", "label": "LXC Container", "short_label": "LXC"}
+
+    if not isinstance(platform_dict, dict) or not platform_dict:
+        return {"type": "pending", "label": "Auto Deteksi", "short_label": "AUTO"}
+
+    virt = str(platform_dict.get("virt") or "").strip().upper()
+    vendor = str(platform_dict.get("vendor") or "").strip()
+    product = str(platform_dict.get("product") or "").strip()
+    p_type = platform_dict.get("platform_type")
+
+    if p_type == "lxc" or virt in ("LXC", "LXC-LIBVIRT", "DOCKER", "PODMAN", "CONTAINER", "WSL", "SYSTEMD-NSPAWN"):
+        return {
+            "type": "lxc",
+            "virt": virt or "LXC",
+            "label": "LXC Container",
+            "short_label": "LXC",
+        }
+
+    vm_types = ("KVM", "QEMU", "VMWARE", "XEN", "VIRTUALBOX", "ORACLE", "HYPERV", "BOCHS", "BHYVE")
+    is_vm = p_type == "vm" or virt in vm_types or any(x in (vendor + product).upper() for x in ("QEMU", "KVM", "VMWARE", "VIRTUALBOX"))
+    if is_vm:
+        v_name = virt if virt in vm_types else "KVM"
+        return {
+            "type": "vm",
+            "virt": v_name,
+            "label": f"VM ({v_name})" if v_name != "VM" else "Virtual Machine",
+            "short_label": f"VM ({v_name})" if v_name != "VM" else "VM",
+        }
+
+    return {
+        "type": "baremetal",
+        "virt": "Baremetal",
+        "label": "Baremetal",
+        "short_label": "BAREMETAL",
+    }
 
 @router.get("")
 def list_servers(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -38,14 +82,20 @@ def list_servers(user: User = Depends(get_current_user), db: Session = Depends(g
         .all()
     )
     problems_by_server = {}
+    down_services_by_server = {}
     for p in active_problems:
         if p.server_id not in problems_by_server:
             problems_by_server[p.server_id] = []
         problems_by_server[p.server_id].append(p)
+        if p.key and p.key.startswith("service_down:"):
+            down_services_by_server[p.server_id] = down_services_by_server.get(p.server_id, 0) + 1
 
     # 2. Ambil snapshot ID terbaru seluruh aset dalam 1 kueri batch
     server_ids = [s.id for s in servers]
     latest_snaps_map = {}
+    extras_map = {}
+    services_counts = {}
+
     if server_ids:
         latest_snap_ids = [
             sid for (sid,) in db.query(func.max(SystemSnapshot.id))
@@ -56,6 +106,18 @@ def list_servers(user: User = Depends(get_current_user), db: Session = Depends(g
         if latest_snap_ids:
             snaps = db.query(SystemSnapshot).filter(SystemSnapshot.id.in_(latest_snap_ids)).all()
             latest_snaps_map = {sn.server_id: sn for sn in snaps}
+
+        # 3. Batch load ServerExtras untuk info hardware & platform
+        extras_list = db.query(ServerExtras).filter(ServerExtras.server_id.in_(server_ids)).all()
+        extras_map = {e.server_id: e for e in extras_list}
+
+        # 4. Batch query jumlah services per server
+        services_counts = dict(
+            db.query(Service.server_id, func.count(Service.id))
+            .filter(Service.server_id.in_(server_ids))
+            .group_by(Service.server_id)
+            .all()
+        )
 
     for s in servers:
         if not user.can_access_server(s.id):
@@ -137,6 +199,20 @@ def list_servers(user: User = Depends(get_current_user), db: Session = Depends(g
             s.maintenance_reason = None
             db.commit()
 
+        # Deteksi tipe platform & hitung services fisik
+        extra = extras_map.get(s.id)
+        hw_specs = {}
+        if extra and extra.hardware_specs:
+            try:
+                hw_specs = json.loads(extra.hardware_specs) if isinstance(extra.hardware_specs, str) else extra.hardware_specs
+            except Exception:
+                hw_specs = {}
+        plat_info = _classify_platform(hw_specs.get("platform", {}))
+
+        tot_svcs = services_counts.get(s.id, 0)
+        down_svcs = down_services_by_server.get(s.id, 0)
+        up_svcs = max(0, tot_svcs - down_svcs) if is_online else 0
+
         result.append({
             "id": s.id,
             "hostname": s.hostname,
@@ -149,6 +225,10 @@ def list_servers(user: User = Depends(get_current_user), db: Session = Depends(g
             "mem_pct": mem_pct,
             "disk_pct": disk_pct,
             "uptime_secs": latest_snap.uptime_secs if latest_snap else 0,
+            "platform_type": plat_info["type"],
+            "platform_label": plat_info["short_label"],
+            "services_total": tot_svcs,
+            "services_up": up_svcs,
             "active_problems_count": active_problems_count,
             "danger_count": danger_count,
             "critical_count": critical_count,

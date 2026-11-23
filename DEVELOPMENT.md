@@ -174,6 +174,17 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.27
+
+### v0.1.27 (2026-11-24) — Dasbor Standar Baku NOC 10-Kolom, Gauge Baterai LED 10-Segmen & Badge Platform Real-Time
+
+- **10-Kolom Tabel Dasbor Standar:** Menyinkronkan 10 kolom tabel operasional real-time: Aset, Status, Lingkungan (Shield/Flask), Platform / IP (Badge LXC/VM/Baremetal + Salin IP), Uptime, CPU (%), RAM (%), STORAGE (%), Services (rasio fisik), dan Insiden.
+- **10-Segment LED Battery Gauge:** Visualisasi meter baterai LED 10-segmen dengan threshold warna dinamis (hijau, kuning, oranye, merah) untuk CPU, RAM, dan Storage.
+- **Badge Platform Real-Time:** Penemuan dinamis platform host (LXC, VM KVM, Baremetal) dari kernel specs tanpa hardcoding.
+- **Insiden Terkini Satu Baris:** Baris insiden padat satu baris dengan indikator status dot, nama host, badge grup aset, tingkat keparahan, deskripsi, dan durasi.
+- **Waktu Sistem WITA:** Banner jam presisi tinggi dilengkapi penanda zona waktu WITA.
+
+
 ### Versi v0.1.26
 
 ### Perubahan v0.1.26:

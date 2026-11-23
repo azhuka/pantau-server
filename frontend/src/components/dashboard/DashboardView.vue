@@ -15,7 +15,12 @@
         
         <div class="flex items-center justify-between mb-1.5">
           <div class="text-xs font-bold uppercase tracking-wider text-gray-400 font-mono flex items-center gap-2 whitespace-nowrap">
-            <span class="w-2 h-2 rounded-full bg-cyan-400 beacon-live shrink-0"></span>
+            <svg class="w-3.5 h-3.5 text-cyan-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="20" height="8" x="2" y="2" rx="2" ry="2"/>
+              <rect width="20" height="8" x="2" y="14" rx="2" ry="2"/>
+              <line x1="6" y1="6" x2="6.01" y2="6"/>
+              <line x1="6" y1="18" x2="6.01" y2="18"/>
+            </svg>
             <span>// {{ t('dash_kpi_total_servers').toUpperCase() }}</span>
           </div>
           <svg class="w-3.5 h-3.5 text-gray-500 group-hover:text-cyan-400 transition shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -31,7 +36,7 @@
           <div class="flex items-center gap-1.5 font-mono text-xs shrink-0 whitespace-nowrap">
             <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded font-bold whitespace-nowrap shrink-0 bg-emerald-950/80 text-emerald-300 border border-emerald-700/60" :title="t('online')">
               <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 beacon-live shrink-0"></span>
-              <span>{{ upCount }} {{ t('dash_kpi_up') }}</span>
+              <span>{{ upCount }} {{ t('dash_kpi_up').toUpperCase() }}</span>
             </span>
             <span
               class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded font-bold whitespace-nowrap shrink-0"
@@ -39,7 +44,7 @@
               :title="t('offline')"
             >
               <span class="w-1.5 h-1.5 rounded-full shrink-0" :class="downCount > 0 ? 'bg-rose-400 radar-critical' : 'bg-gray-500'"></span>
-              <span>{{ downCount }} {{ t('dash_kpi_down') }}</span>
+              <span>{{ downCount }} {{ t('dash_kpi_down').toUpperCase() }}</span>
             </span>
           </div>
         </div>
@@ -101,7 +106,7 @@
             <span class="text-[9.5px] uppercase font-bold block mt-0.5 tracking-wider">{{ t('sev_warning') }}</span>
           </div>
 
-          <!-- Info (Biru - Info) -->
+          <!-- Info (Biru/Cyan - Info) -->
           <div
             @click="openSevModal('info')"
             class="py-1 px-1 rounded border transition cursor-pointer hover:brightness-125 active:scale-95"
@@ -139,8 +144,8 @@
             <span class="w-2 h-2 rounded-full bg-emerald-400 beacon-live shrink-0"></span>
             <span>// {{ t('dash_kpi_system_clock').toUpperCase() }}</span>
           </div>
-          <span class="text-[10px] px-1.5 py-0.2 rounded bg-cyan-950/80 text-cyan-300 font-mono font-bold border border-cyan-800/50 shrink-0">
-            NOC-CLOCK
+          <span class="text-[10px] px-1.5 py-0.2 rounded bg-emerald-950/80 text-emerald-300 font-mono font-bold border border-emerald-700/60 shrink-0">
+            {{ t('dash_kpi_wita') }}
           </span>
         </div>
 
@@ -179,13 +184,13 @@
             :class="dangerCount > 0 ? 'bg-rose-400 radar-critical' : (criticalCount > 0 ? 'bg-orange-400 radar-critical' : (warnCount > 0 ? 'bg-amber-400 radar-warning' : 'bg-emerald-400 beacon-live'))"
           ></span>
           <h3 class="text-xs font-bold text-gray-100 tracking-wider uppercase">
-            // ACTIVE INCIDENTS & ALERTS QUEUE
+            {{ t('dash_recent_incidents') }}
           </h3>
           <span
             class="px-2 py-0.2 rounded text-[11px] font-bold"
             :class="activeProblems.length > 0 ? 'bg-rose-950/80 text-rose-300 border border-rose-800' : (servers.length === 0 ? 'bg-gray-800/80 text-gray-400 border border-gray-700' : 'bg-emerald-950/80 text-emerald-300 border border-emerald-800')"
           >
-            {{ activeProblems.length > 0 ? `${activeProblems.length} ${t('active_incidents')}` : (servers.length === 0 ? t('nav_status_no_nodes') : t('nav_status_all_secure')) }}
+            {{ activeProblems.length > 0 ? t('dash_recent_incidents_badge', { count: activeProblems.length }) : (servers.length === 0 ? t('nav_status_no_nodes') : t('nav_status_all_secure')) }}
           </span>
         </div>
 
@@ -193,7 +198,7 @@
           @click="$emit('nav', 'assets')"
           class="text-xs text-cyan-400 hover:text-cyan-300 transition font-mono flex items-center gap-1.5 cursor-pointer font-semibold"
         >
-          <span>{{ t('dash_open_assets') }}</span>
+          <span>{{ t('dash_full_history') }}</span>
         </button>
       </div>
 
@@ -224,12 +229,12 @@
         <table class="w-full text-left text-xs font-mono border-collapse">
           <thead>
             <tr class="border-b border-cyan-500/20 text-gray-400 bg-[#070c18]/80 font-bold tracking-wider select-none">
-              <th class="py-2.5 px-4 w-28">{{ t('dash_col_time') }}</th>
-              <th class="py-2.5 px-4 w-44">{{ t('dash_col_server') }}</th>
-              <th class="py-2.5 px-3 w-32 text-center">{{ t('dash_col_severity') }}</th>
-              <th class="py-2.5 px-4">{{ t('dash_col_description') }}</th>
-              <th class="py-2.5 px-4 w-28 text-right">{{ t('dash_col_duration') }}</th>
-              <th class="py-2.5 px-3 w-10 text-center"></th>
+              <th class="py-2 px-3 w-28">{{ t('dash_col_time').toUpperCase() }}</th>
+              <th class="py-2 px-3 w-48">{{ t('dash_col_server').toUpperCase() }}</th>
+              <th class="py-2 px-2.5 w-28 text-center">{{ t('dash_col_severity').toUpperCase() }}</th>
+              <th class="py-2 px-3">{{ t('dash_col_description').toUpperCase() }}</th>
+              <th class="py-2 px-3 w-28 text-right">{{ t('dash_col_duration').toUpperCase() }}</th>
+              <th class="py-2 px-2 w-8 text-center"></th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-800/40 bg-[#090e1c]/40">
@@ -242,68 +247,71 @@
             >
               <!-- TIME -->
               <td
-                class="py-2.5 px-4 text-gray-400 whitespace-nowrap cursor-help hover:text-cyan-300 transition"
+                class="py-2 px-3 text-gray-400 whitespace-nowrap cursor-help hover:text-cyan-300 transition"
                 :title="formatFullTime(prob.started_at)"
               >
-                {{ formatTime(prob.started_at) }}
+                {{ formatIncidentTime(prob.started_at) }}
               </td>
 
-              <!-- SERVER -->
-              <td class="py-2.5 px-4 whitespace-nowrap">
-                <div class="flex items-center gap-2 font-bold text-gray-100 group-hover:text-cyan-300 transition">
+              <!-- SERVER (Host + Group Badge) -->
+              <td class="py-2 px-3 whitespace-nowrap">
+                <div class="flex items-center gap-2">
                   <span
                     class="w-2 h-2 rounded-full shrink-0"
                     :class="prob.severity === 'danger' ? 'bg-rose-400 radar-critical' : (prob.severity === 'critical' || prob.severity === 'average' ? 'bg-orange-400 radar-critical' : (prob.severity === 'warning' ? 'bg-amber-400 radar-warning' : 'bg-cyan-400'))"
                   ></span>
-                  <span>{{ prob.hostname }}</span>
+                  <span class="font-bold text-gray-100 group-hover:text-cyan-300 transition">{{ prob.hostname }}</span>
+                  <span
+                    v-if="prob.group_name"
+                    class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-slate-800/80 text-slate-300 border border-slate-700/60 uppercase"
+                  >
+                    {{ prob.group_name }}
+                  </span>
                 </div>
               </td>
 
               <!-- SEVERITY -->
-              <td class="py-2.5 px-3 text-center whitespace-nowrap">
+              <td class="py-2 px-2.5 text-center whitespace-nowrap">
                 <span
                   v-if="prob.severity === 'danger'"
-                  class="px-2 py-0.5 rounded text-[11px] font-bold bg-rose-950 text-rose-300 border border-rose-700/80 uppercase shadow-[0_0_6px_rgba(244,63,94,0.3)] radar-critical"
+                  class="px-2 py-0.5 rounded text-[10.5px] font-bold bg-rose-950 text-rose-300 border border-rose-700/80 uppercase shadow-[0_0_6px_rgba(244,63,94,0.3)] radar-critical"
                 >
                   {{ t('sev_danger').toUpperCase() }}
                 </span>
                 <span
                   v-else-if="prob.severity === 'critical' || prob.severity === 'average'"
-                  class="px-2 py-0.5 rounded text-[11px] font-bold bg-orange-950 text-orange-300 border border-orange-700/80 uppercase shadow-[0_0_6px_rgba(249,115,22,0.3)] radar-critical"
+                  class="px-2 py-0.5 rounded text-[10.5px] font-bold bg-orange-950 text-orange-300 border border-orange-700/80 uppercase shadow-[0_0_6px_rgba(249,115,22,0.3)] radar-critical"
                 >
                   {{ t('sev_critical').toUpperCase() }}
                 </span>
                 <span
                   v-else-if="prob.severity === 'warning'"
-                  class="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-950 text-amber-300 border border-amber-700/80 uppercase shadow-[0_0_6px_rgba(245,158,11,0.3)] radar-warning"
+                  class="px-2 py-0.5 rounded text-[10.5px] font-bold bg-amber-950 text-amber-300 border border-amber-700/80 uppercase shadow-[0_0_6px_rgba(245,158,11,0.3)] radar-warning"
                 >
                   {{ t('sev_warning').toUpperCase() }}
                 </span>
                 <span
                   v-else
-                  class="px-2 py-0.5 rounded text-[11px] font-bold bg-cyan-950 text-cyan-300 border border-cyan-700/80 uppercase"
+                  class="px-2 py-0.5 rounded text-[10.5px] font-bold bg-cyan-950 text-cyan-300 border border-cyan-700/80 uppercase"
                 >
                   {{ t('sev_info').toUpperCase() }}
                 </span>
               </td>
 
-              <!-- DESCRIPTION -->
-              <td class="py-2.5 px-4 text-gray-200 font-medium leading-snug">
-                <div>{{ formatIncidentMessage(prob, locale) }}</div>
-                <div v-if="formatIncidentTip(prob, locale)" class="text-[11px] text-gray-400 font-normal mt-0.5 truncate max-w-xl">
-                  {{ formatIncidentTip(prob, locale) }}
-                </div>
+              <!-- DESCRIPTION (Single-Line Compact Ala Blueprint) -->
+              <td class="py-2 px-3 text-gray-200 font-medium leading-snug whitespace-nowrap overflow-hidden text-ellipsis max-w-xl" :title="formatIncidentTip(prob, locale) || formatIncidentMessage(prob, locale)">
+                <span>{{ formatIncidentMessage(prob, locale) }}</span>
               </td>
 
               <!-- DURATION -->
-              <td class="py-2.5 px-4 text-right whitespace-nowrap text-gray-300">
-                <span class="px-2 py-0.5 rounded bg-gray-900 border border-gray-700/80 font-bold">
-                  {{ calcDuration(prob.started_at) }}
+              <td class="py-2 px-3 text-right whitespace-nowrap text-gray-300">
+                <span class="px-2 py-0.5 rounded bg-gray-900 border border-gray-700/80 font-bold text-[10.5px]">
+                  {{ formatIncidentDuration(prob.started_at, locale) }}
                 </span>
               </td>
 
               <!-- PASSIVE NAVIGATION CHEVRON -->
-              <td class="py-2.5 px-3 text-center text-gray-500 group-hover:text-cyan-400 transition">
+              <td class="py-2 px-2 text-center text-gray-500 group-hover:text-cyan-400 transition">
                 <svg class="w-3.5 h-3.5 mx-auto opacity-40 group-hover:opacity-100 group-hover:translate-x-0.5 transition" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <polyline points="9 18 15 12 9 6"/>
                 </svg>
@@ -314,7 +322,7 @@
       </div>
     </div>
 
-    <!-- 3. ASSET STATUS & TELEMETRY RADAR -->
+    <!-- 3. ASSET STATUS & PERFORMANCE TABLE (10 Kolom Standar Lengkap) -->
     <div id="dash-assets-card" class="hud-tactical-card rounded-xl overflow-hidden shadow-lg mb-8">
       <span class="hud-corner-tr"></span>
       <span class="hud-corner-bl"></span>
@@ -322,20 +330,28 @@
       <!-- Toolbar -->
       <div class="bg-[#0b1324] border-b border-cyan-500/20 px-4 py-2.5 flex items-center justify-between flex-wrap gap-2">
         <div class="flex items-center gap-2.5 font-mono">
-          <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 beacon-live"></span>
+          <svg class="w-4 h-4 text-cyan-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="20" height="8" x="2" y="2" rx="2" ry="2"/>
+            <rect width="20" height="8" x="2" y="14" rx="2" ry="2"/>
+            <line x1="6" y1="6" x2="6.01" y2="6"/>
+            <line x1="6" y1="18" x2="6.01" y2="18"/>
+          </svg>
           <div>
             <h3 class="text-xs font-bold text-gray-100 tracking-wider uppercase">
-              // ASSET TELEMETRY & PERFORMANCE
+              {{ t('dash_status_perf_title') }}
             </h3>
+            <p class="text-[10px] text-gray-400 font-mono hidden sm:block">
+              {{ t('dash_status_perf_sub') }}
+            </p>
           </div>
         </div>
 
-        <div class="flex items-center gap-2.5 font-mono">
+        <div class="flex items-center gap-2.5 font-mono flex-wrap">
           <!-- View Switcher (Tabel vs Grid) -->
           <div class="inline-flex bg-[#060a14] border border-cyan-900/40 rounded p-0.5 text-xs">
             <button
               @click="assetViewMode = 'table'"
-              class="px-2.5 py-1 rounded transition cursor-pointer flex items-center gap-1.5"
+              class="px-2 py-1 rounded transition cursor-pointer flex items-center gap-1.5"
               :class="assetViewMode === 'table' ? 'bg-cyan-950 text-cyan-300 font-bold border border-cyan-500/50' : 'text-gray-400 hover:text-white'"
               :title="t('dash_view_table')"
             >
@@ -343,7 +359,7 @@
             </button>
             <button
               @click="assetViewMode = 'grid'"
-              class="px-2.5 py-1 rounded transition cursor-pointer flex items-center gap-1.5"
+              class="px-2 py-1 rounded transition cursor-pointer flex items-center gap-1.5"
               :class="assetViewMode === 'grid' ? 'bg-cyan-950 text-cyan-300 font-bold border border-cyan-500/50' : 'text-gray-400 hover:text-white'"
               :title="t('dash_view_grid')"
             >
@@ -351,30 +367,92 @@
             </button>
           </div>
 
+          <!-- Density Switcher (= Compact vs ≡ Standard) -->
+          <div v-if="assetViewMode === 'table'" class="inline-flex bg-[#060a14] border border-cyan-900/40 rounded p-0.5 text-xs">
+            <button
+              @click="tableDensity = 'compact'"
+              class="px-2 py-1 rounded transition cursor-pointer font-bold"
+              :class="tableDensity === 'compact' ? 'bg-cyan-950 text-cyan-300 border border-cyan-500/50' : 'text-gray-400 hover:text-white'"
+              :title="t('dash_density_compact')"
+            >
+              =
+            </button>
+            <button
+              @click="tableDensity = 'standard'"
+              class="px-2 py-1 rounded transition cursor-pointer font-bold"
+              :class="tableDensity === 'standard' ? 'bg-cyan-950 text-cyan-300 border border-cyan-500/50' : 'text-gray-400 hover:text-white'"
+              :title="t('dash_density_standard')"
+            >
+              ≡
+            </button>
+          </div>
+
+          <!-- Group Filter Dropdown -->
+          <select
+            v-model="selectedGroup"
+            class="bg-[#060a14] border border-cyan-900/50 focus:border-cyan-400 rounded px-2.5 py-1 text-xs text-gray-200 outline-none transition cursor-pointer"
+          >
+            <option value="">{{ t('dash_all_groups') }}</option>
+            <option v-for="grp in availableGroups" :key="grp" :value="grp">
+              {{ grp }}
+            </option>
+          </select>
+
           <!-- Search Filter -->
           <input
             v-model="assetFilter"
             type="text"
-            :placeholder="t('dash_search_host')"
-            class="bg-[#060a14] border border-cyan-900/50 focus:border-cyan-400 rounded px-2.5 py-1 text-xs text-gray-100 placeholder-gray-500 w-48 outline-none transition"
+            :placeholder="t('dash_search_placeholder')"
+            class="bg-[#060a14] border border-cyan-900/50 focus:border-cyan-400 rounded px-2.5 py-1 text-xs text-gray-100 placeholder-gray-500 w-44 outline-none transition"
           />
         </div>
       </div>
 
-      <!-- VIEW 1: TABEL OPERASIONAL REAL-TIME DASBOR -->
+      <!-- VIEW 1: TABEL OPERASIONAL REAL-TIME DASBOR (10 Kolom Baku) -->
       <div v-if="assetViewMode === 'table'" class="overflow-x-auto">
         <table class="w-full text-left text-xs font-mono border-collapse">
           <thead>
             <tr class="border-b border-cyan-500/20 font-bold text-gray-400 bg-[#070c18]/80 select-none tracking-wider">
-              <th class="py-2.5 px-4">{{ t('col_server') }}</th>
-              <th class="py-2.5 px-3 text-center">{{ t('col_status') }}</th>
-              <th class="py-2.5 px-3 text-center">{{ t('dash_col_env') }}</th>
-              <th class="py-2.5 px-4">{{ t('dash_col_platform_ip') }}</th>
-              <th class="py-2.5 px-4 text-center">{{ t('col_uptime') }}</th>
-              <th class="py-2.5 px-4 text-center">{{ t('col_cpu') }}</th>
-              <th class="py-2.5 px-4 text-center">{{ t('col_memory') }}</th>
-              <th class="py-2.5 px-4 text-center">{{ t('dash_col_storage') }}</th>
-              <th class="py-2.5 px-3 text-center">{{ t('dash_col_incidents') }}</th>
+              <!-- 0. Server -->
+              <th @click="setSort('hostname')" class="px-3 cursor-pointer hover:text-cyan-300 transition" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
+                {{ t('col_server') }} <span class="text-[10px] text-gray-500">↕</span>
+              </th>
+              <!-- 1. Status -->
+              <th class="px-2.5 text-center" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
+                {{ t('col_status') }}
+              </th>
+              <!-- 2. Lingkungan -->
+              <th class="px-2.5 text-center" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
+                {{ t('dash_col_env') }}
+              </th>
+              <!-- 3. Platform / IP -->
+              <th class="px-3" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
+                {{ t('dash_col_platform_ip') }}
+              </th>
+              <!-- 4. Uptime -->
+              <th @click="setSort('uptime')" class="px-3 text-center cursor-pointer hover:text-cyan-300 transition" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
+                {{ t('col_uptime') }} <span class="text-[10px] text-gray-500">↕</span>
+              </th>
+              <!-- 5. CPU (%) -->
+              <th @click="setSort('cpu')" class="px-3 text-center cursor-pointer hover:text-cyan-300 transition" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
+                {{ t('dash_col_cpu') }} <span class="text-[10px] text-gray-500">↕</span>
+              </th>
+              <!-- 6. RAM (%) -->
+              <th @click="setSort('ram')" class="px-3 text-center cursor-pointer hover:text-cyan-300 transition" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
+                {{ t('dash_col_ram') }} <span class="text-[10px] text-gray-500">↕</span>
+              </th>
+              <!-- 7. STORAGE (%) -->
+              <th @click="setSort('storage')" class="px-3 text-center cursor-pointer hover:text-cyan-300 transition" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
+                {{ t('dash_col_storage') }} <span class="text-[10px] text-gray-500">↕</span>
+              </th>
+              <!-- 8. Services -->
+              <th class="px-2.5 text-center" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
+                {{ t('dash_col_services') }}
+              </th>
+              <!-- 9. Insiden -->
+              <th @click="setSort('incidents')" class="px-2.5 text-center cursor-pointer hover:text-cyan-300 transition" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
+                {{ t('dash_col_incidents') }} <span class="text-[10px] text-gray-500">↕</span>
+              </th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-800/40 bg-[#090e1c]/40">
@@ -384,38 +462,37 @@
               @click="$emit('inspect-node', s.id)"
               class="hover:bg-cyan-950/20 transition-colors cursor-pointer group"
             >
-              <!-- Server -->
-              <td class="py-2.5 px-4 whitespace-nowrap">
+              <!-- 0. Server -->
+              <td class="px-3 whitespace-nowrap" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
                 <div class="flex items-center gap-2">
                   <span
-                    class="w-2 h-2 rounded-full"
+                    class="w-2 h-2 rounded-full shrink-0"
                     :class="!s.is_online ? 'bg-rose-500 radar-critical' : (s.is_maintenance ? 'bg-amber-400 animate-pulse' : (s.danger_count > 0 ? 'bg-rose-400 radar-critical' : (s.critical_count > 0 ? 'bg-orange-400 radar-critical' : (s.warning_count > 0 ? 'bg-amber-400 radar-warning' : 'bg-emerald-400 beacon-live'))))"
                   ></span>
                   <span class="font-bold text-gray-100 group-hover:text-cyan-300 transition text-sm">{{ s.hostname }}</span>
-                  <span class="text-xs text-gray-500 font-normal">({{ s.group_name || 'Default' }})</span>
                 </div>
               </td>
 
-              <!-- Status -->
-              <td class="py-2.5 px-3 text-center whitespace-nowrap">
+              <!-- 1. Status -->
+              <td class="px-2.5 text-center whitespace-nowrap" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
                 <span
                   v-if="s.is_maintenance"
-                  class="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-950/80 text-amber-300 border border-amber-600/60"
+                  class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950/80 text-amber-300 border border-amber-600/60"
                   :title="s.maintenance_reason ? `${t('status_maint')}: ${s.maintenance_reason}` : t('tooltip_node_maint')"
                 >
                   {{ t('status_maint').toUpperCase() }}
                 </span>
                 <span
                   v-else
-                  class="px-2 py-0.5 rounded text-[11px] font-bold"
+                  class="px-2 py-0.5 rounded text-[10px] font-bold"
                   :class="s.is_online ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-700/60' : 'bg-rose-950/80 text-rose-300 border border-rose-700/60'"
                 >
                   {{ s.is_online ? t('online').toUpperCase() : t('offline').toUpperCase() }}
                 </span>
               </td>
 
-              <!-- Environment (Lingkungan: Produksi vs Non-produksi) -->
-              <td class="py-2.5 px-3 text-center whitespace-nowrap">
+              <!-- 2. Lingkungan (Produksi vs Non-produksi) -->
+              <td class="px-2.5 text-center whitespace-nowrap" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
                 <span
                   v-if="s.tier === 1"
                   class="inline-flex items-center justify-center p-1 rounded bg-emerald-950/40 text-emerald-400 border border-emerald-700/50"
@@ -439,101 +516,166 @@
                 </span>
               </td>
 
-              <!-- Platform / IP -->
-              <td class="py-2.5 px-4 whitespace-nowrap text-cyan-300 font-semibold text-xs">
-                {{ s.ip_address }}
+              <!-- 3. Platform / IP -->
+              <td class="px-3 whitespace-nowrap" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
+                <div class="flex items-center gap-2">
+                  <!-- Platform Badge -->
+                  <span
+                    v-if="s.platform_type === 'lxc'"
+                    class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-cyan-950/80 text-cyan-300 border border-cyan-700/60 inline-flex items-center gap-1"
+                    :title="`Platform: ${s.platform_label || 'LXC'}`"
+                  >
+                    <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                    <span>{{ s.platform_label || 'LXC' }}</span>
+                  </span>
+                  <span
+                    v-else-if="s.platform_type === 'vm'"
+                    class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-purple-950/80 text-purple-300 border border-purple-700/60 inline-flex items-center gap-1"
+                    :title="`Platform: ${s.platform_label || 'VM'}`"
+                  >
+                    <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+                    <span>{{ s.platform_label || 'VM' }}</span>
+                  </span>
+                  <span
+                    v-else
+                    class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-700/60 inline-flex items-center gap-1"
+                    :title="`Platform: ${s.platform_label || 'BAREMETAL'}`"
+                  >
+                    <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                    <span>{{ s.platform_label || 'BAREMETAL' }}</span>
+                  </span>
+
+                  <!-- IP Address + Copy Icon -->
+                  <div class="flex items-center gap-1 group/ip">
+                    <span class="text-xs text-gray-300 font-mono">{{ s.ip_address }}</span>
+                    <button
+                      type="button"
+                      @click.stop="copyIp(s.ip_address, s.id, $event)"
+                      class="text-gray-500 hover:text-cyan-400 transition p-0.5 rounded cursor-pointer"
+                      :title="copiedHostId === s.id ? t('dash_copied_ip') : t('dash_click_to_copy')"
+                    >
+                      <svg v-if="copiedHostId === s.id" class="w-3 h-3 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      <svg v-else class="w-3 h-3 opacity-60 group-hover/ip:opacity-100 transition" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
+                        <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
               </td>
 
-              <!-- Uptime -->
-              <td class="py-2.5 px-4 text-center whitespace-nowrap text-gray-300 text-xs">
-                {{ formatUptime(s.uptime_secs) }}
+              <!-- 4. Uptime -->
+              <td class="px-3 text-center whitespace-nowrap text-gray-300 text-xs font-mono" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
+                {{ formatUptime(s.uptime_secs, locale) }}
               </td>
 
-              <!-- CPU (%) -->
-              <td class="py-2.5 px-4 whitespace-nowrap">
-                <div class="flex items-center justify-between gap-2 mb-1">
-                  <span :class="s.cpu > 80 ? 'text-rose-400 font-bold' : 'text-gray-200'">{{ (s.cpu || 0).toFixed(1) }}%</span>
-                </div>
-                <div class="cyber-bar-track">
-                  <div
-                    :class="s.cpu > 80 ? 'cyber-bar-fill-crimson' : s.cpu > 60 ? 'cyber-bar-fill-amber' : 'cyber-bar-fill-cyan'"
-                    :style="{ width: `${Math.min(s.cpu || 0, 100)}%` }"
-                  ></div>
-                </div>
-              </td>
-
-              <!-- RAM (%) -->
-              <td class="py-2.5 px-4 whitespace-nowrap">
-                <div class="flex items-center justify-between gap-2 mb-1">
-                  <span :class="s.mem_pct > 80 ? 'text-rose-400 font-bold' : 'text-gray-200'">{{ (s.mem_pct || 0).toFixed(1) }}%</span>
-                </div>
-                <div class="cyber-bar-track">
-                  <div
-                    :class="s.mem_pct > 80 ? 'cyber-bar-fill-crimson' : s.mem_pct > 60 ? 'cyber-bar-fill-amber' : 'cyber-bar-fill-emerald'"
-                    :style="{ width: `${Math.min(s.mem_pct || 0, 100)}%` }"
-                  ></div>
+              <!-- 5. CPU (%) Visual 10-Segment LED Battery Gauge -->
+              <td class="px-3 text-center whitespace-nowrap" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
+                <div class="inline-flex items-center justify-center gap-2">
+                  <div class="meter-led-track" :title="`CPU: ${(s.cpu || 0).toFixed(1)}%`">
+                    <span
+                      v-for="i in 10"
+                      :key="i"
+                      class="meter-led-seg"
+                      :class="i <= getMeterLitSegments(s.cpu) ? getMeterClass(s.cpu) : ''"
+                    ></span>
+                  </div>
+                  <strong class="font-mono text-xs min-w-[42px] text-left" :style="{ color: getMeterColor(s.cpu) }">
+                    {{ (s.cpu || 0).toFixed(1) }}%
+                  </strong>
                 </div>
               </td>
 
-              <!-- Storage (%) -->
-              <td class="py-2.5 px-4 whitespace-nowrap">
-                <div class="flex items-center justify-between gap-2 mb-1">
-                  <span :class="(s.disk_pct || 0) > 85 ? 'text-rose-400 font-bold' : 'text-gray-200'">{{ s.disk_pct || 0 }}%</span>
-                </div>
-                <div class="cyber-bar-track">
-                  <div
-                    class="cyber-bar-fill-cyan"
-                    :style="{ width: `${s.disk_pct || 0}%` }"
-                  ></div>
+              <!-- 6. RAM (%) Visual 10-Segment LED Battery Gauge -->
+              <td class="px-3 text-center whitespace-nowrap" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
+                <div class="inline-flex items-center justify-center gap-2">
+                  <div class="meter-led-track" :title="`RAM: ${(s.mem_pct || 0).toFixed(1)}%`">
+                    <span
+                      v-for="i in 10"
+                      :key="i"
+                      class="meter-led-seg"
+                      :class="i <= getMeterLitSegments(s.mem_pct) ? getMeterClass(s.mem_pct) : ''"
+                    ></span>
+                  </div>
+                  <strong class="font-mono text-xs min-w-[42px] text-left" :style="{ color: getMeterColor(s.mem_pct) }">
+                    {{ (s.mem_pct || 0).toFixed(1) }}%
+                  </strong>
                 </div>
               </td>
 
-              <!-- Incidents -->
-              <td class="py-2.5 px-3 text-center whitespace-nowrap">
+              <!-- 7. STORAGE (%) Visual 10-Segment LED Battery Gauge -->
+              <td class="px-3 text-center whitespace-nowrap" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
+                <div class="inline-flex items-center justify-center gap-2">
+                  <div class="meter-led-track" :title="`Storage: ${(s.disk_pct || 0).toFixed(1)}%`">
+                    <span
+                      v-for="i in 10"
+                      :key="i"
+                      class="meter-led-seg"
+                      :class="i <= getMeterLitSegments(s.disk_pct) ? getMeterClass(s.disk_pct) : ''"
+                    ></span>
+                  </div>
+                  <strong class="font-mono text-xs min-w-[42px] text-left" :style="{ color: getMeterColor(s.disk_pct) }">
+                    {{ (s.disk_pct || 0).toFixed(1) }}%
+                  </strong>
+                </div>
+              </td>
+
+              <!-- 8. Services (tot_svcs / up_svcs) -->
+              <td class="px-2.5 text-center whitespace-nowrap font-mono text-xs font-bold" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
+                <span v-if="!s.is_online || !s.services_total" class="text-gray-500">-</span>
+                <span v-else>
+                  <span class="text-emerald-400">{{ s.services_total }}</span><span class="text-gray-500">/</span><span :class="s.services_up < s.services_total ? 'text-amber-400' : 'text-emerald-400'">{{ s.services_up }}</span>
+                </span>
+              </td>
+
+              <!-- 9. Insiden -->
+              <td class="px-2.5 text-center whitespace-nowrap" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
                 <span
                   v-if="!s.is_online"
-                  class="px-2 py-0.5 rounded text-[10.5px] font-bold bg-rose-950/80 text-rose-300 border border-rose-700/60"
+                  class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950/80 text-rose-300 border border-rose-700/60 uppercase"
                 >
                   {{ t('offline').toUpperCase() }}
                 </span>
                 <span
                   v-else-if="(!s.active_problems_count || s.active_problems_count === 0) && (!s.ignored_count || s.ignored_count === 0)"
-                  class="px-2 py-0.5 rounded text-[10.5px] font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-700/60"
+                  class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-700/60 uppercase"
                 >
                   {{ t('status_clear').toUpperCase() }}
                 </span>
-                <div v-else class="inline-flex items-center justify-center gap-1.5 flex-wrap">
+                <div v-else class="inline-flex items-center justify-center gap-1 flex-wrap">
                   <span
                     v-if="s.danger_count > 0"
-                    class="px-1.5 py-0.2 rounded text-[11px] font-bold bg-rose-950 text-rose-300 border border-rose-700 shadow-sm radar-critical"
+                    class="px-1.5 py-0.2 rounded text-[10.5px] font-bold bg-rose-950 text-rose-300 border border-rose-700 shadow-sm radar-critical"
                     :title="s.danger_msgs || t('sev_danger')"
                   >
                     {{ s.danger_count }}
                   </span>
                   <span
                     v-if="s.critical_count > 0"
-                    class="px-1.5 py-0.2 rounded text-[11px] font-bold bg-orange-950 text-orange-300 border border-orange-700 shadow-sm radar-critical"
+                    class="px-1.5 py-0.2 rounded text-[10.5px] font-bold bg-orange-950 text-orange-300 border border-orange-700 shadow-sm radar-critical"
                     :title="s.critical_msgs || t('sev_critical')"
                   >
                     {{ s.critical_count }}
                   </span>
                   <span
                     v-if="s.warning_count > 0"
-                    class="px-1.5 py-0.2 rounded text-[11px] font-bold bg-amber-950 text-amber-300 border border-amber-700 shadow-sm radar-warning"
+                    class="px-1.5 py-0.2 rounded text-[10.5px] font-bold bg-amber-950 text-amber-300 border border-amber-700 shadow-sm radar-warning"
                     :title="s.warning_msgs || t('sev_warning')"
                   >
                     {{ s.warning_count }}
                   </span>
                   <span
                     v-if="s.info_count > 0"
-                    class="px-1.5 py-0.2 rounded text-[11px] font-bold bg-sky-950 text-sky-300 border border-sky-700 shadow-sm"
+                    class="px-1.5 py-0.2 rounded text-[10.5px] font-bold bg-cyan-950 text-cyan-300 border border-cyan-700 shadow-sm"
                     :title="s.info_msgs || t('sev_info')"
                   >
                     {{ s.info_count }}
                   </span>
                   <span
                     v-if="s.ignored_count > 0"
-                    class="px-1.5 py-0.2 rounded text-[11px] font-bold bg-slate-900 text-slate-400 border border-slate-700 shadow-sm"
+                    class="px-1.5 py-0.2 rounded text-[10.5px] font-bold bg-slate-900 text-slate-400 border border-slate-700 shadow-sm"
                     :title="s.ignored_msgs || t('sev_ignored')"
                   >
                     {{ s.ignored_count }}
@@ -544,7 +686,7 @@
 
             <!-- Empty State Baris -->
             <tr v-if="filteredServers.length === 0">
-              <td colspan="9" class="py-12 px-4 text-center text-gray-400 font-mono text-xs">
+              <td colspan="10" class="py-12 px-4 text-center text-gray-400 font-mono text-xs">
                 <div class="flex flex-col items-center justify-center gap-1.5">
                   <svg class="w-8 h-8 text-gray-600 mb-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                     <rect width="20" height="8" x="2" y="2" rx="2" ry="2"/>
@@ -620,7 +762,7 @@
           </div>
 
           <div class="mt-3 pt-2 border-t border-cyan-500/10 flex items-center justify-between text-[11px] font-mono text-gray-400">
-            <span>UP // {{ formatUptime(s.uptime_secs) }}</span>
+            <span>UP // {{ formatUptime(s.uptime_secs, locale) }}</span>
             <div v-if="s.active_problems_count > 0" class="inline-flex items-center gap-1">
               <span v-if="s.danger_count > 0" class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-rose-950 text-rose-300 border border-rose-700 radar-critical" :title="s.danger_msgs">{{ s.danger_count }}</span>
               <span v-if="s.critical_count > 0" class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-orange-950 text-orange-300 border border-orange-700 radar-critical" :title="s.critical_msgs">{{ s.critical_count }}</span>
@@ -667,7 +809,16 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from '../../i18n'
-import { formatIncidentMessage, formatIncidentTip } from '../../utils/formatters'
+import {
+  formatIncidentMessage,
+  formatIncidentTip,
+  formatIncidentTime,
+  formatIncidentDuration,
+  formatUptime,
+  getMeterLitSegments,
+  getMeterClass,
+  getMeterColor
+} from '../../utils/formatters'
 import SevDetailModal from './SevDetailModal.vue'
 import ProblemDetailModal from './ProblemDetailModal.vue'
 import IgnoreProblemModal from './IgnoreProblemModal.vue'
@@ -696,6 +847,23 @@ const selectedProblem = ref(null)
 const showIgnoreModal = ref(false)
 const problemToIgnore = ref(null)
 
+const copiedHostId = ref(null)
+async function copyIp(ip, id, e) {
+  if (e) e.stopPropagation()
+  if (!ip) return
+  try {
+    await navigator.clipboard.writeText(ip)
+    copiedHostId.value = id
+    setTimeout(() => {
+      if (copiedHostId.value === id) {
+        copiedHostId.value = null
+      }
+    }, 1500)
+  } catch (err) {
+    console.error('Failed to copy IP:', err)
+  }
+}
+
 function openSevModal(sev) {
   activeSev.value = sev
   showSevModal.value = true
@@ -722,7 +890,7 @@ async function unignoreProblem(pid) {
     if (data.ok) {
       emit('refresh-problems')
     } else {
-      alert(data.detail || 'Gagal memulihkan pemantauan')
+      alert(data.detail || 'Failed to unignore problem')
     }
   } catch (err) {
     console.error('Failed to unignore problem:', err)
@@ -761,7 +929,29 @@ function openHostFromModal(sid) {
 }
 
 const assetViewMode = ref('table') // 'table' or 'grid'
+const tableDensity = ref('standard') // 'standard' or 'compact'
+const selectedGroup = ref('')
 const assetFilter = ref('')
+
+const sortCol = ref('id')
+const sortAsc = ref(true)
+
+function setSort(col) {
+  if (sortCol.value === col) {
+    sortAsc.value = !sortAsc.value
+  } else {
+    sortCol.value = col
+    sortAsc.value = true
+  }
+}
+
+const availableGroups = computed(() => {
+  const set = new Set()
+  props.servers.forEach(s => {
+    if (s.group_name) set.add(s.group_name)
+  })
+  return Array.from(set).sort()
+})
 
 // Clock state
 const clockDayStr = ref('')
@@ -773,10 +963,10 @@ const currentTime = ref('')
 const currentUtcTime = ref('')
 let clockTimer = null
 
-const daysEN = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
-const monthsEN = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
-const daysID = ['MIN', 'SEN', 'SEL', 'RAB', 'KAM', 'JUM', 'SAB']
-const monthsID = ['JAN', 'FEB', 'MAR', 'APR', 'MEI', 'JUN', 'JUL', 'AGU', 'SEP', 'OKT', 'NOV', 'DES']
+const daysEN = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+const monthsEN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+const daysID = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']
+const monthsID = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
 
 function updateClock() {
   const now = new Date()
@@ -827,24 +1017,47 @@ const infoCount = computed(() => activeProblems.value.filter(p => !p.severity ||
 const ignoredCount = computed(() => props.problems.filter(p => p.is_ignored).length)
 
 const filteredServers = computed(() => {
-  if (!assetFilter.value) return props.servers
-  const q = assetFilter.value.toLowerCase()
-  return props.servers.filter(s =>
-    (s.hostname && s.hostname.toLowerCase().includes(q)) ||
-    (s.ip_address && s.ip_address.toLowerCase().includes(q)) ||
-    (s.group_name && s.group_name.toLowerCase().includes(q))
-  )
-})
-
-function formatTime(isoStr) {
-  if (!isoStr) return '-'
-  try {
-    const d = new Date(isoStr)
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-  } catch {
-    return isoStr
+  let list = props.servers || []
+  if (selectedGroup.value) {
+    list = list.filter(s => s.group_name === selectedGroup.value)
   }
-}
+  if (assetFilter.value) {
+    const q = assetFilter.value.toLowerCase()
+    list = list.filter(s =>
+      (s.hostname && s.hostname.toLowerCase().includes(q)) ||
+      (s.ip_address && s.ip_address.toLowerCase().includes(q)) ||
+      (s.group_name && s.group_name.toLowerCase().includes(q))
+    )
+  }
+  return [...list].sort((a, b) => {
+    let aVal, bVal
+    if (sortCol.value === 'hostname') {
+      aVal = (a.hostname || '').toLowerCase()
+      bVal = (b.hostname || '').toLowerCase()
+    } else if (sortCol.value === 'uptime') {
+      aVal = a.uptime_secs || 0
+      bVal = b.uptime_secs || 0
+    } else if (sortCol.value === 'cpu') {
+      aVal = a.cpu || 0
+      bVal = b.cpu || 0
+    } else if (sortCol.value === 'ram') {
+      aVal = a.mem_pct || 0
+      bVal = b.mem_pct || 0
+    } else if (sortCol.value === 'storage') {
+      aVal = a.disk_pct || 0
+      bVal = b.disk_pct || 0
+    } else if (sortCol.value === 'incidents') {
+      aVal = a.active_problems_count || 0
+      bVal = b.active_problems_count || 0
+    } else {
+      aVal = a.id || 0
+      bVal = b.id || 0
+    }
+    if (aVal < bVal) return sortAsc.value ? -1 : 1
+    if (aVal > bVal) return sortAsc.value ? 1 : -1
+    return 0
+  })
+})
 
 function formatFullTime(isoStr) {
   if (!isoStr) return '-'
@@ -855,31 +1068,47 @@ function formatFullTime(isoStr) {
     return isoStr
   }
 }
-
-function calcDuration(startedAt) {
-  if (!startedAt) return '0m'
-  try {
-    const start = new Date(startedAt).getTime()
-    const diff = Math.max(0, Math.floor((Date.now() - start) / 1000))
-    if (diff < 60) return `${diff}s`
-    if (diff < 3600) return `${Math.floor(diff / 60)}m`
-    const d = Math.floor(diff / 86400)
-    const h = Math.floor((diff % 86400) / 3600)
-    const m = Math.floor((diff % 3600) / 60)
-    if (d > 0) return `${d}d ${h}h`
-    return `${h}h ${m}m`
-  } catch {
-    return '-'
-  }
-}
-
-function formatUptime(secs) {
-  if (!secs) return '-'
-  const d = Math.floor(secs / 86400)
-  const h = Math.floor((secs % 86400) / 3600)
-  const m = Math.floor((secs % 3600) / 60)
-  if (d > 0) return `${d}d ${h}h`
-  if (h > 0) return `${h}h ${m}m`
-  return `${m}m`
-}
 </script>
+
+<style scoped>
+/* 10-Segment LED Battery Gauge (Zabbix-Style) */
+.meter-led-track {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 68px;
+  height: 12px;
+  padding: 2px;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 4px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6);
+  gap: 2px;
+  box-sizing: border-box;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+.meter-led-seg {
+  flex: 1;
+  height: 100%;
+  border-radius: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+.meter-led-seg.on-green {
+  background: linear-gradient(180deg, #34d399 0%, #10b981 100%);
+  box-shadow: 0 0 2px rgba(16, 185, 129, 0.5);
+}
+.meter-led-seg.on-yellow {
+  background: linear-gradient(180deg, #fbbf24 0%, #f59e0b 100%);
+  box-shadow: 0 0 2px rgba(245, 158, 11, 0.5);
+}
+.meter-led-seg.on-orange {
+  background: linear-gradient(180deg, #fb923c 0%, #ea580c 100%);
+  box-shadow: 0 0 2px rgba(249, 115, 22, 0.5);
+}
+.meter-led-seg.on-red {
+  background: linear-gradient(180deg, #f87171 0%, #ef4444 100%);
+  box-shadow: 0 0 3px rgba(239, 68, 68, 0.6);
+}
+</style>

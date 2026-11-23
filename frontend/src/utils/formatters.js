@@ -6,13 +6,80 @@ export function formatBytes(bytes) {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
 }
 
-export function formatUptime(secs) {
-  if (!secs) return '-'
+export function formatUptime(secs, locale = 'en') {
+  if (!secs || secs <= 0) return '-'
+  const isId = (typeof locale === 'string' ? locale : locale?.value) === 'id'
   const d = Math.floor(secs / 86400)
   const h = Math.floor((secs % 86400) / 3600)
   const m = Math.floor((secs % 3600) / 60)
-  if (d > 0) return `${d}d ${h}h ${m}m`
-  return `${h}h ${m}m`
+  if (d > 0) {
+    if (isId) return h > 0 ? `${d}h ${h}j` : `${d} hari`
+    return h > 0 ? `${d}d ${h}h` : `${d} days`
+  }
+  if (h > 0) {
+    if (isId) return `${h}j ${m}m`
+    return `${h}h ${m}m`
+  }
+  return isId ? `${m} mnt` : `${m}m`
+}
+
+export function formatIncidentTime(isoStr) {
+  if (!isoStr) return '-'
+  try {
+    const d = new Date(isoStr)
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
+    const day = String(d.getDate()).padStart(2, '0')
+    const mon = months[d.getMonth()]
+    const h = String(d.getHours()).padStart(2, '0')
+    const m = String(d.getMinutes()).padStart(2, '0')
+    return `${day} ${mon} ${h}:${m}`
+  } catch {
+    return isoStr
+  }
+}
+
+export function formatIncidentDuration(startedAt, locale = 'en') {
+  if (!startedAt) return '-'
+  const isId = (typeof locale === 'string' ? locale : locale?.value) === 'id'
+  try {
+    const start = new Date(startedAt).getTime()
+    const diff = Math.max(0, Math.floor((Date.now() - start) / 1000))
+    if (diff < 60) return isId ? `${diff} dtk` : `${diff}s`
+    const d = Math.floor(diff / 86400)
+    const h = Math.floor((diff % 86400) / 3600)
+    const m = Math.floor((diff % 3600) / 60)
+    if (d > 0) {
+      if (isId) return h > 0 ? `${d} h ${h} j` : `${d} hari`
+      return h > 0 ? `${d}d ${h}h` : `${d}d`
+    }
+    if (h > 0) {
+      if (isId) return `${h} j ${m} mnt`
+      return `${h}h ${m}m`
+    }
+    return isId ? `${m} mnt` : `${m}m`
+  } catch {
+    return '-'
+  }
+}
+
+export function getMeterLitSegments(val) {
+  if (val === null || val === undefined || isNaN(val) || val <= 0) return 0
+  if (val < 5) return 1
+  return Math.min(10, Math.round(val / 10))
+}
+
+export function getMeterClass(val) {
+  if (val >= 95) return 'on-red'
+  if (val >= 90) return 'on-orange'
+  if (val >= 85) return 'on-yellow'
+  return 'on-green'
+}
+
+export function getMeterColor(val) {
+  if (val >= 95) return '#ef4444'
+  if (val >= 90) return '#f97316'
+  if (val >= 85) return '#f59e0b'
+  return '#10b981'
 }
 
 export function isServerOnline(s) {
