@@ -66,6 +66,8 @@ export default {
   dash_view_grid: 'Grid',
   dash_search_host: 'Cari host...',
   dash_col_env: 'Lingkungan',
+  env_prod: 'Produksi',
+  env_non_prod: 'Non-produksi',
   dash_col_platform_ip: 'Platform / IP',
   dash_col_storage: 'Storage (%)',
   dash_col_incidents: 'Insiden',

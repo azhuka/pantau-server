@@ -368,6 +368,7 @@
             <tr class="border-b border-cyan-500/20 font-bold text-gray-400 bg-[#070c18]/80 select-none tracking-wider">
               <th class="py-2.5 px-4">{{ t('col_server') }}</th>
               <th class="py-2.5 px-3 text-center">{{ t('col_status') }}</th>
+              <th class="py-2.5 px-3 text-center">{{ t('dash_col_env') }}</th>
               <th class="py-2.5 px-4">{{ t('dash_col_platform_ip') }}</th>
               <th class="py-2.5 px-4 text-center">{{ t('col_uptime') }}</th>
               <th class="py-2.5 px-4 text-center">{{ t('col_cpu') }}</th>
@@ -410,6 +411,31 @@
                   :class="s.is_online ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-700/60' : 'bg-rose-950/80 text-rose-300 border border-rose-700/60'"
                 >
                   {{ s.is_online ? t('online').toUpperCase() : t('offline').toUpperCase() }}
+                </span>
+              </td>
+
+              <!-- Environment (Lingkungan: Produksi vs Non-produksi) -->
+              <td class="py-2.5 px-3 text-center whitespace-nowrap">
+                <span
+                  v-if="s.tier === 1"
+                  class="inline-flex items-center justify-center p-1 rounded bg-emerald-950/40 text-emerald-400 border border-emerald-700/50"
+                  :title="t('env_prod')"
+                >
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    <polyline points="9 12 11 14 15 10"/>
+                  </svg>
+                </span>
+                <span
+                  v-else
+                  class="inline-flex items-center justify-center p-1 rounded bg-slate-900/60 text-slate-400 border border-slate-700/50"
+                  :title="t('env_non_prod')"
+                >
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/>
+                    <path d="M8.5 2h7"/>
+                    <path d="M7 16h10"/>
+                  </svg>
                 </span>
               </td>
 
@@ -518,7 +544,7 @@
 
             <!-- Empty State Baris -->
             <tr v-if="filteredServers.length === 0">
-              <td colspan="8" class="py-12 px-4 text-center text-gray-400 font-mono text-xs">
+              <td colspan="9" class="py-12 px-4 text-center text-gray-400 font-mono text-xs">
                 <div class="flex flex-col items-center justify-center gap-1.5">
                   <svg class="w-8 h-8 text-gray-600 mb-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                     <rect width="20" height="8" x="2" y="2" rx="2" ry="2"/>

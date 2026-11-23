@@ -174,6 +174,14 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.26
+
+### Perubahan v0.1.26:
+- **Restorasi Kolom Lingkungan / Environment Baku:** Mengembalikan kolom Environment (Lingkungan) pada tabel dasbor dengan representasi visual ikonik baku: ikon Perisai Hijau (Level Produksi) dan ikon Lab Flask (Level Non-produksi) dengan tooltip informatif, 100% konsisten dengan blueprint awal.
+- **Eliminasi Teks Ambigu:** Menghapus sepenuhnya teks statis TIER 1 dan TIER 2, menggantikannya dengan ikon semantik vektor monokromatik tanpa menimbulkan kebingungan interpretasi tingkatan.
+- **Konsistensi Visual di Seluruh Tab:** Menerapkan lencana ikon lingkungan yang sama pada tabel inventaris aset (AssetTableView.vue) dan ringkasan aset workspace (WorkspaceOverviewTab.vue).
+
+
 ### Versi v0.1.25
 
 ### Perubahan v0.1.25:

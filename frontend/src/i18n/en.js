@@ -66,6 +66,8 @@ export default {
   dash_view_grid: 'Grid',
   dash_search_host: 'Filter hosts...',
   dash_col_env: 'Environment',
+  env_prod: 'Production',
+  env_non_prod: 'Non-production',
   dash_col_platform_ip: 'Platform / IP',
   dash_col_storage: 'Storage (%)',
   dash_col_incidents: 'Incidents',

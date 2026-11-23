@@ -96,7 +96,30 @@
           </div>
           <div>
             <span class="text-gray-500">{{ t('ws_asset_group') }}</span>
-            <div class="text-cyan-400 mt-0.5 font-bold">{{ server?.group_name || 'Default' }}</div>
+            <div class="flex items-center gap-1.5 mt-0.5">
+              <span class="text-cyan-400 font-bold">{{ server?.group_name || 'Default' }}</span>
+              <span
+                v-if="server?.tier === 1"
+                class="inline-flex items-center justify-center p-0.5 rounded bg-emerald-950/40 text-emerald-400 border border-emerald-700/50"
+                :title="t('env_prod')"
+              >
+                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                  <polyline points="9 12 11 14 15 10"/>
+                </svg>
+              </span>
+              <span
+                v-else
+                class="inline-flex items-center justify-center p-0.5 rounded bg-slate-900/60 text-slate-400 border border-slate-700/50"
+                :title="t('env_non_prod')"
+              >
+                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/>
+                  <path d="M8.5 2h7"/>
+                  <path d="M7 16h10"/>
+                </svg>
+              </span>
+            </div>
           </div>
         </div>
       </div>
