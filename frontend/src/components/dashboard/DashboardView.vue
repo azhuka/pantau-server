@@ -238,8 +238,6 @@
               :key="prob.id"
               @click="openProblemDetail(prob)"
               class="hover:bg-cyan-950/30 transition-colors group cursor-pointer"
-              title="Klik untuk diagnosa dan penanganan insiden"
-            >
               :title="`Open details for ${prob.hostname}`"
             >
               <!-- TIME -->

@@ -95,6 +95,7 @@
         <button
           @click="$emit('open-server', problem.server_id)"
           class="px-3 py-1.5 rounded bg-gray-800 text-gray-300 hover:text-white text-xs font-bold transition cursor-pointer"
+          :title="t('pdm_btn_open_workspace_tooltip')"
         >
           {{ t('pdm_btn_open_workspace') }}
         </button>
@@ -104,6 +105,7 @@
             v-if="!problem.is_ignored"
             @click="$emit('ignore-problem', problem)"
             class="px-3 py-1.5 rounded bg-amber-950/80 text-amber-300 border border-amber-800 hover:bg-amber-800 hover:text-white text-xs font-bold transition cursor-pointer"
+            :title="t('pdm_btn_ignore_tooltip')"
           >
             {{ t('pdm_btn_ignore') }}
           </button>
@@ -112,6 +114,7 @@
             v-if="problem.action === 'terminate_session'"
             @click="$emit('terminate-ssh', problem)"
             class="px-3 py-1.5 rounded bg-rose-700 hover:bg-rose-600 text-white text-xs font-bold transition cursor-pointer"
+            :title="t('pdm_btn_terminate_ssh_tooltip')"
           >
             {{ t('pdm_btn_terminate_ssh') }}
           </button>
@@ -119,6 +122,7 @@
           <button
             @click="$emit('close')"
             class="px-4 py-1.5 rounded bg-cyan-700 hover:bg-cyan-600 text-white text-xs font-bold transition cursor-pointer"
+            :title="t('pdm_btn_close_tooltip')"
           >
             {{ t('pdm_btn_close') }}
           </button>

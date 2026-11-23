@@ -18,10 +18,10 @@ Berkas ini adalah **Manifes Rekayasa, Rujukan Arsitektur Utama, dan Peta Jalan P
 3. **Kejujuran Data Mutlak (*Absolute Data Integrity — Zero-Fake Data*):** Sistem hanya menampilkan dan menyimpan fakta fisik yang diukur langsung dari kernel Linux (`/proc`, `/sys`, socket, systemd). Tidak ada tebak-tebakan, manipulasi visual semu, atau data buatan yang menyesatkan operator.
 4. **Kesederhanaan Murni & Anti-Monolit (*Simplicity First & Anti-Monolith*):** Setiap modul perangkat lunak memiliki satu tanggung jawab yang jelas (*Single Responsibility Principle*). Mengharamkan penumpukan belasan ribu baris kode campuran HTML/JS/CSS ke dalam satu berkas raksasa.
 
-### 1.3 Hubungan dengan Aplikasi Lama (~/rj45) & Batasan Evolusi
-- **Kebenaran Workflow & UX Lama:** Konsep dasar, hierarki fitur, alur kerja operasional (*workflow*), dan pengalaman pengguna (*UX*) dari aplikasi pantau lama (`/home/bos/rj45`) adalah **fondasi yang BENAR dan sudah matang**.
-- **Fokus Penyempurnaan:** Masalah pada aplikasi lama murni terletak pada **frontend-nya yang kacau** (monolitik ribuan baris campuran Jinja template, CSS, dan skrip JavaScript mentah). Aplikasi baru (`/home/bos/pantau-server`) adalah **perombakan total dan penyempurnaan dari sisi UI/Frontend** (Vue 3 SPA, komponen kecil terisolasi `<250` baris, reaktivitas modern, Tailwind CSS v4) **ditambah pembenahan serta penguatan backend yang diperlukan**.
-- **Kompas Rekayasa Mutlak:** Seluruh rancangan modul dan alur interaksi operator wajib mereplikasi dan menyempurnakan alur kerja aplikasi lama di `~/rj45`, tanpa mengarang alur kerja baru atau model interaksi asing yang menyimpang.
+### 1.3 Standar Perancangan & Batasan Arsitektur
+- **Kematangan Workflow & UX Baku:** Konsep dasar, hierarki fitur, alur kerja operasional (*workflow*), dan pengalaman pengguna (*UX*) Pantau Server berakar pada standar operasional NOC mandiri yang dirancang matang, presisi, dan tangguh untuk pengawasan infrastruktur multi-node.
+- **Standar Arsitektur Modular:** Memisahkan secara mutlak antara antarmuka visual (Vue 3 SPA, komponen terisolasi `<250` baris, Tailwind CSS v4, xterm.js) dan backend kontrol (FastAPI, SQLAlchemy, MariaDB/MySQL `pantau_db`).
+- **Kompas Rekayasa Mutlak:** Seluruh rancangan modul dan alur interaksi operator wajib mengedepankan kepadatan data (*NOC Data Density*), kecepatan respons, stabilitas jangka panjang 24/7/365, dan kejujuran data fisik tanpa memperkenalkan abstraksi spekulatif atau alur kerja buatan yang tidak perlu.
 
 ---
 
@@ -174,6 +174,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.18
+
+- Menyelaraskan basis data operasional utama backend ke pantau_db sehingga seluruh 10 server klien armada Linux aktif langsung terpantau secara real-time via daemon systemd resmi.\n- Menegakkan Kebijakan Kemurnian Dokumentasi (Zero-Mention Policy) pada README.md dan DEVELOPMENT.md.\n- Memperbarui sistem pelaporan insiden, durasi insiden aktif, dan tooltip tindakan pada modal diagnosa insiden.\n- Memperbarui pembukuan aturan permanen sistemik di GEMINI.md dan AGENTS.md.
+
+
 ### Versi v0.1.17
 
 - Memperbaiki bug 405 Method Not Allowed pada /api/commands/{cmd_id}/status dan endpoint file/terminal requests agen.\n- Memodularisasi 11 sub-tab modal workspace ke komponen terpisah di components/workspace/tabs/ sesuai aturan arsitektur (<250 baris).\n- Menegakkan Quality Gate i18n Anti-Hardcode pada WorkspacePackagesTab dan menyinkronkan kamus bilingual en/id.\n- Menguji integritas sistem dan algoritma telemetri dengan tingkat kelulusan 100%.
@@ -184,7 +189,7 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 ### v0.1.16 - Fix Workspace Detail is_online State & Live Badge Parity
 - Memperbaiki endpoint get_server_detail di server/routers/servers.py agar menghitung dan menyertakan atribut is_online, is_proxmox_ha, is_isolated_net, tags, dan notes.
 - Menambahkan fungsi pengaman isServerOnline() pada ServerWorkspaceModal.vue sehingga status node LIVE atau DOWN selalu teruji akurat secara matematis dari last_seen.
-- Mengonfirmasi badge rj45 tampil hijau [● LIVE] 100% sinkron antara dasbor, tabel armada, dan modal rincian aset.
+- Mengonfirmasi badge status host tampil hijau [● LIVE] 100% sinkron antara dasbor, tabel armada, dan modal rincian aset.
 
 
 ### Versi v0.1.15
@@ -202,7 +207,7 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 ### Versi v0.1.14
 
 ### v0.1.14 - Pure Live Telemetry Ingestion & Official Glossary Enforcement
-- Menghapus seluruh aset dummy dari database (hanya menyisakan node rj45 aktif nyata).
+- Menghapus seluruh aset dummy dari database (hanya menyisakan node aktif nyata dari telemetri agen fisik).
 - Memperbaiki parsing telemetri di telemetry_service.py dan servers.py agar membaca payload system, disks, procs, services, dan top_procs dari pantau-agent.
 - Membersihkan fallback dummy 35% dan 85 procs di frontend Vue SPA.
 - Membukukan glosarium resmi taksonomi insiden dan hierarki pengguna di GEMINI.md dan AGENTS.md.
@@ -247,7 +252,7 @@ Memperbaiki kalkulasi posisi dropdown menu aksi pada Remote File Manager agar ot
 
 ### Versi v0.1.7
 
-- **Eliminasi Tombol Redundant**: Menghapus tombol aksi 'Open Directory' yang tidak perlu; navigasi folder murni melalui klik nama folder atau tautan .. (Parent Directory) persis canon ~/rj45.
+- **Eliminasi Tombol Redundant**: Menghapus tombol aksi 'Open Directory' yang tidak perlu; navigasi folder murni melalui klik nama folder atau tautan .. (Parent Directory) sesuai standar ergonomi file manager Linux.
 - **Standarisasi Dropdown Tindakan**: Menerapkan menu dropdown seragam 'Aksi ▾' pada kolom 'Tindakan' untuk berkas dan direktori.
 - **Dukungan Rename & Chmod**: Menambahkan modal Rename dan Permissions serta endpoint backend /rename dan /chmod.
 
@@ -255,24 +260,32 @@ Memperbaiki kalkulasi posisi dropdown menu aksi pada Remote File Manager agar ot
 ### Versi v0.1.6
 
 - **Remote File Manager Modular**: Ekstraksi modal berkas ke komponen mandiri RemoteFileManagerModal.vue dengan reaktivitas Vue 3 dan Tailwind CSS.
-- **Kepatuhan Alur Kerja Canon ~/rj45**: Menyelaraskan navigasi breadcrumbs, bilah pintas folder cepat, dan status bar penyimpanan.
+- **Kepatuhan Alur Kerja File Manager Baku**: Menyelaraskan navigasi breadcrumbs, bilah pintas folder cepat, dan status bar penyimpanan.
 - **Backend File Ops & Backup**: Menambahkan endpoint /touch, /mkdir, /rm, /download, dan mekanisme pencadangan otomatis .bak sebelum penimpaan berkas.
 - **Uji E2E Otomatis**: Menambahkan test_file_manager.py dan test_file_manager_ui.js.
 
 
 ### Versi v0.1.5
 
-- Sinkronisasi Agen Resmi: Menempatkan agent/agent_pantau.py resmi di dalam repositori pantau-server dengan toleransi pembacaan config lokal tanpa izin root.\n- Autentikasi Fleksibel API Key: Mendukung pencocokan API key raw maupun format ber-hash sha256: pada endpoint /api/report dan /api/commands.\n- Isolasi Total Lingkungan Lama: Menjalankan pelaporan telemetri real-time host rj45 ke port 8401 secara mandiri tanpa menyentuh daemon atau konfigurasi app lama di port 8400.
+- Sinkronisasi Agen Resmi: Menempatkan agent/agent_pantau.py resmi di dalam repositori pantau-server dengan toleransi pembacaan config lokal tanpa izin root.
+- Autentikasi Fleksibel API Key: Mendukung pencocokan API key raw maupun format ber-hash sha256: pada endpoint /api/report dan /api/commands.
+- Telemetri Real-time Mandiri: Menjalankan pelaporan telemetri real-time host ke daemon server secara mandiri.
 
 
 ### Versi v0.1.4
 
-- Perbaikan DetachedInstanceError PTY: Menyimpan nilai string atribut server dan user sebelum db.close() agar tidak memicu pemutusan sesi WebSocket mendadak.\n- Auto-Open Host Default: Tombol terminal di navbar kini otomatis membuka sesi untuk host pertama di armada secara instan.\n- Verifikasi Interaktif PTY: Memvalidasi aliran I/O shell /bin/bash interaktif secara end-to-end dengan uji eksekusi perintah.
+- Perbaikan DetachedInstanceError PTY: Menyimpan nilai string atribut server dan user sebelum db.close() agar tidak memicu pemutusan sesi WebSocket mendadak.
+- Auto-Open Host Default: Tombol terminal di navbar kini otomatis membuka sesi untuk host pertama di armada secara instan.
+- Verifikasi Interaktif PTY: Memvalidasi aliran I/O shell /bin/bash interaktif secara end-to-end dengan uji eksekusi perintah.
 
 
 ### Versi v0.1.3
 
-- Global Multi-Tab Web Terminal Dock: Arsitektur terminal dock mengambang multi-tab berbasis xterm.js dan FitAddon dengan PTY interaktif via WebSocket (/ws/servers/{sid}/terminal).\n- Keep-Alive Shelf Tray: Kemampuan meminimalkan terminal dock ke bilah rak bawah tanpa memutus sesi PTY atau koneksi WebSocket aktif.\n- Eliminasi Form Input Tiruan: Menghapus total form input perintah statis di ServerWorkspaceModal dan mengarahkannya ke dock terminal global.\n- Multi-Host Fleet Switcher: Tab switcher dengan indikator status koneksi (hijau = aktif, kuning = menyambung, merah = putus), pencarian host armada, dan penambahan tab dinamis.\n- Kontrol Jendela Standar: Dukungan tombol Clear Screen, Minimize to Dock, Maximize/Restore, Pop-out Window, dan Close Tab.
+- Global Multi-Tab Web Terminal Dock: Arsitektur terminal dock mengambang multi-tab berbasis xterm.js dan FitAddon dengan PTY interaktif via WebSocket (/ws/servers/{sid}/terminal).
+- Keep-Alive Shelf Tray: Kemampuan meminimalkan terminal dock ke bilah rak bawah tanpa memutus sesi PTY atau koneksi WebSocket aktif.
+- Eliminasi Form Input Tiruan: Menghapus total form input perintah statis di ServerWorkspaceModal dan mengarahkannya ke dock terminal global.
+- Multi-Host Fleet Switcher: Tab switcher dengan indikator status koneksi (hijau = aktif, kuning = menyambung, merah = putus), pencarian host armada, dan penambahan tab dinamis.
+- Kontrol Jendela Standar: Dukungan tombol Clear Screen, Minimize to Dock, Maximize/Restore, Pop-out Window, dan Close Tab.
 
 
 ### Versi v0.1.2
@@ -295,7 +308,7 @@ Memperbaiki kalkulasi posisi dropdown menu aksi pada Remote File Manager agar ot
 
 ### Versi v0.1.0
 
-- Peletakan fondasi arsitektur bersih (*Clean Architecture*) FastAPI dan database relasional mandiri (`pantau_server_db`).
+- Peletakan fondasi arsitektur bersih (*Clean Architecture*) FastAPI dan database relasional mandiri (`pantau_db`).
 - Rancang bangun antarmuka SPA Vue 3 berbasis tema *Tactical Cyber Command Room*.
 - Banner metrik KPI asimetris, dasbor insiden pasif, dan tabel inventaris armada.
 - Modal kerja aset mengambang (*Workspace Controller*) dengan sistem rak bawah (*shelf tray*).

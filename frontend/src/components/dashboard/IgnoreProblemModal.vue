@@ -64,6 +64,7 @@
         <button
           @click="$emit('close')"
           class="px-3 py-1.5 rounded bg-gray-800 text-gray-300 hover:text-white font-bold transition cursor-pointer"
+          :title="t('ipm_btn_cancel_tooltip')"
         >
           {{ t('ipm_btn_cancel') }}
         </button>
@@ -71,6 +72,7 @@
           :disabled="submitting"
           @click="submitIgnore"
           class="px-4 py-1.5 rounded bg-amber-600 hover:bg-amber-500 text-white font-bold transition cursor-pointer disabled:opacity-50"
+          :title="t('ipm_btn_submit_tooltip')"
         >
           {{ submitting ? t('ipm_btn_saving') : t('ipm_btn_submit') }}
         </button>

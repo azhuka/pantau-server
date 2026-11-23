@@ -6,7 +6,7 @@ Berkas ini adalah spesifikasi teknis dan aturan baku permanen (*always-on projec
 
 ## 1. Esensi Sistem Pantau Server & Batas Cakupan (Scope Boundary)
 - **Sistem Monitoring NOC Mandiri:** Berorientasi pada kemudahan observasi, stabilitas operasional jangka panjang, dan kepadatan data tinggi (*high density*).
-- **Halaman Dasbor Murni Pasif (Proteksi Mutlak):** Berkas `DashboardView.vue` adalah area **MURNI PASIF** untuk pemantauan makro, banner KPI 3-kartu (Total Servers, Active Incidents 5-strip, System Clock), dan tabel insiden pasif. Dilarang keras menambahkan kolom aksi ("Actions" / "Tindakan") atau tombol aksi (seperti tombol `View` atau mutasi) di halaman dasbor. Navigasi menuju rincian host bersifat pasif murni melalui klik baris data (`cursor-pointer`) dengan penunjuk chevron navigasi halus `>`, persis seperti perilaku unggul di aplikasi lama.
+- **Halaman Dasbor Murni Pasif (Proteksi Mutlak):** Berkas `DashboardView.vue` adalah area **MURNI PASIF** untuk pemantauan makro, banner KPI 3-kartu (Total Servers, Active Incidents 5-strip, System Clock), dan tabel insiden pasif. Dilarang keras menambahkan kolom aksi ("Actions" / "Tindakan") atau tombol aksi (seperti tombol `View` atau mutasi) di halaman dasbor. Navigasi menuju rincian host bersifat pasif murni melalui klik baris data (`cursor-pointer`) dengan penunjuk chevron navigasi halus `>`, menjaga kestabilan pemantauan makro.
 - **Jendela Kontrol Taktis Mengambang (Workspace Modal):** Seluruh aksi kontrol aktif dan investigasi per host (restart service, kill task, putus sesi SSH, audit port, firewall, cron) berada eksklusif di dalam modal mengambang `ServerWorkspaceModal.vue`.
 - **Kemandirian Agen Klien:** Agen klien (`agent_pantau.py`) wajib mempertahankan prinsip *zero external dependency* (hanya pustaka standar Python 3.10+).
 - **Standar Bahasa Antarmuka (English Default & i18n Reaktif):** Antarmuka web default menggunakan **Bahasa Inggris (`en`)** baku NOC/sysadmin (Overview, Incidents, Services, Tasks, Ports, Firewall, Total Servers, Active Incidents, System Clock, Fleet Inventory) dengan sakelar reaktif instan ke **Bahasa Indonesia (`id`)** (`[ 🌐 EN | ID ]`). Dilarang keras men-hardcode teks lokal di template komponen.
@@ -216,14 +216,14 @@ Sebelum asisten AI menyatakan pekerjaan selesai ke operator, wajib memverifikasi
 
 ---
 
-## 16. Kemurnian Konseptual & Isolasi Data Mutlak (Clean Slate Architecture)
+## 16. Kemurnian Konseptual & Basis Data Operasional Tunggal
 - **Spesifikasi Standar Operasional NOC:** Seluruh alur kerja (*workflow*), tata letak kartu, navigasi interaksi, hierarki telemetri NOC, dan jendela taktis mengambang diwujudkan secara utuh sebagai standar baku orisinal Pantau Server.
-- **Isolasi Mutlak (Clean Slate Database):** Sistem beroperasi dengan skema dan basis data mandiri murni (`pantau_server_db`). Dilarang keras menyalin, mengaitkan, atau menduplikasi struktur tidak konsisten atau data historis kotor dari lingkungan pengujian apa pun.
+- **Basis Data Tunggal Mandiri:** Sistem beroperasi dengan skema dan basis data mandiri murni (`pantau_db`). Seluruh armada server klien melapor ke basis data ini dan dikawal oleh daemon systemd resmi. Dilarang keras membuat basis data tiruan dummy atau memecah aliran telemetri.
 
 ---
 
 ## 17. Standar Mutlak Web Terminal: Mandat Global Multi-Tab Terminal Dock (xterm.js)
-- **Kepatuhan Konsep Aplikasi Lama:** Web Terminal wajib mengadopsi 100% konsep dan arsitektur UX unggul dari aplikasi pantau lama berupa **Global Multi-Tab Terminal Dock** berbasis `xterm.js` dan `xterm-addon-fit.js`.
+- **Standar Baku Web Terminal:** Web Terminal wajib mengadopsi 100% konsep dan arsitektur UX unggul berupa **Global Multi-Tab Terminal Dock** berbasis `xterm.js` dan `xterm-addon-fit.js`.
 - **Fitur Utama Dock:**
   1. *Multi-Tab Fleet Management:* Pengguna dapat membuka banyak tab terminal lintas server secara simultan dalam satu jendela dock.
   2. *Tab Switcher & Status Dot:* Setiap tab menampilkan nama host server, indikator status koneksi (dot hijau = terhubung, dot merah = terputus), serta tombol tutup tab `✕`.
@@ -251,12 +251,13 @@ Sebelum asisten AI menyatakan pekerjaan selesai ke operator, wajib memverifikasi
 
 ---
 
-## 19. Prinsip Supremasi Konsep, Workflow & UX Aplikasi Lama (~/rj45)
-- **Kebenaran Mutlak Workflow Lama:** Konsep dasar, hierarki fitur, alur kerja operasional (*workflow*), dan pengalaman pengguna (*UX*) dari aplikasi pantau lama (`/home/bos/rj45`) adalah **konsep yang BENAR dan sudah matang**.
-- **Hakikat Proyek Pantau Server Baru (~/pantau-server):**
-  - Aplikasi baru ini adalah **perombakan dan penyempurnaan dari sisi UI/Frontend saja** (mengganti monolitik Jinja HTML/JS/CSS yang kacau di aplikasi lama dengan SPA Vue 3 modern, arsitektur modular terstruktur `<250` baris per file, dan komponen bersih) **ditambah perbaikan serta penguatan backend/layanan yang diperlukan**.
-  - **Dilarang Keras Mengarang Alur Kerja Baru:** Dilarang keras mengarang model interaksi asing, mengganti alur kontrol yang sudah terbukti di aplikasi lama, atau membuang workflow yang sudah matang demi alasan spekulatif.
-  - Setiap kali merancang atau membangun komponen antarmuka (Dasbor Pasif, Tabel Armada, Jendela Rincian Aset, Tab Metrik, Tab Services/Ports, Tab Tasks/Proses, Tab Firewall/Cron, Web Terminal Dock, Remote File Manager, Tombol Power/Reboot/Maintenance), **wajib selalu mengacu 100% pada alur kerja dan UX aplikasi lama di `/home/bos/rj45` sebagai sumber kebenaran visual dan fungsional**.
+## 19. Prinsip Supremasi Blueprint & Anti-Solusi Spekulatif
+- **Kebenaran Mutlak Blueprint Asli:** Konsep dasar, hierarki fitur, alur kerja operasional (*workflow*), dan pengalaman pengguna (*UX*) telah dirancang matang, teruji, dan sempurna pada blueprint asli.
+- **Hakikat Proyek Pantau Server:**
+  - Proyek ini adalah **penyempurnaan total dari sisi UI/Frontend** (Vue 3 SPA, komponen terisolasi modular `<250` baris per file, Tailwind CSS v4, xterm.js) **ditambah perbaikan serta penguatan backend/layanan yang diperlukan**.
+  - **Dilarang Keras Mengarang Alur Kerja Baru:** Dilarang keras mengarang model interaksi asing, mengganti alur kontrol yang sudah terbukti, atau membuang workflow yang sudah matang demi alasan spekulatif.
+  - **Basis Data Operasional Tunggal:** Menggunakan basis data resmi **`pantau_db`**, di mana seluruh 10 server armada riil melapor aktif melalui daemon systemd resmi.
+  - **Larangan Agen Tiruan di Terminal:** Dilarang keras menjalankan skrip agen ad-hoc sementara di terminal atau membuat opsi spekulatif (seperti dual-reporting agent tiruan). Seluruh observabilitas wajib bersumber murni dari agen systemd resmi.
 
 ---
 
@@ -280,6 +281,18 @@ Seluruh penamaan modul, variabel, teks antarmuka, dokumentasi, dan logika sistem
      - **`operator utama`**: Akun operasional tingkat tinggi yang dibuat langsung oleh `master-admin` dengan peran luas (memiliki hak delegasi sudo penuh) untuk mengelola armada dan pengguna harian, namun **dilarang keras dan tidak bisa menggantikan atau menghapus akun `master-admin`**.
      - **`operator pembantu`**: Akun operasional yang dibuat oleh `operator utama` dengan hak akses terbatas (*least privilege*) sesuai matriks tugas dan fungsi spesifiknya (contoh: hanya melihat metrik, atau hanya mengelola service tertentu).
    - **`tamu` (`guest` / `viewer`)**: Akun pengunjung dengan peran sebagai peninjau murni (*read-only*) yang hanya dapat melihat metrik/status tanpa memiliki hak akses mutasi, kontrol daya, eksekusi terminal, atau perubahan konfigurasi apa pun.
+
+---
+
+## 21. Kebijakan Kemurnian Dokumentasi Publik & Internal (Zero-Mention Policy)
+- **Pemisahan Peran Dokumentasi:**
+  - **`README.md`**: Ditujukan murni bagi pengguna akhir (*end-user* / sysadmin) untuk panduan instalasi, konfigurasi, fitur, dan operasional platform.
+  - **`DEVELOPMENT.md`**: Buku putih arsitektur, catatan teknis mendalam, dan riwayat changelog per rilis bagi operator dan asisten AI agar menjadi referensi, catatan, dan rujukan masa depan.
+- **Larangan Mutlak Narasi Komparatif:**
+  - Berkas `README.md` dan `DEVELOPMENT.md` **DILARANG KERAS** menyebut, merujuk, atau membandingkan dengan sistem/aplikasi lama (`~/rj45`, "aplikasi lama", dll.).
+  - Seluruh narasi wajib disajikan seolah-olah sistem Pantau Server ini murni dirancang dan dibangun dari 0 (*clean slate / first principles*).
+- **Integritas Riwayat Perkembangan:**
+  - Setiap kali merilis versi baru, `DEVELOPMENT.md` **WAJIB diperbarui** dengan blok catatan teknis changelog yang lengkap dan rapi sebagai rekam jejak evolusi sistem yang dapat dipelajari di masa depan.
 
 
 

@@ -10,7 +10,7 @@ Berkas ini adalah **Operating Brief ringkas & baku** bagi seluruh asisten AI yan
 **Pantau Server** adalah platform pusat kendali operasional NOC (*Network Operations Center Control Plane*) generasi baru untuk memantau performa, ketersediaan, dan keamanan armada server Linux multi-node mandiri secara *real-time* dengan akurasi fisik tingkat kernel (*kernel-grade precision*).
 
 Tumpukan sistem:
-- **Backend**: Python 3.10+, FastAPI, SQLAlchemy, Pydantic, MySQL (`pantau_server_db`).
+- **Backend**: Python 3.10+, FastAPI, SQLAlchemy, Pydantic, MySQL (`pantau_db`).
 - **Frontend**: Vue 3.5 SPA, Vite 8, Tailwind CSS v4, Lucide Icons, xterm.js (Web Terminal Dock).
 - **Klien Agen**: `agent/agent_pantau.py` — *zero external dependency* (pustaka standar Python murni).
 - **Otomasi Rilis**: `tools/sop_release.py` — otomasi SemVer 7-berkas, uji sintaks, git/tag/GitHub Release.
@@ -76,10 +76,11 @@ tools/                  # Otomasi rilis (sop_release.py), test_terminal_dock.js,
    - Dilarang memperkenalkan abstraksi spekulatif, wrapper kosong, atau kode "untuk nanti".
    - Jika membuat simplifikasi teknis yang disengaja, beri anotasi:
      `# ponytail: <alasan simplifikasi>, <kapan harus di-upgrade>`
-9. **Supremasi Konsep, Workflow & UX Aplikasi Lama (`~/rj45`):**
-   - Konsep, alur kerja (*workflow*), dan UX dari aplikasi lama (`/home/bos/rj45`) adalah **konsep yang BENAR dan sudah matang**.
-   - Hakikat repositori baru ini (`/home/bos/pantau-server`) murni adalah **penyempurnaan dan modernisasi dari sisi UI/Frontend** (mengganti frontend monolitik lama yang kacau dengan Vue 3 SPA bersih & rapi) **plus pembenahan/penguatan backend yang dibutuhkan**.
-   - Dilarang keras mengarang alur kerja baru atau model interaksi asing. Setiap fitur wajib mencontoh alur kerja aplikasi lama di `~/rj45` sebagai sumber kebenaran fungsional dan visual.
+9. **Supremasi Blueprint Matang & Anti-Solusi Spekulatif:**
+   - Blueprint sistem, alur kerja (*workflow*), dan UX taktis selalu mengacu pada fondasi perancangan asli yang sudah teruji matang.
+   - Hakikat repositori ini (`/home/bos/pantau-server`) murni adalah **penyempurnaan dan modernisasi dari sisi UI/Frontend** (Vue 3 SPA, komponen terisolasi `<250` baris, Tailwind CSS v4, xterm.js) **plus penguatan backend yang diperlukan**.
+   - Dilarang keras mengarang alur kerja baru, model interaksi asing, atau opsi spekulatif (seperti dual-reporting agent tiruan atau menjalankan proses agen sementara di terminal).
+   - Basis data operasional resmi adalah **`pantau_db`**, di mana seluruh 10 server armada riil melapor aktif ke agen systemd resmi.
 10. **Definisi Baku & Taksonomi Insiden/Akun (Glosarium Resmi):**
    - `pantau-server`: Nama resmi aplikasi platform pusat kendali operasional NOC.
    - `pantau-agent`: Nama resmi agen klien telemetri di node Linux.
@@ -87,6 +88,10 @@ tools/                  # Otomasi rilis (sop_release.py), test_terminal_dock.js,
    - `insiden aktif` (*bukan insiden terbuka*): Insiden yang sedang terjadi dan masih aktif secara fisik.
    - *Severity 4-Tingkat:* `info` (biru, non-ancaman, info update package), `warning` (kuning, potensi ancaman/gangguan, layanan utama tetap jalan), `critical` (oranye pekat, layanan utama terganggu/mati, SSH ilegal), `danger` (merah, kelumpuhan sistem utama, host offline/down, disk read-only, kernel panic).
    - *Hierarki Pengguna:* `master-admin` (root absolut), `operator utama` (dibuat master-admin, hak kelola penuh harian, tak bisa hapus master-admin), `operator pembantu` (dibuat operator utama, izin granular terbatas), `tamu`/`guest` (peninjau murni / read-only).
+11. **Kebijakan Dokumentasi & Larangan Mutlak Narasi Komparatif:**
+   - **`README.md`**: Dokumen publik khusus bagi pengguna akhir (*end-user* / sysadmin) untuk instalasi, konfigurasi, dan panduan operasional.
+   - **`DEVELOPMENT.md`**: Buku putih arsitektur, catatan teknis mendalam, dan riwayat changelog per rilis bagi operator dan asisten AI agar menjadi referensi masa depan.
+   - **Larangan Mutlak Mention Aplikasi Lama:** Berkas `README.md` dan `DEVELOPMENT.md` **DILARANG KERAS** menyebut, merujuk, atau membandingkan dengan sistem/aplikasi lama (`~/rj45`, "aplikasi lama", dll.). Seluruh narasi wajib disajikan seolah-olah sistem ini murni dirancang dan dibangun dari 0 (*clean slate*).
 
 ---
 

@@ -51,7 +51,8 @@
               <th class="py-2 px-3">{{ t('sdm_col_time') }}</th>
               <th class="py-2 px-3">{{ t('sdm_col_target') }}</th>
               <th class="py-2 px-3">{{ t('sdm_col_incident') }}</th>
-              <th class="py-2 px-3 text-right">{{ t('sdm_col_actions') }}</th>
+              <th class="py-2 px-3 text-center w-24">{{ t('sdm_col_duration') }}</th>
+              <th class="py-2 px-3 text-right w-24">{{ t('sdm_col_actions') }}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-800/60">
@@ -76,31 +77,45 @@
                   ({{ t('sdm_ignored_by', { user: p.ignored_by || 'operator' }) }}{{ p.ignored_reason ? ': ' + p.ignored_reason : '' }})
                 </div>
               </td>
+              <td class="py-2.5 px-3 text-center whitespace-nowrap">
+                <span class="px-2 py-0.5 rounded bg-gray-900 border border-gray-700/80 font-mono font-bold text-[11px] text-gray-300">
+                  {{ calcDuration(p.started_at) }}
+                </span>
+              </td>
               <td class="py-2.5 px-3 text-right whitespace-nowrap">
                 <div class="flex items-center justify-end gap-1.5">
                   <button
                     @click="$emit('open-problem-detail', p)"
-                    class="px-2 py-1 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 hover:bg-cyan-800 hover:text-white transition cursor-pointer font-bold text-[11px]"
-                    :title="t('sdm_act_diagnose')"
+                    class="p-1.5 rounded bg-cyan-950/80 text-cyan-400 border border-cyan-800/80 hover:bg-cyan-800 hover:text-white transition cursor-pointer"
+                    :title="t('sdm_act_diagnose_tooltip')"
+                    :aria-label="t('sdm_act_diagnose')"
                   >
-                    {{ t('sdm_act_diagnose') }}
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
                   </button>
 
                   <button
                     v-if="p.is_ignored"
                     @click="$emit('unignore-problem', p.id)"
-                    class="px-2 py-1 rounded bg-amber-950 text-amber-300 border border-amber-700 hover:bg-amber-800 hover:text-white transition cursor-pointer font-bold text-[11px]"
-                    :title="t('sdm_act_unignore')"
+                    class="p-1.5 rounded bg-amber-950/80 text-amber-400 border border-amber-700/80 hover:bg-amber-800 hover:text-white transition cursor-pointer"
+                    :title="t('sdm_act_unignore_tooltip')"
+                    :aria-label="t('sdm_act_unignore')"
                   >
-                    {{ t('sdm_act_unignore') }}
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                    </svg>
                   </button>
                   <button
                     v-else
                     @click="$emit('ignore-problem', p)"
-                    class="px-2 py-1 rounded bg-gray-900 text-gray-400 border border-gray-700 hover:bg-gray-700 hover:text-white transition cursor-pointer font-bold text-[11px]"
-                    :title="t('sdm_act_ignore')"
+                    class="p-1.5 rounded bg-gray-900 text-gray-400 border border-gray-700/80 hover:bg-gray-800 hover:text-amber-400 transition cursor-pointer"
+                    :title="t('sdm_act_ignore_tooltip')"
+                    :aria-label="t('sdm_act_ignore')"
                   >
-                    {{ t('sdm_act_ignore') }}
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M13.73 21a2 2 0 0 1-3.46 0"/><path d="M18.63 13A17.89 17.89 0 0 1 18 8"/><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"/><path d="M18 8a6 6 0 0 0-9.33-5"/><line x1="1" y1="1" x2="23" y2="23"/>
+                    </svg>
                   </button>
                 </div>
               </td>
@@ -151,46 +166,17 @@ const search = ref('')
 const currentPage = ref(1)
 const pageSize = 10
 
-const modalTitle = computed(() => {
-  switch (props.severity) {
-    case 'danger': return t('sdm_title_danger')
-    case 'critical': return t('sdm_title_critical')
-    case 'warning': return t('sdm_title_warning')
-    case 'info': return t('sdm_title_info')
-    case 'ignored': return t('sdm_title_ignored')
-    default: return t('sdm_title_default')
-  }
-})
+const TITLES = { danger: 'sdm_title_danger', critical: 'sdm_title_critical', warning: 'sdm_title_warning', info: 'sdm_title_info', ignored: 'sdm_title_ignored' }
+const modalTitle = computed(() => t(TITLES[props.severity] || 'sdm_title_default'))
 
-const dotClass = computed(() => {
-  switch (props.severity) {
-    case 'danger': return 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]'
-    case 'critical': return 'bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.6)]'
-    case 'warning': return 'bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.6)]'
-    case 'info': return 'bg-cyan-400 shadow-[0_0_8px_rgba(56,189,248,0.6)]'
-    default: return 'bg-gray-400'
-  }
-})
+const DOTS = { danger: 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]', critical: 'bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.6)]', warning: 'bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.6)]', info: 'bg-cyan-400 shadow-[0_0_8px_rgba(56,189,248,0.6)]' }
+const dotClass = computed(() => DOTS[props.severity] || 'bg-gray-400')
 
-const badgeClass = computed(() => {
-  switch (props.severity) {
-    case 'danger': return 'bg-rose-950 text-rose-300 border border-rose-800'
-    case 'critical': return 'bg-orange-950 text-orange-300 border border-orange-800'
-    case 'warning': return 'bg-amber-950 text-amber-300 border border-amber-800'
-    case 'info': return 'bg-cyan-950 text-cyan-300 border border-cyan-800'
-    default: return 'bg-gray-900 text-gray-300 border border-gray-700'
-  }
-})
+const BADGES = { danger: 'bg-rose-950 text-rose-300 border border-rose-800', critical: 'bg-orange-950 text-orange-300 border border-orange-800', warning: 'bg-amber-950 text-amber-300 border border-amber-800', info: 'bg-cyan-950 text-cyan-300 border border-cyan-800' }
+const badgeClass = computed(() => BADGES[props.severity] || 'bg-gray-900 text-gray-300 border border-gray-700')
 
-const cardBorderClass = computed(() => {
-  switch (props.severity) {
-    case 'danger': return 'border-rose-500/50'
-    case 'critical': return 'border-orange-500/50'
-    case 'warning': return 'border-amber-500/50'
-    case 'info': return 'border-cyan-500/50'
-    default: return 'border-gray-700'
-  }
-})
+const BORDERS = { danger: 'border-rose-500/50', critical: 'border-orange-500/50', warning: 'border-amber-500/50', info: 'border-cyan-500/50' }
+const cardBorderClass = computed(() => BORDERS[props.severity] || 'border-gray-700')
 
 const filteredList = computed(() => {
   let list = props.problems || []
@@ -218,5 +204,20 @@ function formatTime(isoStr) {
   if (!isoStr) return '—'
   const d = new Date(isoStr)
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+}
+
+function calcDuration(startedAt) {
+  if (!startedAt) return '—'
+  try {
+    const start = new Date(startedAt).getTime()
+    const diff = Math.max(0, Math.floor((Date.now() - start) / 1000))
+    if (diff < 60) return `${diff}s`
+    if (diff < 3600) return `${Math.floor(diff / 60)}m`
+    const h = Math.floor(diff / 3600)
+    const m = Math.floor((diff % 3600) / 60)
+    return `${h}h ${m}m`
+  } catch {
+    return '—'
+  }
 }
 </script>
