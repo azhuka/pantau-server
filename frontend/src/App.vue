@@ -14,7 +14,7 @@
     />
 
     <!-- MAIN CONTENT VIEWPORT -->
-    <main class="flex-1 max-w-[1650px] w-full mx-auto p-3 sm:p-5 pb-24">
+    <main class="flex-1 max-w-[1650px] w-full mx-auto px-3 sm:px-5 pt-3 sm:pt-5 pb-28 sm:pb-32">
       <!-- HALAMAN 1: DASHBOARD (MURNI PASIF: Observasi Makro & Triase Pasif) -->
       <DashboardView
         v-if="activeTab === 'dashboard'"
@@ -47,7 +47,7 @@
     </main>
 
     <!-- FOOTER STATUS BAR -->
-    <footer class="border-t border-gray-800/80 bg-[#090d16] py-2.5 px-6 flex items-center justify-between text-xs text-gray-400 font-mono fixed bottom-0 left-0 right-0 z-30">
+    <footer class="border-t border-gray-800/80 bg-[#090d16]/95 backdrop-blur-md py-2.5 px-6 flex items-center justify-between text-xs text-gray-400 font-mono fixed bottom-0 left-0 right-0 z-30 shadow-2xl">
       <div class="flex items-center gap-3">
         <span class="text-gray-300 font-bold">PANTAU NOC CONTROL</span>
         <span>·</span>

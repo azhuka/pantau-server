@@ -69,7 +69,7 @@
     </div>
 
     <!-- HIGH-DENSITY ASSET TELEMETRY MATRIX TABLE -->
-    <div class="hud-tactical-card rounded-xl overflow-hidden shadow-2xl">
+    <div class="hud-tactical-card rounded-xl overflow-hidden shadow-2xl mb-8">
       <span class="hud-corner-tr"></span>
       <span class="hud-corner-bl"></span>
 

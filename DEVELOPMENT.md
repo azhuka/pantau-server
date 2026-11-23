@@ -174,6 +174,13 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.21
+
+### [v0.1.21] - 2026-11-23
+#### Diperbaiki (Fixed)
+- **Layout Viewport & Spasi Bawah:** Memperbaiki bug cascade CSS Tailwind di mana shorthand sm:p-5 menimpa pb-24 pada layar desktop, menyebabkan baris terakhir tabel tertutup oleh footer fixed. Kontainer kini menggunakan sm:pb-32 eksplisit dan mb-8 pada seluruh kartu tabel utama.
+
+
 ### Versi v0.1.20
 
 ### [v0.1.20] - 2026-11-23

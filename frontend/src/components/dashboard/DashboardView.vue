@@ -309,7 +309,7 @@
     </div>
 
     <!-- 3. ASSET STATUS & TELEMETRY RADAR -->
-    <div id="dash-assets-card" class="hud-tactical-card rounded-xl overflow-hidden shadow-lg">
+    <div id="dash-assets-card" class="hud-tactical-card rounded-xl overflow-hidden shadow-lg mb-8">
       <span class="hud-corner-tr"></span>
       <span class="hud-corner-bl"></span>
 

@@ -17,7 +17,7 @@
     </div>
 
     <!-- RBAC & User Management Overview -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 font-mono text-xs">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 font-mono text-xs mb-8">
       <div class="hud-tactical-card p-4 rounded-xl space-y-3 shadow-lg">
         <span class="hud-corner-tr"></span>
         <span class="hud-corner-bl"></span>
