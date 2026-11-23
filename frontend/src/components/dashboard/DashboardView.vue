@@ -62,7 +62,7 @@
           <div class="text-xs font-bold uppercase tracking-wider text-gray-400 font-mono flex items-center gap-2 whitespace-nowrap">
             <span
               class="w-2 h-2 rounded-full shrink-0"
-              :class="dangerCount > 0 ? 'bg-rose-400 radar-critical' : (criticalCount > 0 ? 'bg-orange-400 radar-critical' : (warnCount > 0 ? 'bg-amber-400 radar-warning' : 'bg-emerald-400 beacon-live'))"
+              :class="incidentDotClass"
             ></span>
             <span>// {{ t('dash_kpi_active_incidents').toUpperCase() }}</span>
           </div>
@@ -180,15 +180,15 @@
       <div class="bg-[#0b1324] border-b border-cyan-500/20 px-4 py-2.5 flex items-center justify-between flex-wrap gap-2">
         <div class="flex items-center gap-2.5 font-mono">
           <span
-            class="w-2.5 h-2.5 rounded-full"
-            :class="dangerCount > 0 ? 'bg-rose-400 radar-critical' : (criticalCount > 0 ? 'bg-orange-400 radar-critical' : (warnCount > 0 ? 'bg-amber-400 radar-warning' : 'bg-emerald-400 beacon-live'))"
+            class="w-2.5 h-2.5 rounded-full shrink-0"
+            :class="incidentDotClass"
           ></span>
           <h3 class="text-xs font-bold text-gray-100 tracking-wider uppercase">
             {{ t('dash_recent_incidents') }}
           </h3>
           <span
             class="px-2 py-0.2 rounded text-[11px] font-bold"
-            :class="activeProblems.length > 0 ? 'bg-rose-950/80 text-rose-300 border border-rose-800' : (servers.length === 0 ? 'bg-gray-800/80 text-gray-400 border border-gray-700' : 'bg-emerald-950/80 text-emerald-300 border border-emerald-800')"
+            :class="incidentBadgeClass"
           >
             {{ activeProblems.length > 0 ? t('dash_recent_incidents_badge', { count: activeProblems.length }) : (servers.length === 0 ? t('nav_status_no_nodes') : t('nav_status_all_secure')) }}
           </span>
@@ -1015,6 +1015,27 @@ const criticalCount = computed(() => activeProblems.value.filter(p => p.severity
 const warnCount = computed(() => activeProblems.value.filter(p => p.severity === 'warning').length)
 const infoCount = computed(() => activeProblems.value.filter(p => !p.severity || p.severity === 'info').length)
 const ignoredCount = computed(() => props.problems.filter(p => p.is_ignored).length)
+
+const incidentDotClass = computed(() => {
+  if (dangerCount.value > 0) return 'bg-rose-400 radar-critical'
+  if (criticalCount.value > 0) return 'bg-orange-400 radar-critical'
+  if (warnCount.value > 0) return 'bg-amber-400 radar-warning'
+  if (infoCount.value > 0) return 'bg-cyan-400'
+  return 'bg-emerald-400 beacon-live'
+})
+
+const incidentBadgeClass = computed(() => {
+  if (activeProblems.value.length === 0) {
+    return props.servers.length === 0
+      ? 'bg-gray-800/80 text-gray-400 border border-gray-700'
+      : 'bg-emerald-950/80 text-emerald-300 border border-emerald-800'
+  }
+  if (dangerCount.value > 0) return 'bg-rose-950/80 text-rose-300 border border-rose-800 shadow-[0_0_6px_rgba(244,63,94,0.3)] radar-critical'
+  if (criticalCount.value > 0) return 'bg-orange-950/80 text-orange-300 border border-orange-800 shadow-[0_0_6px_rgba(249,115,22,0.3)] radar-critical'
+  if (warnCount.value > 0) return 'bg-amber-950/80 text-amber-300 border border-amber-800 shadow-[0_0_6px_rgba(245,158,11,0.3)] radar-warning'
+  if (infoCount.value > 0) return 'bg-cyan-950/80 text-cyan-300 border border-cyan-800 shadow-[0_0_6px_rgba(56,189,248,0.3)]'
+  return 'bg-slate-900/80 text-slate-400 border border-slate-700'
+})
 
 const filteredServers = computed(() => {
   let list = props.servers || []
