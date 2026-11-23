@@ -62,7 +62,7 @@
               </svg>
             </button>
 
-            <!-- DROPDOWN SEARCH LIST OF FLEET SERVERS -->
+            <!-- DROPDOWN SEARCH LIST OF ASSETS -->
             <div
               v-if="showNewTabDropdown"
               class="absolute left-0 top-full mt-1.5 w-64 bg-[#0a0f1d] border border-cyan-500/40 rounded-lg shadow-2xl p-2 z-50 text-xs font-mono"
@@ -198,6 +198,7 @@ import 'xterm/css/xterm.css'
 const props = defineProps({
   isOpen: { type: Boolean, default: false },
   isMinimized: { type: Boolean, default: false },
+  assetsList: { type: Array, default: () => [] },
   fleetServers: { type: Array, default: () => [] },
   initialServer: { type: Object, default: null }
 })
@@ -210,10 +211,12 @@ const hostSearchQuery = ref('')
 const activeTabId = ref(null)
 const tabs = ref([])
 
+const allAssets = computed(() => props.assetsList?.length ? props.assetsList : props.fleetServers)
+
 const filteredServers = computed(() => {
-  if (!hostSearchQuery.value) return props.fleetServers
+  if (!hostSearchQuery.value) return allAssets.value
   const q = hostSearchQuery.value.toLowerCase()
-  return props.fleetServers.filter(
+  return allAssets.value.filter(
     (s) => s.hostname.toLowerCase().includes(q) || (s.ip_address || '').includes(q)
   )
 })

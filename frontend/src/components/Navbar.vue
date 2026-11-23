@@ -16,12 +16,12 @@
           <div class="font-bold text-sm tracking-wider text-gray-100 flex items-center gap-2 font-mono">
             <span class="text-cyan-400 font-extrabold">{{ t('app_name') }}</span>
             <span class="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-800/60 tracking-normal">
-              v0.1.18
+              v0.1.19
             </span>
           </div>
           <div class="text-[10px] text-gray-400 tracking-widest font-mono uppercase flex items-center gap-1.5">
             <span class="text-cyan-500/80">//</span>
-            <span>FLEET TELEMETRY &amp; NOC CONTROL</span>
+            <span>ASSET TELEMETRY &amp; NOC CONTROL</span>
           </div>
         </div>
       </div>
@@ -42,18 +42,18 @@
           <span>{{ t('nav_dashboard') }}</span>
         </button>
 
-        <!-- 2: FLEET INVENTORY -->
+        <!-- 2: ASSET INVENTORY -->
         <button
-          @click="$emit('nav', 'fleet')"
+          @click="$emit('nav', 'assets')"
           :class="[
             'px-3 py-1.5 rounded transition-all cursor-pointer flex items-center gap-2 font-semibold tracking-wide border',
-            activeTab === 'fleet'
+            activeTab === 'assets'
               ? 'bg-cyan-950/50 text-cyan-300 border-cyan-500/60 font-bold shadow-[0_0_10px_rgba(56,189,248,0.2)]'
               : 'text-gray-400 hover:text-gray-100 hover:bg-gray-800/40 border-transparent'
           ]"
         >
           <span class="text-cyan-400/70">02 //</span>
-          <span>{{ t('nav_fleet') }}</span>
+          <span>{{ t('nav_assets') }}</span>
           <span
             v-if="serverCount"
             class="text-[11px] px-1.5 py-0.2 rounded bg-gray-800/90 text-cyan-300 font-bold ml-0.5 border border-cyan-800/40"

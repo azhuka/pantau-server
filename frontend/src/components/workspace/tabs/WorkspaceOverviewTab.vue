@@ -95,7 +95,7 @@
             <div class="text-gray-200 mt-0.5 font-bold">{{ server?.arch || 'x86_64' }}</div>
           </div>
           <div>
-            <span class="text-gray-500">{{ t('ws_fleet_group') }}</span>
+            <span class="text-gray-500">{{ t('ws_asset_group') }}</span>
             <div class="text-cyan-400 mt-0.5 font-bold">{{ server?.group_name }} (Tier {{ server?.tier }})</div>
           </div>
         </div>

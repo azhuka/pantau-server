@@ -102,7 +102,7 @@ Berkas ini adalah spesifikasi teknis dan aturan baku permanen (*always-on projec
 ---
 
 ## 8. Aturan Baku Manajemen Pengguna & Kesetaraan Otoritas Operator (RBAC Parity)
-- **Kesetaraan Fungsional Operator Penuh:** Akun `master_admin` berhak mengangkat akun `operator` dengan hak akses global penuh (seperti `sysadmin_sadri`) yang memiliki otoritas operasional identik dengan `master-admin` atas seluruh server klien di armada.
+- **Kesetaraan Fungsional Operator Penuh:** Akun `master_admin` berhak mengangkat akun `operator` dengan hak akses global penuh (seperti `sysadmin_sadri`) yang memiliki otoritas operasional identik dengan `master-admin` atas seluruh aset server klien.
 - **Proteksi Mutlak Integritas Akun:**
   - Akun operator DILARANG KERAS menghapus akun dirinya sendiri.
   - Akun operator DILARANG KERAS menghapus akun `master-admin`.
@@ -156,10 +156,10 @@ Skrip tersebut secara otomatis mengeksekusi 4 pilar SOP:
 
 ---
 
-## 10. Kebijakan Keandalan Auto-OTA Armada Klien & Validasi Lapangan Mutlak (Zero-Stall OTA)
+## 10. Kebijakan Keandalan Auto-OTA Aset Klien & Validasi Lapangan Mutlak (Zero-Stall OTA)
 - **Larangan Keras Klaim Selesai Buta (*Anti-Blind Completion Claim*):**
   - Dilarang keras berasumsi atau menyatakan tugas rilis selesai hanya karena perintah build atau skrip rilis berhasil.
-  - Asisten **WAJIB melakukan kueri verifikasi lapangan nyata ke basis data** (`SELECT s.id, s.hostname, e.agent_version, s.last_seen FROM servers s LEFT JOIN server_extras e ON s.id=e.server_id ORDER BY s.id;`) untuk membuktikan 100% armada host klien aktif telah menerima, me-restart, dan melaporkan versi baru ke server sebelum menyatakan pekerjaan tuntas kepada operator.
+  - Asisten **WAJIB melakukan kueri verifikasi lapangan nyata ke basis data** (`SELECT s.id, s.hostname, e.agent_version, s.last_seen FROM servers s LEFT JOIN server_extras e ON s.id=e.server_id ORDER BY s.id;`) untuk membuktikan 100% aset host klien aktif telah menerima, me-restart, dan melaporkan versi baru ke server sebelum menyatakan pekerjaan tuntas kepada operator.
 - **Arsitektur Antrean OTA Bebas Penguncian (*Zero-Lockout Pipeline*):**
   - **Larangan Keras Cooldown Global:** Dilarang keras menaruh filter waktu tunggu kaku (seperti pemblokiran global 5 menit) pada `/api/commands` yang memblokir dispatch versi baru. Versi baru wajib dapat di-dispatch seketika (*instant dispatch*) pada heartbeat berikutnya.
   - **Auto-Heal Timeout Maksimal 2 Menit:** Setiap perintah `update_agent` yang tersangkut di status `executing` lebih dari 2 menit wajib otomatis di-failkan oleh server agar antrean pembaruan tidak tersumbat.
@@ -176,7 +176,7 @@ Sebelum asisten AI menyatakan pekerjaan selesai ke operator, wajib memverifikasi
 4. **Kontras Multi-Tema:** Apakah kontras multi-tema aman (tidak ada teks putih di latar putih / teks gelap di latar gelap)? (**Wajib: YA**).
 5. **Dual-Render Sinkron:** Apakah dual-render Jinja server-side dan JS client-side disinkronkan identik tanpa selisih? (**Wajib: YA**).
 6. **Otomasi SemVer 7 Berkas:** Apakah versi SemVer dinaikkan sinkron di 7 berkas via skrip `sop_release.py`? (**Wajib: YA**).
-7. **Verifikasi Lapangan 100% Armada:** Apakah 100% server klien aktif telah diverifikasi nyata di basis data sudah melapor pada versi baru? (**Wajib: YA**).
+7. **Verifikasi Lapangan 100% Aset:** Apakah 100% server klien aktif telah diverifikasi nyata di basis data sudah melapor pada versi baru? (**Wajib: YA**).
 8. **Kesetaraan Otoritas Operator (RBAC Parity):** Apakah perlindungan integritas akun (larangan hapus diri sendiri & master-admin) serta kesetaraan wewenang operator penuh dipatuhi? (**Wajib: YA**).
 9. **Arsitektur Agnostik & Bebas Hardcode:** Apakah seluruh implementasi bebas dari hardcoding string/nama spesifik aplikasi pihak ketiga dan murni mengandalkan penemuan dinamis atau karakteristik fisik sistem? (**Wajib: YA**).
 
@@ -218,16 +218,16 @@ Sebelum asisten AI menyatakan pekerjaan selesai ke operator, wajib memverifikasi
 
 ## 16. Kemurnian Konseptual & Basis Data Operasional Tunggal
 - **Spesifikasi Standar Operasional NOC:** Seluruh alur kerja (*workflow*), tata letak kartu, navigasi interaksi, hierarki telemetri NOC, dan jendela taktis mengambang diwujudkan secara utuh sebagai standar baku orisinal Pantau Server.
-- **Basis Data Tunggal Mandiri:** Sistem beroperasi dengan skema dan basis data mandiri murni (`pantau_db`). Seluruh armada server klien melapor ke basis data ini dan dikawal oleh daemon systemd resmi. Dilarang keras membuat basis data tiruan dummy atau memecah aliran telemetri.
+- **Basis Data Tunggal Mandiri:** Sistem beroperasi dengan skema dan basis data mandiri murni (`pantau_db`). Seluruh aset klien melapor ke basis data ini dan dikawal oleh daemon systemd resmi. Dilarang keras membuat basis data tiruan dummy atau memecah aliran telemetri.
 
 ---
 
 ## 17. Standar Mutlak Web Terminal: Mandat Global Multi-Tab Terminal Dock (xterm.js)
 - **Standar Baku Web Terminal:** Web Terminal wajib mengadopsi 100% konsep dan arsitektur UX unggul berupa **Global Multi-Tab Terminal Dock** berbasis `xterm.js` dan `xterm-addon-fit.js`.
 - **Fitur Utama Dock:**
-  1. *Multi-Tab Fleet Management:* Pengguna dapat membuka banyak tab terminal lintas server secara simultan dalam satu jendela dock.
+  1. *Multi-Tab Asset Management:* Pengguna dapat membuka banyak tab terminal lintas server/aset secara simultan dalam satu jendela dock.
   2. *Tab Switcher & Status Dot:* Setiap tab menampilkan nama host server, indikator status koneksi (dot hijau = terhubung, dot merah = terputus), serta tombol tutup tab `✕`.
-  3. *Tombol Tambah Tab (`+`):* Dilengkapi menu dropdown pencarian host untuk membuka koneksi terminal ke server armada lain secara langsung.
+  3. *Tombol Tambah Tab (`+`):* Dilengkapi menu dropdown pencarian host untuk membuka koneksi terminal ke aset server lain secara langsung.
   4. *Kontrol Jendela Standar:* Mendukung minimize ke rak dock bawah (dengan koneksi *keep-alive* tidak terputus), maximize/fullscreen, dan pop-out ke jendela terpisah.
 - **Larangan Keras Terminal Model Baru / Fake Input Box:**
   - Dilarang keras membuat terminal tiruan baru berupa kotak teks `<input>` satu baris dengan tombol submit. Terminal wajib berupa emulator PTY sejati berbasis `xterm.js` yang mendukung interaksi keyboard langsung (TAB completion, Ctrl+C, Ctrl+D, nano/vim, htop).
@@ -256,7 +256,7 @@ Sebelum asisten AI menyatakan pekerjaan selesai ke operator, wajib memverifikasi
 - **Hakikat Proyek Pantau Server:**
   - Proyek ini adalah **penyempurnaan total dari sisi UI/Frontend** (Vue 3 SPA, komponen terisolasi modular `<250` baris per file, Tailwind CSS v4, xterm.js) **ditambah perbaikan serta penguatan backend/layanan yang diperlukan**.
   - **Dilarang Keras Mengarang Alur Kerja Baru:** Dilarang keras mengarang model interaksi asing, mengganti alur kontrol yang sudah terbukti, atau membuang workflow yang sudah matang demi alasan spekulatif.
-  - **Basis Data Operasional Tunggal:** Menggunakan basis data resmi **`pantau_db`**, di mana seluruh 10 server armada riil melapor aktif melalui daemon systemd resmi.
+  - **Basis Data Operasional Tunggal:** Menggunakan basis data resmi **`pantau_db`**, di mana seluruh 10 aset server riil melapor aktif melalui daemon systemd resmi.
   - **Larangan Agen Tiruan di Terminal:** Dilarang keras menjalankan skrip agen ad-hoc sementara di terminal atau membuat opsi spekulatif (seperti dual-reporting agent tiruan). Seluruh observabilitas wajib bersumber murni dari agen systemd resmi.
 
 ---
@@ -264,8 +264,9 @@ Sebelum asisten AI menyatakan pekerjaan selesai ke operator, wajib memverifikasi
 ## 20. Glosarium Baku, Taksonomi Insiden & Hierarki Pengguna (Definisi Resmi)
 Seluruh penamaan modul, variabel, teks antarmuka, dokumentasi, dan logika sistem wajib tunduk pada definisi resmi berikut:
 1. **Identitas Sistem & Komponen:**
-   - **`pantau-server`**: Nama resmi aplikasi platform pusat kendali operasional NOC (*backend* FastAPI, *frontend* Vue 3 SPA, basis data, dan orkestrasi armada).
+   - **`pantau-server`**: Nama resmi aplikasi platform pusat kendali operasional NOC (*backend* FastAPI, *frontend* Vue 3 SPA, basis data, dan orkestrasi aset).
    - **`pantau-agent`**: Nama resmi agen telemetri yang terpasang pada node/aset klien Linux (`agent_pantau.py`).
+   - **`aset` (`assets`)**: Istilah tunggal dan mutlak untuk seluruh perangkat, sistem, dan komponen infrastruktur yang dipantau (mencakup server Linux, router jaringan, aplikasi klien, gateway, dan perangkat lainnya). **DILARANG KERAS menggunakan istilah baru seperti "fleet" atau "armada"**. Jika pada rancangan awal hanya ada istilah "server", maka pada sistem ini diperluas menjadi payung **`aset` (`assets`)** tanpa memperkenalkan istilah asing lain.
 2. **Terminologi Kejadian Sistem:**
    - **`insiden` (`incident`)**: Masalah, gangguan, anomali, kejadian, atau peristiwa yang terdeteksi pada sistem/aset.
    - **`insiden aktif` (`active incident`)**: Masalah/gangguan/anomali/kejadian/peristiwa yang sedang terjadi dan masih aktif (anomali fisik sedang berlangsung). **Dilarang keras menggunakan istilah "insiden terbuka"**.
@@ -278,7 +279,7 @@ Seluruh penamaan modul, variabel, teks antarmuka, dokumentasi, dan logika sistem
 4. **Hierarki & Otoritas Akun Pengguna (RBAC Structure):**
    - **`master-admin`**: Akun administrator utama (*root*), satu-satunya pemegang otoritas absolut sistem. Keberadaannya terlindungi mutlak: tidak dapat dihapus, tidak dapat di-lock, dan keberadaannya diisolasi dari penglihatan operator biasa.
    - **`operator`**: Akun pengguna dan pengelola harian sistem aplikasi:
-     - **`operator utama`**: Akun operasional tingkat tinggi yang dibuat langsung oleh `master-admin` dengan peran luas (memiliki hak delegasi sudo penuh) untuk mengelola armada dan pengguna harian, namun **dilarang keras dan tidak bisa menggantikan atau menghapus akun `master-admin`**.
+     - **`operator utama`**: Akun operasional tingkat tinggi yang dibuat langsung oleh `master-admin` dengan peran luas (memiliki hak delegasi sudo penuh) untuk mengelola aset dan pengguna harian, namun **dilarang keras dan tidak bisa menggantikan atau menghapus akun `master-admin`**.
      - **`operator pembantu`**: Akun operasional yang dibuat oleh `operator utama` dengan hak akses terbatas (*least privilege*) sesuai matriks tugas dan fungsi spesifiknya (contoh: hanya melihat metrik, atau hanya mengelola service tertentu).
    - **`tamu` (`guest` / `viewer`)**: Akun pengunjung dengan peran sebagai peninjau murni (*read-only*) yang hanya dapat melihat metrik/status tanpa memiliki hak akses mutasi, kontrol daya, eksekusi terminal, atau perubahan konfigurasi apa pun.
 

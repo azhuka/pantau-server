@@ -106,9 +106,9 @@
           </div>
         </div>
 
-        <!-- Center-Right: FLEET SERVER QUICK-SWITCHER & PINNED WINDOW CONTROLS -->
+        <!-- Center-Right: ASSET QUICK-SWITCHER & PINNED WINDOW CONTROLS -->
         <div class="flex items-center gap-2 font-mono shrink-0 ml-auto" @click.stop>
-          <!-- Fleet Switcher -->
+          <!-- Asset Switcher -->
           <div class="flex items-center bg-[#050811] border border-cyan-900/50 rounded p-0.5">
             <button
               @click="navigateHost(-1)"
@@ -123,7 +123,7 @@
               <button
                 @click="showHostDropdown = !showHostDropdown"
                 class="px-2.5 py-1 text-xs font-mono text-gray-200 hover:text-cyan-300 flex items-center gap-1.5 transition cursor-pointer font-semibold"
-                :title="t('ws_search_fleet')"
+                :title="t('ws_search_asset')"
               >
                 <svg class="w-3.5 h-3.5 text-cyan-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
                 <span class="max-w-[130px] truncate">{{ server?.hostname }}</span>
@@ -139,7 +139,7 @@
                   <input
                     v-model="hostSearchQuery"
                     type="text"
-                    :placeholder="t('ws_search_fleet')"
+                    :placeholder="t('ws_search_asset')"
                     class="w-full bg-[#04060c] border border-cyan-800/80 rounded px-2.5 py-1.5 text-xs text-gray-100 placeholder-gray-500 focus:outline-none focus:border-cyan-400 font-mono"
                     autofocus
                   />
@@ -679,6 +679,10 @@ const props = defineProps({
   isOpen: Boolean,
   isMinimized: Boolean,
   initialFloatingTool: String,
+  assetsList: {
+    type: Array,
+    default: () => []
+  },
   fleetServers: {
     type: Array,
     default: () => []
@@ -746,10 +750,12 @@ const subTabs = computed(() => [
   { id: 'logs', label: t('tab_logs') },
 ])
 
+const allAssets = computed(() => props.assetsList?.length ? props.assetsList : props.fleetServers)
+
 const filteredHosts = computed(() => {
-  if (!hostSearchQuery.value) return props.fleetServers
+  if (!hostSearchQuery.value) return allAssets.value
   const q = hostSearchQuery.value.toLowerCase()
-  return props.fleetServers.filter(
+  return allAssets.value.filter(
     (h) => h.hostname.toLowerCase().includes(q) || (h.ip_address || '').includes(q)
   )
 })
@@ -890,13 +896,13 @@ function selectHost(sid) {
 }
 
 function navigateHost(direction) {
-  if (!props.fleetServers || props.fleetServers.length === 0) return
-  const currentIndex = props.fleetServers.findIndex((s) => s.id === currentServerId.value)
+  if (!allAssets.value || allAssets.value.length === 0) return
+  const currentIndex = allAssets.value.findIndex((s) => s.id === currentServerId.value)
   if (currentIndex === -1) return
   let nextIndex = currentIndex + direction
-  if (nextIndex < 0) nextIndex = props.fleetServers.length - 1
-  if (nextIndex >= props.fleetServers.length) nextIndex = 0
-  const nextServer = props.fleetServers[nextIndex]
+  if (nextIndex < 0) nextIndex = allAssets.value.length - 1
+  if (nextIndex >= allAssets.value.length) nextIndex = 0
+  const nextServer = allAssets.value[nextIndex]
   if (nextServer) {
     selectHost(nextServer.id)
   }

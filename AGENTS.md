@@ -7,7 +7,7 @@ Berkas ini adalah **Operating Brief ringkas & baku** bagi seluruh asisten AI yan
 
 ## 1. Hakikat Sistem (What This Is)
 
-**Pantau Server** adalah platform pusat kendali operasional NOC (*Network Operations Center Control Plane*) generasi baru untuk memantau performa, ketersediaan, dan keamanan armada server Linux multi-node mandiri secara *real-time* dengan akurasi fisik tingkat kernel (*kernel-grade precision*).
+**Pantau Server** adalah platform pusat kendali operasional NOC (*Network Operations Center Control Plane*) generasi baru untuk memantau performa, ketersediaan, dan keamanan aset Linux multi-node mandiri secara *real-time* dengan akurasi fisik tingkat kernel (*kernel-grade precision*).
 
 Tumpukan sistem:
 - **Backend**: Python 3.10+, FastAPI, SQLAlchemy, Pydantic, MySQL (`pantau_db`).
@@ -33,11 +33,11 @@ frontend/               # Frontend Vue 3 SPA
   │    ├── App.vue      # Root container, Global Terminal Dock, Workspace Modal
   │    ├── components/  # Komponen modular (<250 baris per file)
   │    │     ├── dashboard/   # Dasbor pasif makro
-  │    │     ├── fleet/       # Tabel inventaris armada
+  │    │     ├── assets/      # Tabel inventaris aset
   │    │     ├── workspace/   # Floating Workspace Modal & tab inspeksi host
   │    │     └── terminal/    # Global Multi-Tab xterm.js Dock
   │    └── i18n/        # Bilingual dictionary (EN default, ID selectable)
-agent/                  # Klien telemetri node armada (agent_pantau.py)
+agent/                  # Klien telemetri node aset (agent_pantau.py)
 tools/                  # Otomasi rilis (sop_release.py), test_terminal_dock.js, seed scripts
 .agents/skills/         # Panduan per domain (sop-pantau, ponytail, moli-*, antislop-*, security-audit)
 ```
@@ -80,10 +80,11 @@ tools/                  # Otomasi rilis (sop_release.py), test_terminal_dock.js,
    - Blueprint sistem, alur kerja (*workflow*), dan UX taktis selalu mengacu pada fondasi perancangan asli yang sudah teruji matang.
    - Hakikat repositori ini (`/home/bos/pantau-server`) murni adalah **penyempurnaan dan modernisasi dari sisi UI/Frontend** (Vue 3 SPA, komponen terisolasi `<250` baris, Tailwind CSS v4, xterm.js) **plus penguatan backend yang diperlukan**.
    - Dilarang keras mengarang alur kerja baru, model interaksi asing, atau opsi spekulatif (seperti dual-reporting agent tiruan atau menjalankan proses agen sementara di terminal).
-   - Basis data operasional resmi adalah **`pantau_db`**, di mana seluruh 10 server armada riil melapor aktif ke agen systemd resmi.
+   - Basis data operasional resmi adalah **`pantau_db`**, di mana seluruh 10 aset server riil melapor aktif ke agen systemd resmi.
 10. **Definisi Baku & Taksonomi Insiden/Akun (Glosarium Resmi):**
    - `pantau-server`: Nama resmi aplikasi platform pusat kendali operasional NOC.
    - `pantau-agent`: Nama resmi agen klien telemetri di node Linux.
+   - `aset` (`assets`): Istilah tunggal resmi untuk seluruh entitas yang dipantau (server, router, aplikasi klien, gateway, dll.). Dilarang keras menggunakan istilah "fleet" atau "armada".
    - `insiden`: Masalah/gangguan/anomali/kejadian/peristiwa pada aset.
    - `insiden aktif` (*bukan insiden terbuka*): Insiden yang sedang terjadi dan masih aktif secara fisik.
    - *Severity 4-Tingkat:* `info` (biru, non-ancaman, info update package), `warning` (kuning, potensi ancaman/gangguan, layanan utama tetap jalan), `critical` (oranye pekat, layanan utama terganggu/mati, SSH ilegal), `danger` (merah, kelumpuhan sistem utama, host offline/down, disk read-only, kernel panic).
@@ -120,7 +121,7 @@ Sebelum menyatakan tugas perbaikan bug atau fitur selesai:
    npm run build --prefix /home/bos/pantau-server/frontend
    ```
 3. **Verifikasi Lapangan Rilis (Jika Melakukan Rilis SemVer):**
-   Wajib menjalankan kueri basis data untuk memastikan 100% armada aktif telah menerima pembaruan dan melapor pada versi baru:
+   Wajib menjalankan kueri basis data untuk memastikan 100% aset aktif telah menerima pembaruan dan melapor pada versi baru:
    ```bash
    PYTHONPATH=/home/bos/pantau-server/server /home/bos/pantau-server/env/bin/python -c "
    from sqlalchemy import create_engine, text
@@ -152,7 +153,7 @@ Koleksi skill `anti-slop` dipasang lokal di `.agents/skills/antislop*` sebagai f
 
 Skill `security-audit` dipasang lokal di `.agents/skills/security-audit/` untuk audit celah keamanan, review API, dan penetration testing berbasis bukti:
 - **Hierarki Otoritas:** `GEMINI.md` dan `AGENTS.md` tetap menjadi hukum tertinggi.
-- **Keselamatan Eksekusi (Zero-Production Probing):** Dilarang keras menembak IP publik node armada, melakukan DoS, atau mengganggu daemon aktif (`pantau-server.service`, `agent_pantau.service`). Audit murni melalui inspeksi kode sumber lokal atau sandbox tertutup (`127.0.0.1`).
+- **Keselamatan Eksekusi (Zero-Production Probing):** Dilarang keras menembak IP publik node aset, melakukan DoS, atau mengganggu daemon aktif (`pantau-server.service`, `agent_pantau.service`). Audit murni melalui inspeksi kode sumber lokal atau sandbox tertutup (`127.0.0.1`).
 - **Verifikasi Adversarial:** Setiap kandidat temuan wajib diverifikasi oleh verifikator independen yang mencoba menyangkal hipotesis (*refute*) untuk membasmi *false positives*.
 - **Vonis 3-Tingkat Baku:** Hasil audit diklasifikasikan ke `confirmed` (terbukti dengan trace kode dan dampak nyata), `needs_validation` (butuh validasi runtime khusus tanpa mengarang tingkat keparahan), atau `rejected` (terbantahkan).
 - **Mode Operasi:** Secara *default* berstatus *Guidance Mode* (hanya menjawab konsultasi atau review terarah) dan hanya menjalankan alur 6 fase penuh jika ada permintaan audit eksplisit (*"security audit"*, *"pen-test"*).

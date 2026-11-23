@@ -25,9 +25,9 @@
         @refresh-problems="fetchProblems"
       />
 
-      <!-- HALAMAN 2: FLEET INVENTORY TABLE (Tabel Rincian Armada Lengkap + Tombol Aksi ala Pantau) -->
-      <FleetTableView
-        v-else-if="activeTab === 'fleet'"
+      <!-- HALAMAN 2: ASSET INVENTORY TABLE -->
+      <AssetTableView
+        v-else-if="activeTab === 'assets'"
         :servers="servers"
         @open-workspace="openWorkspace"
         @open-terminal="openTerminalDock"
@@ -66,7 +66,7 @@
       :is-open="isWorkspaceOpen"
       :is-minimized="isWorkspaceMinimized"
       :initial-floating-tool="initialFloatingTool"
-      :fleet-servers="servers"
+      :assets-list="servers"
       @close="closeWorkspace"
       @minimize="minimizeWorkspace"
       @switch-server="onWorkspaceSwitchServer"
@@ -79,7 +79,7 @@
       ref="terminalDockRef"
       :is-open="isTerminalDockOpen"
       :is-minimized="isTerminalDockMinimized"
-      :fleet-servers="servers"
+      :assets-list="servers"
       :initial-server="terminalDockInitialServer"
       @close="closeTerminalDock"
       @minimize="minimizeTerminalDock"
@@ -201,7 +201,7 @@ import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useI18n } from './i18n'
 import Navbar from './components/Navbar.vue'
 import DashboardView from './components/dashboard/DashboardView.vue'
-import FleetTableView from './components/fleet/FleetTableView.vue'
+import AssetTableView from './components/assets/AssetTableView.vue'
 import AuditView from './components/audit/AuditView.vue'
 import SettingsView from './components/settings/SettingsView.vue'
 import ServerWorkspaceModal from './components/ServerWorkspaceModal.vue'
@@ -210,7 +210,7 @@ import LoginModal from './components/LoginModal.vue'
 
 const { t } = useI18n()
 
-const activeTab = ref('dashboard') // 'dashboard', 'fleet', 'audit', 'settings'
+const activeTab = ref('dashboard') // 'dashboard', 'assets', 'audit', 'settings'
 const workspaceServerId = ref(null)
 const isWorkspaceOpen = ref(false)
 const isWorkspaceMinimized = ref(false)
@@ -445,7 +445,7 @@ function handleGlobalKeydown(e) {
   if (e.key === '1') {
     handleNav('dashboard')
   } else if (e.key === '2') {
-    handleNav('fleet')
+    handleNav('assets')
   } else if (e.key === '3') {
     handleNav('audit')
   } else if (e.key === '4') {

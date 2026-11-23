@@ -8,11 +8,11 @@
       <div>
         <h2 class="text-sm font-bold text-gray-100 uppercase tracking-wider font-mono flex items-center gap-2">
           <span class="w-2 h-2 rounded-full bg-cyan-400 beacon-live"></span>
-          <span>// FLEET INFRASTRUCTURE MATRIX</span>
+          <span>// ASSET INFRASTRUCTURE MATRIX</span>
           <span class="text-xs text-cyan-400 font-bold">({{ filteredServers.length }} {{ t('nodes_monitored') }})</span>
         </h2>
         <p class="text-xs text-gray-400 font-mono mt-0.5">
-          {{ t('fleet_subtitle') }}
+          {{ t('assets_subtitle') }}
         </p>
       </div>
 
@@ -68,7 +68,7 @@
       </div>
     </div>
 
-    <!-- HIGH-DENSITY FLEET TELEMETRY MATRIX TABLE -->
+    <!-- HIGH-DENSITY ASSET TELEMETRY MATRIX TABLE -->
     <div class="hud-tactical-card rounded-xl overflow-hidden shadow-2xl">
       <span class="hud-corner-tr"></span>
       <span class="hud-corner-bl"></span>
@@ -340,8 +340,8 @@
                     <line x1="6" y1="6" x2="6.01" y2="6"/>
                     <line x1="6" y1="18" x2="6.01" y2="18"/>
                   </svg>
-                  <div class="text-sm font-bold text-gray-200 font-mono tracking-wider uppercase">// {{ t('fleet_empty_title') }}</div>
-                  <div class="text-xs text-gray-400 font-mono max-w-md">{{ t('fleet_empty_desc') }}</div>
+                  <div class="text-sm font-bold text-gray-200 font-mono tracking-wider uppercase">// {{ t('assets_empty_title') }}</div>
+                  <div class="text-xs text-gray-400 font-mono max-w-md">{{ t('assets_empty_desc') }}</div>
                 </div>
               </td>
             </tr>

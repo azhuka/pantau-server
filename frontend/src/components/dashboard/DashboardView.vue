@@ -2,13 +2,13 @@
   <div class="space-y-4">
     <!-- 1. GLOBAL TACTICAL KPI BANNER (Asymmetric Grid: 220-250px + 1fr + 280-320px) -->
     <div class="dash-kpi-grid">
-      <!-- KARTU 1: FLEET ASSETS STATUS (Kompak 220px - 250px) -->
+      <!-- KARTU 1: ASSET STATUS (Kompak 220px - 250px) -->
       <a
-        href="#fleet"
-        @click.prevent="$emit('nav', 'fleet')"
+        href="#assets"
+        @click.prevent="$emit('nav', 'assets')"
         id="kpi-card-total"
         class="hud-tactical-card p-3.5 px-4 rounded-xl flex flex-col justify-between hover:border-cyan-400/50 transition cursor-pointer group shadow-lg"
-        :title="t('dash_open_fleet')"
+        :title="t('dash_open_assets')"
       >
         <span class="hud-corner-tr"></span>
         <span class="hud-corner-bl"></span>
@@ -16,7 +16,7 @@
         <div class="flex items-center justify-between mb-1.5">
           <div class="text-xs font-bold uppercase tracking-wider text-gray-400 font-mono flex items-center gap-2">
             <span class="w-2 h-2 rounded-full bg-cyan-400 beacon-live"></span>
-            <span>// FLEET INFRASTRUCTURE OVERVIEW</span>
+            <span>// ASSET INFRASTRUCTURE OVERVIEW</span>
           </div>
           <svg class="w-3.5 h-3.5 text-gray-500 group-hover:text-cyan-400 transition" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
@@ -190,10 +190,10 @@
         </div>
 
         <button
-          @click="$emit('nav', 'fleet')"
+          @click="$emit('nav', 'assets')"
           class="text-xs text-cyan-400 hover:text-cyan-300 transition font-mono flex items-center gap-1.5 cursor-pointer font-semibold"
         >
-          <span>{{ t('dash_open_fleet') }}</span>
+          <span>{{ t('dash_open_assets') }}</span>
         </button>
       </div>
 
@@ -308,8 +308,8 @@
       </div>
     </div>
 
-    <!-- 3. FLEET STATUS & TELEMETRY RADAR -->
-    <div id="dash-fleet-card" class="hud-tactical-card rounded-xl overflow-hidden shadow-lg">
+    <!-- 3. ASSET STATUS & TELEMETRY RADAR -->
+    <div id="dash-assets-card" class="hud-tactical-card rounded-xl overflow-hidden shadow-lg">
       <span class="hud-corner-tr"></span>
       <span class="hud-corner-bl"></span>
 
@@ -319,7 +319,7 @@
           <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 beacon-live"></span>
           <div>
             <h3 class="text-xs font-bold text-gray-100 tracking-wider uppercase">
-              // FLEET TELEMETRY & PERFORMANCE
+              // ASSET TELEMETRY & PERFORMANCE
             </h3>
           </div>
         </div>
@@ -328,17 +328,17 @@
           <!-- View Switcher (Tabel vs Grid) -->
           <div class="inline-flex bg-[#060a14] border border-cyan-900/40 rounded p-0.5 text-xs">
             <button
-              @click="fleetViewMode = 'table'"
+              @click="assetViewMode = 'table'"
               class="px-2.5 py-1 rounded transition cursor-pointer flex items-center gap-1.5"
-              :class="fleetViewMode === 'table' ? 'bg-cyan-950 text-cyan-300 font-bold border border-cyan-500/50' : 'text-gray-400 hover:text-white'"
+              :class="assetViewMode === 'table' ? 'bg-cyan-950 text-cyan-300 font-bold border border-cyan-500/50' : 'text-gray-400 hover:text-white'"
               :title="t('dash_view_table')"
             >
               <span>{{ t('dash_view_table') }}</span>
             </button>
             <button
-              @click="fleetViewMode = 'grid'"
+              @click="assetViewMode = 'grid'"
               class="px-2.5 py-1 rounded transition cursor-pointer flex items-center gap-1.5"
-              :class="fleetViewMode === 'grid' ? 'bg-cyan-950 text-cyan-300 font-bold border border-cyan-500/50' : 'text-gray-400 hover:text-white'"
+              :class="assetViewMode === 'grid' ? 'bg-cyan-950 text-cyan-300 font-bold border border-cyan-500/50' : 'text-gray-400 hover:text-white'"
               :title="t('dash_view_grid')"
             >
               <span>{{ t('dash_view_grid') }}</span>
@@ -347,7 +347,7 @@
 
           <!-- Search Filter -->
           <input
-            v-model="fleetFilter"
+            v-model="assetFilter"
             type="text"
             :placeholder="t('dash_search_host')"
             class="bg-[#060a14] border border-cyan-900/50 focus:border-cyan-400 rounded px-2.5 py-1 text-xs text-gray-100 placeholder-gray-500 w-48 outline-none transition"
@@ -356,7 +356,7 @@
       </div>
 
       <!-- VIEW 1: TABEL OPERASIONAL REAL-TIME DASBOR -->
-      <div v-if="fleetViewMode === 'table'" class="overflow-x-auto">
+      <div v-if="assetViewMode === 'table'" class="overflow-x-auto">
         <table class="w-full text-left text-xs font-mono border-collapse">
           <thead>
             <tr class="border-b border-cyan-500/20 uppercase font-bold text-gray-400 bg-[#070c18]/80 select-none tracking-wider">
@@ -486,8 +486,8 @@
                     <line x1="6" y1="6" x2="6.01" y2="6"/>
                     <line x1="6" y1="18" x2="6.01" y2="18"/>
                   </svg>
-                  <div class="font-bold text-gray-200">{{ t('fleet_empty_title') }}</div>
-                  <div class="text-gray-400 max-w-sm">{{ t('dash_fleet_empty') }}</div>
+                  <div class="font-bold text-gray-200">{{ t('assets_empty_title') }}</div>
+                  <div class="text-gray-400 max-w-sm">{{ t('dash_assets_empty') }}</div>
                 </div>
               </td>
             </tr>
@@ -506,8 +506,8 @@
               <line x1="6" y1="6" x2="6.01" y2="6"/>
               <line x1="6" y1="18" x2="6.01" y2="18"/>
             </svg>
-            <div class="font-bold text-gray-200">{{ t('fleet_empty_title') }}</div>
-            <div class="text-gray-400 max-w-sm">{{ t('dash_fleet_empty') }}</div>
+            <div class="font-bold text-gray-200">{{ t('assets_empty_title') }}</div>
+            <div class="text-gray-400 max-w-sm">{{ t('dash_assets_empty') }}</div>
           </div>
         </div>
 
@@ -688,8 +688,8 @@ function openHostFromModal(sid) {
   emit('inspect-node', sid)
 }
 
-const fleetViewMode = ref('table') // 'table' or 'grid'
-const fleetFilter = ref('')
+const assetViewMode = ref('table') // 'table' or 'grid'
+const assetFilter = ref('')
 
 // Clock state
 const clockDayStr = ref('')
@@ -741,8 +741,8 @@ const infoCount = computed(() => activeProblems.value.filter(p => !p.severity ||
 const ignoredCount = computed(() => props.problems.filter(p => p.is_ignored).length)
 
 const filteredServers = computed(() => {
-  if (!fleetFilter.value) return props.servers
-  const q = fleetFilter.value.toLowerCase()
+  if (!assetFilter.value) return props.servers
+  const q = assetFilter.value.toLowerCase()
   return props.servers.filter(s =>
     (s.hostname && s.hostname.toLowerCase().includes(q)) ||
     (s.ip_address && s.ip_address.toLowerCase().includes(q)) ||

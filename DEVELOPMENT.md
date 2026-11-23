@@ -174,6 +174,16 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.19
+
+### [v0.1.19] - 2026-11-23
+#### Ditambahkan / Diubah (Added / Changed)
+- **Standarisasi Terminologi Aset (assets):** Mengeliminasi penggunaan istilah fleet dan armada di seluruh antarmuka dan dokumentasi sistem. Istilah tunggal untuk seluruh perangkat yang dipantau adalah aset (assets).
+- **Refaktorisasi Komponen AssetTableView.vue:** Memindahkan dan memodularisasi tabel inventaris utama ke frontend/src/components/assets/AssetTableView.vue.
+- **Sinkronisasi Kamus i18n:** Memperbarui kamus bahasa Inggris (en.js) dan bahasa Indonesia (id.js).
+- **Pembaruan Aturan Tetap:** Mencatat glosarium baku di GEMINI.md (Poin 20) dan AGENTS.md (Poin 10).
+
+
 ### Versi v0.1.18
 
 - Menyelaraskan basis data operasional utama backend ke pantau_db sehingga seluruh 10 server klien armada Linux aktif langsung terpantau secara real-time via daemon systemd resmi.\n- Menegakkan Kebijakan Kemurnian Dokumentasi (Zero-Mention Policy) pada README.md dan DEVELOPMENT.md.\n- Memperbarui sistem pelaporan insiden, durasi insiden aktif, dan tooltip tindakan pada modal diagnosa insiden.\n- Memperbarui pembukuan aturan permanen sistemik di GEMINI.md dan AGENTS.md.

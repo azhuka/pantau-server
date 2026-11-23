@@ -2,7 +2,8 @@ export default {
   // Navigasi
   app_name: 'PANTAU CONTROL',
   nav_dashboard: 'Dasbor',
-  nav_fleet: 'Rincian Armada',
+  nav_assets: 'Inventaris Aset',
+  nav_fleet: 'Inventaris Aset',
   nav_audit: 'Log Audit',
   nav_settings: 'Pengaturan',
   nav_status_live: 'TELEMETRI LANGSUNG',
@@ -15,7 +16,8 @@ export default {
 
   // Umum & HUD
   nodes_monitored: 'Server Terpantau',
-  total_fleet: 'Total Armada',
+  total_assets: 'Total Aset',
+  total_fleet: 'Total Aset',
   active_incidents: 'Insiden Aktif',
   active_ssh_sessions: 'Sesi SSH Manusia',
   human_intercept_badge: 'SESI SSH AKTIF TERDETEKSI',
@@ -45,16 +47,19 @@ export default {
   sev_ignored: 'Diabaikan',
 
   dash_recent_incidents: 'Insiden Terkini',
-  dash_incidents_empty: 'Tidak ada insiden aktif. Seluruh {count} server armada beroperasi normal.',
-  dash_incidents_empty_no_servers: 'Tidak ada insiden aktif. Belum ada server armada terhubung.',
-  dash_open_fleet: 'Buka Inventaris Armada →',
+  dash_incidents_empty: 'Tidak ada insiden aktif. Seluruh {count} aset beroperasi normal.',
+  dash_incidents_empty_no_servers: 'Tidak ada insiden aktif. Belum ada aset terhubung.',
+  dash_open_assets: 'Buka Inventaris Aset →',
+  dash_open_fleet: 'Buka Inventaris Aset →',
   dash_col_time: 'WAKTU',
   dash_col_server: 'SERVER',
   dash_col_severity: 'KEPARAHAN',
   dash_col_description: 'DESKRIPSI INSIDEN',
   dash_col_duration: 'DURASI',
 
-  dash_fleet_perf_title: 'Status & Kinerja Armada',
+  dash_assets_perf_title: 'Status & Kinerja Aset',
+  dash_assets_perf_sub: 'Status operasional host, level insiden, utilisasi hardware real-time.',
+  dash_fleet_perf_title: 'Status & Kinerja Aset',
   dash_fleet_perf_sub: 'Status operasional host, level insiden, utilisasi hardware real-time.',
   dash_view_table: 'Tabel',
   dash_view_grid: 'Grid',
@@ -64,12 +69,17 @@ export default {
   dash_col_storage: 'Storage (%)',
   dash_col_incidents: 'Insiden',
 
-  // Rincian Armada
-  fleet_title: 'Inventaris & Telemetri Armada',
-  fleet_subtitle: 'Spesifikasi fisik kernel, antarmuka jaringan, dan metrik operasional seluruh server.',
-  fleet_empty_title: 'Belum Ada Server Armada Terhubung',
+  // Inventaris Aset
+  assets_title: 'Inventaris & Telemetri Aset',
+  assets_subtitle: 'Spesifikasi fisik kernel, antarmuka jaringan, dan metrik operasional seluruh aset terpantau.',
+  assets_empty_title: 'Belum Ada Aset Terhubung',
+  assets_empty_desc: 'Sistem aktif dalam kondisi baseline bersih (v0.1.0). Menunggu agen klien melapor.',
+  fleet_title: 'Inventaris & Telemetri Aset',
+  fleet_subtitle: 'Spesifikasi fisik kernel, antarmuka jaringan, dan metrik operasional seluruh aset terpantau.',
+  fleet_empty_title: 'Belum Ada Aset Terhubung',
   fleet_empty_desc: 'Sistem aktif dalam kondisi baseline bersih (v0.1.0). Menunggu agen klien melapor.',
-  dash_fleet_empty: 'Belum ada server armada terdaftar. Sistem aktif dalam kondisi baseline bersih.',
+  dash_assets_empty: 'Belum ada aset terdaftar. Sistem aktif dalam kondisi baseline bersih.',
+  dash_fleet_empty: 'Belum ada aset terdaftar. Sistem aktif dalam kondisi baseline bersih.',
   col_status: 'STATUS',
   col_server: 'SERVER / HOST',
   col_ip: 'IP / INTERFACE',
@@ -97,7 +107,8 @@ export default {
   // Jendela Kerja Mengambang
   ws_header_title: 'Konsol Kontrol Taktis Server',
   ws_loading_host: 'Memuat telemetri host...',
-  ws_search_fleet: 'Cari server armada...',
+  ws_search_asset: 'Cari aset...',
+  ws_search_fleet: 'Cari aset...',
   ws_minimize: 'Minimalkan ke Rak Bawah',
   ws_maximize: 'Layar Penuh / Maksimalkan',
   ws_restore: 'Pulihkan Ukuran Jendela',
@@ -122,7 +133,8 @@ export default {
   ws_cpu_model: 'Model CPU:',
   ws_core_capacity: 'Kapasitas Core:',
   ws_arch: 'Arsitektur:',
-  ws_fleet_group: 'Grup Armada:',
+  ws_asset_group: 'Grup Aset:',
+  ws_fleet_group: 'Grup Aset:',
   ws_disk_partitions: 'Partisi Penyimpanan (Disk Filesystems)',
 
   ws_incidents_title: 'Tiket Insiden Aktif Host Ini',
@@ -204,14 +216,14 @@ export default {
   shelf_title: 'Jendela Taktis di Rak',
   shelf_restore: 'Buka Kembali',
   shelf_close: 'Tutup',
-  footer_hotkeys: 'Hotkeys: 1 Dasbor / 2 Armada / 3 Audit / 4 Pengaturan',
+  footer_hotkeys: 'Hotkeys: 1 Dasbor / 2 Aset / 3 Audit / 4 Pengaturan',
   footer_live_synced: 'Live Polling Synced',
 
   // Log Audit
   audit_title: 'Log Audit & Jejak Akuntabilitas Operator',
-  audit_subtitle: 'Rekaman kronologis permanen setiap aksi kontrol dan perintah mitigasi yang dieksekusi di armada.',
+  audit_subtitle: 'Rekaman kronologis permanen setiap aksi kontrol dan perintah mitigasi yang dieksekusi pada aset terpantau.',
   audit_reload: 'Muat Ulang',
-  audit_loading: 'Memuat jejak audit armada...',
+  audit_loading: 'Memuat jejak audit aset...',
   audit_empty: 'Belum ada catatan aksi operasional dalam rentang waktu ini.',
   audit_col_time: 'WAKTU',
   audit_col_operator: 'OPERATOR',
@@ -222,10 +234,10 @@ export default {
 
   // Pengaturan
   settings_title: 'Pengaturan Sistem & Kontrol Otoritas (RBAC)',
-  settings_subtitle: 'Tata kelola akun operator, hak akses granular, dan konfigurasi ambang batas armada.',
+  settings_subtitle: 'Tata kelola akun operator, hak akses granular, dan konfigurasi ambang batas aset.',
   rbac_title: 'Kebijakan Otoritas Operator (RBAC Parity)',
-  rbac_master_admin: 'Master Admin: Otoritas mutlak atas konfigurasi, pengguna, dan armada.',
-  rbac_full_operator: 'Operator Penuh: Hak operasional setara untuk mengendalikan armada (restart service, kill process, putus sesi SSH).',
+  rbac_master_admin: 'Master Admin: Otoritas mutlak atas konfigurasi, pengguna, dan aset.',
+  rbac_full_operator: 'Operator Penuh: Hak operasional setara untuk mengendalikan aset (restart service, kill process, putus sesi SSH).',
   rbac_protect_accounts: 'Proteksi Akun: Operator dilarang menghapus akun sendiri atau menghapus akun master-admin.',
   threshold_title: 'Ambang Batas Deteksi Anomali',
   threshold_cpu: 'Ambang Beban CPU Kritis:',
@@ -235,7 +247,7 @@ export default {
 
   // Login Modal
   login_title: 'Otentikasi Pantau Server',
-  login_subtitle: 'Masuk untuk mengakses dasbor NOC & kontrol armada',
+  login_subtitle: 'Masuk untuk mengakses dasbor NOC & kontrol aset',
   login_username: 'Nama Pengguna',
   login_password: 'Kata Sandi',
   login_button: 'Masuk ke Dasbor',
