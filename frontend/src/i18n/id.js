@@ -542,4 +542,7 @@ export default {
   term_resize_handle_tooltip: 'Tarik ke atas atau bawah untuk mengubah tinggi terminal',
   term_connecting: 'Menghubungkan ke agen server...',
   term_session_closed: 'Sesi shell ditutup',
+  term_status_active: 'terhubung · shell aktif',
+  term_status_connecting: 'menyambung ke shell...',
+  term_status_closed: 'sesi ditutup',
 }

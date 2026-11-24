@@ -174,6 +174,14 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.34
+
+### v0.1.34 - Penyelarasan Estetika Visual & Ergonomi Web Terminal
+- **Penyelarasan Tema & Warna Konsol xterm.js**: Menerapkan palet warna GitHub Dark (#0d1117 kanvas, #161b22 titlebar, #30363d border), kursor block (#58a6ff), dan 16 warna ANSI baku.
+- **Ergonomi & Kepadatan Data Konsol**: Menyesuaikan padding internal layar terminal (10px 14px), tinggi default 480px (maksimal 65vh), scrollbar terintegrasi 8px, dan drag resize handle vertikal dengan grip bar.
+- **Standarisasi Kontrol Titlebar**: Menyeragamkan tombol-tombol aksi titlebar terminal (.terminal-btn-icon) dengan status beacon aktif hijau, penghitung mundur masa sewa kuning, tombol lock merah, serta indikator status koneksi terhubung.
+
+
 ### Versi v0.1.33
 
 ### v0.1.33 - Standardisasi Bahasa Antarmuka & Integrasi Terminal Taktis Host

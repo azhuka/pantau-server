@@ -542,4 +542,7 @@ export default {
   term_resize_handle_tooltip: 'Drag up or down to resize terminal height',
   term_connecting: 'Connecting to server agent...',
   term_session_closed: 'Shell session closed',
+  term_status_active: 'connected · shell active',
+  term_status_connecting: 'connecting to shell...',
+  term_status_closed: 'session closed',
 }
