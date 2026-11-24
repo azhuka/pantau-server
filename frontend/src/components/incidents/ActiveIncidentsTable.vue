@@ -99,15 +99,27 @@
               </td>
               <td class="py-2.5 px-3 text-right whitespace-nowrap">
                 <div class="inline-flex items-center justify-end gap-1.5">
-                  <!-- Minor Action: Tangani Insiden (Acknowledge) -->
+                  <!-- Minor Action: Tandai Ditangani (Acknowledge) -->
                   <button
                     v-if="canOperate && !prob.acknowledged_by"
                     @click="$emit('ack', prob.id)"
-                    class="px-2 py-1 rounded bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-600/40 font-bold text-[11px] transition cursor-pointer flex items-center gap-1"
+                    class="px-2.5 py-1 rounded bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-600/40 font-bold text-[11px] transition cursor-pointer flex items-center gap-1 shadow-sm"
                     :title="t('inc_btn_ack')"
                   >
-                    <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-                    <span>{{ t('inc_btn_ack_short') }}</span>
+                    <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span>{{ t('inc_btn_ack') }}</span>
+                  </button>
+
+                  <!-- Status: Sudah Ditangani (Hover untuk Batal Ditangani) -->
+                  <button
+                    v-else-if="canOperate && prob.acknowledged_by"
+                    @click="$emit('unack', prob.id)"
+                    class="px-2 py-1 rounded bg-emerald-950/30 hover:bg-rose-950/40 text-emerald-300 hover:text-rose-300 border border-emerald-600/40 hover:border-rose-600/40 font-bold text-[10px] transition cursor-pointer flex items-center gap-1 group/ack"
+                    :title="`${t('inc_ack_badge')}: ${prob.acknowledged_by} (${formatIncidentTime(prob.acknowledged_at)}) — ${t('inc_btn_unack')}`"
+                  >
+                    <svg class="w-3 h-3 text-emerald-400 group-hover/ack:text-rose-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span class="group-hover/ack:hidden">✓ {{ prob.acknowledged_by }}</span>
+                    <span class="hidden group-hover/ack:inline text-rose-300">{{ t('inc_btn_unack') }}</span>
                   </button>
 
                   <!-- Minor Action: Abaikan / Pantau Kembali -->
@@ -170,7 +182,7 @@ const props = defineProps({
   currentUser: { type: Object, default: null }
 })
 
-defineEmits(['ack', 'unignore', 'open-ignore-modal', 'open-workspace'])
+defineEmits(['ack', 'unack', 'unignore', 'open-ignore-modal', 'open-workspace'])
 
 const activeFilter = ref('all')
 const searchQuery = ref('')

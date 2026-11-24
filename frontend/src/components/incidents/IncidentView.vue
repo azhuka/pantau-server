@@ -44,6 +44,7 @@
       :problems="activeProblems"
       :current-user="currentUser"
       @ack="handleAck"
+      @unack="handleUnack"
       @unignore="handleUnignore"
       @open-ignore-modal="openIgnoreModal"
       @open-workspace="handleOpenWorkspace"
@@ -122,48 +123,32 @@ async function fetchActiveProblems() {
   try {
     const res = await fetch('/api/problems?active_only=true', { headers: getAuthHeaders() })
     const data = await res.json()
-    if (data.ok) {
-      activeProblems.value = data.problems || []
-    }
-  } catch (err) {
-    console.error('Failed to fetch active problems:', err)
-  }
+    if (data.ok) activeProblems.value = data.problems || []
+  } catch (err) { console.error('fetchActiveProblems error:', err) }
 }
 
 async function fetchResolvedProblems() {
   try {
     const res = await fetch(`/api/problems?active_only=false&period=${resolvedPeriod.value}&limit=100`, { headers: getAuthHeaders() })
     const data = await res.json()
-    if (data.ok) {
-      resolvedProblems.value = data.problems || []
-    }
-  } catch (err) {
-    console.error('Failed to fetch resolved problems:', err)
-  }
+    if (data.ok) resolvedProblems.value = data.problems || []
+  } catch (err) { console.error('fetchResolvedProblems error:', err) }
 }
 
 async function fetchStats() {
   try {
     const res = await fetch('/api/problems/stats', { headers: getAuthHeaders() })
     const data = await res.json()
-    if (data.ok) {
-      stats.value = data
-    }
-  } catch (err) {
-    console.error('Failed to fetch problem stats:', err)
-  }
+    if (data.ok) stats.value = data
+  } catch (err) { console.error('fetchStats error:', err) }
 }
 
 async function fetchThresholds() {
   try {
     const res = await fetch('/api/problems/thresholds', { headers: getAuthHeaders() })
     const data = await res.json()
-    if (data.ok) {
-      thresholds.value = data.thresholds || {}
-    }
-  } catch (err) {
-    console.error('Failed to fetch thresholds:', err)
-  }
+    if (data.ok) thresholds.value = data.thresholds || {}
+  } catch (err) { console.error('fetchThresholds error:', err) }
 }
 
 async function refreshAll() {
@@ -195,6 +180,27 @@ async function handleAck(probId) {
     }
   } catch (err) {
     console.error('Error acknowledging incident:', err)
+  }
+}
+
+async function handleUnack(probId) {
+  try {
+    const res = await fetch(`/api/problems/${probId}/unack`, {
+      method: 'POST',
+      headers: getAuthHeaders()
+    })
+    const data = await res.json()
+    if (data.ok) {
+      const idx = activeProblems.value.findIndex(p => p.id === probId)
+      if (idx !== -1) {
+        activeProblems.value[idx].acknowledged_by = null
+        activeProblems.value[idx].acknowledged_at = null
+      }
+    } else {
+      alert(data.detail || 'Failed to unacknowledge incident')
+    }
+  } catch (err) {
+    console.error('Error unacknowledging incident:', err)
   }
 }
 

@@ -785,6 +785,7 @@
       @open-server="openHostFromModal"
       @unignore-problem="unignoreProblem"
       @ignore-problem="openIgnoreDialog"
+      @ack-problem="handleProblemAck"
     />
 
     <!-- PROBLEM DETAIL & DIAGNOSTICS MODAL -->
@@ -796,6 +797,7 @@
       @open-server="openHostFromModal"
       @ignore-problem="openIgnoreDialog"
       @terminate-ssh="terminateSshSession"
+      @ack-problem="handleProblemAck"
     />
 
     <!-- IGNORE PROBLEM MODAL -->
@@ -884,6 +886,31 @@ function openProblemDetail(p) {
 function openIgnoreDialog(p) {
   problemToIgnore.value = p
   showIgnoreModal.value = true
+}
+
+async function handleProblemAck(pid) {
+  const token = localStorage.getItem('pantau_token')
+  try {
+    const res = await fetch(`/api/problems/${pid}/ack`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      }
+    })
+    const data = await res.json()
+    if (data.ok) {
+      if (selectedProblem.value && selectedProblem.value.id === pid) {
+        selectedProblem.value.acknowledged_by = data.acknowledged_by
+        selectedProblem.value.acknowledged_at = data.acknowledged_at
+      }
+      emit('refresh-problems')
+    } else {
+      alert(data.detail || 'Failed to acknowledge problem')
+    }
+  } catch (err) {
+    console.error('Failed to acknowledge problem:', err)
+  }
 }
 
 async function unignoreProblem(pid) {

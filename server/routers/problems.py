@@ -294,6 +294,50 @@ def acknowledge_problem_action(
     }
 
 
+@router.post("/{pid}/unack")
+def unacknowledge_problem_action(
+    pid: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Membatalkan status penanganan insiden (Unacknowledge)."""
+    if user.is_viewer:
+        raise HTTPException(status_code=403, detail="Access denied: Viewer accounts cannot unacknowledge incidents")
+
+    prob = db.query(ServerProblem).filter(ServerProblem.id == pid, ServerProblem.resolved_at == None).first()
+    if not prob:
+        raise HTTPException(status_code=404, detail="Active incident not found")
+
+    if prob.server_id and not user.can_access_server(prob.server_id):
+        raise HTTPException(status_code=403, detail="Access denied: You do not have permission for this server")
+
+    now = datetime.utcnow()
+    old_ack = prob.acknowledged_by
+    prob.acknowledged_by = None
+    prob.acknowledged_at = None
+    prob.updated_at = now
+
+    audit = AuditLog(
+        server_id=prob.server_id,
+        username=user.username,
+        action="problem_unack",
+        target=prob.message[:100],
+        result="berhasil",
+        meta=f"Tanda penanganan insiden dibatalkan oleh {user.username} (sebelumnya: {old_ack})",
+        created_at=now
+    )
+    db.add(audit)
+    db.commit()
+
+    return {
+        "ok": True,
+        "id": pid,
+        "acknowledged_by": None,
+        "acknowledged_at": None,
+        "message": f"Tanda penanganan insiden berhasil dibatalkan oleh {user.username}"
+    }
+
+
 @router.post("/{pid}/ignore")
 def ignore_problem_action(
     pid: int,

@@ -451,6 +451,14 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.56
+
+- **Penegakan Tombol Baku 'Tandai Ditangani':** Menyeragamkan label tombol aksi 'Tandai Ditangani' (Mark Handled) pada tabel insiden aktif dan modal diagnosa insiden.
+- **Dukungan Batal Ditangani (Unack):** Tombol interaktif dinamis [ ✓ <operator> ] dengan kemampuan pembatalan tanda penanganan (POST /api/problems/{id}/unack) bila terjadi kesalahan atau pergantian operator.
+- **Integrasi Modal Diagnosa & Severity Drilldown:** Menyematkan tombol 'Tandai Ditangani' langsung pada footer ProblemDetailModal dan baris SevDetailModal.
+- **Disiplin Modul <250 Baris:** Memastikan seluruh komponen modal dan tabel teroptimasi padat di bawah batas arsitektur 250 baris.
+
+
 ### Versi v0.1.55
 
 - **Pusat Kendali & Penanganan Insiden (02 // Incidents):** Mengimplementasikan antarmuka dual-tabel terpadu untuk pemantauan insiden fisik aktif dan rekaman kronologis pemulihan (MTTR).
