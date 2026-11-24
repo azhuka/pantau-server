@@ -1,3 +1,4 @@
+from datetime import datetime
 from sqlalchemy import Column, Integer, String, Text, DateTime, SmallInteger, func
 from core.database import Base
 
@@ -10,7 +11,7 @@ class AuditLog(Base):
     target = Column(String(255), nullable=True)
     result = Column(String(500), nullable=True)
     meta = Column(Text, nullable=True)
-    created_at = Column(DateTime, server_default=func.now(), index=True)
+    created_at = Column(DateTime, default=datetime.utcnow, server_default=func.now(), index=True)
     server_id = Column(Integer, index=True, nullable=True)
 
 class MaintenanceWindow(Base):

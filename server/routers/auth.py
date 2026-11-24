@@ -1,15 +1,40 @@
-from datetime import datetime
+import json
+from datetime import datetime, timedelta
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from config import settings
 import security_auth
 from core.database import get_db
 from core.security import verify_password, create_access_token, decode_access_token, oauth2_scheme
-from models.user import User
+from models.user import User, LoginAttempt
+from models.misc import AuditLog
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
+
+LOGIN_MAX_FAILS = 5
+LOGIN_LOCK_DURATIONS = [60, 300, 1800, 7200]
+
+def _client_ip(request: Request) -> str:
+    fwd = request.headers.get("x-forwarded-for")
+    if fwd:
+        return fwd.split(",")[0].strip()
+    return request.client.host if request.client else "127.0.0.1"
+
+def _login_trial(db: Session, ip: str) -> LoginAttempt:
+    row = db.query(LoginAttempt).filter(LoginAttempt.ip_address == ip).first()
+    if row is None:
+        row = LoginAttempt(ip_address=ip, fails=0)
+        db.add(row)
+        db.flush()
+    return row
+
+def _lock_remaining(row: LoginAttempt) -> int:
+    if row.lock_until is None:
+        return 0
+    rem = int((row.lock_until - datetime.utcnow()).total_seconds())
+    return max(0, rem)
 
 class LoginRequest(BaseModel):
     username: str
@@ -42,10 +67,24 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     return user
 
 @router.post("/login", response_model=TokenResponse)
-def login(req: LoginRequest, db: Session = Depends(get_db)):
+def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
+    ip = _client_ip(request)
+    trial = _login_trial(db, ip)
+    remaining = _lock_remaining(trial)
+    if remaining > 0:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Terlalu banyak percobaan login gagal. Silakan tunggu {remaining} detik."
+        )
+
     clean_username = req.username.strip()
     user = db.query(User).filter(User.username == clean_username).first()
     if not user or not verify_password(req.password, user.password_hash):
+        trial.fails = (trial.fails or 0) + 1
+        if trial.fails >= LOGIN_MAX_FAILS:
+            lock_secs = LOGIN_LOCK_DURATIONS[min(trial.fails - LOGIN_MAX_FAILS, len(LOGIN_LOCK_DURATIONS) - 1)]
+            trial.lock_until = datetime.utcnow() + timedelta(seconds=lock_secs)
+        db.commit()
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid username or password"
@@ -63,7 +102,20 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
             "token_type": "bearer",
         }
 
+    trial.fails = 0
+    trial.lock_until = None
     user.last_login_at = datetime.utcnow()
+
+    # Catat log audit login berhasil
+    audit = AuditLog(
+        username=user.username,
+        action="user_login",
+        target=user.username,
+        result="success",
+        meta=json.dumps({"ip": ip}),
+        created_at=datetime.utcnow()
+    )
+    db.add(audit)
     db.commit()
 
     token = create_access_token(data={"sub": user.username, "role": user.role, "uid": user.id})
@@ -85,7 +137,8 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
     }
 
 @router.post("/login-2fa", response_model=TokenResponse)
-def login_2fa(req: Login2faRequest, db: Session = Depends(get_db)):
+def login_2fa(req: Login2faRequest, request: Request, db: Session = Depends(get_db)):
+    ip = _client_ip(request)
     uid = security_auth.verify_preauth_token(req.preauth_token, settings.SECRET_KEY)
     if not uid:
         raise HTTPException(
@@ -122,7 +175,20 @@ def login_2fa(req: Login2faRequest, db: Session = Depends(get_db)):
             detail="Invalid 2FA authenticator code or emergency recovery code."
         )
 
+    trial = _login_trial(db, ip)
+    trial.fails = 0
+    trial.lock_until = None
     user.last_login_at = datetime.utcnow()
+
+    audit = AuditLog(
+        username=user.username,
+        action="user_login_2fa",
+        target=user.username,
+        result="success",
+        meta=json.dumps({"ip": ip}),
+        created_at=datetime.utcnow()
+    )
+    db.add(audit)
     db.commit()
 
     token = create_access_token(data={"sub": user.username, "role": user.role, "uid": user.id})
@@ -142,6 +208,19 @@ def login_2fa(req: Login2faRequest, db: Session = Depends(get_db)):
             "allowed_server_ids": user.get_allowed_server_ids()
         }
     }
+
+@router.post("/logout")
+def logout(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    audit = AuditLog(
+        username=user.username,
+        action="user_logout",
+        target=user.username,
+        result="success",
+        created_at=datetime.utcnow()
+    )
+    db.add(audit)
+    db.commit()
+    return {"ok": True, "message": "Logged out successfully"}
 
 @router.get("/me")
 def get_me(user: User = Depends(get_current_user)):

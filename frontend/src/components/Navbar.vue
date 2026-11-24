@@ -16,7 +16,7 @@
           <div class="font-bold text-sm tracking-wider text-gray-100 flex items-center gap-2 font-mono">
             <span class="text-cyan-400 font-extrabold">{{ t('app_name') }}</span>
             <span class="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-800/60 tracking-normal">
-              v0.1.46
+              v0.1.47
             </span>
           </div>
           <div class="text-[10px] text-gray-400 tracking-widest font-mono uppercase flex items-center gap-1.5">
@@ -119,9 +119,32 @@
       <!-- Operator User Badge -->
       <div v-if="user" class="flex items-center gap-2.5 border-l border-gray-800 pl-3.5">
         <div class="text-right">
-          <div class="text-xs font-bold text-gray-100 font-mono">{{ user.username }}</div>
-          <div class="text-[10px] font-semibold text-cyan-400 font-mono uppercase tracking-wider">
-            OP // {{ user.role }}
+          <div class="text-xs font-bold text-gray-100 font-mono leading-none mb-1">{{ user.username }}</div>
+          <div class="flex items-center justify-end">
+            <span
+              v-if="user.is_master_admin || user.role === 'master_admin'"
+              class="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-cyan-950/90 text-cyan-300 border border-cyan-500/50 tracking-wider"
+            >
+              MASTER ADMIN
+            </span>
+            <span
+              v-else-if="user.is_operator || user.role === 'operator'"
+              class="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-emerald-950/90 text-emerald-300 border border-emerald-500/50 tracking-wider"
+            >
+              OPERATOR
+            </span>
+            <span
+              v-else-if="user.is_viewer || user.role === 'viewer'"
+              class="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-slate-800/90 text-slate-300 border border-slate-600/50 tracking-wider"
+            >
+              VIEWER
+            </span>
+            <span
+              v-else
+              class="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-gray-800 text-gray-300 border border-gray-700 tracking-wider uppercase"
+            >
+              {{ user.role }}
+            </span>
           </div>
         </div>
         <button

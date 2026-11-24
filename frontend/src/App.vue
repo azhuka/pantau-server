@@ -1,5 +1,30 @@
 <template>
-  <div class="min-h-screen bg-[#06090f] text-gray-100 flex flex-col font-sans select-text">
+  <!-- AUTH LOADING SPLASH: Mencegah layar berkedip saat verifikasi token awal -->
+  <div v-if="authChecking" class="min-h-screen bg-[#06090f] text-gray-100 flex flex-col items-center justify-center font-mono select-none">
+    <div class="flex flex-col items-center gap-4">
+      <div class="w-12 h-12 rounded-xl bg-cyan-950/80 border border-cyan-500/50 flex items-center justify-center text-cyan-300 shadow-[0_0_20px_rgba(56,189,248,0.3)] animate-pulse">
+        <svg class="w-6 h-6 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect width="20" height="8" x="2" y="2" rx="2" ry="2"/>
+          <rect width="20" height="8" x="2" y="14" rx="2" ry="2"/>
+          <line x1="6" y1="6" x2="6.01" y2="6"/>
+          <line x1="6" y1="18" x2="6.01" y2="18"/>
+        </svg>
+      </div>
+      <div class="text-xs text-cyan-400 tracking-widest uppercase flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+        <span>INITIALIZING NOC CONTROL PLANE...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEBELUM LOGIN: TAMPILAN PENUH OTENTIKASI & KONTROL MASUK (TIDAK ADA KEBOCORAN DATA DASBOR) -->
+  <LoginModal
+    v-else-if="!currentUser"
+    @logged-in="onLoggedIn"
+  />
+
+  <!-- SESUDAH LOGIN: PUSAT KENDALI OPERASIONAL NOC RESMI & FLEET MONITORING -->
+  <div v-else class="min-h-screen bg-[#06090f] text-gray-100 flex flex-col font-sans select-text">
     <!-- TACTICAL NAVBAR -->
     <Navbar
       :active-tab="activeTab"
@@ -9,7 +34,6 @@
       :user="currentUser"
       @nav="handleNav"
       @logout="handleLogout"
-      @login-click="showLoginModal = true"
     />
 
     <!-- MAIN CONTENT VIEWPORT -->
@@ -37,12 +61,22 @@
 
       <!-- HALAMAN 3: AUDIT TRAIL (Log Akuntabilitas Aksi Operator) -->
       <AuditView
-        v-else-if="activeTab === 'audit' && (currentUser?.is_master_admin || currentUser?.permissions?.can_audit)"
+        v-else-if="activeTab === 'audit' && canAccessTab('audit')"
       />
 
       <!-- HALAMAN 4: SETTINGS & RBAC (Otoritas & Ambang Batas) -->
       <SettingsView
-        v-else-if="activeTab === 'settings' && (currentUser?.is_master_admin || currentUser?.permissions?.can_manage_users || currentUser?.permissions?.can_manage_viewers)"
+        v-else-if="activeTab === 'settings' && canAccessTab('settings')"
+      />
+
+      <!-- FALLBACK AMAN: Jika tab tidak diizinkan / hash salah, selalu tampilkan Dasbor (Cegah Blank Screen) -->
+      <DashboardView
+        v-else
+        :servers="servers"
+        :problems="problems"
+        @inspect-node="openWorkspace"
+        @nav="handleNav"
+        @refresh-problems="fetchProblems"
       />
     </main>
 
@@ -126,12 +160,6 @@
         </button>
       </div>
     </div>
-
-    <!-- Login Modal -->
-    <LoginModal
-      v-if="showLoginModal"
-      @logged-in="onLoggedIn"
-    />
   </div>
 </template>
 
@@ -161,8 +189,8 @@ function onServerUpdated(updated) {
   }
 }
 
+const authChecking = ref(true)
 const currentUser = ref(null)
-const showLoginModal = ref(false)
 
 const servers = ref([])
 const problems = ref([])
@@ -181,7 +209,19 @@ const workspaceHost = computed(() => {
   return servers.value.find((s) => s.id === workspaceServerId.value) || null
 })
 
+function canAccessTab(tab) {
+  if (tab === 'dashboard' || tab === 'assets') return true
+  if (tab === 'audit') return Boolean(currentUser.value?.is_master_admin || currentUser.value?.permissions?.can_audit)
+  if (tab === 'settings') return Boolean(currentUser.value?.is_master_admin || currentUser.value?.permissions?.can_manage_users || currentUser.value?.permissions?.can_manage_viewers)
+  return false
+}
+
 function handleNav(tab) {
+  if (!canAccessTab(tab)) {
+    activeTab.value = 'dashboard'
+    window.location.hash = 'dashboard'
+    return
+  }
   activeTab.value = tab
   window.location.hash = tab
 }
@@ -189,7 +229,12 @@ function handleNav(tab) {
 function syncTabFromHash() {
   const hash = window.location.hash.replace(/^#/, '')
   if (['dashboard', 'assets', 'audit', 'settings'].includes(hash)) {
-    activeTab.value = hash
+    if (canAccessTab(hash)) {
+      activeTab.value = hash
+    } else {
+      activeTab.value = 'dashboard'
+      window.location.hash = 'dashboard'
+    }
   }
 }
 
@@ -241,16 +286,31 @@ async function handleProbeNode(sid) {
   }
 }
 
-function handleLogout() {
+async function handleLogout() {
+  const token = localStorage.getItem('pantau_token')
+  if (token) {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      })
+    } catch (e) {}
+  }
   localStorage.removeItem('pantau_token')
   currentUser.value = null
-  showLoginModal.value = true
+  servers.value = []
+  problems.value = []
+  activeTab.value = 'dashboard'
+  window.location.hash = ''
   closeWorkspace()
 }
 
 function onLoggedIn(user) {
   currentUser.value = user
-  showLoginModal.value = false
+  if (!canAccessTab(activeTab.value)) {
+    activeTab.value = 'dashboard'
+    window.location.hash = 'dashboard'
+  }
   fetchServers()
   fetchProblems()
 }
@@ -259,18 +319,17 @@ function checkUrlStandalone() {
   const urlParams = new URLSearchParams(window.location.search)
   const standalone = urlParams.get('standalone')
   const sid = parseInt(urlParams.get('sid'))
-  if (standalone === 'terminal') {
-    const targetServer = sid ? (servers.value.find((s) => s.id === sid) || { id: sid, hostname: `Server #${sid}` }) : null
-    openTerminalDock(targetServer)
-  } else if (standalone && sid) {
+  if (standalone && sid) {
     openWorkspace(sid, standalone)
   }
 }
 
 async function checkAuth() {
+  authChecking.value = true
   let token = localStorage.getItem('pantau_token')
   if (!token) {
-    showLoginModal.value = true
+    currentUser.value = null
+    authChecking.value = false
     return
   }
   try {
@@ -280,14 +339,23 @@ async function checkAuth() {
     if (res.ok) {
       const data = await res.json()
       currentUser.value = data
+      if (!canAccessTab(activeTab.value)) {
+        activeTab.value = 'dashboard'
+        window.location.hash = 'dashboard'
+      }
       fetchServers()
       fetchProblems()
       checkUrlStandalone()
     } else {
-      showLoginModal.value = true
+      localStorage.removeItem('pantau_token')
+      currentUser.value = null
     }
   } catch (err) {
     console.error('Auth check error:', err)
+    localStorage.removeItem('pantau_token')
+    currentUser.value = null
+  } finally {
+    authChecking.value = false
   }
 }
 
@@ -324,6 +392,7 @@ async function fetchProblems() {
 }
 
 function handleGlobalKeydown(e) {
+  if (!currentUser.value) return
   // If modal is open, let modal handle hotkeys
   if (isWorkspaceOpen.value && !isWorkspaceMinimized.value) return
 

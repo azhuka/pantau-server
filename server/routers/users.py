@@ -310,7 +310,7 @@ def create_user(
         if req.permissions:
             perms_json = json.dumps(req.permissions)
         if req.allowed_server_ids is not None:
-            allowed_servers_json = json.dumps(sorted(req.allowed_server_ids))
+            allowed_servers_json = json.dumps(sorted(req.allowed_server_ids)) if req.allowed_server_ids else None
 
     new_user = User(
         username=clean_username,
@@ -459,7 +459,7 @@ def update_user(
         # Allowed server ids
         if req.allowed_server_ids is not None:
             if target.role in ("operator", "operator_utama", "operator_pembantu"):
-                target.allowed_server_ids = json.dumps(sorted(req.allowed_server_ids))
+                target.allowed_server_ids = json.dumps(sorted(req.allowed_server_ids)) if req.allowed_server_ids else None
             else:
                 target.allowed_server_ids = None
 

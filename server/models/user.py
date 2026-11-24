@@ -63,22 +63,28 @@ class User(Base):
         return bool(perms.get(perm, False))
 
     def get_allowed_server_ids(self) -> list[int] | None:
-        """Mengembalikan list ID server yang diizinkan, atau None jika akses global."""
+        """Mengembalikan list ID server yang diizinkan, atau None jika akses global (seluruh armada)."""
         if self.is_master_admin or self.role in ("operator_utama", "operator-utama"):
             return None
-        if not self.allowed_server_ids:
-            return []
+        if self.allowed_server_ids is None:
+            return None
+        raw = str(self.allowed_server_ids).strip()
+        if not raw or raw in ("[]", "null", "None"):
+            return None
         try:
             import json
-            parsed = json.loads(self.allowed_server_ids)
+            parsed = json.loads(raw)
             if isinstance(parsed, list):
+                if not parsed:
+                    return None
                 return [int(x) for x in parsed]
         except Exception:
             pass
         try:
-            return [int(x.strip()) for x in str(self.allowed_server_ids).split(",") if x.strip().isdigit()]
+            res = [int(x.strip()) for x in raw.split(",") if x.strip().isdigit()]
+            return res if res else None
         except Exception:
-            return []
+            return None
 
     def can_access_server(self, server_id: int) -> bool:
         # master-admin dan operator utama memiliki akses penuh global ke seluruh armada

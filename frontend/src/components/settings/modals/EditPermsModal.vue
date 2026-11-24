@@ -258,7 +258,7 @@ async function handleSubmit() {
     const payload = {
       role: form.role,
       permissions: form.role === 'operator' ? form.permissions : {},
-      allowed_server_ids: form.role === 'operator' && scopeType.value === 'custom' ? form.allowed_server_ids : []
+      allowed_server_ids: form.role === 'operator' && scopeType.value === 'custom' ? form.allowed_server_ids : null
     }
 
     const res = await fetch(`/api/users/${props.user.id}`, {

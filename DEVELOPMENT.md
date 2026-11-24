@@ -319,6 +319,18 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.47
+
+### [v0.1.47] - 2026-11-25
+
+#### Penyempurnaan Workflow Sesi Login & Resolusi Cakupan Armada Global
+- **Proteksi Pra-Otentikasi Penuh (Zero Telemetry Leakage):** Antarmuka saat belum login kini menampilkan layar login mandiri berkepadatan tinggi tanpa kebocoran navbar, dasbor, tabel aset, maupun footer status di latar belakang.
+- **Penyelesaian Bug Visibilitas Armada (0 Host Bug Resolution):** Memperbaiki evaluasi get_allowed_server_ids() di server/models/user.py di mana nilai NULL atau [] pada operator dan viewer diselesaikan secara benar sebagai None (Global Access), memulihkan visibilitas 100% armada (10 host) bagi operator dan viewer.
+- **Pencegahan Layar Blank (Zero Blank Screen Guard):** Menambahkan pengaman reaktif pada rute tab dan fallback DashboardView di App.vue sehingga pengguna yang mengakses tautan hash terproteksi secara otomatis dialihkan ke Dasbor tanpa pernah mengalami layar hitam kosong.
+- **Standardisasi Badge Peran di Navbar:** Menggantikan format lama OP // role dengan badge semantik resmi yang presisi (MASTER ADMIN, OPERATOR, VIEWER).
+- **Penguatan Keamanan & Jejak Audit (Rate Limiting & Audit Trail):** Menerapkan pembatasan percobaan login berbasis tabel login_attempts, pencatatan audit log otomatis pada kejadian login dan logout, serta endpoint resmi POST /api/auth/logout.
+
+
 ### Versi v0.1.46
 
 - **Enforce Zero-Knowledge Master Admin:** Akun `master-admin` disembunyikan secara absolut dari pandangan Operator (penyaringan baris pada `GET /api/users`, penyembunyian kartu KPI counter di UI, dan respons netral `404 Not Found` saat dicoba dimanipulasi oleh akun non-master-admin).\n- **Audit Trail Masking:** Menyamarkan otomatis seluruh aktivitas Master Admin menjadi aktor `"Sistem"` dan menyembunyikan Master Admin dari filter pencarian bagi Operator.\n- **Strict Permissions Guard:** Mengunci hak mengubah wewenang (`permissions`) operator lain secara eksklusif hanya untuk Master Admin.\n- **Viewer Isolation Guard:** Memblokir seluruh akses mutasi, pengelolaan pengguna, pengaturan profil sendiri, dan audit trail bagi akun Viewer.
