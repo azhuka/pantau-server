@@ -63,12 +63,20 @@ tools/                  # Otomasi rilis (sop_release.py), test_terminal_dock.js,
    - Multi-step writes wajib melalui transaksi atomik eksplisit (`db.commit()`, `db.rollback()`).
 5. **Kejujuran Data Mutlak (Zero-Fake Data):**
    - Hanya simpan dan tampilkan data terukur fisik dari kernel Linux (`/proc`, `/sys`, socket, systemd). Dilarang memalsukan status atau mengarang metrik.
-6. **Standar Ergonomi Tombol (4-Tier Standard):**
-   - *Tier 1 (Ikon SVG Saja):* Aksi universal (minimize, close, sync/refresh, download).
-   - *Tier 2 (Ikon + Label):* Tab navigasi & kontrol domain (`[ Performance ]`, `[ Services & Ports ]`).
-   - *Tier 3 (Ikon Saja + Tooltip Informatif):* Aksi padat baris tabel demi *NOC Data Density*.
-   - *Tier 4 (Ikon + Label + Tooltip Konsekuensi):* Aksi kritis sistemik (`Update OS`, `Reboot`, `Power Off`).
-   - Dilarang keras menggunakan karakter emoji kartun bawaan OS. Gunakan SVG monokromatik.
+6. **Standar Ergonomi Tombol & Tipologi 4-Tier (4-Tier Button Ergonomics Standard):**
+   - *Tipologi 4-Tier Baku:*
+     - *Tier 1 (Ikon SVG Saja):* Aksi universal (minimize, maximize/restore, close, clear screen, sync/refresh, chevrons nav, download). Wajib ikon SVG vektor tipis monokromatik tanpa label teks panjang yang memboroskan ruang.
+     - *Tier 2 (Ikon + Label):* Tab navigasi & kontrol domain (`[ Maintenance Mode ]`, `[ Performance ]`, `[ Services & Ports ]`). Dilarang keras menggunakan kata fiktif/dramatis seperti *Investigate* atau emoji petir.
+     - *Tier 3 (Ikon Saja + Tooltip Informatif):* Aksi padat baris tabel demi *NOC Data Density*. Wajib ukuran fisik baku **26x26px** (`width: 26px; height: 26px; min-width: 26px`), `border-radius: 4px`, ukuran ikon SVG **13–14px**, dengan atribut `title="..."` presisi yang menyebutkan target objek secara akurat.
+     - *Tier 4 (Ikon + Label + Tooltip Konsekuensi):* Aksi kritis sistemik (`Update OS`, `Upgrade OS`, `Reboot`, `Power Off`). Wajib memiliki label teks tegas dan tooltip informatif yang merinci konsekuensi aksi.
+   - *Keseragaman Tingkat Tabel (Bukan Campur Aduk Per Baris):*
+     - Tabel dengan > 2 jenis aksi: 100% baris secara seragam wajib menggunakan menu dropdown **`Actions ▾`** (`<details class="noc-act-dropdown">`, tinggi 24px, min-width 58px, `z-index: 9999` saat terbuka). Dilarang keras mencampuradukkan tombol inline dan dropdown dalam satu tabel yang sama.
+     - Tabel dengan 1–2 jenis aksi: Seluruh baris menampilkan tombol aksi langsung secara sejajar (*inline*) ukuran baku 26x26px.
+     - Peran Viewer (Read-Only): Selalu menggunakan 1 tombol ikon bersih `[ 👁 ]` (26x26px) tanpa menu mutasi.
+   - *Aturan Tombol Non-Aktif (*Disabled States*):* Tombol yang tidak dapat dieksekusi (misal layanan sudah aktif/running, host terproteksi Proxmox HA, daemon agen dilindungi sistem) wajib memiliki `opacity: 0.38 !important`, `cursor: not-allowed !important`, event klik diblokir (`pointer-events: none` atau `event.stopPropagation()`), dan **wajib memiliki atribut `title="..."` yang menjelaskan alasan spesifik** mengapa tombol tersebut non-aktif.
+   - *Larangan Tombol Melayang (*Floating Overlays*):* Dilarang menempatkan tombol mengambang di atas teks konsol/log/tabel yang menghalangi keterbacaan data; kontrol wajib diletakkan pada toolbar atas atau statusbar footer terstruktur.
+   - *Keseragaman Kontrol Jendela (*Window Chrome*):* Kontrol bilah judul jendela konsol/modal (Pop-out, Clear Screen, Full Window, Fullscreen, Close) wajib seragam berupa tombol ikon SVG tanpa label teks horizontal memanjang, dengan tooltip informatif sebagai penjelas.
+   - *Larangan Mutlak Emoji Kartun (Zero-Emoji Mandate):* Seluruh tombol dan antarmuka wajib menggunakan vektor SVG inline monokromatik/semantik (stroke 1.5–2px, adaptif terhadap warna tema NOC). Dilarang keras menggunakan karakter emoji bergambar bawaan OS.
 7. **Paginasi Otomatis ($\le 10$ Baris Sembunyi pada Tabel Sekunder):**
    - Pada tabel sekunder (`AssetTableView`, `AuditView`, modal keparahan): jika baris data $\le 10$, bilah paginasi **wajib disembunyikan otomatis (`display: none !important`)**. Hanya tampil jika $> 10$ baris. (Paginasi mutlak tidak berlaku di halaman dasbor).
 8. **Prinsip Ponytail (Anti-Bloat & Lazy Senior Dev Mode):**
@@ -94,6 +102,9 @@ tools/                  # Otomasi rilis (sop_release.py), test_terminal_dock.js,
    - **`README.md`**: Dokumen publik khusus bagi pengguna akhir (*end-user* / sysadmin) untuk instalasi, konfigurasi, dan panduan operasional.
    - **`DEVELOPMENT.md`**: Buku putih arsitektur, catatan teknis mendalam, dan riwayat changelog per rilis bagi operator dan asisten AI agar menjadi referensi masa depan.
    - **Larangan Mutlak Mention Aplikasi Lama:** Berkas `README.md` dan `DEVELOPMENT.md` **DILARANG KERAS** menyebut, merujuk, atau membandingkan dengan sistem/aplikasi lama (`~/rj45`, "aplikasi lama", dll.). Seluruh narasi wajib disajikan seolah-olah sistem ini murni dirancang dan dibangun dari 0 (*clean slate*).
+12. **Standar Bahasa Antarmuka Eksklusif Bahasa Inggris (Strict English-Only Interface — For Now):**
+   - Seluruh antarmuka web (tab navigasi, header kolom tabel, kartu KPI, tombol kontrol, status badge, teks dialog, modal diagnosa, pesan audit, dan tooltip) **WAJIB murni dan eksklusif menggunakan Bahasa Inggris (`en`)** baku NOC/sysadmin (`Actions`, `Triggered At`, `Incident Description`, `Severity`, `Duration`, `Solution`, `Actions ▾`, `Mark Handled`, `HANDLED`, `Ignore Incident`, `IGNORED`, `Cancel Ignore`, `Server Details`, dll.).
+   - Komponen sakelar bahasa atau penerjemahan lokal ditangguhkan untuk sementara waktu guna menjaga keseragaman arsitektur teks dan efisiensi context window.
 
 ---
 

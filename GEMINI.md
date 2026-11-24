@@ -10,7 +10,7 @@ Berkas ini adalah spesifikasi teknis dan aturan baku permanen (*always-on projec
 - **Pengecualian Mutlak Paginasi di Dasbor (Zero-Hidden Awareness):** Paginasi **MUTLAK TIDAK BERLAKU** pada halaman dasbor (`DashboardView.vue`). Seluruh aset yang dipantau wajib ditampilkan secara utuh, terbuka, dan seketika (baik pada mode Tabel maupun Grid) tanpa ada server yang disembunyikan ke halaman berikutnya. Tujuannya adalah menjaga kewaspadaan situasional NOC 24/7/365 agar operator tidak pernah terlambat membaca situasi kritis atau insiden akibat data yang terpecah ke halaman selanjutnya.
 - **Jendela Kontrol Taktis Mengambang (Workspace Modal):** Seluruh aksi kontrol aktif dan investigasi per host (restart service, kill task, putus sesi SSH, audit port, firewall, cron) berada eksklusif di dalam modal mengambang `ServerWorkspaceModal.vue`.
 - **Kemandirian Agen Klien:** Agen klien (`agent_pantau.py`) wajib mempertahankan prinsip *zero external dependency* (hanya pustaka standar Python 3.10+).
-- **Standar Bahasa Antarmuka (English Default & i18n Reaktif):** Antarmuka web default menggunakan **Bahasa Inggris (`en`)** baku NOC/sysadmin (Overview, Incidents, Services, Tasks, Ports, Firewall, Total Servers, Active Incidents, System Clock, Fleet Inventory) dengan sakelar reaktif instan ke **Bahasa Indonesia (`id`)** (`[ 🌐 EN | ID ]`). Dilarang keras men-hardcode teks lokal di template komponen.
+- **Standar Bahasa Antarmuka Eksklusif Bahasa Inggris (Strict English-Only Interface — For Now):** Seluruh antarmuka web (tab navigasi, header kolom, kartu KPI, tombol kontrol, status badge, teks dialog, modal diagnosa, pesan audit, dan tooltip) **WAJIB murni dan eksklusif menggunakan Bahasa Inggris (`en`)** baku NOC/sysadmin (`Overview`, `Incidents`, `Services`, `Tasks`, `Ports`, `Firewall`, `Total Servers`, `Active Incidents`, `System Clock`, `Fleet Inventory`, `Actions`, `Triggered At`, `Incident Description`, `Severity`, `Duration`, `Solution`, `Actions ▾`, `Mark Handled`, `HANDLED`, `Ignore Incident`, `IGNORED`, `Cancel Ignore`, `Server Details`, dll.). Sakelar bahasa atau komponen terjemahan Bahasa Indonesia dinonaktifkan/ditangguhkan untuk sementara waktu guna menjaga fokus arsitektur, keseragaman teks, dan efisiensi context window. Dilarang keras men-hardcode teks non-Inggris di template komponen.
 - **Prioritas Browser (Moli First):** Setiap pengujian tampilan web atau otomasi browser wajib memprioritaskan Moli (`moli fetch` / `moli-webfetch`). Gunakan Chrome DevTools hanya jika Moli gagal.
 - **Protokol Kecepatan & Efisiensi Eksekusi (Anti-Bekerja Berjam-jam):**
   - Tugas perbaikan bug atau penambahan fitur terfokus wajib diselesaikan secara terarah dan terencana (target 2–4 *turns*, durasi di bawah 5 menit).
@@ -31,26 +31,34 @@ Berkas ini adalah spesifikasi teknis dan aturan baku permanen (*always-on projec
 
 ---
 
-## 3. Aturan Baku Tabel: Header Kolom & Kolom Tindakan
+## 3. Aturan Baku Tabel: Header Kolom & Kolom Tindakan (Actions)
 - **Format Penulisan Nama Kolom (Kapitalisasi):**
-  - Seluruh nama kolom pada seluruh tabel **wajib diawali huruf besar dan sisanya huruf kecil** (Contoh: `Tindakan`, `Waktu`, `Pengguna`, `Status`, `Durasi`, `Kejadian`, dll. Dilarang keras menggunakan huruf kapital semua seperti *TINDAKAN* atau *AKSI*).
+  - Seluruh nama kolom pada seluruh tabel **wajib diawali huruf besar dan sisanya huruf kecil (Title Case)** (Contoh: `Actions`, `Triggered At`, `Incident Description`, `Severity`, `Duration`, `Solution`, `User`, `Status`, dll. Dilarang keras menggunakan huruf kapital semua seperti *ACTIONS* atau *TINDAKAN*).
 - **Standardisasi Header Kolom Kontrol:**
-  - Nama header kolom kontrol tombol pada seluruh tabel diseragamkan menjadi **"Tindakan"**.
-- **Keseragaman Tingkat Tabel untuk Isi Sel Kolom "Tindakan" (Bukan Per Baris):**
-  - Pola tampilan tombol pada kolom "Tindakan" ditentukan pada **skala tabel secara utuh dan seragam**. Dilarang mencampuradukkan tombol langsung dengan menu dropdown dalam satu tabel yang sama.
-  - **Tabel dengan > 2 Tombol Aksi:** Jika kapabilitas tindakan pada tabel tersebut menyediakan lebih dari 2 jenis tombol aksi, maka **seluruh baris pada tabel tersebut secara seragam menggunakan menu dropdown berlabel "Aksi ▾"** (`<details class="noc-act-dropdown">`).
-  - **Tabel dengan 1 atau 2 Tombol Aksi:** Jika tabel hanya memiliki 1 atau 2 jenis tombol aksi (misalnya tabel Port yang hanya memiliki Hentikan & Lepas Blokir, atau tabel Proses), maka **seluruh baris menampilkan tombol aksi langsung secara sejajar (*inline*)**.
+  - Nama header kolom kontrol tombol pada seluruh tabel diseragamkan menjadi **"Actions"** (atau "Tindakan" jika dalam dokumen berbahasa Indonesia).
+- **Keseragaman Tingkat Tabel untuk Isi Sel Kolom Tindakan (Bukan Per Baris):**
+  - Pola tampilan tombol pada kolom tindakan ditentukan pada **skala tabel secara utuh dan seragam**. Dilarang mencampuradukkan tombol langsung dengan menu dropdown dalam satu tabel yang sama.
+  - **Tabel dengan > 2 Tombol Aksi:** Jika kapabilitas tindakan pada tabel tersebut menyediakan lebih dari 2 jenis tombol aksi, maka **seluruh baris pada tabel tersebut secara seragam menggunakan menu dropdown berlabel "Actions ▾"** (`<details class="noc-act-dropdown">`).
+  - **Tabel dengan 1 atau 2 Tombol Aksi:** Jika tabel hanya memiliki 1 atau 2 jenis tombol aksi (misalnya tabel Port yang hanya memiliki Hentikan & Lepas Blokir, atau tabel Proses), maka **seluruh baris menampilkan tombol aksi langsung secara sejajar (*inline*)** dengan ukuran fisik baku 26x26px.
+  - **Peran Viewer (Read-Only):** Selalu menggunakan 1 tombol ikon bersih `[ 👁 ]` (26x26px) tanpa menu mutasi.
+- **Standar Dimensi Fisik Tombol Mikro & Dropdown:**
+  - **Tombol Mikro Tabel (Icon-Only):** Berukuran fisik baku **26x26px** (`width: 26px; height: 26px; min-width: 26px; padding: 0`), `border-radius: 4px`, dengan ikon SVG monokromatik berukuran **13–14px**.
+  - **Pemicu Dropdown `Actions ▾`:** Berukuran `height: 24px`, `min-width: 58px`, padding `2px 8px`, `font-size: 11px`, gap `4px`.
 - **Pencegahan Menu Terpotong (*Stacking Context*):**
-  - Setiap menu dropdown "Aksi ▾" wajib memiliki elevasi `z-index: 9999` saat dibuka agar tidak tertutup oleh sel *sticky* atau baris tabel di bawahnya.
+  - Setiap menu dropdown "Actions ▾" wajib memiliki elevasi `z-index: 9999` saat dibuka agar tidak tertutup oleh sel *sticky* atau baris tabel di bawahnya.
+- **Standar Tombol Non-Aktif (*Disabled States*):**
+  - Tombol yang tidak dapat dieksekusi (misal layanan sudah running, host terproteksi Proxmox HA, agen dilindungi sistem) wajib memiliki `opacity: 0.38 !important`, `cursor: not-allowed !important`, event klik diblokir (`pointer-events: none` atau `event.stopPropagation()`), dan **wajib memiliki atribut `title="..."` yang menjelaskan alasan spesifik** mengapa tombol tersebut non-aktif.
 - **Standar Ikon Umum Tanpa Label Teks Boros:**
-  - Tombol-tombol aksi umum yang fungsinya telah dikenal luas (seperti Tutup, Hapus, Tambah, Salin, Muat Ulang/Refresh, Kunci, Lepas Kunci) cukup diwakili oleh ikon SVG baku yang bersih dan intuitif dengan tooltip `title="..."` yang informatif, tanpa label teks panjang yang memboroskan ruang tabel.
+  - Tombol-tombol aksi umum yang fungsinya telah dikenal luas (seperti Close, Delete, Add, Copy, Refresh/Sync, Lock, Unlock) cukup diwakili oleh ikon SVG baku yang bersih dan intuitif dengan tooltip `title="..."` yang informatif, tanpa label teks panjang yang memboroskan ruang tabel.
 - **Standar Ergonomi Tombol & Tipologi 4-Tier (4-Tier Button Ergonomics Standard):**
   1. *Tier 1 (Ikon Saja + Tooltip Standar):* Khusus aksi universal yang sudah dipahami luas tanpa perlu membaca teks (minimize, maximize/restore, close, clear screen, sync/refresh, chevrons nav, download). Wajib menggunakan ikon SVG vektor tipis monokromatik. Dilarang menyematkan label teks panjang yang memboroskan ruang.
   2. *Tier 2 (Ikon + Label):* Khusus tab navigasi dan kontrol domain fungsional yang memerlukan kejelasan nama (`[ Maintenance Mode ]`, `[ Performance ]`, `[ Services & Ports ]`, `[ View ]` dengan ikon SVG Eye untuk membuka rincian aset). Dilarang keras menggunakan kata fiktif/dramatis seperti *Investigate* atau emoji petir.
-  3. *Tier 3 (Ikon Saja + Tooltip Informatif):* Tombol aksi baris tabel atau kontrol padat di mana label disembunyikan demi efisiensi kepadatan data (*NOC Data Density*), namun wajib memiliki atribut `title="..."` informatif yang menyebutkan target objek secara presisi (contoh: SVG chart dengan tooltip `"Performance & Metrics"`, SVG terminal dengan tooltip `"Web Terminal"`, SVG sync dengan tooltip `"Probe Telemetry"`, SVG dots dengan tooltip `"More Actions"`).
+  3. *Tier 3 (Ikon Saja + Tooltip Informatif):* Tombol aksi baris tabel atau kontrol padat di mana label disembunyikan demi efisiensi kepadatan data (*NOC Data Density*), ukuran baku 26x26px, wajib memiliki atribut `title="..."` informatif yang menyebutkan target objek secara presisi (contoh: SVG chart dengan tooltip `"Performance & Metrics"`, SVG terminal dengan tooltip `"Web Terminal"`, SVG sync dengan tooltip `"Probe Telemetry"`, SVG dots dengan tooltip `"More Actions"`).
   4. *Tier 4 (Ikon + Label + Tooltip Penjelasan):* Kontrol berkategori kritis atau berdampak sistemik tinggi (`Update OS`, `Upgrade OS`, `Reboot`, `Power Off`). Wajib memiliki label teks tegas dan tooltip informatif yang menjelaskan konsekuensi/rincian aksi.
 - **Keseragaman Kontrol Jendela (Window Chrome Uniformity):**
   - Seluruh tombol kontrol pada bilah judul jendela konsol (termasuk *Pop-out Window*, *Clear Screen*, *Full Window*, *Fullscreen*, *Close*) **wajib seragam berupa tombol ikon SVG tanpa label teks horizontal**, dengan tooltip sebagai penjelas. Dilarang membuat tombol teks memanjang di dalam deretan tombol kontrol jendela atau menduplikasi teks yang sama persis antara label dan tooltip.
+- **Larangan Tombol Melayang (*No Floating Overlays*):**
+  - Dilarang menempatkan tombol mengambang di atas teks konsol/log/tabel yang menghalangi keterbacaan data; kontrol navigasi/aksi wajib diletakkan pada toolbar atas atau statusbar footer terstruktur.
 - **Larangan Mutlak Emoji Kartun (Zero-Emoji Mandate):**
   - Seluruh antarmuka Pantau Server wajib menggunakan **vektor SVG inline monokromatik/semantik** (stroke 1.5–2px, adaptif terhadap warna tema NOC) dan DILARANG KERAS menggunakan karakter emoji bergambar bawaan OS.
 
