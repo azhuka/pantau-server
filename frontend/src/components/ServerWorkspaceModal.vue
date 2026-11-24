@@ -920,6 +920,25 @@ const canAccessTab = (tabId) => {
   return true
 }
 
+const activeSSHSessions = computed(() => {
+  const result = []
+  for (const acc of accountsList.value) {
+    const user = acc.user || acc.name
+    for (const s of acc.sessions || []) {
+      const from = (s.from || '').trim()
+      if (from && !from.startsWith(':') && !from.toLowerCase().startsWith('local')) {
+        result.push({
+          user,
+          tty: s.tty || 'ssh',
+          from,
+          time: s.time,
+        })
+      }
+    }
+  }
+  return result
+})
+
 const subTabs = computed(() => {
   const allTabs = [
     { id: 'overview', label: t('tab_perf') },
@@ -967,25 +986,6 @@ const filteredProcesses = computed(() => {
   return processesList.value.filter(
     (p) => String(p.pid).includes(q) || (p.cmd || p.command || '').toLowerCase().includes(q) || (p.user || '').toLowerCase().includes(q)
   )
-})
-
-const activeSSHSessions = computed(() => {
-  const result = []
-  for (const acc of accountsList.value) {
-    const user = acc.user || acc.name
-    for (const s of acc.sessions || []) {
-      const from = (s.from || '').trim()
-      if (from && !from.startsWith(':') && !from.toLowerCase().startsWith('local')) {
-        result.push({
-          user,
-          tty: s.tty || 'ssh',
-          from,
-          time: s.time,
-        })
-      }
-    }
-  }
-  return result
 })
 
 watch(() => props.serverId, (newId) => {

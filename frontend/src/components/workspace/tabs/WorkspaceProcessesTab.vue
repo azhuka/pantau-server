@@ -42,7 +42,7 @@
               <div class="relative inline-block text-left">
                 <button
                   type="button"
-                  @click.stop="toggleProcDropdown(p.pid)"
+                  @click.stop="toggleProcDropdown(p, $event)"
                   class="p-1.5 rounded bg-gray-900 hover:bg-rose-950 border border-gray-700 hover:border-rose-600/50 text-gray-300 hover:text-rose-300 transition cursor-pointer flex items-center justify-center shadow-sm"
                   :title="t('col_actions')"
                 >
@@ -52,66 +52,70 @@
                     <circle cx="12" cy="19" r="1.5"></circle>
                   </svg>
                 </button>
-
-                <div
-                  v-if="openProcId === p.pid"
-                  @click.stop
-                  class="absolute right-0 mt-1 w-44 rounded-lg bg-[#0b1326] border border-rose-900/80 shadow-2xl z-50 py-1 font-mono text-xs divide-y divide-gray-800"
-                >
-                  <div class="py-0.5">
-                    <!-- SIGTERM: Terminate Gracefully -->
-                    <button
-                      type="button"
-                      @click="sendSignal(p.pid, 'SIGTERM', p.cmd || p.command)"
-                      class="w-full px-3 py-1.5 text-left text-amber-300 hover:text-white hover:bg-amber-950/80 flex items-center gap-2 cursor-pointer transition font-bold"
-                      title="Request process to close gracefully (SIGTERM 15)"
-                    >
-                      <svg class="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                      <span>SIGTERM (Terminasi)</span>
-                    </button>
-
-                    <!-- SIGKILL: Force Kill -->
-                    <button
-                      type="button"
-                      @click="sendSignal(p.pid, 'SIGKILL', p.cmd || p.command)"
-                      class="w-full px-3 py-1.5 text-left text-rose-400 hover:text-white hover:bg-rose-950/80 flex items-center gap-2 cursor-pointer transition font-bold"
-                      title="Force immediate termination without catch (SIGKILL 9)"
-                    >
-                      <svg class="w-3.5 h-3.5 text-rose-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-                      <span>SIGKILL (Paksa)</span>
-                    </button>
-                  </div>
-
-                  <div class="py-0.5">
-                    <!-- SIGSTOP: Suspend -->
-                    <button
-                      type="button"
-                      @click="sendSignal(p.pid, 'SIGSTOP', p.cmd || p.command)"
-                      class="w-full px-3 py-1.5 text-left text-gray-300 hover:text-white hover:bg-cyan-950/80 flex items-center gap-2 cursor-pointer transition"
-                      title="Pause execution (SIGSTOP 19)"
-                    >
-                      <svg class="w-3.5 h-3.5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
-                      <span>SIGSTOP (Bekukan)</span>
-                    </button>
-
-                    <!-- SIGCONT: Resume -->
-                    <button
-                      type="button"
-                      @click="sendSignal(p.pid, 'SIGCONT', p.cmd || p.command)"
-                      class="w-full px-3 py-1.5 text-left text-emerald-300 hover:text-white hover:bg-emerald-950/80 flex items-center gap-2 cursor-pointer transition"
-                      title="Resume execution (SIGCONT 18)"
-                    >
-                      <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                      <span>SIGCONT (Lanjut)</span>
-                    </button>
-                  </div>
-                </div>
               </div>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
+
+    <!-- Floating Process Action Dropdown Menu (Teleported to body to eliminate scroll clipping) -->
+    <Teleport to="body">
+      <div
+        v-if="openProcId && activeProc"
+        @click.stop
+        :style="dropdownStyle"
+        class="rounded-lg bg-[#0b1326] border border-rose-900/80 shadow-2xl z-[100005] py-1 font-mono text-xs divide-y divide-gray-800 transition-all select-none"
+      >
+        <div class="py-0.5">
+          <!-- SIGTERM: Terminate Gracefully -->
+          <button
+            type="button"
+            @click="sendSignal(activeProc.pid, 'SIGTERM', activeProc.cmd || activeProc.command)"
+            class="w-full px-3 py-1.5 text-left text-amber-300 hover:text-white hover:bg-amber-950/80 flex items-center gap-2 cursor-pointer transition font-bold"
+            title="Request process to close gracefully (SIGTERM 15)"
+          >
+            <svg class="w-3.5 h-3.5 text-amber-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span>SIGTERM (Terminasi)</span>
+          </button>
+
+          <!-- SIGKILL: Force Kill -->
+          <button
+            type="button"
+            @click="sendSignal(activeProc.pid, 'SIGKILL', activeProc.cmd || activeProc.command)"
+            class="w-full px-3 py-1.5 text-left text-rose-400 hover:text-white hover:bg-rose-950/80 flex items-center gap-2 cursor-pointer transition font-bold"
+            title="Force immediate termination without catch (SIGKILL 9)"
+          >
+            <svg class="w-3.5 h-3.5 text-rose-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+            <span>SIGKILL (Paksa)</span>
+          </button>
+        </div>
+
+        <div class="py-0.5">
+          <!-- SIGSTOP: Suspend -->
+          <button
+            type="button"
+            @click="sendSignal(activeProc.pid, 'SIGSTOP', activeProc.cmd || activeProc.command)"
+            class="w-full px-3 py-1.5 text-left text-gray-300 hover:text-white hover:bg-cyan-950/80 flex items-center gap-2 cursor-pointer transition"
+            title="Pause execution (SIGSTOP 19)"
+          >
+            <svg class="w-3.5 h-3.5 text-cyan-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+            <span>SIGSTOP (Bekukan)</span>
+          </button>
+
+          <!-- SIGCONT: Resume -->
+          <button
+            type="button"
+            @click="sendSignal(activeProc.pid, 'SIGCONT', activeProc.cmd || activeProc.command)"
+            class="w-full px-3 py-1.5 text-left text-emerald-300 hover:text-white hover:bg-emerald-950/80 flex items-center gap-2 cursor-pointer transition"
+            title="Resume execution (SIGCONT 18)"
+          >
+            <svg class="w-3.5 h-3.5 text-emerald-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            <span>SIGCONT (Lanjut)</span>
+          </button>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -129,25 +133,66 @@ const emit = defineEmits(['kill-process'])
 
 const search = ref('')
 const openProcId = ref(null)
-
-function toggleProcDropdown(pid) {
-  openProcId.value = openProcId.value === pid ? null : pid
-}
+const activeProc = ref(null)
+const dropdownStyle = ref({})
 
 function closeDropdowns() {
   openProcId.value = null
+  activeProc.value = null
+}
+
+function toggleProcDropdown(p, event) {
+  if (openProcId.value === p.pid) {
+    closeDropdowns()
+    return
+  }
+  openProcId.value = p.pid
+  activeProc.value = p
+
+  if (event && event.currentTarget) {
+    const rect = event.currentTarget.getBoundingClientRect()
+    const vh = window.innerHeight
+    const vw = window.innerWidth
+    const menuHeight = 170
+    const spaceBelow = vh - rect.bottom
+    const spaceAbove = rect.top
+    const isDropup = (spaceBelow < menuHeight + 10) && (spaceAbove > spaceBelow)
+    const rightOffset = Math.max(8, vw - rect.right)
+
+    if (isDropup) {
+      dropdownStyle.value = {
+        position: 'fixed',
+        bottom: `${Math.max(8, vh - rect.top + 4)}px`,
+        right: `${rightOffset}px`,
+        zIndex: 100005,
+        width: '176px'
+      }
+    } else {
+      dropdownStyle.value = {
+        position: 'fixed',
+        top: `${Math.max(8, rect.bottom + 4)}px`,
+        right: `${rightOffset}px`,
+        zIndex: 100005,
+        width: '176px'
+      }
+    }
+  }
 }
 
 onMounted(() => {
   window.addEventListener('click', closeDropdowns)
+  window.addEventListener('scroll', closeDropdowns, true)
+  window.addEventListener('resize', closeDropdowns)
 })
 
 onUnmounted(() => {
   window.removeEventListener('click', closeDropdowns)
+  window.removeEventListener('scroll', closeDropdowns, true)
+  window.removeEventListener('resize', closeDropdowns)
 })
 
 function sendSignal(pid, signal, cmd) {
-  openProcId.value = null
+  closeDropdowns()
   const pname = (cmd || '').split(' ')[0].split('/').pop() || 'process'
   emit('kill-process', { pid, signal, pname })
 }

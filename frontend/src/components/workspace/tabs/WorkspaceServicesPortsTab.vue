@@ -61,7 +61,7 @@
                 <div class="relative inline-block text-left">
                   <button
                     type="button"
-                    @click.stop="toggleSvcDropdown(svc.name || svc.unit)"
+                    @click.stop="toggleSvcDropdown(svc, $event)"
                     class="p-1.5 rounded bg-gray-900 hover:bg-cyan-950 border border-gray-700 hover:border-cyan-600/50 text-gray-300 hover:text-cyan-300 transition cursor-pointer flex items-center justify-center shadow-sm"
                     :title="t('col_actions')"
                   >
@@ -71,60 +71,6 @@
                       <circle cx="12" cy="19" r="1.5"></circle>
                     </svg>
                   </button>
-
-                  <div
-                    v-if="openSvcId === (svc.name || svc.unit)"
-                    @click.stop
-                    class="absolute right-0 mt-1 w-36 rounded-lg bg-[#0b1326] border border-cyan-800/80 shadow-2xl z-50 py-1 font-mono text-xs divide-y divide-gray-800"
-                  >
-                    <div class="py-0.5">
-                      <!-- Restart Service -->
-                      <button
-                        type="button"
-                        @click="handleAction('restart_service', svc.name || svc.unit)"
-                        class="w-full px-3 py-1.5 text-left text-cyan-300 hover:text-white hover:bg-cyan-950/80 flex items-center gap-2 cursor-pointer transition font-bold"
-                      >
-                        <svg class="w-3.5 h-3.5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg>
-                        <span>Restart</span>
-                      </button>
-
-                      <!-- Start Service (if not running) -->
-                      <button
-                        v-if="svc.active !== 'active' && svc.sub !== 'running'"
-                        type="button"
-                        @click="handleAction('start_service', svc.name || svc.unit)"
-                        class="w-full px-3 py-1.5 text-left text-emerald-300 hover:text-white hover:bg-emerald-950/80 flex items-center gap-2 cursor-pointer transition font-bold"
-                      >
-                        <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                        <span>Start</span>
-                      </button>
-
-                      <!-- Reload Service (if running) -->
-                      <button
-                        v-if="svc.active === 'active' || svc.sub === 'running'"
-                        type="button"
-                        @click="handleAction('reload_service', svc.name || svc.unit)"
-                        class="w-full px-3 py-1.5 text-left text-amber-300 hover:text-white hover:bg-amber-950/80 flex items-center gap-2 cursor-pointer transition"
-                      >
-                        <svg class="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
-                        <span>Reload</span>
-                      </button>
-                    </div>
-
-                    <div class="py-0.5">
-                      <!-- Stop Service -->
-                      <button
-                        type="button"
-                        :disabled="isProtectedService(svc.name || svc.unit)"
-                        @click="handleAction('stop_service', svc.name || svc.unit)"
-                        class="w-full px-3 py-1.5 text-left text-rose-400 hover:bg-rose-950/60 flex items-center gap-2 transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-                        :title="isProtectedService(svc.name || svc.unit) ? 'Critical service is protected by guardrails' : 'Stop systemd service unit'"
-                      >
-                        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></svg>
-                        <span>Stop</span>
-                      </button>
-                    </div>
-                  </div>
                 </div>
               </td>
             </tr>
@@ -167,6 +113,64 @@
         </table>
       </div>
     </div>
+
+    <!-- Floating Service Action Dropdown Menu (Teleported to body to eliminate scroll clipping) -->
+    <Teleport to="body">
+      <div
+        v-if="openSvcId && activeSvc"
+        @click.stop
+        :style="dropdownStyle"
+        class="rounded-lg bg-[#0b1326] border border-cyan-800/80 shadow-2xl z-[100005] py-1 font-mono text-xs divide-y divide-gray-800 transition-all select-none"
+      >
+        <div class="py-0.5">
+          <!-- Restart Service -->
+          <button
+            type="button"
+            @click="handleAction('restart_service', activeSvc.name || activeSvc.unit)"
+            class="w-full px-3 py-1.5 text-left text-cyan-300 hover:text-white hover:bg-cyan-950/80 flex items-center gap-2 cursor-pointer transition font-bold"
+          >
+            <svg class="w-3.5 h-3.5 text-cyan-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg>
+            <span>Restart</span>
+          </button>
+
+          <!-- Start Service (if not running) -->
+          <button
+            v-if="activeSvc.active !== 'active' && activeSvc.sub !== 'running'"
+            type="button"
+            @click="handleAction('start_service', activeSvc.name || activeSvc.unit)"
+            class="w-full px-3 py-1.5 text-left text-emerald-300 hover:text-white hover:bg-emerald-950/80 flex items-center gap-2 cursor-pointer transition font-bold"
+          >
+            <svg class="w-3.5 h-3.5 text-emerald-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            <span>Start</span>
+          </button>
+
+          <!-- Reload Service (if running) -->
+          <button
+            v-if="activeSvc.active === 'active' || activeSvc.sub === 'running'"
+            type="button"
+            @click="handleAction('reload_service', activeSvc.name || activeSvc.unit)"
+            class="w-full px-3 py-1.5 text-left text-amber-300 hover:text-white hover:bg-amber-950/80 flex items-center gap-2 cursor-pointer transition"
+          >
+            <svg class="w-3.5 h-3.5 text-amber-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+            <span>Reload</span>
+          </button>
+        </div>
+
+        <div class="py-0.5">
+          <!-- Stop Service -->
+          <button
+            type="button"
+            :disabled="isProtectedService(activeSvc.name || activeSvc.unit)"
+            @click="handleAction('stop_service', activeSvc.name || activeSvc.unit)"
+            class="w-full px-3 py-1.5 text-left text-rose-400 hover:bg-rose-950/60 flex items-center gap-2 transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+            :title="isProtectedService(activeSvc.name || activeSvc.unit) ? 'Critical service is protected by guardrails' : 'Stop systemd service unit'"
+          >
+            <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></svg>
+            <span>Stop</span>
+          </button>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -186,21 +190,63 @@ const emit = defineEmits(['restart-service', 'service-action'])
 const mode = ref('services')
 const search = ref('')
 const openSvcId = ref(null)
-
-function toggleSvcDropdown(id) {
-  openSvcId.value = openSvcId.value === id ? null : id
-}
+const activeSvc = ref(null)
+const dropdownStyle = ref({})
 
 function closeDropdowns() {
   openSvcId.value = null
+  activeSvc.value = null
+}
+
+function toggleSvcDropdown(svc, event) {
+  const id = svc.name || svc.unit
+  if (openSvcId.value === id) {
+    closeDropdowns()
+    return
+  }
+  openSvcId.value = id
+  activeSvc.value = svc
+
+  if (event && event.currentTarget) {
+    const rect = event.currentTarget.getBoundingClientRect()
+    const vh = window.innerHeight
+    const vw = window.innerWidth
+    const menuHeight = 160
+    const spaceBelow = vh - rect.bottom
+    const spaceAbove = rect.top
+    const isDropup = (spaceBelow < menuHeight + 10) && (spaceAbove > spaceBelow)
+    const rightOffset = Math.max(8, vw - rect.right)
+
+    if (isDropup) {
+      dropdownStyle.value = {
+        position: 'fixed',
+        bottom: `${Math.max(8, vh - rect.top + 4)}px`,
+        right: `${rightOffset}px`,
+        zIndex: 100005,
+        width: '144px'
+      }
+    } else {
+      dropdownStyle.value = {
+        position: 'fixed',
+        top: `${Math.max(8, rect.bottom + 4)}px`,
+        right: `${rightOffset}px`,
+        zIndex: 100005,
+        width: '144px'
+      }
+    }
+  }
 }
 
 onMounted(() => {
   window.addEventListener('click', closeDropdowns)
+  window.addEventListener('scroll', closeDropdowns, true)
+  window.addEventListener('resize', closeDropdowns)
 })
 
 onUnmounted(() => {
   window.removeEventListener('click', closeDropdowns)
+  window.removeEventListener('scroll', closeDropdowns, true)
+  window.removeEventListener('resize', closeDropdowns)
 })
 
 function isProtectedService(name) {
@@ -209,7 +255,7 @@ function isProtectedService(name) {
 }
 
 function handleAction(action, unit) {
-  openSvcId.value = null
+  closeDropdowns()
   if (action === 'restart_service') {
     emit('restart-service', unit)
   }

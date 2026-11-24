@@ -353,10 +353,12 @@
                   <!-- Menu DROPDOWN ⋮ -->
                   <div class="relative inline-block text-left">
                     <button
-                      @click="toggleDropdown(s.id)"
+                      type="button"
+                      @click.stop="toggleDropdown(s, $event)"
                       class="w-7 h-7 flex items-center justify-center rounded transition cursor-pointer border"
                       :class="activeDropdownId === s.id ? 'bg-cyan-950 text-cyan-300 border-cyan-500/60 shadow-[0_0_8px_rgba(56,189,248,0.25)]' : 'bg-[#0b1324] hover:bg-gray-800 text-gray-400 hover:text-white border-gray-700/80'"
                       :title="t('btn_more') || 'More Actions'"
+                      aria-label="Actions"
                     >
                       <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="12" r="1"/>
@@ -364,85 +366,6 @@
                         <circle cx="12" cy="19" r="1"/>
                       </svg>
                     </button>
-
-                    <!-- Tactical Dropdown Menu Floating Popover (Exact Golden Reference Standard) -->
-                    <div
-                      v-if="activeDropdownId === s.id"
-                      class="absolute right-0 top-full mt-1.5 w-48 bg-[#080d19] border border-cyan-500/50 rounded-xl shadow-[0_12px_36px_rgba(0,0,0,0.85)] p-1.5 z-[9999] text-xs font-mono backdrop-blur-md text-left"
-                    >
-                      <!-- 1. Edit Host -->
-                      <button
-                        v-if="userPerms.can_server_control || userPerms.can_manage_servers"
-                        @click="openEditHost(s)"
-                        class="w-full px-2.5 py-1.5 rounded hover:bg-cyan-950/70 text-gray-200 hover:text-cyan-300 flex items-center gap-2.5 transition cursor-pointer"
-                      >
-                        <svg class="w-3.5 h-3.5 text-amber-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
-                          <path d="m15 5 4 4"/>
-                        </svg>
-                        <span>{{ t('act_edit_host') }}</span>
-                      </button>
-
-                      <!-- 2. Edit Host Note -->
-                      <button
-                        v-if="userPerms.can_manage_servers || userPerms.can_server_control"
-                        @click="openEditNote(s)"
-                        class="w-full px-2.5 py-1.5 rounded hover:bg-cyan-950/70 text-gray-200 hover:text-cyan-300 flex items-center gap-2.5 transition cursor-pointer"
-                      >
-                        <svg class="w-3.5 h-3.5 text-sky-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
-                          <polyline points="14 2 14 8 20 8"/>
-                          <line x1="16" x2="8" y1="13" y2="13"/>
-                          <line x1="16" x2="8" y1="17" y2="17"/>
-                          <line x1="10" x2="8" y1="9" y2="9"/>
-                        </svg>
-                        <span>{{ t('act_edit_host_note') }}</span>
-                      </button>
-
-                      <!-- 3. Test Connection -->
-                      <button
-                        @click="testHostConnection(s)"
-                        class="w-full px-2.5 py-1.5 rounded hover:bg-cyan-950/70 text-gray-200 hover:text-cyan-300 flex items-center gap-2.5 transition cursor-pointer"
-                      >
-                        <svg class="w-3.5 h-3.5 text-yellow-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-                        </svg>
-                        <span>{{ t('act_test_conn') }}</span>
-                      </button>
-
-                      <!-- 4. Inject Key -->
-                      <button
-                        v-if="userPerms.can_server_control"
-                        @click="openInjectKey(s)"
-                        class="w-full px-2.5 py-1.5 rounded hover:bg-cyan-950/70 text-gray-200 hover:text-cyan-300 flex items-center gap-2.5 transition cursor-pointer"
-                      >
-                        <svg class="w-3.5 h-3.5 text-amber-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <circle cx="7.5" cy="15.5" r="5.5"/>
-                          <path d="m21 2-9.6 9.6"/>
-                          <path d="m15.5 7.5 3 3L22 7l-3-3"/>
-                        </svg>
-                        <span>{{ t('act_inject_key') }}</span>
-                      </button>
-
-                      <!-- Divider -->
-                      <div v-if="userPerms.can_server_control" class="border-t border-cyan-950/80 my-1"></div>
-
-                      <!-- 5. Delete Host -->
-                      <button
-                        v-if="userPerms.can_server_control"
-                        @click="openDeleteHost(s)"
-                        class="w-full px-2.5 py-1.5 rounded hover:bg-rose-950/40 text-rose-400 hover:text-rose-300 flex items-center gap-2.5 transition cursor-pointer"
-                      >
-                        <svg class="w-3.5 h-3.5 text-rose-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <path d="M3 6h18"/>
-                          <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
-                          <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
-                          <line x1="10" x2="10" y1="11" y2="17"/>
-                          <line x1="14" x2="14" y1="11" y2="17"/>
-                        </svg>
-                        <span>{{ t('act_delete_host') }}</span>
-                      </button>
-                    </div>
                   </div>
                 </div>
               </td>
@@ -510,6 +433,94 @@
       <span class="text-sm">{{ toast.icon }}</span>
       <span class="font-medium">{{ toast.message }}</span>
     </div>
+
+    <!-- Floating Action Dropdown Menu (Teleported to body to eliminate table overflow clipping) -->
+    <Teleport to="body">
+      <div
+        v-if="activeDropdownId && activeDropdownServer"
+        @click.stop
+        :style="dropdownStyle"
+        class="bg-[#080d19] border border-cyan-500/50 rounded-xl shadow-[0_12px_36px_rgba(0,0,0,0.85)] p-1.5 z-[100005] text-xs font-mono backdrop-blur-md text-left transition-all select-none"
+      >
+        <!-- 1. Edit Host -->
+        <button
+          v-if="userPerms.can_server_control || userPerms.can_manage_servers"
+          type="button"
+          @click="openEditHost(activeDropdownServer); closeDropdown()"
+          class="w-full px-2.5 py-1.5 rounded hover:bg-cyan-950/70 text-gray-200 hover:text-cyan-300 flex items-center gap-2.5 transition cursor-pointer"
+        >
+          <svg class="w-3.5 h-3.5 text-amber-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+            <path d="m15 5 4 4"/>
+          </svg>
+          <span>{{ t('act_edit_host') }}</span>
+        </button>
+
+        <!-- 2. Edit Host Note -->
+        <button
+          v-if="userPerms.can_manage_servers || userPerms.can_server_control"
+          type="button"
+          @click="openEditNote(activeDropdownServer); closeDropdown()"
+          class="w-full px-2.5 py-1.5 rounded hover:bg-cyan-950/70 text-gray-200 hover:text-cyan-300 flex items-center gap-2.5 transition cursor-pointer"
+        >
+          <svg class="w-3.5 h-3.5 text-sky-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" x2="8" y1="13" y2="13"/>
+            <line x1="16" x2="8" y1="17" y2="17"/>
+            <line x1="10" x2="8" y1="9" y2="9"/>
+          </svg>
+          <span>{{ t('act_edit_host_note') }}</span>
+        </button>
+
+        <!-- 3. Test Connection -->
+        <button
+          type="button"
+          @click="testHostConnection(activeDropdownServer); closeDropdown()"
+          class="w-full px-2.5 py-1.5 rounded hover:bg-cyan-950/70 text-gray-200 hover:text-cyan-300 flex items-center gap-2.5 transition cursor-pointer"
+        >
+          <svg class="w-3.5 h-3.5 text-yellow-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+          </svg>
+          <span>{{ t('act_test_conn') }}</span>
+        </button>
+
+        <!-- 4. Inject Key -->
+        <button
+          v-if="userPerms.can_server_control"
+          type="button"
+          @click="openInjectKey(activeDropdownServer); closeDropdown()"
+          class="w-full px-2.5 py-1.5 rounded hover:bg-cyan-950/70 text-gray-200 hover:text-cyan-300 flex items-center gap-2.5 transition cursor-pointer"
+        >
+          <svg class="w-3.5 h-3.5 text-amber-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="7.5" cy="15.5" r="5.5"/>
+            <path d="m21 2-9.6 9.6"/>
+            <path d="m15.5 7.5 3 3L22 7l-3-3"/>
+          </svg>
+          <span>{{ t('act_inject_key') }}</span>
+        </button>
+
+        <!-- Divider -->
+        <div v-if="userPerms.can_server_control" class="border-t border-cyan-950/80 my-1"></div>
+
+        <!-- 5. Delete Host -->
+        <button
+          v-if="userPerms.can_server_control"
+          type="button"
+          @click="openDeleteHost(activeDropdownServer); closeDropdown()"
+          class="w-full px-2.5 py-1.5 rounded hover:bg-rose-950/40 text-rose-400 hover:text-rose-300 flex items-center gap-2.5 transition cursor-pointer"
+        >
+          <svg class="w-3.5 h-3.5 text-rose-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 6h18"/>
+            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+            <line x1="10" x2="10" y1="11" y2="17"/>
+            <line x1="14" x2="14" y1="11" y2="17"/>
+          </svg>
+          <span>{{ t('act_delete_host') }}</span>
+        </button>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -564,6 +575,8 @@ const userPerms = computed(() => {
 const searchQuery = ref('')
 const statusFilter = ref('all') // all, online, offline
 const activeDropdownId = ref(null)
+const activeDropdownServer = ref(null)
+const dropdownStyle = ref({})
 const copiedServerId = ref(null)
 
 const isEditHostOpen = ref(false)
@@ -643,12 +656,47 @@ function onHostDeleted(msg) {
   emit('server-updated')
 }
 
-function toggleDropdown(sid) {
-  activeDropdownId.value = activeDropdownId.value === sid ? null : sid
-}
-
 function closeDropdown() {
   activeDropdownId.value = null
+  activeDropdownServer.value = null
+}
+
+function toggleDropdown(s, event) {
+  if (activeDropdownId.value === s.id) {
+    closeDropdown()
+    return
+  }
+  activeDropdownId.value = s.id
+  activeDropdownServer.value = s
+
+  if (event && event.currentTarget) {
+    const rect = event.currentTarget.getBoundingClientRect()
+    const vh = window.innerHeight
+    const vw = window.innerWidth
+    const menuHeight = 220
+    const spaceBelow = vh - rect.bottom
+    const spaceAbove = rect.top
+    const isDropup = (spaceBelow < menuHeight + 10) && (spaceAbove > spaceBelow)
+    const rightOffset = Math.max(8, vw - rect.right)
+
+    if (isDropup) {
+      dropdownStyle.value = {
+        position: 'fixed',
+        bottom: `${Math.max(8, vh - rect.top + 4)}px`,
+        right: `${rightOffset}px`,
+        zIndex: 100005,
+        width: '192px'
+      }
+    } else {
+      dropdownStyle.value = {
+        position: 'fixed',
+        top: `${Math.max(8, rect.bottom + 4)}px`,
+        right: `${rightOffset}px`,
+        zIndex: 100005,
+        width: '192px'
+      }
+    }
+  }
 }
 
 function handleSelectAction(sid, tool) {
@@ -673,12 +721,6 @@ function copyServerIp(ip, sid) {
   }).catch(() => {})
 }
 
-function handleDocumentClick(e) {
-  if (!e.target.closest('.noc-action-dropdown-container')) {
-    closeDropdown()
-  }
-}
-
 function handleKeydown(e) {
   if (e.key === 'Escape') {
     closeDropdown()
@@ -686,12 +728,16 @@ function handleKeydown(e) {
 }
 
 onMounted(() => {
-  window.addEventListener('click', handleDocumentClick)
+  window.addEventListener('click', closeDropdown)
+  window.addEventListener('scroll', closeDropdown, true)
+  window.addEventListener('resize', closeDropdown)
   window.addEventListener('keydown', handleKeydown)
 })
 
 onUnmounted(() => {
-  window.removeEventListener('click', handleDocumentClick)
+  window.removeEventListener('click', closeDropdown)
+  window.removeEventListener('scroll', closeDropdown, true)
+  window.removeEventListener('resize', closeDropdown)
   window.removeEventListener('keydown', handleKeydown)
 })
 

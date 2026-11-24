@@ -494,13 +494,14 @@
                     </svg>
                   </button>
 
-                  <!-- Dropdown Menu with Smart Drop-Up/Drop-Down -->
-                  <div
-                    v-if="activeDropdownPath === item.path"
-                    class="noc-act-dropdown-menu fixed z-[99999] bg-[#0c1328] border border-cyan-500/50 rounded shadow-2xl py-1 text-xs w-44 font-sans overflow-y-auto scrollbar-thin"
-                    :style="dropdownPositionStyle"
-                    @click.stop
-                  >
+                  <!-- Dropdown Menu with Smart Drop-Up/Drop-Down (Teleported to body to eliminate modal clipping) -->
+                  <Teleport to="body">
+                    <div
+                      v-if="activeDropdownPath === item.path"
+                      class="noc-act-dropdown-menu fixed z-[100005] bg-[#0c1328] border border-cyan-500/50 rounded shadow-2xl py-1 text-xs w-44 font-sans overflow-y-auto scrollbar-thin"
+                      :style="dropdownPositionStyle"
+                      @click.stop
+                    >
                     <!-- File Actions -->
                     <template v-if="!item.is_dir">
                       <button
@@ -616,6 +617,7 @@
                       <span>{{ t('fm_delete') || 'Delete' }}</span>
                     </button>
                   </div>
+                  </Teleport>
                 </div>
               </td>
             </tr>
@@ -1375,11 +1377,13 @@ async function submitUpload() {
 onMounted(() => {
   window.addEventListener('click', handleClickOutside)
   window.addEventListener('scroll', closeDropdown, true)
+  window.addEventListener('resize', closeDropdown)
 })
 
 onUnmounted(() => {
   window.removeEventListener('click', handleClickOutside)
   window.removeEventListener('scroll', closeDropdown, true)
+  window.removeEventListener('resize', closeDropdown)
 })
 
 async function loadDirectory(path = currentPath.value, pushToHistory = true) {
