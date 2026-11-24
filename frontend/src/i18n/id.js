@@ -62,6 +62,10 @@ export default {
   dash_col_severity: 'Keparahan',
   dash_col_description: 'Deskripsi Insiden',
   dash_col_duration: 'Durasi',
+  dash_badge_handled: 'DITANGANI',
+  dash_acked_by: 'Ditangani oleh {user}',
+  dash_all_handled: 'Seluruh insiden aktif pada host ini telah ditangani',
+  pdm_unack_tooltip: 'Batalkan status penanganan insiden ini',
 
   dash_status_perf_title: 'Status & Kinerja',
   dash_status_perf_sub: 'Status operasional host, level insiden, utilisasi hardware, dan status services real-time.',

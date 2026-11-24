@@ -203,6 +203,8 @@ def list_servers(user: User = Depends(get_current_user), db: Session = Depends(g
         info_count = len(info_p)
         ignored_count = len(ignored_p)
         active_problems_count = danger_count + critical_count + warning_count + info_count
+        acknowledged_count = sum(1 for p in s_probs if p.acknowledged_by and not getattr(p, "is_ignored", 0))
+        all_acknowledged = bool(active_problems_count > 0 and acknowledged_count == active_problems_count)
 
         danger_msgs = " • ".join(p.message for p in danger_p if p.message)
         critical_msgs = " • ".join(p.message for p in critical_p if p.message)
@@ -284,6 +286,8 @@ def list_servers(user: User = Depends(get_current_user), db: Session = Depends(g
             "services_total": tot_svcs,
             "services_up": up_svcs,
             "active_problems_count": active_problems_count,
+            "acknowledged_count": acknowledged_count,
+            "all_acknowledged": all_acknowledged,
             "danger_count": danger_count,
             "critical_count": critical_count,
             "warning_count": warning_count,
@@ -529,7 +533,9 @@ def get_server_problems(sid: int, user: User = Depends(get_current_user), db: Se
         .all()
     )
     result = []
+    now = datetime.utcnow()
     for prob in problems:
+        is_ign = bool(prob.is_ignored and (not prob.ignored_until or prob.ignored_until > now))
         result.append({
             "id": prob.id,
             "key": prob.key,
@@ -538,6 +544,12 @@ def get_server_problems(sid: int, user: User = Depends(get_current_user), db: Se
             "tip": prob.tip,
             "started_at": prob.started_at.isoformat() if prob.started_at else None,
             "is_active": prob.is_active,
+            "acknowledged_by": prob.acknowledged_by,
+            "acknowledged_at": prob.acknowledged_at.isoformat() if prob.acknowledged_at else None,
+            "is_ignored": is_ign,
+            "ignored_until": prob.ignored_until.isoformat() if prob.ignored_until else None,
+            "ignored_by": prob.ignored_by,
+            "ignored_reason": prob.ignored_reason,
         })
     return {"ok": True, "problems": result}
 

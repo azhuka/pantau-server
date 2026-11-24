@@ -116,6 +116,7 @@
       @minimize="minimizeWorkspace"
       @switch-server="onWorkspaceSwitchServer"
       @server-updated="onServerUpdated"
+      @refresh-problems="fetchProblems"
     />
 
     <!-- WORKSPACE SHELF (Bilah Rak Mengambang untuk Jendela Diminimalkan) -->

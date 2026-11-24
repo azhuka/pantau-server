@@ -451,6 +451,15 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.57
+
+### v0.1.57
+- **Dashboard Handled Badges & Situational Awareness (DashboardView.vue)**: Kolom Keparahan pada tabel Recent Incidents menyajikan sub-badge pasif ✓ DITANGANI (✓ HANDLED) dengan tooltip nama operator yang menangani, serta sub-badge 🔇 DIABAIKAN. Kolom status insiden armada menampilkan indikator ✓ DITANGANI apabila seluruh insiden pada host telah ditangani.
+- **Workspace Incidents Tab Parity (WorkspaceProblemsTab.vue & ServerWorkspaceModal.vue)**: Tab mikro insiden pada modal taktis host menyajikan badge keparahan fisik, timestamp deteksi, status penanganan ✓ DITANGANI (oleh operator), serta tombol interaktif Tandai Ditangani dan Batal Ditangani.
+- **Incident Diagnostics & Drilldown Modals (ProblemDetailModal.vue & SevDetailModal.vue)**: Tombol Tandai Ditangani dan pembatalan penanganan didukung penuh dengan proteksi RBAC Viewer.
+- **Backend Telemetry Envelope (server/routers/servers.py)**: Endpoint GET /api/servers menghitung acknowledged_count dan all_acknowledged, serta endpoint GET /api/servers/{sid}/problems mengalirkan atribut acknowledged_by dan is_ignored secara utuh.
+
+
 ### Versi v0.1.56
 
 - **Penegakan Tombol Baku 'Tandai Ditangani':** Menyeragamkan label tombol aksi 'Tandai Ditangani' (Mark Handled) pada tabel insiden aktif dan modal diagnosa insiden.

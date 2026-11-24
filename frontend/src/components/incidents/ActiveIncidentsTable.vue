@@ -71,9 +71,19 @@
                 <span class="font-bold text-cyan-300">{{ prob.hostname || `Server #${prob.server_id}` }}</span>
               </td>
               <td class="py-2.5 px-3 whitespace-nowrap">
-                <span class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase border" :class="severityBadgeClass(prob.severity)">
-                  {{ prob.severity }}
-                </span>
+                <div class="inline-flex flex-col items-start gap-1">
+                  <span class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase border" :class="severityBadgeClass(prob.severity)">
+                    {{ prob.severity }}
+                  </span>
+                  <span
+                    v-if="prob.acknowledged_by"
+                    class="text-[9px] px-1.5 py-0.2 rounded font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-0.5 shadow-sm"
+                    :title="t('dash_acked_by', { user: prob.acknowledged_by })"
+                  >
+                    <span>✓</span>
+                    <span>{{ t('dash_badge_handled') }}</span>
+                  </span>
+                </div>
               </td>
               <td class="py-2.5 px-3 text-gray-200">
                 <div class="flex items-center gap-2 flex-wrap">

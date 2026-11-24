@@ -425,7 +425,10 @@
           <WorkspaceProblemsTab
             v-else-if="activeSubTab === 'problems'"
             :problems="serverProblems"
+            :current-user="currentUser"
             @terminate-ssh-problem="terminateSSHSessionFromProblem"
+            @ack-problem="handleWorkspaceProblemAck"
+            @unack-problem="handleWorkspaceProblemUnack"
           />
           <WorkspaceServicesPortsTab
             v-else-if="activeSubTab === 'services_ports'"
@@ -743,7 +746,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['close', 'minimize', 'switch-server', 'open-terminal', 'server-updated'])
+const emit = defineEmits(['close', 'minimize', 'switch-server', 'open-terminal', 'server-updated', 'refresh-problems'])
 
 const { t } = useI18n()
 
@@ -1274,6 +1277,52 @@ async function terminateSSHSessionFromProblem(problemId) {
     }
   } catch (err) {
     alert(t('msg_conn_failed') + err.message)
+  }
+}
+
+async function handleWorkspaceProblemAck(problemId) {
+  const token = localStorage.getItem('pantau_token')
+  try {
+    const res = await fetch(`/api/problems/${problemId}/ack`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      }
+    })
+    const data = await res.json()
+    if (data.ok) {
+      loadServerData()
+      emit('server-updated')
+      emit('refresh-problems')
+    } else {
+      alert(data.detail || 'Failed to acknowledge problem')
+    }
+  } catch (err) {
+    console.error('Failed to acknowledge problem in workspace:', err)
+  }
+}
+
+async function handleWorkspaceProblemUnack(problemId) {
+  const token = localStorage.getItem('pantau_token')
+  try {
+    const res = await fetch(`/api/problems/${problemId}/unack`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      }
+    })
+    const data = await res.json()
+    if (data.ok) {
+      loadServerData()
+      emit('server-updated')
+      emit('refresh-problems')
+    } else {
+      alert(data.detail || 'Failed to cancel problem acknowledgment')
+    }
+  } catch (err) {
+    console.error('Failed to cancel problem acknowledgment in workspace:', err)
   }
 }
 

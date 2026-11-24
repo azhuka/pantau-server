@@ -272,35 +272,64 @@
 
               <!-- SEVERITY -->
               <td class="py-2 px-2.5 text-center whitespace-nowrap">
-                <span
-                  v-if="prob.severity === 'danger'"
-                  class="px-2 py-0.5 rounded text-[10.5px] font-bold bg-rose-950 text-rose-300 border border-rose-700/80 uppercase shadow-[0_0_6px_rgba(244,63,94,0.3)] radar-critical"
-                >
-                  {{ t('sev_danger').toUpperCase() }}
-                </span>
-                <span
-                  v-else-if="prob.severity === 'critical' || prob.severity === 'average'"
-                  class="px-2 py-0.5 rounded text-[10.5px] font-bold bg-orange-950 text-orange-300 border border-orange-700/80 uppercase shadow-[0_0_6px_rgba(249,115,22,0.3)] radar-critical"
-                >
-                  {{ t('sev_critical').toUpperCase() }}
-                </span>
-                <span
-                  v-else-if="prob.severity === 'warning'"
-                  class="px-2 py-0.5 rounded text-[10.5px] font-bold bg-amber-950 text-amber-300 border border-amber-700/80 uppercase shadow-[0_0_6px_rgba(245,158,11,0.3)] radar-warning"
-                >
-                  {{ t('sev_warning').toUpperCase() }}
-                </span>
-                <span
-                  v-else
-                  class="px-2 py-0.5 rounded text-[10.5px] font-bold bg-cyan-950 text-cyan-300 border border-cyan-700/80 uppercase"
-                >
-                  {{ t('sev_info').toUpperCase() }}
-                </span>
+                <div class="inline-flex flex-col items-center gap-1">
+                  <span
+                    v-if="prob.severity === 'danger'"
+                    class="px-2 py-0.5 rounded text-[10.5px] font-bold bg-rose-950 text-rose-300 border border-rose-700/80 uppercase shadow-[0_0_6px_rgba(244,63,94,0.3)] radar-critical"
+                  >
+                    {{ t('sev_danger').toUpperCase() }}
+                  </span>
+                  <span
+                    v-else-if="prob.severity === 'critical' || prob.severity === 'average'"
+                    class="px-2 py-0.5 rounded text-[10.5px] font-bold bg-orange-950 text-orange-300 border border-orange-700/80 uppercase shadow-[0_0_6px_rgba(249,115,22,0.3)] radar-critical"
+                  >
+                    {{ t('sev_critical').toUpperCase() }}
+                  </span>
+                  <span
+                    v-else-if="prob.severity === 'warning'"
+                    class="px-2 py-0.5 rounded text-[10.5px] font-bold bg-amber-950 text-amber-300 border border-amber-700/80 uppercase shadow-[0_0_6px_rgba(245,158,11,0.3)] radar-warning"
+                  >
+                    {{ t('sev_warning').toUpperCase() }}
+                  </span>
+                  <span
+                    v-else
+                    class="px-2 py-0.5 rounded text-[10.5px] font-bold bg-cyan-950 text-cyan-300 border border-cyan-700/80 uppercase"
+                  >
+                    {{ t('sev_info').toUpperCase() }}
+                  </span>
+
+                  <!-- Handled / Ignored Sub-badges (Blueprint Parity) -->
+                  <div v-if="prob.acknowledged_by || prob.is_ignored" class="inline-flex items-center justify-center gap-1">
+                    <span
+                      v-if="prob.acknowledged_by"
+                      class="text-[9px] px-1.5 py-0.2 rounded font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-0.5 shadow-sm"
+                      :title="t('dash_acked_by', { user: prob.acknowledged_by })"
+                    >
+                      <span>✓</span>
+                      <span>{{ t('dash_badge_handled') }}</span>
+                    </span>
+                    <span
+                      v-if="prob.is_ignored"
+                      class="text-[9px] px-1.5 py-0.2 rounded font-bold bg-slate-800 text-slate-400 border border-slate-700 flex items-center gap-0.5"
+                      :title="prob.ignored_reason || t('sev_ignored')"
+                    >
+                      <span>🔇</span>
+                      <span>{{ t('sev_ignored') }}</span>
+                    </span>
+                  </div>
+                </div>
               </td>
 
               <!-- DESCRIPTION (Single-Line Compact Ala Blueprint) -->
               <td class="py-2 px-3 text-gray-200 font-medium leading-snug whitespace-nowrap overflow-hidden text-ellipsis max-w-xl" :title="formatIncidentTip(prob, locale) || formatIncidentMessage(prob, locale)">
                 <span>{{ formatIncidentMessage(prob, locale) }}</span>
+                <span
+                  v-if="prob.acknowledged_by"
+                  class="text-[10px] text-emerald-400/90 font-mono ml-2 font-semibold"
+                  :title="t('dash_acked_by', { user: prob.acknowledged_by })"
+                >
+                  ✓ {{ prob.acknowledged_by }}
+                </span>
               </td>
 
               <!-- DURATION -->
@@ -680,6 +709,14 @@
                   >
                     {{ s.ignored_count }}
                   </span>
+                  <span
+                    v-if="s.all_acknowledged"
+                    class="px-1.5 py-0.2 rounded text-[9.5px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm flex items-center gap-0.5"
+                    :title="t('dash_all_handled')"
+                  >
+                    <span>✓</span>
+                    <span>{{ t('dash_badge_handled') }}</span>
+                  </span>
                 </div>
               </td>
             </tr>
@@ -768,6 +805,7 @@
               <span v-if="s.critical_count > 0" class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-orange-950 text-orange-300 border border-orange-700 radar-critical" :title="s.critical_msgs">{{ s.critical_count }}</span>
               <span v-if="s.warning_count > 0" class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-950 text-amber-300 border border-amber-700 radar-warning" :title="s.warning_msgs">{{ s.warning_count }}</span>
               <span v-if="s.info_count > 0" class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-sky-950 text-sky-300 border border-sky-700" :title="s.info_msgs">{{ s.info_count }}</span>
+              <span v-if="s.all_acknowledged" class="px-1.5 py-0.2 rounded text-[9.5px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40" :title="t('dash_all_handled')">✓ {{ t('dash_badge_handled') }}</span>
             </div>
           </div>
         </div>
@@ -786,6 +824,7 @@
       @unignore-problem="unignoreProblem"
       @ignore-problem="openIgnoreDialog"
       @ack-problem="handleProblemAck"
+      @unack-problem="handleProblemUnack"
     />
 
     <!-- PROBLEM DETAIL & DIAGNOSTICS MODAL -->
@@ -798,6 +837,7 @@
       @ignore-problem="openIgnoreDialog"
       @terminate-ssh="terminateSshSession"
       @ack-problem="handleProblemAck"
+      @unack-problem="handleProblemUnack"
     />
 
     <!-- IGNORE PROBLEM MODAL -->
@@ -910,6 +950,31 @@ async function handleProblemAck(pid) {
     }
   } catch (err) {
     console.error('Failed to acknowledge problem:', err)
+  }
+}
+
+async function handleProblemUnack(pid) {
+  const token = localStorage.getItem('pantau_token')
+  try {
+    const res = await fetch(`/api/problems/${pid}/unack`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      }
+    })
+    const data = await res.json()
+    if (data.ok) {
+      if (selectedProblem.value && selectedProblem.value.id === pid) {
+        selectedProblem.value.acknowledged_by = null
+        selectedProblem.value.acknowledged_at = null
+      }
+      emit('refresh-problems')
+    } else {
+      alert(data.detail || 'Failed to cancel problem acknowledgment')
+    }
+  } catch (err) {
+    console.error('Failed to cancel problem acknowledgment:', err)
   }
 }
 

@@ -62,6 +62,10 @@ export default {
   dash_col_severity: 'Severity',
   dash_col_description: 'Incident Description',
   dash_col_duration: 'Duration',
+  dash_badge_handled: 'HANDLED',
+  dash_acked_by: 'Handled by {user}',
+  dash_all_handled: 'All active incidents on this host are acknowledged and handled',
+  pdm_unack_tooltip: 'Undo handled status for this incident',
 
   dash_status_perf_title: 'Status & Performance',
   dash_status_perf_sub: 'Operational status of hosts, incident level, hardware utilization, and real-time services status.',

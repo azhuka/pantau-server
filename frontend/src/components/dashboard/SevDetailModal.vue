@@ -73,6 +73,9 @@
                 <div class="text-gray-200 font-medium leading-relaxed">
                   {{ formatIncidentMessage(p, locale) }}
                 </div>
+                <div v-if="p.acknowledged_by" class="text-[11px] text-emerald-400/90 mt-0.5 flex items-center gap-1 font-mono">
+                  <span>✓</span> <span>{{ t('dash_acked_by', { user: p.acknowledged_by }) }}</span>
+                </div>
                 <div v-if="p.is_ignored" class="text-[11px] text-amber-400/90 mt-0.5">
                   ({{ t('sdm_ignored_by', { user: p.ignored_by || 'operator' }) }}{{ p.ignored_reason ? ': ' + p.ignored_reason : '' }})
                 </div>
@@ -84,16 +87,21 @@
               </td>
               <td class="py-2.5 px-3 text-right whitespace-nowrap">
                 <div class="flex items-center justify-end gap-1.5">
-                  <!-- Tombol Tandai Ditangani (Ack) -->
+                  <!-- Tombol Tandai / Batal Ditangani -->
                   <button
                     v-if="!p.acknowledged_by && !isViewer"
                     @click="$emit('ack-problem', p.id)"
                     class="p-1.5 rounded bg-emerald-950/80 text-emerald-400 border border-emerald-700/80 hover:bg-emerald-800 hover:text-white transition cursor-pointer"
                     :title="t('inc_btn_ack')"
                     :aria-label="t('inc_btn_ack')"
-                  >
-                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                  </button>
+                  ><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></button>
+                  <button
+                    v-else-if="p.acknowledged_by && !isViewer"
+                    @click="$emit('unack-problem', p.id)"
+                    class="p-1.5 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-500/80 hover:bg-rose-950 hover:text-rose-300 hover:border-rose-700 transition cursor-pointer"
+                    :title="t('pdm_unack_tooltip')"
+                    :aria-label="t('pdm_btn_unack')"
+                  ><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></button>
 
                   <button
                     @click="$emit('open-problem-detail', p)"
@@ -173,7 +181,7 @@ const props = defineProps({
   currentUser: { type: Object, default: null }
 })
 
-defineEmits(['close', 'open-problem-detail', 'open-server', 'unignore-problem', 'ignore-problem', 'ack-problem'])
+defineEmits(['close', 'open-problem-detail', 'open-server', 'unignore-problem', 'ignore-problem', 'ack-problem', 'unack-problem'])
 
 const isViewer = computed(() => {
   const r = (props.currentUser?.role || '').toLowerCase()
