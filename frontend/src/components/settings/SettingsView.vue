@@ -71,9 +71,10 @@
                 </div>
               </div>
 
-              <!-- Button labeled simply "Edit" per Blueprint -->
+              <!-- Unified Edit Profile Button -> Opens EditUserModal in Self Mode -->
               <button
-                @click="toggleEditProfile"
+                v-if="profile"
+                @click="openEditModal(profile)"
                 class="px-2.5 py-1 rounded bg-gray-900 hover:bg-cyan-950 border border-gray-700 hover:border-cyan-600/50 text-xs font-mono text-gray-200 hover:text-cyan-300 transition cursor-pointer flex items-center gap-1.5"
                 :title="t('settings_btn_edit')"
               >
@@ -82,77 +83,7 @@
                   <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                 </svg>
                 <span>{{ t('settings_btn_edit') }}</span>
-                <span class="text-[10px]">{{ showEditProfile ? '▲' : '▼' }}</span>
               </button>
-            </div>
-
-            <!-- Profile & Credentials Edit Form -->
-            <div v-if="showEditProfile" class="mt-4 pt-2">
-              <form @submit.prevent="handleSelfEdit" class="space-y-2.5 max-w-md font-mono text-xs">
-                <div>
-                  <label class="block text-[11px] text-gray-400 mb-0.5">{{ t('settings_col_username') }}</label>
-                  <input
-                    v-model="editProfileForm.username"
-                    type="text"
-                    required
-                    minlength="3"
-                    maxlength="50"
-                    class="w-full bg-[#111827] border border-gray-800 text-gray-100 text-xs rounded px-2.5 py-1.5 focus:border-cyan-500 outline-none"
-                  />
-                </div>
-                <div>
-                  <label class="block text-[11px] text-gray-400 mb-0.5">
-                    {{ t('settings_current_pwd') }} <span class="text-rose-400">*</span>
-                  </label>
-                  <input
-                    v-model="editProfileForm.current_password"
-                    type="password"
-                    required
-                    placeholder="Verify identity"
-                    class="w-full bg-[#111827] border border-gray-800 text-gray-100 text-xs rounded px-2.5 py-1.5 focus:border-cyan-500 outline-none"
-                  />
-                </div>
-                <div class="grid grid-cols-2 gap-2">
-                  <div>
-                    <label class="block text-[11px] text-gray-400 mb-0.5">
-                      {{ t('settings_new_pwd') }} <span class="text-gray-500 text-[10px]">{{ t('settings_opt_optional') }}</span>
-                    </label>
-                    <input
-                      v-model="editProfileForm.new_password"
-                      type="password"
-                      minlength="8"
-                      placeholder="Optional"
-                      class="w-full bg-[#111827] border border-gray-800 text-gray-100 text-xs rounded px-2.5 py-1.5 focus:border-cyan-500 outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label class="block text-[11px] text-gray-400 mb-0.5">{{ t('settings_confirm_pwd') }}</label>
-                    <input
-                      v-model="editProfileForm.confirm_password"
-                      type="password"
-                      minlength="8"
-                      placeholder="Confirm"
-                      class="w-full bg-[#111827] border border-gray-800 text-gray-100 text-xs rounded px-2.5 py-1.5 focus:border-cyan-500 outline-none"
-                    />
-                  </div>
-                </div>
-                <div class="flex items-center gap-2 pt-1">
-                  <button
-                    type="submit"
-                    :disabled="editProfileLoading"
-                    class="px-3 py-1.5 rounded bg-cyan-700 hover:bg-cyan-600 disabled:opacity-50 text-white text-xs font-bold transition cursor-pointer"
-                  >
-                    {{ editProfileLoading ? t('saving', 'Saving...') : t('settings_btn_save') }}
-                  </button>
-                  <button
-                    type="button"
-                    @click="showEditProfile = false"
-                    class="px-3 py-1.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs transition cursor-pointer"
-                  >
-                    {{ t('settings_btn_cancel') }}
-                  </button>
-                </div>
-              </form>
             </div>
           </div>
         </div>
@@ -540,15 +471,6 @@ const userSearchQuery = ref('')
 
 const openDropdownId = ref(null)
 
-const showEditProfile = ref(false)
-const editProfileLoading = ref(false)
-const editProfileForm = ref({
-  username: '',
-  current_password: '',
-  new_password: '',
-  confirm_password: '',
-})
-
 const showAddModal = ref(false)
 const showEditModal = ref(false)
 const editingUser = ref(null)
@@ -584,16 +506,6 @@ onUnmounted(() => {
 
 function toggleActionDropdown(userId) {
   openDropdownId.value = openDropdownId.value === userId ? null : userId
-}
-
-function toggleEditProfile() {
-  showEditProfile.value = !showEditProfile.value
-  if (showEditProfile.value && profile.value) {
-    editProfileForm.value.username = profile.value.username || ''
-    editProfileForm.value.current_password = ''
-    editProfileForm.value.new_password = ''
-    editProfileForm.value.confirm_password = ''
-  }
 }
 
 const filteredUsers = computed(() => {
@@ -649,9 +561,6 @@ async function loadProfile() {
     })
     if (res.ok) {
       profile.value = await res.json()
-      if (editProfileForm.value.username === '') {
-        editProfileForm.value.username = profile.value.username || ''
-      }
     }
   } catch (err) {
     console.error('Failed to load profile:', err)
@@ -678,6 +587,7 @@ function openViewModal(user) {
 }
 
 function openEditModal(user) {
+  showViewModal.value = false
   editingUser.value = user
   showEditModal.value = true
 }
@@ -720,48 +630,6 @@ async function handleDisableOwn2fa() {
     flashMsg.value = '2FA has been disabled successfully.'
   } catch (err) {
     alert(err.message)
-  }
-}
-
-async function handleSelfEdit() {
-  if (editProfileForm.value.new_password && editProfileForm.value.new_password !== editProfileForm.value.confirm_password) {
-    flashType.value = 'error'
-    flashMsg.value = 'New password and confirmation do not match.'
-    return
-  }
-  editProfileLoading.value = true
-  flashMsg.value = ''
-  try {
-    const token = localStorage.getItem('pantau_token')
-    const payload = {
-      username: editProfileForm.value.username.trim(),
-      current_password: editProfileForm.value.current_password,
-      password: editProfileForm.value.new_password.trim() || null,
-      confirm_password: editProfileForm.value.confirm_password.trim() || null,
-    }
-    const res = await fetch(`/api/users/${profile.value.id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify(payload),
-    })
-    const data = await res.json()
-    if (!res.ok) throw new Error(data.detail || 'Failed to update account credentials')
-    flashType.value = 'success'
-    flashMsg.value = 'Account credentials updated successfully.'
-    showEditProfile.value = false
-    editProfileForm.value.current_password = ''
-    editProfileForm.value.new_password = ''
-    editProfileForm.value.confirm_password = ''
-    await loadProfile()
-    await loadUsers()
-  } catch (err) {
-    flashType.value = 'error'
-    flashMsg.value = err.message
-  } finally {
-    editProfileLoading.value = false
   }
 }
 
@@ -816,11 +684,14 @@ function onUserCreated() {
   loadUsers()
 }
 
-function onUserUpdated() {
+async function onUserUpdated(updatedUser) {
   showEditModal.value = false
   flashType.value = 'success'
   flashMsg.value = 'User credentials and permissions updated successfully.'
-  loadUsers()
+  await loadUsers()
+  if (profile.value && updatedUser && updatedUser.id === profile.value.id) {
+    await loadProfile()
+  }
 }
 
 function onPasswordReset() {

@@ -174,6 +174,22 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.40
+
+### v0.1.40 (2026-11-24) — Penyeragaman Alur Sunting Akun & Standarisasi Ergonomi Tombol Aksi
+- **Unified Edit User Workflow:** Menghapus form inline akordeon redundan pada kartu profil pengguna aktif. Tombol Edit kartu profil dan baris tabel akun diri sendiri memanggil EditUserModal.vue dalam mode mandiri (Self Mode: Username, Current Password, New Password Optional, Confirm Password). Baris pengguna lain memanggil mode admin.
+- **Anti-Slop Button Labels:** Mengeliminasi kata pemasaran generik (Now/Sekarang) pada seluruh tombol aksi, termasuk tombol 2FA menjadi Enable 2FA (Aktifkan 2FA).
+- **Otomasi Pengujian:** Menambahkan skrip uji Puppeteer tools/test_v0140_unified_edit.js untuk validasi pemisahan mode modal dan integritas label tombol.
+
+
+### Versi v0.1.40
+
+### v0.1.40 (2026-11-24) — Penyeragaman Alur Sunting Akun & Standarisasi Ergonomi Tombol Aksi
+- **Unified Edit User Workflow:** Menghapus form inline akordeon redundan pada kartu profil pengguna aktif. Tombol Edit kartu profil dan baris tabel akun diri sendiri memanggil EditUserModal.vue dalam mode mandiri (Self Mode: Username, Current Password, New Password Optional, Confirm Password). Baris pengguna lain memanggil mode admin.
+- **Anti-Slop Button Labels:** Mengeliminasi kata pemasaran generik (Now/Sekarang) pada seluruh tombol aksi, termasuk tombol 2FA menjadi Enable 2FA (Aktifkan 2FA).
+- **Otomasi Pengujian:** Menambahkan skrip uji Puppeteer tools/test_v0140_unified_edit.js untuk validasi pemisahan mode modal dan integritas label tombol.
+
+
 ### Versi v0.1.39
 
 ### v0.1.39 (2026-11-24) — Standardisasi Bahasa Inggris Baku, Tampilan 2FA Presisi, Alur Kerja Edit Akun, dan Tombol Aksi Ikon Murni
