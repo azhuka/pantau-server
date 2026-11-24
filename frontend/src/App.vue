@@ -32,6 +32,8 @@
         :probing-server-id="probingNodeId"
         @open-workspace="openWorkspace"
         @probe-node="handleProbeNode"
+        @open-terminal="openTerminalDock"
+        @server-updated="fetchServers"
       />
 
       <!-- HALAMAN 3: AUDIT TRAIL (Log Akuntabilitas Aksi Operator) -->

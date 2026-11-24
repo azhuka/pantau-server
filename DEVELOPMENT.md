@@ -174,6 +174,16 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.29
+
+### Fitur & Penyempurnaan Taktis (v0.1.29)
+- **Standardisasi Menu Aksi Host:** Menyelaraskan menu aksi baris inventaris aset sesuai cetak biru rujukan: Edit Host, Edit Host Note, Test Connection, Inject Key, Native Terminal, dan Delete Host.
+- **Pembersihan Tombol Terminal Baris:** Menghapus tombol terminal inline pada baris tabel aset untuk menjaga keamanan dan kesucian terminal sesuai standar NOC.
+- **Komponen Modal Mandiri:** Menambahkan 4 modal modular (<250 baris): EditHostModal, EditNoteModal, InjectKeyModal, dan DeleteHostModal.
+- **Endpoint Backend Baru:** Menambahkan dukungan backend PUT /api/servers/{sid}, GET/PUT /api/servers/{sid}/note, POST /api/servers/{sid}/test-connection, POST /api/servers/{sid}/inject-key, dan DELETE /api/servers/{sid} dengan pencatatan audit trail menyeluruh.
+- **Dukungan Penuh Dwi-Bahasa (i18n):** Kepatuhan 100% pada lint_i18n tanpa teks hardcode.
+
+
 ### Versi v0.1.28
 
 - **Inventaris Aset**: Menghapus tombol terminal pada kolom Tindakan demi keamanan dan etika operasional shell terpusat.

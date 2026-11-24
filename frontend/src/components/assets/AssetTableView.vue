@@ -365,76 +365,91 @@
                       </svg>
                     </button>
 
-                    <!-- Tactical Dropdown Menu Floating Popover -->
+                    <!-- Tactical Dropdown Menu Floating Popover (Exact Golden Reference Standard) -->
                     <div
                       v-if="activeDropdownId === s.id"
-                      class="absolute right-0 top-full mt-1.5 w-52 bg-[#080d19] border border-cyan-500/50 rounded-xl shadow-[0_12px_36px_rgba(0,0,0,0.85)] p-1.5 z-[9999] text-xs font-mono backdrop-blur-md text-left"
+                      class="absolute right-0 top-full mt-1.5 w-48 bg-[#080d19] border border-cyan-500/50 rounded-xl shadow-[0_12px_36px_rgba(0,0,0,0.85)] p-1.5 z-[9999] text-xs font-mono backdrop-blur-md text-left"
                     >
-                      <div class="px-2.5 py-1 text-[10px] text-gray-400 font-bold uppercase tracking-wider border-b border-cyan-950/80 pb-1 mb-1">
-                        // {{ s.hostname }}
-                      </div>
-
+                      <!-- 1. Edit Host -->
                       <button
-                        @click="handleSelectAction(s.id, 'services_ports')"
-                        class="w-full px-2.5 py-1.5 rounded hover:bg-cyan-950/70 text-gray-200 hover:text-cyan-300 flex items-center gap-2 transition cursor-pointer"
-                      >
-                        <svg class="w-3.5 h-3.5 text-cyan-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <circle cx="12" cy="12" r="3"/>
-                          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-                        </svg>
-                        <span>{{ t('tab_services_ports') }}</span>
-                      </button>
-
-                      <button
-                        @click="handleSelectAction(s.id, 'processes')"
-                        class="w-full px-2.5 py-1.5 rounded hover:bg-cyan-950/70 text-gray-200 hover:text-cyan-300 flex items-center gap-2 transition cursor-pointer"
-                      >
-                        <svg class="w-3.5 h-3.5 text-cyan-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <rect width="18" height="18" x="3" y="3" rx="2"/>
-                          <path d="m9 12 2 2 4-4"/>
-                        </svg>
-                        <span>{{ t('tab_tasks') }}</span>
-                      </button>
-
-                      <button
-                        @click="handleSelectAction(s.id, 'firewall')"
-                        class="w-full px-2.5 py-1.5 rounded hover:bg-cyan-950/70 text-gray-200 hover:text-cyan-300 flex items-center gap-2 transition cursor-pointer"
-                      >
-                        <svg class="w-3.5 h-3.5 text-cyan-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                        </svg>
-                        <span>{{ t('tab_firewall') }}</span>
-                      </button>
-
-                      <button
-                        @click="handleSelectAction(s.id, 'maintenance')"
-                        class="w-full px-2.5 py-1.5 rounded hover:bg-amber-950/70 text-amber-300 flex items-center gap-2 transition cursor-pointer"
+                        @click="openEditHost(s)"
+                        class="w-full px-2.5 py-1.5 rounded hover:bg-cyan-950/70 text-gray-200 hover:text-cyan-300 flex items-center gap-2.5 transition cursor-pointer"
                       >
                         <svg class="w-3.5 h-3.5 text-amber-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                          <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+                          <path d="m15 5 4 4"/>
                         </svg>
-                        <span>{{ t('toolbar_maint') }}</span>
+                        <span>{{ t('act_edit_host') }}</span>
                       </button>
 
+                      <!-- 2. Edit Host Note -->
+                      <button
+                        @click="openEditNote(s)"
+                        class="w-full px-2.5 py-1.5 rounded hover:bg-cyan-950/70 text-gray-200 hover:text-cyan-300 flex items-center gap-2.5 transition cursor-pointer"
+                      >
+                        <svg class="w-3.5 h-3.5 text-sky-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+                          <polyline points="14 2 14 8 20 8"/>
+                          <line x1="16" x2="8" y1="13" y2="13"/>
+                          <line x1="16" x2="8" y1="17" y2="17"/>
+                          <line x1="10" x2="8" y1="9" y2="9"/>
+                        </svg>
+                        <span>{{ t('act_edit_host_note') }}</span>
+                      </button>
+
+                      <!-- 3. Test Connection -->
+                      <button
+                        @click="testHostConnection(s)"
+                        class="w-full px-2.5 py-1.5 rounded hover:bg-cyan-950/70 text-gray-200 hover:text-cyan-300 flex items-center gap-2.5 transition cursor-pointer"
+                      >
+                        <svg class="w-3.5 h-3.5 text-yellow-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                        </svg>
+                        <span>{{ t('act_test_conn') }}</span>
+                      </button>
+
+                      <!-- 4. Inject Key -->
+                      <button
+                        @click="openInjectKey(s)"
+                        class="w-full px-2.5 py-1.5 rounded hover:bg-cyan-950/70 text-gray-200 hover:text-cyan-300 flex items-center gap-2.5 transition cursor-pointer"
+                      >
+                        <svg class="w-3.5 h-3.5 text-amber-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <circle cx="7.5" cy="15.5" r="5.5"/>
+                          <path d="m21 2-9.6 9.6"/>
+                          <path d="m15.5 7.5 3 3L22 7l-3-3"/>
+                        </svg>
+                        <span>{{ t('act_inject_key') }}</span>
+                      </button>
+
+                      <!-- 5. Native Terminal -->
+                      <button
+                        @click="openNativeTerminal(s)"
+                        class="w-full px-2.5 py-1.5 rounded hover:bg-cyan-950/70 text-gray-200 hover:text-cyan-300 flex items-center gap-2.5 transition cursor-pointer"
+                      >
+                        <svg class="w-3.5 h-3.5 text-cyan-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <rect width="20" height="16" x="2" y="4" rx="2"/>
+                          <path d="m6 10 3 2-3 2"/>
+                          <path d="M12 14h4"/>
+                        </svg>
+                        <span>{{ t('act_native_terminal') }}</span>
+                      </button>
+
+                      <!-- Divider -->
                       <div class="border-t border-cyan-950/80 my-1"></div>
 
+                      <!-- 6. Delete Host -->
                       <button
-                        @click="copyServerIp(s.ip_address, s.id)"
-                        class="w-full px-2.5 py-1.5 rounded hover:bg-cyan-950/70 text-gray-300 hover:text-cyan-300 flex items-center justify-between transition cursor-pointer"
+                        @click="openDeleteHost(s)"
+                        class="w-full px-2.5 py-1.5 rounded hover:bg-rose-950/40 text-rose-400 hover:text-rose-300 flex items-center gap-2.5 transition cursor-pointer"
                       >
-                        <span class="flex items-center gap-2">
-                          <svg class="w-3.5 h-3.5 text-gray-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
-                            <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
-                          </svg>
-                          <span>{{ s.ip_address }}</span>
-                        </span>
-                        <span v-if="copiedServerId === s.id" class="text-[10px] text-emerald-400 font-bold">
-                          {{ t('dash_copied_ip') }}
-                        </span>
-                        <span v-else class="text-[10px] text-gray-400">
-                          {{ t('btn_copy') }}
-                        </span>
+                        <svg class="w-3.5 h-3.5 text-rose-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M3 6h18"/>
+                          <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+                          <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                          <line x1="10" x2="10" y1="11" y2="17"/>
+                          <line x1="14" x2="14" y1="11" y2="17"/>
+                        </svg>
+                        <span>{{ t('act_delete_host') }}</span>
                       </button>
                     </div>
                   </div>
@@ -461,12 +476,59 @@
         </table>
       </div>
     </div>
+
+    <!-- MODALS: EDIT HOST, EDIT NOTE, INJECT KEY, DELETE HOST -->
+    <EditHostModal
+      :is-open="isEditHostOpen"
+      :server="selectedServer"
+      @close="isEditHostOpen = false"
+      @updated="onHostUpdated"
+    />
+
+    <EditNoteModal
+      :is-open="isEditNoteOpen"
+      :server="selectedServer"
+      @close="isEditNoteOpen = false"
+      @updated="onHostUpdated"
+    />
+
+    <InjectKeyModal
+      :is-open="isInjectKeyOpen"
+      :server="selectedServer"
+      @close="isInjectKeyOpen = false"
+      @success="onKeyInjected"
+    />
+
+    <DeleteHostModal
+      :is-open="isDeleteHostOpen"
+      :server="selectedServer"
+      @close="isDeleteHostOpen = false"
+      @deleted="onHostDeleted"
+    />
+
+    <!-- FLOATING TOAST NOTIFICATION -->
+    <div
+      v-if="toast.show"
+      class="fixed bottom-14 right-6 z-50 flex items-center gap-2.5 px-4 py-2.5 rounded-xl border font-mono text-xs shadow-2xl backdrop-blur-md transition-all"
+      :class="{
+        'bg-[#0b1b2b]/95 border-cyan-500/70 text-cyan-200': toast.type === 'info',
+        'bg-[#062419]/95 border-emerald-500/70 text-emerald-200': toast.type === 'success',
+        'bg-[#280c12]/95 border-rose-500/70 text-rose-200': toast.type === 'error'
+      }"
+    >
+      <span class="text-sm">{{ toast.icon }}</span>
+      <span class="font-medium">{{ toast.message }}</span>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from '../../i18n'
+import EditHostModal from './modals/EditHostModal.vue'
+import EditNoteModal from './modals/EditNoteModal.vue'
+import InjectKeyModal from './modals/InjectKeyModal.vue'
+import DeleteHostModal from './modals/DeleteHostModal.vue'
 
 const props = defineProps({
   servers: {
@@ -479,7 +541,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['open-workspace', 'probe-node'])
+const emit = defineEmits(['open-workspace', 'probe-node', 'open-terminal', 'server-updated'])
 
 const { t } = useI18n()
 
@@ -487,6 +549,88 @@ const searchQuery = ref('')
 const statusFilter = ref('all') // all, online, offline
 const activeDropdownId = ref(null)
 const copiedServerId = ref(null)
+
+const isEditHostOpen = ref(false)
+const isEditNoteOpen = ref(false)
+const isInjectKeyOpen = ref(false)
+const isDeleteHostOpen = ref(false)
+const selectedServer = ref(null)
+
+const toast = ref({ show: false, type: 'info', message: '', icon: 'ℹ️' })
+let toastTimer = null
+
+function showToast(msg, type = 'info', icon = 'ℹ️', duration = 3000) {
+  if (toastTimer) clearTimeout(toastTimer)
+  toast.value = { show: true, type, message: msg, icon }
+  toastTimer = setTimeout(() => {
+    toast.value.show = false
+  }, duration)
+}
+
+function openEditHost(s) {
+  closeDropdown()
+  selectedServer.value = s
+  isEditHostOpen.value = true
+}
+
+function openEditNote(s) {
+  closeDropdown()
+  selectedServer.value = s
+  isEditNoteOpen.value = true
+}
+
+async function testHostConnection(s) {
+  closeDropdown()
+  showToast(t('toast_testing_conn') || `Testing connection to ${s.hostname}...`, 'info', '⚡', 2500)
+  const token = localStorage.getItem('pantau_token')
+  try {
+    const res = await fetch(`/api/servers/${s.id}/test-connection`, {
+      method: 'POST',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      }
+    })
+    const data = await res.json()
+    if (res.ok && data.ok) {
+      showToast(data.message || data.output || t('toast_conn_success'), 'success', '⚡', 4000)
+    } else {
+      showToast(data.error || data.detail || t('toast_conn_failed'), 'error', '⚠️', 4500)
+    }
+  } catch (err) {
+    showToast(t('toast_conn_failed') + ': ' + err.message, 'error', '⚠️', 4500)
+  }
+}
+
+function openInjectKey(s) {
+  closeDropdown()
+  selectedServer.value = s
+  isInjectKeyOpen.value = true
+}
+
+function openNativeTerminal(s) {
+  closeDropdown()
+  emit('open-terminal', s)
+}
+
+function openDeleteHost(s) {
+  closeDropdown()
+  selectedServer.value = s
+  isDeleteHostOpen.value = true
+}
+
+function onHostUpdated(msg) {
+  showToast(msg || t('toast_host_updated'), 'success', '✓')
+  emit('server-updated')
+}
+
+function onKeyInjected(msg) {
+  showToast(msg || t('toast_key_success'), 'success', '🔑')
+}
+
+function onHostDeleted(msg) {
+  showToast(msg || t('toast_host_deleted'), 'success', '🗑️')
+  emit('server-updated')
+}
 
 function toggleDropdown(sid) {
   activeDropdownId.value = activeDropdownId.value === sid ? null : sid

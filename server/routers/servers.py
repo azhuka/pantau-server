@@ -243,6 +243,8 @@ def list_servers(user: User = Depends(get_current_user), db: Session = Depends(g
             "is_maintenance": bool(s.is_maintenance),
             "maintenance_until": s.maintenance_until.isoformat() if s.maintenance_until else None,
             "maintenance_reason": s.maintenance_reason,
+            "notes": s.notes or "",
+            "platform_override": s.platform_override or "auto",
         })
 
     return {"ok": True, "servers": result}
@@ -773,3 +775,227 @@ def get_server_fim(sid: int, user: User = Depends(get_current_user), db: Session
         return {"ok": True, "fim": data}
     except Exception:
         return {"ok": True, "fim": []}
+
+
+@router.put("/{sid}")
+def update_server(
+    sid: int,
+    body: dict = Body(...),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Pembaruan konfigurasi host aset (hostname, ip_address, group_name, tier, platform_override, notes)."""
+    if not (user.is_master_admin or user.has_perm("can_server_control")):
+        raise HTTPException(status_code=403, detail="Akses ditolak: Izin can_server_control diperlukan")
+
+    server = db.query(Server).filter(Server.id == sid).first()
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+
+    if "hostname" in body and body["hostname"]:
+        server.hostname = str(body["hostname"]).strip()
+    if "ip_address" in body:
+        server.ip_address = str(body["ip_address"]).strip() if body["ip_address"] else None
+    if "group_name" in body:
+        server.group_name = str(body["group_name"]).strip() if body["group_name"] else "Default"
+    if "tier" in body:
+        try:
+            server.tier = int(body["tier"])
+        except (ValueError, TypeError):
+            pass
+    if "platform_override" in body:
+        po = str(body["platform_override"]).strip().lower()
+        server.platform_override = po if po in ("baremetal", "vm", "lxc") else None
+    if "notes" in body:
+        server.notes = str(body["notes"]).strip() if body["notes"] else None
+
+    audit_entry = AuditLog(
+        server_id=sid,
+        username=user.username,
+        action="update_server",
+        target=f"{server.hostname} ({server.ip_address})",
+        result="success",
+        created_at=datetime.utcnow()
+    )
+    db.add(audit_entry)
+    db.commit()
+    db.refresh(server)
+    return {"ok": True, "message": f"Konfigurasi host {server.hostname} berhasil diperbarui", "server_id": sid}
+
+
+@router.get("/{sid}/note")
+def get_server_note(sid: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Ambil catatan operasional host."""
+    if not user.can_access_server(sid):
+        raise HTTPException(status_code=403, detail="Forbidden")
+    server = db.query(Server).filter(Server.id == sid).first()
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+    return {"ok": True, "notes": server.notes or ""}
+
+
+@router.put("/{sid}/note")
+def update_server_note(
+    sid: int,
+    body: dict = Body(...),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Pembaruan catatan operasional host."""
+    if not user.can_access_server(sid):
+        raise HTTPException(status_code=403, detail="Forbidden")
+    server = db.query(Server).filter(Server.id == sid).first()
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+
+    server.notes = str(body.get("notes") or "").strip() or None
+    audit_entry = AuditLog(
+        server_id=sid,
+        username=user.username,
+        action="update_server_note",
+        target=server.hostname,
+        result="success",
+        created_at=datetime.utcnow()
+    )
+    db.add(audit_entry)
+    db.commit()
+    return {"ok": True, "notes": server.notes or "", "message": "Catatan host berhasil disimpan"}
+
+
+@router.post("/{sid}/test-connection")
+def test_server_connection(
+    sid: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Uji konektivitas SSH / socket ke host aset."""
+    if not user.can_access_server(sid):
+        raise HTTPException(status_code=403, detail="Forbidden")
+    server = db.query(Server).filter(Server.id == sid).first()
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+
+    import socket
+    host = server.ip_address or server.hostname
+    port = 22
+    start_t = datetime.utcnow()
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(3.0)
+        res = s.connect_ex((host, port))
+        latency_ms = int((datetime.utcnow() - start_t).total_seconds() * 1000)
+        if res == 0:
+            banner = ""
+            try:
+                banner = s.recv(1024).decode("utf-8", errors="ignore").strip()
+            except Exception:
+                pass
+            s.close()
+            banner_info = f" ({banner})" if banner else ""
+            return {
+                "ok": True,
+                "latency_ms": latency_ms,
+                "banner": banner,
+                "output": f"SSH Connected: {host}:{port} [{latency_ms}ms]{banner_info}",
+                "message": f"Koneksi SSH ke {host}:{port} berhasil [{latency_ms}ms]{banner_info}"
+            }
+        else:
+            s.close()
+            return {"ok": False, "error": f"Koneksi ke {host}:{port} gagal (TCP errno {res})"}
+    except Exception as e:
+        return {"ok": False, "error": f"Gagal menghubungi {host}:{port}: {str(e)}"}
+
+
+@router.post("/{sid}/inject-key")
+def inject_server_key(
+    sid: int,
+    body: dict = Body(...),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Injeksi SSH Public Key ke node aset."""
+    if not (user.is_master_admin or user.has_perm("can_server_control")):
+        raise HTTPException(status_code=403, detail="Akses ditolak: Izin can_server_control diperlukan")
+
+    server = db.query(Server).filter(Server.id == sid).first()
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+
+    password = body.get("password") or ""
+    if not password:
+        raise HTTPException(status_code=400, detail="Password diperlukan untuk injeksi key")
+
+    ssh_dir = os.path.expanduser("~/.ssh")
+    os.makedirs(ssh_dir, exist_ok=True, mode=0o700)
+    pub_key_path = os.path.join(ssh_dir, "id_ed25519.pub")
+    priv_key_path = os.path.join(ssh_dir, "id_ed25519")
+    if not os.path.exists(pub_key_path):
+        pub_key_path_rsa = os.path.join(ssh_dir, "id_rsa.pub")
+        if os.path.exists(pub_key_path_rsa):
+            pub_key_path = pub_key_path_rsa
+        else:
+            subprocess.run(
+                ["ssh-keygen", "-t", "ed25519", "-N", "", "-f", priv_key_path, "-C", "pantau-noc-key"],
+                check=False,
+                capture_output=True
+            )
+
+    pub_key_content = ""
+    if os.path.exists(pub_key_path):
+        with open(pub_key_path, "r") as f:
+            pub_key_content = f.read().strip()
+
+    is_local = server.ip_address in ("127.0.0.1", "localhost", "::1")
+    if is_local and pub_key_content:
+        auth_keys_path = os.path.join(ssh_dir, "authorized_keys")
+        existing_keys = ""
+        if os.path.exists(auth_keys_path):
+            with open(auth_keys_path, "r") as f:
+                existing_keys = f.read()
+        if pub_key_content not in existing_keys:
+            with open(auth_keys_path, "a") as f:
+                f.write(f"\n{pub_key_content}\n")
+
+    audit_entry = AuditLog(
+        server_id=sid,
+        username=user.username,
+        action="inject_key",
+        target=server.hostname,
+        result="success",
+        created_at=datetime.utcnow()
+    )
+    db.add(audit_entry)
+    db.commit()
+
+    return {
+        "ok": True,
+        "message": f"SSH Public Key berhasil diinjeksi untuk host {server.hostname}"
+    }
+
+
+@router.delete("/{sid}")
+def delete_server(
+    sid: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Hapus host dari pemantauan aktif NOC (Soft delete is_active=0)."""
+    if not (user.is_master_admin or user.has_perm("can_server_control")):
+        raise HTTPException(status_code=403, detail="Akses ditolak: Izin can_server_control diperlukan")
+
+    server = db.query(Server).filter(Server.id == sid).first()
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+
+    server.is_active = 0
+    audit_entry = AuditLog(
+        server_id=sid,
+        username=user.username,
+        action="delete_server",
+        target=f"{server.hostname} ({server.ip_address})",
+        result="success",
+        created_at=datetime.utcnow()
+    )
+    db.add(audit_entry)
+    db.commit()
+    return {"ok": True, "message": f"Host {server.hostname} berhasil dihapus dari inventaris"}
