@@ -73,9 +73,6 @@
                 <div class="text-gray-200 font-medium leading-relaxed">
                   {{ formatIncidentMessage(p, locale) }}
                 </div>
-                <div v-if="p.acknowledged_by" class="text-[11px] text-emerald-400/90 mt-0.5 flex items-center gap-1 font-mono">
-                  <span>✓</span> <span>{{ t('dash_acked_by', { user: p.acknowledged_by }) }}</span>
-                </div>
                 <div v-if="p.is_ignored" class="text-[11px] text-amber-400/90 mt-0.5">
                   ({{ t('sdm_ignored_by', { user: p.ignored_by || 'operator' }) }}{{ p.ignored_reason ? ': ' + p.ignored_reason : '' }})
                 </div>

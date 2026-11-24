@@ -83,7 +83,7 @@ db.close()
     console.log('\n--- TEST SUITE 2: ProblemDetailModal Handled & Unack Action ---');
     await page.evaluate(() => {
       const rows = Array.from(document.querySelectorAll('#dash-problems-card tbody tr'));
-      const ackRow = rows.find(r => r.textContent.includes('op-sadri'));
+      const ackRow = rows.find(r => r.querySelector('[title*="op-sadri"]') || r.textContent.includes('HANDLED'));
       if (ackRow) ackRow.click();
     });
     await page.waitForSelector('#problem-detail-modal', { timeout: 5000 });

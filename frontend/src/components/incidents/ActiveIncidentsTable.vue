@@ -89,13 +89,6 @@
                 <div class="flex items-center gap-2 flex-wrap">
                   <span class="font-medium">{{ formatIncidentMessage(prob, locale) }}</span>
                   <span
-                    v-if="prob.acknowledged_by"
-                    class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1"
-                    :title="`Handled by ${prob.acknowledged_by} at ${prob.acknowledged_at || '-'}`"
-                  >
-                    ✓ {{ t('inc_ack_badge') }}: {{ prob.acknowledged_by }}
-                  </span>
-                  <span
                     v-if="prob.is_ignored"
                     class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-gray-700/50 text-gray-300 border border-gray-600 flex items-center gap-1"
                     :title="prob.ignored_reason || 'Ignored'"

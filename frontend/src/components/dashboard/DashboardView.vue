@@ -323,13 +323,6 @@
               <!-- DESCRIPTION (Single-Line Compact Ala Blueprint) -->
               <td class="py-2 px-3 text-gray-200 font-medium leading-snug whitespace-nowrap overflow-hidden text-ellipsis max-w-xl" :title="formatIncidentTip(prob, locale) || formatIncidentMessage(prob, locale)">
                 <span>{{ formatIncidentMessage(prob, locale) }}</span>
-                <span
-                  v-if="prob.acknowledged_by"
-                  class="text-[10px] text-emerald-400/90 font-mono ml-2 font-semibold"
-                  :title="t('dash_acked_by', { user: prob.acknowledged_by })"
-                >
-                  ✓ {{ prob.acknowledged_by }}
-                </span>
               </td>
 
               <!-- DURATION -->

@@ -451,6 +451,13 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.58
+
+### v0.1.58
+- **Incident Description Hygiene (DashboardView.vue & ActiveIncidentsTable.vue)**: Menghapus label redundan nama operator dari sel teks kolom Incident Description pada Dasbor dan tabel insiden aktif. Teks deskripsi insiden dikembalikan murni menampilkan pesan kejadian fisik. Nama operator yang menangani insiden ditegakkan secara baku pada atribut tooltip informatif di sub-badge keparahan ✓ DITANGANI.
+- **Modal Drilldown Description Cleanup (SevDetailModal.vue)**: Menghilangkan label penanganan ganda pada sel deskripsi modal keparahan, menjaga tata letak tetap proporsional dan bersih.
+
+
 ### Versi v0.1.57
 
 ### v0.1.57
