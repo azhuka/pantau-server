@@ -605,6 +605,9 @@ export default {
   sdm_page_info: 'Page {current} of {total}',
   sdm_prev: 'Prev',
   sdm_next: 'Next',
+  pagination_page_info: 'Page {current} of {total}',
+  pagination_prev: 'Prev',
+  pagination_next: 'Next',
   sdm_ignored_by: 'Ignored by {user}',
 
   // Problem Detail & Diagnostics

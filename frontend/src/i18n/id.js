@@ -605,6 +605,9 @@ export default {
   sdm_page_info: 'Halaman {current} dari {total}',
   sdm_prev: 'Prev',
   sdm_next: 'Next',
+  pagination_page_info: 'Halaman {current} dari {total}',
+  pagination_prev: 'Prev',
+  pagination_next: 'Next',
   sdm_ignored_by: 'Diabaikan oleh {user}',
 
   // Problem Detail & Diagnostics

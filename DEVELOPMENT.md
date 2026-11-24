@@ -319,6 +319,18 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.52
+
+### [v0.1.52] - 2026-11-25
+#### Ditambahkan / Diperbarui (Added / Updated)
+- **RBAC Kolom Tindakan Aset (AssetTableView.vue):** Viewer murni read-only tanpa tombol aksi mutasi (Probe Instant dan Dropdown ⋮ disembunyikan, menyisakan hanya View dan Metrics).
+- **Standardisasi Header Kolom (GEMINI.md Aturan 3):** Menghapus class uppercase pada thead tr sehingga seluruh nama kolom mengikuti Title Case baku.
+- **Paginasi Otomatis Tabel Sekunder (GEMINI.md Aturan 2 & AGENTS.md Aturan 7):** Paginasi universal (pageSize=10) disembunyikan otomatis jika <= 10 baris dan hanya tampil jika > 10 baris.
+- **Interaktivitas Pengurutan Kolom:** Penambahan fitur klik pengurutan dua arah pada header Hostname, CPU, RAM, Storage, Uptime, dan Last Seen.
+- **Eliminasi Total Emoji Kartun:** Menghapus seluruh emoji kartun OS dan menggantinya dengan SVG vektor monokromatik pada AssetTableView dan DeleteHostModal.
+- **Verifikasi Multi-Role Puppeteer:** 100% lulus uji otomatis pada master-admin, op-sadri, dan guest.
+
+
 ### Versi v0.1.51
 
 - Penegasan Prinsip Dasbor Zero-Hidden: Menetapkan aturan baku bahwa halaman dasbor (DashboardView.vue) mutlak dilarang memiliki paginasi; seluruh node armada dan insiden wajib tampil terbuka secara utuh seketika demi kecepatan baca situasi operator NOC tanpa distraksi.

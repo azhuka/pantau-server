@@ -32,7 +32,10 @@
       <div class="p-5 space-y-4 text-left">
         <div v-if="server" class="p-3.5 rounded bg-rose-950/30 border border-rose-800/40 text-rose-200 leading-relaxed">
           <div class="font-bold text-white mb-1.5 flex items-center gap-2">
-            <span>⚠️</span>
+            <svg class="w-4 h-4 text-amber-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
             <span>{{ t('modal_delete_host_confirm') }} <strong class="text-rose-400">{{ server.hostname }}</strong> ({{ server.ip_address }})?</span>
           </div>
           <div class="text-[11px] text-gray-300">{{ t('modal_delete_host_warning') }}</div>

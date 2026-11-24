@@ -76,24 +76,36 @@
       <div class="overflow-x-auto">
         <table class="w-full text-left text-xs font-mono border-collapse">
           <thead>
-            <tr class="bg-[#070c18]/90 border-b border-cyan-500/20 text-gray-400 uppercase font-bold tracking-wider select-none">
+            <tr class="bg-[#070c18]/90 border-b border-cyan-500/20 text-gray-400 font-bold tracking-wider select-none">
               <th class="py-2.5 px-3 w-16 text-center">{{ t('col_status') }}</th>
-              <th class="py-2.5 px-4 min-w-[180px]">{{ t('col_server') }}</th>
+              <th @click="setSort('hostname')" class="py-2.5 px-4 min-w-[180px] cursor-pointer hover:text-cyan-300 transition select-none">
+                {{ t('col_server') }} <span class="text-[10px] text-gray-500">↕</span>
+              </th>
               <th class="py-2.5 px-3 min-w-[130px]">{{ t('col_ip') }}</th>
               <th class="py-2.5 px-3 min-w-[110px]">{{ t('col_platform') }}</th>
               <th class="py-2.5 px-3 min-w-[130px]">{{ t('col_os') }}</th>
-              <th class="py-2.5 px-3 min-w-[125px]">{{ t('col_cpu') }}</th>
-              <th class="py-2.5 px-3 min-w-[135px]">{{ t('col_memory') }}</th>
-              <th class="py-2.5 px-3 min-w-[105px]">{{ t('col_storage') }}</th>
-              <th class="py-2.5 px-3 min-w-[90px]">{{ t('col_uptime') }}</th>
+              <th @click="setSort('cpu')" class="py-2.5 px-3 min-w-[125px] cursor-pointer hover:text-cyan-300 transition select-none">
+                {{ t('col_cpu') }} <span class="text-[10px] text-gray-500">↕</span>
+              </th>
+              <th @click="setSort('mem_pct')" class="py-2.5 px-3 min-w-[135px] cursor-pointer hover:text-cyan-300 transition select-none">
+                {{ t('col_memory') }} <span class="text-[10px] text-gray-500">↕</span>
+              </th>
+              <th @click="setSort('disk_pct')" class="py-2.5 px-3 min-w-[105px] cursor-pointer hover:text-cyan-300 transition select-none">
+                {{ t('col_storage') }} <span class="text-[10px] text-gray-500">↕</span>
+              </th>
+              <th @click="setSort('uptime')" class="py-2.5 px-3 min-w-[90px] cursor-pointer hover:text-cyan-300 transition select-none">
+                {{ t('col_uptime') }} <span class="text-[10px] text-gray-500">↕</span>
+              </th>
               <th class="py-2.5 px-3 min-w-[95px] text-center">{{ t('col_agent') }}</th>
-              <th class="py-2.5 px-3 min-w-[105px]">{{ t('col_last_seen') }}</th>
+              <th @click="setSort('last_seen')" class="py-2.5 px-3 min-w-[105px] cursor-pointer hover:text-cyan-300 transition select-none">
+                {{ t('col_last_seen') }} <span class="text-[10px] text-gray-500">↕</span>
+              </th>
               <th class="py-2.5 px-4 text-right min-w-[200px]">{{ t('col_actions') }}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-800/40 bg-[#090e1c]/40">
             <tr
-              v-for="s in filteredServers"
+              v-for="s in paginatedServers"
               :key="s.id"
               class="hover:bg-cyan-950/20 transition-colors group"
             >
@@ -326,8 +338,9 @@
                     </svg>
                   </button>
 
-                  <!-- Shortcut PROBE INSTAN -->
+                  <!-- Shortcut PROBE INSTAN (Hanya untuk non-viewer yang memiliki izin) -->
                   <button
+                    v-if="!isViewer && userPerms.can_probing !== false"
                     @click="onProbeClick(s.id)"
                     :disabled="probingServerId === s.id"
                     class="w-7 h-7 flex items-center justify-center rounded bg-[#0b1324] hover:bg-emerald-950 text-emerald-400 hover:text-emerald-300 border border-cyan-800/40 transition cursor-pointer disabled:opacity-60"
@@ -350,8 +363,8 @@
                     </svg>
                   </button>
 
-                  <!-- Menu DROPDOWN ⋮ -->
-                  <div class="relative inline-block text-left">
+                  <!-- Menu DROPDOWN ⋮ (Hanya tampil jika ada aksi dropdown yang diizinkan) -->
+                  <div v-if="hasDropdownActions" class="relative inline-block text-left">
                     <button
                       type="button"
                       @click.stop="toggleDropdown(s, $event)"
@@ -389,6 +402,30 @@
           </tbody>
         </table>
       </div>
+
+      <!-- Universal Table Pagination Bar (Hidden if <= 10 items) -->
+      <div
+        v-if="totalPages > 1"
+        class="table-pagination-bar px-4 py-3 border-t border-cyan-500/20 bg-[#070c18]/90 flex items-center justify-between text-xs text-gray-400 font-mono select-none"
+      >
+        <span>{{ t('pagination_page_info', { current: currentPage, total: totalPages }) }} ({{ sortedServers.length }} {{ t('nodes_monitored') }})</span>
+        <div class="flex items-center gap-1.5">
+          <button
+            :disabled="currentPage === 1"
+            @click="currentPage--"
+            class="px-2.5 py-1 rounded bg-[#0b1324] border border-cyan-800/40 text-gray-300 hover:text-white hover:border-cyan-500/60 transition disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+          >
+            {{ t('pagination_prev') }}
+          </button>
+          <button
+            :disabled="currentPage === totalPages"
+            @click="currentPage++"
+            class="px-2.5 py-1 rounded bg-[#0b1324] border border-cyan-800/40 text-gray-300 hover:text-white hover:border-cyan-500/60 transition disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+          >
+            {{ t('pagination_next') }}
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- MODALS: EDIT HOST, EDIT NOTE, INJECT KEY, DELETE HOST -->
@@ -423,14 +460,24 @@
     <!-- FLOATING TOAST NOTIFICATION -->
     <div
       v-if="toast.show"
-      class="fixed bottom-14 right-6 z-50 flex items-center gap-2.5 px-4 py-2.5 rounded-xl border font-mono text-xs shadow-2xl backdrop-blur-md transition-all"
+      class="fixed bottom-14 right-6 z-50 flex items-center gap-2.5 px-4 py-2.5 rounded-xl border font-mono text-xs shadow-2xl backdrop-blur-md transition-all select-none"
       :class="{
         'bg-[#0b1b2b]/95 border-cyan-500/70 text-cyan-200': toast.type === 'info',
         'bg-[#062419]/95 border-emerald-500/70 text-emerald-200': toast.type === 'success',
         'bg-[#280c12]/95 border-rose-500/70 text-rose-200': toast.type === 'error'
       }"
     >
-      <span class="text-sm">{{ toast.icon }}</span>
+      <span class="shrink-0">
+        <svg v-if="toast.type === 'success'" class="w-4 h-4 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+        <svg v-else-if="toast.type === 'error'" class="w-4 h-4 text-rose-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <svg v-else class="w-4 h-4 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+        </svg>
+      </span>
       <span class="font-medium">{{ toast.message }}</span>
     </div>
 
@@ -475,6 +522,7 @@
 
         <!-- 3. Test Connection -->
         <button
+          v-if="userPerms.can_server_control || userPerms.can_manage_servers"
           type="button"
           @click="testHostConnection(activeDropdownServer); closeDropdown()"
           class="w-full px-2.5 py-1.5 rounded hover:bg-cyan-950/70 text-gray-200 hover:text-cyan-300 flex items-center gap-2.5 transition cursor-pointer"
@@ -525,7 +573,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useI18n } from '../../i18n'
 import EditHostModal from './modals/EditHostModal.vue'
 import EditNoteModal from './modals/EditNoteModal.vue'
@@ -572,6 +620,17 @@ const userPerms = computed(() => {
   return props.currentUser.permissions || {}
 })
 
+const isViewer = computed(() => {
+  if (!props.currentUser) return true
+  const role = (props.currentUser.role || '').toLowerCase()
+  return ['viewer', 'guest', 'tamu'].includes(role) || props.currentUser.is_guest === true
+})
+
+const hasDropdownActions = computed(() => {
+  if (isViewer.value) return false
+  return Boolean(userPerms.value.can_server_control || userPerms.value.can_manage_servers)
+})
+
 const searchQuery = ref('')
 const statusFilter = ref('all') // all, online, offline
 const activeDropdownId = ref(null)
@@ -585,12 +644,12 @@ const isInjectKeyOpen = ref(false)
 const isDeleteHostOpen = ref(false)
 const selectedServer = ref(null)
 
-const toast = ref({ show: false, type: 'info', message: '', icon: 'ℹ️' })
+const toast = ref({ show: false, type: 'info', message: '' })
 let toastTimer = null
 
-function showToast(msg, type = 'info', icon = 'ℹ️', duration = 3000) {
+function showToast(msg, type = 'info', duration = 3000) {
   if (toastTimer) clearTimeout(toastTimer)
-  toast.value = { show: true, type, message: msg, icon }
+  toast.value = { show: true, type, message: msg }
   toastTimer = setTimeout(() => {
     toast.value.show = false
   }, duration)
@@ -610,7 +669,7 @@ function openEditNote(s) {
 
 async function testHostConnection(s) {
   closeDropdown()
-  showToast(t('toast_testing_conn') || `Testing connection to ${s.hostname}...`, 'info', '⚡', 2500)
+  showToast(t('toast_testing_conn') || `Testing connection to ${s.hostname}...`, 'info', 2500)
   const token = localStorage.getItem('pantau_token')
   try {
     const res = await fetch(`/api/servers/${s.id}/test-connection`, {
@@ -621,12 +680,12 @@ async function testHostConnection(s) {
     })
     const data = await res.json()
     if (res.ok && data.ok) {
-      showToast(data.message || data.output || t('toast_conn_success'), 'success', '⚡', 4000)
+      showToast(data.message || data.output || t('toast_conn_success'), 'success', 4000)
     } else {
-      showToast(data.error || data.detail || t('toast_conn_failed'), 'error', '⚠️', 4500)
+      showToast(data.error || data.detail || t('toast_conn_failed'), 'error', 4500)
     }
   } catch (err) {
-    showToast(t('toast_conn_failed') + ': ' + err.message, 'error', '⚠️', 4500)
+    showToast(t('toast_conn_failed') + ': ' + err.message, 'error', 4500)
   }
 }
 
@@ -643,16 +702,16 @@ function openDeleteHost(s) {
 }
 
 function onHostUpdated(msg) {
-  showToast(msg || t('toast_host_updated'), 'success', '✓')
+  showToast(msg || t('toast_host_updated'), 'success')
   emit('server-updated')
 }
 
 function onKeyInjected(msg) {
-  showToast(msg || t('toast_key_success'), 'success', '🔑')
+  showToast(msg || t('toast_key_success'), 'success')
 }
 
 function onHostDeleted(msg) {
-  showToast(msg || t('toast_host_deleted'), 'success', '🗑️')
+  showToast(msg || t('toast_host_deleted'), 'success')
   emit('server-updated')
 }
 
@@ -741,6 +800,18 @@ onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown)
 })
 
+const sortCol = ref('id')
+const sortAsc = ref(true)
+
+function setSort(col) {
+  if (sortCol.value === col) {
+    sortAsc.value = !sortAsc.value
+  } else {
+    sortCol.value = col
+    sortAsc.value = true
+  }
+}
+
 const filteredServers = computed(() => {
   let list = props.servers || []
   if (statusFilter.value === 'online') {
@@ -757,6 +828,48 @@ const filteredServers = computed(() => {
     (s.group_name || '').toLowerCase().includes(q) ||
     (s.os_label || '').toLowerCase().includes(q)
   )
+})
+
+const sortedServers = computed(() => {
+  const list = [...filteredServers.value]
+  if (!sortCol.value || sortCol.value === 'id') return list
+
+  return list.sort((a, b) => {
+    let aVal = a[sortCol.value]
+    let bVal = b[sortCol.value]
+
+    if (sortCol.value === 'uptime') {
+      aVal = a.uptime_secs || 0
+      bVal = b.uptime_secs || 0
+    } else if (sortCol.value === 'last_seen') {
+      aVal = a.last_seen ? new Date(a.last_seen).getTime() : 0
+      bVal = b.last_seen ? new Date(b.last_seen).getTime() : 0
+    } else if (sortCol.value === 'hostname') {
+      aVal = (a.hostname || '').toLowerCase()
+      bVal = (b.hostname || '').toLowerCase()
+    } else if (typeof aVal === 'string') {
+      aVal = aVal.toLowerCase()
+      bVal = (bVal || '').toLowerCase()
+    }
+
+    if (aVal < bVal) return sortAsc.value ? -1 : 1
+    if (aVal > bVal) return sortAsc.value ? 1 : -1
+    return 0
+  })
+})
+
+const pageSize = 10
+const currentPage = ref(1)
+
+const totalPages = computed(() => Math.ceil(sortedServers.value.length / pageSize) || 1)
+
+const paginatedServers = computed(() => {
+  const start = (currentPage.value - 1) * pageSize
+  return sortedServers.value.slice(start, start + pageSize)
+})
+
+watch([searchQuery, statusFilter], () => {
+  currentPage.value = 1
 })
 
 function formatBytes(bytes) {
