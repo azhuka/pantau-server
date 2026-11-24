@@ -7,7 +7,7 @@ import grp
 import shutil
 import subprocess
 from datetime import datetime, timedelta
-from fastapi import APIRouter, Depends, HTTPException, Body, Form, File, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, Body, Form, File, UploadFile, status
 from fastapi.responses import FileResponse
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -21,6 +21,14 @@ from models.misc import AuditLog
 from services.problem_service import check_all_servers_stale
 
 router = APIRouter(prefix="/api/servers", tags=["Servers"])
+
+def check_server_access(user: User, sid: int) -> None:
+    """Validasi hak akses operator terhadap server (scope isolation)."""
+    if not user.can_access_server(sid):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied: You do not have permission for this server."
+        )
 
 def _classify_platform(platform_dict: dict | None, override: str | None = None) -> dict:
     """Klasifikasi tipe platform host: LXC Container, VM (KVM/dll), atau Baremetal."""
@@ -71,6 +79,8 @@ def list_servers(user: User = Depends(get_current_user), db: Session = Depends(g
     """Daftar seluruh server armada NOC beserta ringkasan status real-time."""
     check_all_servers_stale(db)
     servers = db.query(Server).filter(Server.is_active == 1).order_by(Server.id.asc()).all()
+    # Filter server berdasarkan cakupan otorisasi pengguna (scope isolation)
+    servers = [s for s in servers if user.can_access_server(s.id)]
     now = datetime.utcnow()
     result = []
 
@@ -81,6 +91,8 @@ def list_servers(user: User = Depends(get_current_user), db: Session = Depends(g
         .filter(ServerProblem.resolved_at.is_(None))
         .all()
     )
+    # Scoping insiden aktif hanya untuk server yang diizinkan bagi pengguna
+    active_problems = [p for p in active_problems if user.can_access_server(p.server_id)]
     problems_by_server = {}
     down_services_by_server = {}
     for p in active_problems:
@@ -252,8 +264,7 @@ def list_servers(user: User = Depends(get_current_user), db: Session = Depends(g
 @router.get("/{sid}")
 def get_server_detail(sid: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Rincian profil server, spesifikasi perangkat keras, dan snapshot."""
-    if not user.can_access_server(sid):
-        raise HTTPException(status_code=403, detail="Forbidden")
+    check_server_access(user, sid)
 
     server = db.query(Server).filter(Server.id == sid).first()
     if not server:
@@ -341,6 +352,9 @@ def get_server_detail(sid: int, user: User = Depends(get_current_user), db: Sess
 
 @router.get("/{sid}/services")
 def get_server_services(sid: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    check_server_access(user, sid)
+    if not (user.is_master_admin or user.has_perm("can_services")):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied: Service Control permission (can_services) is required")
     extras = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
     if not extras or not extras.systemd_units:
         return {"ok": True, "services": []}
@@ -376,6 +390,9 @@ def get_server_services(sid: int, user: User = Depends(get_current_user), db: Se
 
 @router.get("/{sid}/processes")
 def get_server_processes(sid: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    check_server_access(user, sid)
+    if not (user.is_master_admin or user.has_perm("can_processes")):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied: Process Manager permission (can_processes) is required")
     extras = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
     if not extras or not extras.top_procs:
         return {"ok": True, "processes": []}
@@ -404,6 +421,7 @@ def get_server_processes(sid: int, user: User = Depends(get_current_user), db: S
 
 @router.get("/{sid}/ports")
 def get_server_ports(sid: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    check_server_access(user, sid)
     extras = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
     if not extras or not extras.listening_ports:
         return {"ok": True, "ports": []}
@@ -416,6 +434,9 @@ def get_server_ports(sid: int, user: User = Depends(get_current_user), db: Sessi
 @router.get("/{sid}/accounts")
 def get_server_accounts(sid: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Mengembalikan akun pengguna lokal serta sesi SSH remote aktif."""
+    check_server_access(user, sid)
+    if not (user.is_master_admin or user.has_perm("can_users_sys")):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied: System Users permission (can_users_sys) is required")
     extras = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
     if not extras or not extras.accounts:
         return {"ok": True, "accounts": []}
@@ -428,6 +449,9 @@ def get_server_accounts(sid: int, user: User = Depends(get_current_user), db: Se
 @router.get("/{sid}/firewall")
 def get_server_firewall(sid: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Status UFW dan daftar aturan firewall."""
+    check_server_access(user, sid)
+    if not (user.is_master_admin or user.has_perm("can_firewall")):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied: Firewall Control permission (can_firewall) is required")
     extras = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
     if not extras or not extras.firewall:
         return {"ok": True, "firewall": {"status": "unknown", "rules": [], "blocked_ips": []}}
@@ -440,6 +464,9 @@ def get_server_firewall(sid: int, user: User = Depends(get_current_user), db: Se
 @router.get("/{sid}/cron")
 def get_server_cron(sid: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Daftar crontab dan systemd timers."""
+    check_server_access(user, sid)
+    if not (user.is_master_admin or user.has_perm("can_cron")):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied: Cron Jobs permission (can_cron) is required")
     extras = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
     if not extras or not extras.cron_jobs:
         return {"ok": True, "cron": {"jobs": []}}
@@ -452,6 +479,7 @@ def get_server_cron(sid: int, user: User = Depends(get_current_user), db: Sessio
 @router.get("/{sid}/problems")
 def get_server_problems(sid: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Insiden / anomali aktif khusus untuk server ini."""
+    check_server_access(user, sid)
     problems = (
         db.query(ServerProblem)
         .filter(ServerProblem.server_id == sid, ServerProblem.resolved_at == None)
@@ -484,8 +512,7 @@ def dispatch_server_action(
     - kill_process
     - terminate_ssh_session (putus paksa sesi remote)
     """
-    if not user.can_access_server(sid):
-        raise HTTPException(status_code=403, detail="Forbidden")
+    check_server_access(user, sid)
 
     action = body.get("action")
     params = body.get("params") or {}
@@ -585,8 +612,9 @@ def execute_terminal_command(
     db: Session = Depends(get_db)
 ):
     """Eksekusi perintah terminal pada server secara real-time."""
-    if not user.can_access_server(sid):
-        raise HTTPException(status_code=403, detail="Forbidden")
+    check_server_access(user, sid)
+    if not (user.is_master_admin or user.has_perm("can_terminal")):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied: Web Terminal permission (can_terminal) is required")
 
     server = db.query(Server).filter(Server.id == sid).first()
     if not server:
@@ -669,8 +697,9 @@ def toggle_server_maintenance(
     db: Session = Depends(get_db)
 ):
     """Aktifkan atau nonaktifkan status maintenance mode server."""
-    if not user.can_access_server(sid):
-        raise HTTPException(status_code=403, detail="Forbidden")
+    check_server_access(user, sid)
+    if not (user.is_master_admin or user.has_perm("can_manage_servers") or user.has_perm("can_server_control")):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied: Manage Servers permission is required")
 
     server = db.query(Server).filter(Server.id == sid).first()
     if not server:
@@ -731,6 +760,9 @@ def toggle_server_maintenance(
 
 @router.get("/{sid}/packages")
 def get_server_packages(sid: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    check_server_access(user, sid)
+    if not (user.is_master_admin or user.has_perm("can_apt")):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied: Package Manager permission (can_apt) is required")
     extras = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
     if not extras or not extras.apt_packages:
         return {"ok": True, "packages": [], "upgradable_count": extras.apt_upgradable if extras else 0}
@@ -743,6 +775,9 @@ def get_server_packages(sid: int, user: User = Depends(get_current_user), db: Se
 
 @router.get("/{sid}/ssl")
 def get_server_ssl(sid: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    check_server_access(user, sid)
+    if not (user.is_master_admin or user.has_perm("can_ssl")):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied: SSL Certificates permission (can_ssl) is required")
     extras = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
     if not extras or not extras.ssl_certs:
         return {"ok": True, "certs": []}
@@ -755,6 +790,9 @@ def get_server_ssl(sid: int, user: User = Depends(get_current_user), db: Session
 
 @router.get("/{sid}/logs")
 def get_server_logs(sid: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    check_server_access(user, sid)
+    if not (user.is_master_admin or user.has_perm("can_audit") or user.has_perm("can_services")):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied: Logs audit permission is required")
     extras = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
     if not extras or not extras.system_logs:
         return {"ok": True, "logs": []}
@@ -767,6 +805,9 @@ def get_server_logs(sid: int, user: User = Depends(get_current_user), db: Sessio
 
 @router.get("/{sid}/fim")
 def get_server_fim(sid: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    check_server_access(user, sid)
+    if not (user.is_master_admin or user.has_perm("can_audit")):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied: Security/FIM audit permission is required")
     extras = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
     if not extras or not extras.security:
         return {"ok": True, "fim": []}
@@ -785,8 +826,9 @@ def update_server(
     db: Session = Depends(get_db)
 ):
     """Pembaruan konfigurasi host aset (hostname, ip_address, group_name, tier, platform_override, notes)."""
-    if not (user.is_master_admin or user.has_perm("can_server_control")):
-        raise HTTPException(status_code=403, detail="Access denied: Host Control permission (can_server_control) is required")
+    check_server_access(user, sid)
+    if not (user.is_master_admin or user.has_perm("can_server_control") or user.has_perm("can_manage_servers")):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied: Host Control permission (can_server_control) is required")
 
     server = db.query(Server).filter(Server.id == sid).first()
     if not server:
@@ -826,8 +868,7 @@ def update_server(
 @router.get("/{sid}/note")
 def get_server_note(sid: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Ambil catatan operasional host."""
-    if not user.can_access_server(sid):
-        raise HTTPException(status_code=403, detail="Forbidden")
+    check_server_access(user, sid)
     server = db.query(Server).filter(Server.id == sid).first()
     if not server:
         raise HTTPException(status_code=404, detail="Server not found")
@@ -842,8 +883,9 @@ def update_server_note(
     db: Session = Depends(get_db)
 ):
     """Pembaruan catatan operasional host."""
-    if not user.can_access_server(sid):
-        raise HTTPException(status_code=403, detail="Forbidden")
+    check_server_access(user, sid)
+    if not (user.is_master_admin or user.has_perm("can_manage_servers") or user.has_perm("can_server_control")):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied: Manage Servers permission is required")
     server = db.query(Server).filter(Server.id == sid).first()
     if not server:
         raise HTTPException(status_code=404, detail="Server not found")
@@ -869,8 +911,7 @@ def test_server_connection(
     db: Session = Depends(get_db)
 ):
     """Uji konektivitas SSH / socket ke host aset."""
-    if not user.can_access_server(sid):
-        raise HTTPException(status_code=403, detail="Forbidden")
+    check_server_access(user, sid)
     server = db.query(Server).filter(Server.id == sid).first()
     if not server:
         raise HTTPException(status_code=404, detail="Server not found")
@@ -914,8 +955,9 @@ def inject_server_key(
     db: Session = Depends(get_db)
 ):
     """Injeksi SSH Public Key ke node aset."""
+    check_server_access(user, sid)
     if not (user.is_master_admin or user.has_perm("can_server_control")):
-        raise HTTPException(status_code=403, detail="Access denied: Host Control permission (can_server_control) is required")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied: Host Control permission (can_server_control) is required")
 
     server = db.query(Server).filter(Server.id == sid).first()
     if not server:
@@ -980,8 +1022,9 @@ def delete_server(
     db: Session = Depends(get_db)
 ):
     """Hapus host dari pemantauan aktif NOC (Soft delete is_active=0)."""
+    check_server_access(user, sid)
     if not (user.is_master_admin or user.has_perm("can_server_control")):
-        raise HTTPException(status_code=403, detail="Access denied: Host Control permission (can_server_control) is required")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied: Host Control permission (can_server_control) is required")
 
     server = db.query(Server).filter(Server.id == sid).first()
     if not server:

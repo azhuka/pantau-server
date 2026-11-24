@@ -372,6 +372,7 @@
                     >
                       <!-- 1. Edit Host -->
                       <button
+                        v-if="userPerms.can_server_control || userPerms.can_manage_servers"
                         @click="openEditHost(s)"
                         class="w-full px-2.5 py-1.5 rounded hover:bg-cyan-950/70 text-gray-200 hover:text-cyan-300 flex items-center gap-2.5 transition cursor-pointer"
                       >
@@ -384,6 +385,7 @@
 
                       <!-- 2. Edit Host Note -->
                       <button
+                        v-if="userPerms.can_manage_servers || userPerms.can_server_control"
                         @click="openEditNote(s)"
                         class="w-full px-2.5 py-1.5 rounded hover:bg-cyan-950/70 text-gray-200 hover:text-cyan-300 flex items-center gap-2.5 transition cursor-pointer"
                       >
@@ -410,6 +412,7 @@
 
                       <!-- 4. Inject Key -->
                       <button
+                        v-if="userPerms.can_server_control"
                         @click="openInjectKey(s)"
                         class="w-full px-2.5 py-1.5 rounded hover:bg-cyan-950/70 text-gray-200 hover:text-cyan-300 flex items-center gap-2.5 transition cursor-pointer"
                       >
@@ -422,10 +425,11 @@
                       </button>
 
                       <!-- Divider -->
-                      <div class="border-t border-cyan-950/80 my-1"></div>
+                      <div v-if="userPerms.can_server_control" class="border-t border-cyan-950/80 my-1"></div>
 
                       <!-- 5. Delete Host -->
                       <button
+                        v-if="userPerms.can_server_control"
                         @click="openDeleteHost(s)"
                         class="w-full px-2.5 py-1.5 rounded hover:bg-rose-950/40 text-rose-400 hover:text-rose-300 flex items-center gap-2.5 transition cursor-pointer"
                       >
@@ -525,12 +529,37 @@ const props = defineProps({
   probingServerId: {
     type: Number,
     default: null
+  },
+  currentUser: {
+    type: Object,
+    default: null
   }
 })
 
 const emit = defineEmits(['open-workspace', 'probe-node', 'server-updated'])
 
 const { t } = useI18n()
+
+const userPerms = computed(() => {
+  if (!props.currentUser) return {}
+  if (props.currentUser.is_master_admin || props.currentUser.role === 'operator_utama') {
+    return {
+      can_terminal: true,
+      can_server_control: true,
+      can_manage_servers: true,
+      can_services: true,
+      can_processes: true,
+      can_firewall: true,
+      can_users_sys: true,
+      can_cron: true,
+      can_apt: true,
+      can_ssl: true,
+      can_audit: true,
+      can_file_manager: true
+    }
+  }
+  return props.currentUser.permissions || {}
+})
 
 const searchQuery = ref('')
 const statusFilter = ref('all') // all, online, offline

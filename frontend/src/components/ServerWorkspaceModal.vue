@@ -222,6 +222,7 @@
         <div class="flex items-center gap-2">
           <div class="flex items-center bg-[#050811] border border-cyan-900/60 rounded p-0.5">
             <button
+              v-if="userPerms.can_terminal"
               @click="openTerminalModal"
               class="px-2.5 py-1 text-xs text-gray-200 hover:text-cyan-300 hover:bg-cyan-950/60 rounded transition cursor-pointer flex items-center gap-1.5 font-bold"
               :class="isTerminalOpen ? 'bg-cyan-950/90 text-cyan-300 border border-cyan-500/70 shadow-[0_0_10px_rgba(56,189,248,0.25)]' : ''"
@@ -233,8 +234,9 @@
               </svg>
               <span>{{ t('toolbar_terminal') }}</span>
             </button>
-            <span class="w-[1px] h-4 bg-cyan-900/40 mx-0.5"></span>
+            <span v-if="userPerms.can_terminal && userPerms.can_file_manager" class="w-[1px] h-4 bg-cyan-900/40 mx-0.5"></span>
             <button
+              v-if="userPerms.can_file_manager"
               @click="openFileManagerModal"
               class="px-2.5 py-1 text-xs text-gray-200 hover:text-cyan-300 hover:bg-cyan-950/60 rounded transition cursor-pointer flex items-center gap-1.5 font-bold"
               :title="t('tooltip_fm_btn')"
@@ -244,8 +246,9 @@
               </svg>
               <span>{{ t('toolbar_fm') }}</span>
             </button>
-            <span class="w-[1px] h-4 bg-cyan-900/40 mx-0.5"></span>
+            <span v-if="(userPerms.can_terminal || userPerms.can_file_manager) && (userPerms.can_manage_servers || userPerms.can_server_control)" class="w-[1px] h-4 bg-cyan-900/40 mx-0.5"></span>
             <button
+              v-if="userPerms.can_manage_servers || userPerms.can_server_control"
               @click="openMaintenanceModal"
               class="px-2.5 py-1 text-xs rounded transition cursor-pointer flex items-center gap-1.5 font-bold"
               :class="server?.is_maintenance ? 'bg-amber-950/90 text-amber-300 border border-amber-500/80 shadow-[0_0_12px_rgba(245,158,11,0.25)]' : 'text-gray-300 hover:text-amber-300 hover:bg-amber-950/40'"
@@ -261,9 +264,10 @@
         </div>
 
         <!-- Grup 2: Siklus & Kontrol Daya Sistem -->
-        <div class="flex items-center gap-2">
+        <div v-if="userPerms.can_apt || userPerms.can_server_control" class="flex items-center gap-2">
           <div class="flex items-center bg-[#050811] border border-cyan-900/60 rounded p-0.5">
             <button
+              v-if="userPerms.can_apt"
               @click="triggerOSUpdate"
               class="px-2.5 py-1 text-xs text-emerald-400 hover:bg-emerald-950/60 rounded transition cursor-pointer flex items-center gap-1.5 font-bold"
               :title="t('tooltip_update_btn')"
@@ -276,8 +280,9 @@
               </svg>
               <span>{{ t('toolbar_update_os') }}</span>
             </button>
-            <span class="w-[1px] h-4 bg-cyan-900/40 mx-0.5"></span>
+            <span v-if="userPerms.can_apt" class="w-[1px] h-4 bg-cyan-900/40 mx-0.5"></span>
             <button
+              v-if="userPerms.can_apt"
               @click="triggerOSUpgrade"
               class="px-2.5 py-1 text-xs rounded transition cursor-pointer flex items-center gap-1.5 font-bold"
               :class="(server?.apt_upgradable || 0) > 0 ? 'text-amber-300 bg-amber-950/70 border border-amber-700/60' : 'text-gray-400 hover:text-white'"
@@ -293,8 +298,9 @@
                 {{ server?.apt_upgradable }}
               </span>
             </button>
-            <span class="w-[1px] h-4 bg-cyan-900/40 mx-0.5"></span>
+            <span v-if="userPerms.can_apt && userPerms.can_server_control" class="w-[1px] h-4 bg-cyan-900/40 mx-0.5"></span>
             <button
+              v-if="userPerms.can_server_control"
               @click="openGuardrailConfirm('reboot')"
               class="px-2.5 py-1 text-xs text-amber-400 hover:bg-amber-950/60 rounded transition cursor-pointer flex items-center gap-1.5 font-bold"
               :title="t('tooltip_reboot_btn')"
@@ -305,10 +311,10 @@
               </svg>
               <span>{{ t('toolbar_reboot') }}</span>
             </button>
-            <span class="w-[1px] h-4 bg-cyan-900/40 mx-0.5"></span>
+            <span v-if="userPerms.can_server_control" class="w-[1px] h-4 bg-cyan-900/40 mx-0.5"></span>
             <!-- POWER OFF (Proteksi Proxmox HA) -->
             <button
-              v-if="server?.is_proxmox_ha"
+              v-if="userPerms.can_server_control && server?.is_proxmox_ha"
               disabled
               class="px-2.5 py-1 text-xs text-gray-500 bg-gray-900/50 rounded cursor-not-allowed opacity-40 border border-dashed border-rose-900 flex items-center gap-1.5 font-bold"
               :title="t('tooltip_poweroff_ha_blocked')"
@@ -320,7 +326,7 @@
               <span>{{ t('toolbar_poweroff') }}</span>
             </button>
             <button
-              v-else
+              v-else-if="userPerms.can_server_control"
               @click="openGuardrailConfirm('poweroff')"
               class="px-2.5 py-1 text-xs text-rose-400 hover:bg-rose-950/60 rounded transition cursor-pointer flex items-center gap-1.5 font-bold"
               :title="t('tooltip_poweroff_btn')"
@@ -725,6 +731,10 @@ const props = defineProps({
   fleetServers: {
     type: Array,
     default: () => []
+  },
+  currentUser: {
+    type: Object,
+    default: null
   }
 })
 
@@ -869,19 +879,65 @@ const fimEventsList = ref([])
 const serviceSearch = ref('')
 const processSearch = ref('')
 
-const subTabs = computed(() => [
-  { id: 'overview', label: t('tab_perf') },
-  { id: 'problems', label: t('tab_incidents'), badge: serverProblems.value.length || null },
-  { id: 'services_ports', label: t('tab_services_ports'), badge: servicesList.value.length + portsList.value.length || null },
-  { id: 'processes', label: t('tab_tasks'), badge: processesList.value.length || null },
-  { id: 'firewall', label: t('tab_firewall') },
-  { id: 'accounts', label: t('tab_users_ssh'), badge: activeSSHSessions.value.length || null },
-  { id: 'cron', label: t('tab_cron'), badge: cronData.value?.jobs?.length || null },
-  { id: 'fim', label: t('tab_fim'), badge: fimEventsList.value.length || null },
-  { id: 'packages', label: t('tab_packages'), badge: server.value?.apt_upgradable || packagesList.value.length || null },
-  { id: 'ssl', label: t('tab_ssl'), badge: sslCertsList.value.length || null },
-  { id: 'logs', label: t('tab_logs') },
-])
+const userPerms = computed(() => {
+  if (!props.currentUser) return {}
+  if (props.currentUser.is_master_admin || props.currentUser.role === 'operator_utama') {
+    return {
+      can_terminal: true,
+      can_server_control: true,
+      can_manage_servers: true,
+      can_services: true,
+      can_processes: true,
+      can_firewall: true,
+      can_users_sys: true,
+      can_cron: true,
+      can_apt: true,
+      can_ssl: true,
+      can_audit: true,
+      can_file_manager: true
+    }
+  }
+  return props.currentUser.permissions || {}
+})
+
+const canAccessTab = (tabId) => {
+  if (!props.currentUser) return true
+  if (props.currentUser.is_master_admin || props.currentUser.role === 'operator_utama') return true
+  if (tabId === 'overview' || tabId === 'problems') return true
+  if (tabId === 'services_ports') return Boolean(userPerms.value.can_services)
+  if (tabId === 'processes') return Boolean(userPerms.value.can_processes)
+  if (tabId === 'firewall') return Boolean(userPerms.value.can_firewall)
+  if (tabId === 'accounts') return Boolean(userPerms.value.can_users_sys)
+  if (tabId === 'cron') return Boolean(userPerms.value.can_cron)
+  if (tabId === 'packages') return Boolean(userPerms.value.can_apt)
+  if (tabId === 'ssl') return Boolean(userPerms.value.can_ssl)
+  if (tabId === 'logs') return Boolean(userPerms.value.can_audit || userPerms.value.can_services)
+  if (tabId === 'fim') return Boolean(userPerms.value.can_audit)
+  return true
+}
+
+const subTabs = computed(() => {
+  const allTabs = [
+    { id: 'overview', label: t('tab_perf') },
+    { id: 'problems', label: t('tab_incidents'), badge: serverProblems.value.length || null },
+    { id: 'services_ports', label: t('tab_services_ports'), badge: servicesList.value.length + portsList.value.length || null },
+    { id: 'processes', label: t('tab_tasks'), badge: processesList.value.length || null },
+    { id: 'firewall', label: t('tab_firewall') },
+    { id: 'accounts', label: t('tab_users_ssh'), badge: activeSSHSessions.value.length || null },
+    { id: 'cron', label: t('tab_cron'), badge: cronData.value?.jobs?.length || null },
+    { id: 'fim', label: t('tab_fim'), badge: fimEventsList.value.length || null },
+    { id: 'packages', label: t('tab_packages'), badge: server.value?.apt_upgradable || packagesList.value.length || null },
+    { id: 'ssl', label: t('tab_ssl'), badge: sslCertsList.value.length || null },
+    { id: 'logs', label: t('tab_logs') },
+  ]
+  return allTabs.filter(tab => canAccessTab(tab.id))
+})
+
+watch(subTabs, (available) => {
+  if (!available.some(t => t.id === activeSubTab.value)) {
+    activeSubTab.value = 'overview'
+  }
+})
 
 const allAssets = computed(() => props.assetsList?.length ? props.assetsList : props.fleetServers)
 

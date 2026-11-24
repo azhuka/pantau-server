@@ -174,6 +174,17 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.42
+
+### [0.1.42] - 2026-11-24
+#### Security & RBAC Hardening
+- **Otorisasi Sub-Resource Menyeluruh Tanpa Celah**: Seluruh endpoint inspeksi dan kontrol di `server/routers/servers.py` (`/{sid}/services`, `/{sid}/processes`, `/{sid}/firewall`, `/{sid}/cron`, `/{sid}/packages`, `/{sid}/ssl`, `/{sid}/logs`, `/{sid}/fim`, `/{sid}/terminal/exec`, `/{sid}/maintenance`, `/{sid}/actions`, `/{sid}/inject-key`, `/{sid}/note`, `DELETE /{sid}`) kini menerapkan fungsi pengaman `check_server_access(user, sid)` serta penegakan izin granular (`can_services`, `can_processes`, `can_firewall`, `can_users_sys`, `can_cron`, `can_terminal`, `can_manage_servers`, `can_apt`, `can_ssl`, `can_audit`, `can_server_control`).
+- **Isolasi Cakupan Armada (Host Scope Isolation)**: Endpoint `GET /api/servers` kini secara otomatis menyaring daftar host berdasarkan `user.can_access_server(s.id)`, sehingga operator terbatas hanya melihat aset yang diizinkan untuk akun mereka.
+- **Simetri Kontrak Data Profil Auth**: Menambahkan atribut `permissions` dan `allowed_server_ids` ke dalam envelope respon `/api/auth/login`, `/api/auth/login-2fa`, dan `/api/auth/me` agar lapisan klien SPA memiliki sumber kebenaran otorisasi yang valid.
+- **Penyelarasan UI Taktis Workspace & Inventaris**: Memperbarui `ServerWorkspaceModal.vue` dan `AssetTableView.vue` agar secara otomatis menyembunyikan tab dan tombol aksi yang tidak diizinkan bagi pengguna aktif.
+- **Bukti Pengujian Menyeluruh**: Lulus 100% pengujian otomatis backend (`tools/test_rbac_scope_and_perms.py`) dan pengujian UI Puppeteer (`tools/test_v0142_rbac_workspace.js`).
+
+
 ### Versi v0.1.41
 
 ### v0.1.41 (2026-11-24) — Penegakan Autentikasi 2FA pada Login & Eliminasi Workaround
