@@ -98,7 +98,152 @@ Sistem dibangun dengan pemisahan lapisan tanggung jawab yang ketat (*Strict Sepa
 
 ---
 
-## 5. Spesifikasi Teknis Agen Klien (`agent_pantau`)
+## 5. Model Kontrol Akses Berbasis Peran 3-Tier (3-Tier RBAC Architecture & Security Policy)
+
+Untuk menegakkan tata kelola keamanan operasional *enterprise*, integritas multi-operator, dan prinsip pemisahan tugas (*segregation of duties*), Pantau Server menerapkan sistem otorisasi dan kontrol akses berbasis peran (*Role-Based Access Control* - RBAC) 3-tier yang kokoh.
+
+```mermaid
+flowchart TD
+    subgraph MasterAdmin["1. Master Admin (Root Mutlak)"]
+        MA["Otoritas Penuh Seluruh Modul"]
+        MA_Audit["Audit Trail Transparan Penuh"]
+        MA_Ctrl["Akses Eksklusif Master Control & DB Optimize"]
+        MA_Perms["Hak Eksklusif Edit Wewenang Operator"]
+    end
+
+    subgraph Operator["2. Operator (Staff Operasional Harian / SRE)"]
+        OP["Wewenang Operasional Didelegasikan Granular"]
+        OP_Perms["16 Matriks Izin: Terminal, Services, File Manager, dll."]
+        OP_Scope["Cakupan Aset: Global atau Terbatas (allowed_server_ids)"]
+        OP_Viewer["Dapat Kelola Akun Viewer (Bila Memiliki Izin)"]
+    end
+
+    subgraph Viewer["3. Viewer / Guest (Pengawas & Auditor Eksternal)"]
+        VW["Akses Observasi Murni (Read-Only)"]
+        VW_Block["Blokir Mutlak Seluruh Aksi Mutasi & Kontrol"]
+        VW_Managed["Kredensial Dikelola 100% dari Luar (Zero Self-Edit)"]
+    end
+
+    MasterAdmin -->|"Delegasikan Izin & Akun"| Operator
+    MasterAdmin -->|"Buat & Kelola Akun"| Viewer
+    Operator -.->|"Dapat Kelola (Jika can_manage_viewers)"| Viewer
+
+    subgraph Visibilitas & Isolasi Informasi
+        OP -. "X BLIND (Zero-Knowledge): Master Admin Tidak Terlihat" .-> MasterAdmin
+        VW -. "X ISOLASI TOTAL: Tidak Melihat Akun Lain" .-> MasterAdmin
+        VW -. "X ISOLASI TOTAL: Tidak Melihat Akun Lain" .-> Operator
+    end
+```
+
+### 5.1 Hierarki dan Definisi Tiga Peran (*Role Hierarchy*)
+
+1. **Master Administrator (`master_admin`):**
+   - **Kedudukan:** Akun administratif tertinggi dan tunggal dengan wewenang setara *root* sistem.
+   - **Otoritas:** Kontrol tak terbatas atas seluruh armada server, web terminal, file manager, eksekusi perintah, konfigurasi sistem, dan manajemen pengguna.
+   - **Hak Khusus Eksklusif:**
+     - Satu-satunya peran yang memiliki visibilitas atas kartu statistik dan baris akun Master Admin di antarmuka manajemen pengguna.
+     - Satu-satunya peran yang berhak mengubah matriks wewenang granular (`permissions`) akun Operator.
+     - Akses eksklusif ke modul Master Control (`/api/master-control/*`, inspeksi fragmentasi tabel database InnoDB, dan eksekusi `OPTIMIZE TABLE`).
+     - Akses audit trail transparan penuh tanpa penyamaran nama aktor.
+   - **Kekebalan Integritas:** Akun Master Admin tidak dapat dihapus, dinonaktifkan (`is_active = 0`), atau diubah perannya melalui antarmuka mana pun.
+
+2. **Operator (`operator`):**
+   - **Kedudukan:** Akun staf operasional harian NOC / *Site Reliability Engineer* (SRE).
+   - **Konsep Otoritas Sudo Operator (*Sudo-like Authority*):** Mengadopsi prinsip pengguna Linux dalam grup `sudo` (*wheel*), Master Admin mendelegasikan wewenang operasional teknis kepada Operator melalui matriks izin granular. Hal ini memungkinkan pemeliharaan harian armada berjalan penuh tanpa perlu login menggunakan akun Master Admin.
+   - **Tata Kelola Pengguna oleh Operator:**
+     - Operator yang memiliki izin `can_manage_users` berhak menambah, mengedit profil, me-reset kata sandi, mengunci/membuka, dan menghapus akun sesama Operator dan Viewer.
+     - Operator dengan izin `can_manage_viewers` (tanpa `can_manage_users`) hanya berwenang menambah dan mengelola akun berkategori `viewer`.
+     - Operator dilarang keras mengedit matriks perizinan (`permissions`) akun operator lain.
+   - **Batasan Integritas Diri:** Operator dilarang keras menghapus akun dirinya sendiri, dilarang menonaktifkan akun dirinya sendiri, dan dilarang mengubah perannya sendiri.
+
+3. **Viewer (`viewer`):**
+   - **Kedudukan:** Akun pengawas pasif untuk *stakeholder*, manajemen, tim auditor eksternal, atau peninjau teknis.
+   - **Akses Observasi Murni (*Pure Read-Only*):** Seluruh formulir kontrol, tombol aksi eksekusi (restart service, kill task, power control, inject key, firewall), terminal, file manager, dan pengaturan sistem disembunyikan di antarmuka dan diblokir tegas di backend.
+
+---
+
+### 5.2 Prinsip *Zero-Knowledge Master Admin* (Stealth & Anti-User Enumeration)
+
+Untuk menjamin keamanan tingkat tinggi dan mengisolasi informasi administratif sensitif dari staf operasional, Pantau Server memberlakukan prinsip *Zero-Knowledge* terhadap akun Master Admin:
+1. **Peniadaan Visibilitas di Antarmuka Pengguna:**
+   - Kartu counter statistik jumlah akun Master Admin disembunyikan secara otomatis dari pandangan Operator.
+   - Baris akun Master Admin disaring keluar (*filtered out*) dari tabel direktori pengguna pada endpoint `GET /api/users` ketika diakses oleh Operator. Operator hanya melihat akun sesama Operator dan Viewer.
+2. **Netralitas Respons API (*Anti-User Enumeration*):**
+   - Jika Operator atau non-master-admin mencoba memanipulasi ID Master Admin secara sengaja via API/HTTP request (`PUT /api/users/{id}`, `DELETE /api/users/{id}`, atau endpoint 2FA), sistem **wajib merespons netral: `404 Not Found (User not found)`**, bukan `403 Forbidden`. Hal ini mencegah penyerang atau staf melakukan enumerasi keberadaan akun root melalui perbedaan kode status respons.
+3. **Penyamaran Jejak pada Audit Trail (`/audit`):**
+   - Pada halaman log audit akuntabilitas yang diakses oleh Operator, seluruh catatan aktivitas yang dijalankan oleh Master Admin disamarkan secara otomatis menjadi nama aktor `"Sistem"`.
+   - String pencarian atau penyebutan username Master Admin digantikan secara otomatis menjadi `"Sistem"`.
+   - Dropdown filter aktor pengguna pada antarmuka audit tidak memuat nama akun Master Admin.
+
+---
+
+### 5.3 Prinsip Isolasi Mutlak Akun Viewer (*Zero Administrative Authority*)
+
+Akun Viewer dirancang sebagai entitas terkelola penuh dari luar (*managed credentials*):
+1. **Peniadaan Akses Manajemen Pengguna:** Akun Viewer sama sekali tidak memiliki akses ke halaman atau modal manajemen akun (`/settings`).
+2. **Peniadaan Akses Manajemen Profil Diri (*No Self-Edit*):**
+   - Viewer tidak memiliki menu profil dan tidak dapat mengubah username sendiri.
+   - Viewer **tidak dapat mengubah kata sandi sendiri** melalui antarmuka web.
+   - Viewer **tidak dapat mengaktifkan atau menonaktifkan 2FA sendiri**.
+   - Seluruh kredensial akun Viewer (pembuatan, perubahan kata sandi, aktivasi/deaktivasi) dikendalikan sepenuhnya dari luar oleh Master Admin atau Operator berwenang.
+
+---
+
+### 5.4 Matriks Perbandingan Otoritas & Kapabilitas Antar Peran
+
+| Dimensi / Aksi | Master Admin (`master_admin`) | Operator Utama (`can_manage_users`) | Operator Terbatas (`can_manage_viewers`) | Viewer (`viewer`) |
+|---|---|---|---|---|
+| **Visibilitas Akun Master Admin** | **Terlihat Penuh** | **DISILUMANKAN** *(Zero-Knowledge)* | **DISILUMANKAN** *(Zero-Knowledge)* | **DIBLOKIR MUTLAK** |
+| **Visibilitas Akun Operator** | **Terlihat Penuh** | **Terlihat** | **Disembunyikan** *(Hanya lihat Viewer)* | **DIBLOKIR MUTLAK** |
+| **Visibilitas Akun Viewer** | **Terlihat Penuh** | **Terlihat** | **Terlihat** | **DIBLOKIR MUTLAK** |
+| **Kartu Counter Master Admin** | **Tampil** | **Disembunyikan** | **Disembunyikan** | **Disembunyikan** |
+| **Ganti Username / Password Sendiri** | **Bisa** *(Wajib current pwd)* | **Bisa** *(Wajib current pwd)* | **Bisa** *(Wajib current pwd)* | **DIBLOKIR MUTLAK** |
+| **Kelola 2FA (TOTP) Sendiri** | **Bisa** | **Bisa** | **Bisa** | **DIBLOKIR MUTLAK** |
+| **Hapus / Kunci Akun Sendiri** | **DILARANG KERAS** | **DILARANG KERAS** | **DILARANG KERAS** | **DILARANG KERAS** |
+| **Tambah Akun Baru** | `operator` & `viewer` | `operator` & `viewer` | Khusus `viewer` saja | **DIBLOKIR** |
+| **Promosikan ke `master_admin`** | **DILARANG** *(1 Root)* | **DILARANG KERAS** | **DILARANG KERAS** | **DILARANG KERAS** |
+| **Edit Profil Pengguna Lain** | Operator & Viewer | Operator & Viewer | Khusus Viewer | **DIBLOKIR** |
+| **Reset Kata Sandi Pengguna Lain** | Operator & Viewer | Operator & Viewer | Khusus Viewer | **DIBLOKIR** |
+| **Edit Matriks Wewenang (`permissions`)** | **HAK EKSKLUSIF** | **DILARANG KERAS** | **DILARANG KERAS** | **DIBLOKIR** |
+| **Kunci / Buka Pengguna Lain** | Operator & Viewer | Operator & Viewer | Khusus Viewer | **DIBLOKIR** |
+| **Hapus Akun Pengguna Lain** | Operator & Viewer | Operator & Viewer | Khusus Viewer | **DIBLOKIR** |
+| **Sentuh ID Master Admin** | Akun Sendiri | **404 Not Found** *(Stealth)* | **404 Not Found** *(Stealth)* | **403 Forbidden** |
+| **Akses Master Control & DB Optimize** | **YA** | **403 Forbidden** | **403 Forbidden** | **403 Forbidden** |
+| **Akses Log Audit Trail (`/audit`)** | Transparan Penuh | Wajib Izin `can_audit` *(Masking)* | **403 Forbidden** | **403 Forbidden** |
+
+---
+
+### 5.5 Matriks 16 Izin Granular Operator & Isolasi Cakupan Aset
+
+Hak operasional teknis akun Operator diatur melalui 16 kunci wewenang terperinci (*granular permissions*):
+
+| Kunci Izin (*Permission Key*) | Label Fungsional | Deskripsi Cakupan Wewenang |
+|---|---|---|
+| `can_terminal` | Terminal Shell Web | Akses konsol shell PTY (`/bin/bash`) interaktif multi-tab xterm.js ke host. |
+| `can_file_manager` | File Manager Remote | Penjelajahan direktori, unduh, unggah, dan penyuntingan berkas remote. |
+| `can_services` | Kontrol Services Systemd | Memulai (*start*), menghentikan (*stop*), dan me-restart unit *services* Linux. |
+| `can_processes` | Manajer Proses (Tasks) | Mengirim sinyal terminasi (`SIGTERM`, `SIGKILL`) atau suspensi (`SIGSTOP`, `SIGCONT`). |
+| `can_firewall` | Kontrol Firewall (UFW) | Mengelola status UFW, aturan port masuk/keluar, dan blokir/buka IP. |
+| `can_users_sys` | User Sistem Linux Host | Membuat akun OS baru, mengunci (*lock*), membuka, dan menghapus akun Linux host. |
+| `can_cron` | Tugas Terjadwal (Cron) | Menambah jadwal crontab, mengaktifkan/menonaktifkan, atau eksekusi instan. |
+| `can_ssl` | Sertifikat SSL | Mendaftarkan path sertifikat SSL lokal dan memantau masa berlaku sertifikat. |
+| `can_server_control` | Kontrol Daya Host | Menjalankan instruksi *Reboot* atau *Power Off* pada mesin target. |
+| `can_apt` | Pembaruan Paket OS | Menjalankan pembaruan *cache* repo (`apt update`) dan instalasi paket (`apt upgrade`). |
+| `can_ota` | Dorong Pembaruan Agen | Mengirim perintah dorong pembaruan biner agen OTA (*Over-The-Air*) massal. |
+| `can_manage_servers` | Kelola Metadata Aset | Mendaftarkan server baru, mengubah hostname/IP/catatan, dan menyetel mode pemeliharaan. |
+| `can_audit` | Akses Audit Trail | Membuka dan menelusuri catatan akuntabilitas aktivitas sistem pada halaman Audit Trail. |
+| `can_manage_users` | Manajemen Pengguna Sistem | Membuat akun staf, mengubah kata sandi, dan mengatur status aktivasi pengguna. |
+| `can_manage_viewers` | Kelola Akun Viewer | Izin terfokus untuk membuat dan mengelola akun pemantau berkategori Viewer. |
+| `can_probing` | Synthetic Network Probing | Menambah, mengubah, dan menguji target probe jaringan HTTP, TCP, dan ICMP ping. |
+
+#### Isolasi Cakupan Aset Server (`allowed_server_ids`)
+Selain matriks izin fungsional di atas, setiap akun Operator dibekali atribut isolasi cakupan aset:
+- **Akses Global (`allowed_server_ids = None`):** Operator berwenang mengeksekusi izin aktifnya di seluruh node server yang terdaftar di sistem.
+- **Akses Terbatas (`allowed_server_ids = [id1, id2, ...]`):** Operator hanya dapat melihat telemetri, metrik, dan mengeksekusi tindakan pada daftar server spesifik yang ditentukan. Seluruh endpoint inspeksi dan kontrol sub-resource (`/api/servers/{sid}/*`) memvalidasi kepemilikan cakupan ini melalui pengaman `check_server_access()`.
+
+---
+
+## 6. Spesifikasi Teknis Agen Klien (`agent_pantau`)
 
 Daemon agen di server klien adalah ujung tombak pengumpulan telemetri armada. Agen dirancang dengan prinsip rekayasa presisi:
 * **Zero External Dependencies:** Beroperasi murni menggunakan pustaka standar Python 3.10+ tanpa memerlukan dependensi paket pihak ketiga (seperti `psutil`, `requests`, atau `curl`).
@@ -108,7 +253,7 @@ Daemon agen di server klien adalah ujung tombak pengumpulan telemetri armada. Ag
 
 ---
 
-## 6. Standar Versi SemVer & Peta Jalan Fase Pengembangan
+## 7. Standar Versi SemVer & Peta Jalan Fase Pengembangan
 
 Penomoran versi proyek mengikuti kaidah **Semantic Versioning (SemVer)**: `vMAJOR.MINOR.PATCH`.
 * **Baseline Saat Ini:** **`v0.1.0`** (Fondasi Arsitektur Bersih, SPA 4 Halaman, & API Inti).
@@ -145,7 +290,7 @@ FASE 5: Hardening Produksi & Peluncuran Resmi (v1.0.0)
 
 ---
 
-## 7. Konvensi Rekayasa & Standar Kontribusi Git
+## 8. Konvensi Rekayasa & Standar Kontribusi Git
 
 Seluruh commit ke repositori Git wajib menggunakan standar **Conventional Commits**:
 

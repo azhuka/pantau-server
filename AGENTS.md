@@ -89,6 +89,7 @@ tools/                  # Otomasi rilis (sop_release.py), test_terminal_dock.js,
    - `insiden aktif` (*bukan insiden terbuka*): Insiden yang sedang terjadi dan masih aktif secara fisik.
    - *Severity 4-Tingkat:* `info` (biru, non-ancaman, info update package), `warning` (kuning, potensi ancaman/gangguan, layanan utama tetap jalan), `critical` (oranye pekat, layanan utama terganggu/mati, SSH ilegal), `danger` (merah, kelumpuhan sistem utama, host offline/down, disk read-only, kernel panic).
    - *Hierarki Pengguna:* `master-admin` (root absolut), `operator utama` (dibuat master-admin, hak kelola penuh harian, tak bisa hapus master-admin), `operator pembantu` (dibuat operator utama, izin granular terbatas), `tamu`/`guest` (peninjau murni / read-only).
+   - *Prinsip Zero-Knowledge Master Admin:* Akun `master-admin` disembunyikan total dari operator/viewer (counter card disembunyikan, tabel disaring, respons API netral 404 Not Found, log audit disamarkan sebagai "Sistem").
 11. **Kebijakan Dokumentasi & Larangan Mutlak Narasi Komparatif:**
    - **`README.md`**: Dokumen publik khusus bagi pengguna akhir (*end-user* / sysadmin) untuk instalasi, konfigurasi, dan panduan operasional.
    - **`DEVELOPMENT.md`**: Buku putih arsitektur, catatan teknis mendalam, dan riwayat changelog per rilis bagi operator dan asisten AI agar menjadi referensi masa depan.

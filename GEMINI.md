@@ -103,11 +103,21 @@ Berkas ini adalah spesifikasi teknis dan aturan baku permanen (*always-on projec
 
 ## 8. Aturan Baku Manajemen Pengguna & Kesetaraan Otoritas Operator (RBAC Parity)
 - **Kesetaraan Fungsional Operator Penuh:** Akun `master_admin` berhak mengangkat akun `operator` dengan hak akses global penuh (seperti `sysadmin_sadri`) yang memiliki otoritas operasional identik dengan `master-admin` atas seluruh aset server klien.
-- **Proteksi Mutlak Integritas Akun:**
-  - Akun operator DILARANG KERAS menghapus akun dirinya sendiri.
-  - Akun operator DILARANG KERAS menghapus akun `master-admin`.
-- **Tata Kelola Wewenang Berbasis Izin Granular (`can_*`):** Pembagian tugas di Pantau Server murni didasarkan pada matriks izin granular yang diberikan oleh administrator. Jika seluruh izin diberikan, akun tersebut adalah operator penuh tanpa diskriminasi kapabilitas teknis di lapangan.
-- **Perlakuan Keamanan Setara:** Setiap fitur keamanan sistem (termasuk Web Terminal non-root, eskalasi `sudo`, penegakan 2FA/TOTP, dan kontrol daya) wajib memperlakukan operator berakses penuh secara setara dengan `master-admin`.
+- **Prinsip Zero-Knowledge Master Admin (Hard Rule):**
+  - Akun `master-admin` disembunyikan secara absolut dari antarmuka pengguna Operator dan Viewer.
+  - Kartu counter statistik `master-admin` wajib disembunyikan dari pandangan Operator.
+  - Baris akun `master-admin` wajib disaring keluar dari seluruh tabel/daftar pengguna yang diakses oleh Operator (`GET /api/users`).
+  - Setiap upaya manipulasi ID `master-admin` via API oleh non-master-admin wajib direspons netral dengan kode HTTP `404 Not Found` ("User not found") untuk mencegah *user enumeration*, bukan `403 Forbidden`.
+  - Pada halaman Audit Trail (`/audit`), seluruh aktivitas yang dijalankan oleh Master Admin disamarkan otomatis sebagai aktor `"Sistem"` dan nama akun Master Admin disaring dari filter pengguna.
+- **Hierarki & Batasan RBAC 3-Tier:**
+  - *Master Admin (`master_admin`):* Root absolut. Satu-satunya peran yang berhak mengubah matriks wewenang (`permissions`) akun Operator. Memiliki akses eksklusif ke modul Master Control (`/api/master-control/*`, status InnoDB, optimize DB).
+  - *Operator (`operator`):* Wewenang operasional harian berbasis 16 matriks izin granular. Dilarang keras mengedit `permissions` operator lain. Dilarang keras menyentuh akun master-admin. Dilarang keras menghapus atau menonaktifkan akun dirinya sendiri.
+  - *Viewer (`viewer`):* Pengawas murni (*pure read-only*). Terisolasi mutlak tanpa hak akses manajemen pengguna dan tanpa hak swa-kelola kredensial (*no self-edit*: tidak bisa ganti username, password, atau 2FA sendiri dari web UI). Seluruh kredensial dikelola dari luar.
+- **Tata Kelola Wewenang Berbasis Izin Granular (`can_*`):** Pembagian tugas di Pantau Server murni didasarkan pada 16 matriks izin granular yang diberikan oleh administrator. Jika seluruh izin diberikan dan cakupan aset bersifat global (`allowed_server_ids = None`), akun tersebut adalah operator penuh tanpa diskriminasi kapabilitas teknis di lapangan.
+- **Mandat Dokumentasi Arsitektur di `DEVELOPMENT.md`:**
+  - Berkas `DEVELOPMENT.md` adalah **buku putih arsitektur permanen dan referensi rekayasa utama** bagi operator dan seluruh pengembang sistem.
+  - Setiap spesifikasi teknis, kebijakan keamanan, model RBAC, dan prinsip arsitektural wajib didokumentasikan secara menyeluruh, rapi, dan terperinci di `DEVELOPMENT.md`.
+  - Wajib mempertahankan narasi *clean slate* murni tanpa pernah membandingkan atau menyebut aplikasi lama (`~/rj45`).
 
 ---
 
