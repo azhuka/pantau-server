@@ -197,7 +197,13 @@ async function handleLogin() {
         password: password.value,
       }),
     })
-    const data = await res.json()
+    let data = {}
+    try {
+      data = await res.json()
+    } catch (parseErr) {
+      data = { detail: res.statusText || 'Server error (' + res.status + ')' }
+    }
+
     if (res.ok) {
       if (data.requires_2fa) {
         preauthToken.value = data.preauth_token
@@ -214,7 +220,7 @@ async function handleLogin() {
       errorMsg.value = data.detail || t('login_invalid')
     }
   } catch (err) {
-    errorMsg.value = t('login_conn_fail') + err.message
+    errorMsg.value = t('login_conn_fail') + (err.message || err)
   } finally {
     loading.value = false
   }
@@ -232,7 +238,13 @@ async function handle2faVerify() {
         code: totpCode.value.trim(),
       }),
     })
-    const data = await res.json()
+    let data = {}
+    try {
+      data = await res.json()
+    } catch (parseErr) {
+      data = { detail: res.statusText || 'Server error (' + res.status + ')' }
+    }
+
     if (res.ok && data.access_token) {
       localStorage.setItem('pantau_token', data.access_token)
       emit('logged-in', data.user)
@@ -240,7 +252,7 @@ async function handle2faVerify() {
       errorMsg.value = data.detail || 'Invalid 2FA code'
     }
   } catch (err) {
-    errorMsg.value = t('login_conn_fail') + err.message
+    errorMsg.value = t('login_conn_fail') + (err.message || err)
   } finally {
     loading.value = false
   }

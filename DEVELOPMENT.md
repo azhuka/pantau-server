@@ -319,6 +319,15 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.48
+
+### [v0.1.48] - 2026-11-25
+
+#### Perbaikan Skema Otentikasi & Ketahanan Login Modal
+- **Penyelesaian Kendala 500 Internal Server Error pada Login Baru:** Menambahkan penanganan updated_at otomatis pada entitas LoginAttempt di server/models/user.py dan server/routers/auth.py, serta menetapkan DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP pada tabel login_attempts MySQL sehingga pencatatan percobaan login dari IP baru berjalan mulus tanpa kendala.
+- **Penanganan Aman Respons JSON pada Login Modal:** Memperbarui fungsi handleLogin() dan handle2faVerify() pada LoginModal.vue dengan pembungkus try...catch saat mengurai respons res.json(), mencegah error penguraian teks non-JSON.
+
+
 ### Versi v0.1.47
 
 ### [v0.1.47] - 2026-11-25

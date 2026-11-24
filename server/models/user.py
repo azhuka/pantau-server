@@ -1,3 +1,4 @@
+from datetime import datetime
 from sqlalchemy import Column, Integer, String, Text, DateTime, TIMESTAMP, SmallInteger, func
 from core.database import Base
 
@@ -101,9 +102,9 @@ class LoginAttempt(Base):
     __tablename__ = "login_attempts"
 
     ip_address = Column(String(45), primary_key=True)
-    fails = Column(Integer, default=0)
+    fails = Column(Integer, default=0, nullable=False)
     lock_until = Column(DateTime, nullable=True)
-    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    updated_at = Column(DateTime, default=datetime.utcnow, server_default=func.now(), onupdate=func.now())
 
 class AppSession(Base):
     __tablename__ = "sessions"

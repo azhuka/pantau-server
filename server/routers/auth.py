@@ -25,7 +25,7 @@ def _client_ip(request: Request) -> str:
 def _login_trial(db: Session, ip: str) -> LoginAttempt:
     row = db.query(LoginAttempt).filter(LoginAttempt.ip_address == ip).first()
     if row is None:
-        row = LoginAttempt(ip_address=ip, fails=0)
+        row = LoginAttempt(ip_address=ip, fails=0, updated_at=datetime.utcnow())
         db.add(row)
         db.flush()
     return row
@@ -81,6 +81,7 @@ def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == clean_username).first()
     if not user or not verify_password(req.password, user.password_hash):
         trial.fails = (trial.fails or 0) + 1
+        trial.updated_at = datetime.utcnow()
         if trial.fails >= LOGIN_MAX_FAILS:
             lock_secs = LOGIN_LOCK_DURATIONS[min(trial.fails - LOGIN_MAX_FAILS, len(LOGIN_LOCK_DURATIONS) - 1)]
             trial.lock_until = datetime.utcnow() + timedelta(seconds=lock_secs)
@@ -104,6 +105,7 @@ def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
 
     trial.fails = 0
     trial.lock_until = None
+    trial.updated_at = datetime.utcnow()
     user.last_login_at = datetime.utcnow()
 
     # Catat log audit login berhasil
@@ -178,6 +180,7 @@ def login_2fa(req: Login2faRequest, request: Request, db: Session = Depends(get_
     trial = _login_trial(db, ip)
     trial.fails = 0
     trial.lock_until = None
+    trial.updated_at = datetime.utcnow()
     user.last_login_at = datetime.utcnow()
 
     audit = AuditLog(
