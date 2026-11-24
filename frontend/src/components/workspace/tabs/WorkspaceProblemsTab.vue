@@ -54,7 +54,8 @@
                 class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-gray-700/50 text-gray-300 border border-gray-600 flex items-center gap-1"
                 :title="prob.ignored_reason || 'Ignored'"
               >
-                🔇 {{ t('inc_ignored_badge') }}
+                <svg class="w-3 h-3 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
+                <span>{{ t('inc_ignored_badge') }}</span>
               </span>
             </div>
           </div>

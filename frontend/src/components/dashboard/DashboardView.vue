@@ -310,10 +310,10 @@
                     </span>
                     <span
                       v-if="prob.is_ignored"
-                      class="text-[9px] px-1.5 py-0.2 rounded font-bold bg-slate-800 text-slate-400 border border-slate-700 flex items-center gap-0.5"
+                      class="text-[9px] px-1.5 py-0.2 rounded font-bold bg-slate-800 text-slate-400 border border-slate-700 flex items-center gap-1"
                       :title="prob.ignored_reason || t('sev_ignored')"
                     >
-                      <span>🔇</span>
+                      <svg class="w-2.5 h-2.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
                       <span>{{ t('sev_ignored') }}</span>
                     </span>
                   </div>

@@ -16,7 +16,7 @@
           <div class="font-bold text-sm tracking-wider text-gray-100 flex items-center gap-2 font-mono">
             <span class="text-cyan-400 font-extrabold">{{ t('app_name') }}</span>
             <span class="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-800/60 tracking-normal">
-              v0.1.60
+              v0.1.61
             </span>
           </div>
           <div class="text-[10px] text-gray-400 tracking-widest font-mono uppercase flex items-center gap-1.5">
@@ -56,9 +56,9 @@
           <span>{{ t('nav_incidents') }}</span>
           <span
             v-if="problemCount > 0"
-            class="text-[10px] px-1.5 py-0.2 rounded font-bold ml-0.5 border bg-amber-500/20 text-amber-300 border-amber-500/40 flex items-center gap-0.5"
+            class="text-[10px] px-1.5 py-0.2 rounded font-bold ml-0.5 border bg-amber-500/20 text-amber-300 border-amber-500/40 flex items-center gap-1"
           >
-            <span>⚠</span>
+            <svg class="w-2.5 h-2.5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             <span>{{ problemCount }}</span>
           </span>
           <span

@@ -9,7 +9,7 @@
             <span>// {{ t('settings_modal_perms_title') || 'Configure Operator Permissions' }}: <strong class="text-cyan-300">{{ user.username }}</strong></span>
           </h3>
           <p class="text-[11px] text-gray-400 mt-0.5">
-            {{ t('settings_modal_perms_desc') || 'Manage granular capabilities and server fleet scoping.' }}
+            {{ t('settings_modal_perms_desc') || 'Manage granular capabilities and asset scoping.' }}
           </p>
         </div>
         <button
@@ -92,11 +92,11 @@
           </div>
         </div>
 
-        <!-- Server Fleet Scope (Only for Operator) -->
+        <!-- Monitored Assets Scope (Only for Operator) -->
         <div v-if="form.role === 'operator'" class="p-3 rounded-lg bg-[#0c1322] border border-gray-800 space-y-3">
           <div class="flex items-center justify-between">
             <span class="text-[11px] font-bold text-cyan-400 uppercase tracking-wider">
-              // {{ t('settings_section_scope') || 'Server Fleet Scope' }}
+              // {{ t('settings_section_scope') || 'Monitored Assets Scope' }}
             </span>
           </div>
 

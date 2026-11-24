@@ -498,6 +498,19 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.61
+
+### v0.1.61 — Penerapan Penuh Leksikon Komputasi Baku & Mandat Zero-Emoji (2026-11-25)
+
+- **Standard Computing & Networking Lexicon Enforcement:**
+  - Menstandarisasi seluruh istilah cakupan operator menjadi `Monitored Assets Scope` menggantikan istilah campuran.
+  - Memastikan seluruh teks antarmuka menggunakan terminologi baku industri komputasi dan NOC.
+- **Zero-Emoji Mandate (SVG Replacement):**
+  - Mengganti seluruh sisa karakter emoji bawaan OS (`🔇`, `⚡`, `⚠`) dengan ikon vektor SVG monokromatik semantik pada `DashboardView.vue`, `WorkspaceProblemsTab.vue`, `MasterControlSection.vue`, dan `Navbar.vue`.
+- **Pengujian & Kestabilan:**
+  - 100% suite pengujian otomatis headless browser lulus tanpa regresi.
+
+
 ### Versi v0.1.60
 
 ### v0.1.60 — Antarmuka Eksklusif Bahasa Inggris & Standardisasi Ergonomi Tombol NOC (2026-11-25)

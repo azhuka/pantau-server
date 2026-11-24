@@ -135,11 +135,11 @@
           </div>
         </div>
 
-        <!-- Server Fleet Scope (if Operator) -->
+        <!-- Monitored Assets Scope (if Operator) -->
         <div v-if="form.role === 'operator'" class="p-3 rounded-lg bg-[#0c1322] border border-gray-800 space-y-3">
           <div class="flex items-center justify-between">
             <span class="text-[11px] font-bold text-cyan-400 uppercase tracking-wider">
-              // {{ t('settings_section_scope') || 'Server Fleet Scope' }}
+              // {{ t('settings_section_scope') || 'Monitored Assets Scope' }}
             </span>
           </div>
 
