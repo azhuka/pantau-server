@@ -319,6 +319,15 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.49
+
+### [v0.1.49] - 2026-11-25
+
+#### Pembersihan Placeholder Textbox Login & Ketahanan Antarmuka
+- **Eliminasi Placeholder Kaku & Generik:** Menghapus teks placeholder 'operator / master-admin' dan placeholder semu pada input username dan password di LoginModal.vue. Kotak masukan kini tampil bersih, netral, dan mengandalkan label semantik resmi tanpa pembocoran peran akun maupun teks pengisi generik.
+- **Otomasi Sinkronisasi Versi Antarmuka:** Memperluas skrip otomasi tools/sop_release.py untuk secara otomatis memperbarui lencana versi SemVer pada LoginModal.vue secara sinkron bersama komponen lainnya.
+
+
 ### Versi v0.1.48
 
 ### [v0.1.48] - 2026-11-25

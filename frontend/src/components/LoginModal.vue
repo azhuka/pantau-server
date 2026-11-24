@@ -20,7 +20,7 @@
           <div class="font-bold text-sm tracking-wider text-gray-100 flex items-center gap-2">
             <span class="text-cyan-400 font-extrabold">{{ t('app_name') }}</span>
             <span class="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-800/60 tracking-normal">
-              v0.1.46
+              v0.1.49
             </span>
           </div>
           <div class="text-[10px] text-gray-400 tracking-widest uppercase flex items-center gap-1.5">
@@ -78,7 +78,6 @@
               required
               autofocus
               autocomplete="username"
-              placeholder="operator / master-admin"
               class="w-full bg-[#070c17] border border-cyan-900/50 text-gray-100 text-xs rounded-lg px-3.5 py-2.5 focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_10px_rgba(56,189,248,0.2)] font-mono transition-all"
             />
           </div>
@@ -90,7 +89,6 @@
               type="password"
               required
               autocomplete="current-password"
-              placeholder="••••••••"
               class="w-full bg-[#070c17] border border-cyan-900/50 text-gray-100 text-xs rounded-lg px-3.5 py-2.5 focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_10px_rgba(56,189,248,0.2)] font-mono transition-all"
             />
           </div>

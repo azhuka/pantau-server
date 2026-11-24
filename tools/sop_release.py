@@ -111,19 +111,20 @@ def update_version_files(new_ver: str, changelog_block: str = None) -> list:
                 f4.write_text(c4_new, encoding="utf-8")
                 modified_files.append(str(f4.relative_to(ROOT_DIR)))
 
-    # 5. frontend/src/components/Navbar.vue
-    f5 = ROOT_DIR / "frontend" / "src" / "components" / "Navbar.vue"
-    if f5.exists():
-        c5 = f5.read_text(encoding="utf-8")
-        c5_new = re.sub(
-            r'v[0-9]+\.[0-9]+\.[0-9]+',
-            f'v{new_ver}',
-            c5,
-            count=1
-        )
-        if c5 != c5_new:
-            f5.write_text(c5_new, encoding="utf-8")
-            modified_files.append(str(f5.relative_to(ROOT_DIR)))
+    # 5. frontend/src/components/Navbar.vue & LoginModal.vue
+    for subpath in ("frontend/src/components/Navbar.vue", "frontend/src/components/LoginModal.vue"):
+        fp = ROOT_DIR / subpath
+        if fp.exists():
+            c = fp.read_text(encoding="utf-8")
+            c_new = re.sub(
+                r'v[0-9]+\.[0-9]+\.[0-9]+',
+                f'v{new_ver}',
+                c,
+                count=1
+            )
+            if c != c_new:
+                fp.write_text(c_new, encoding="utf-8")
+                modified_files.append(str(fp.relative_to(ROOT_DIR)))
 
     return modified_files
 
