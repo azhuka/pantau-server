@@ -4,7 +4,52 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 from models.server import Server
 from models.problem import ServerProblem
-from models.misc import AuditLog
+from models.misc import AuditLog, SystemSetting
+
+# Ambang batas masalah default (Bawaan Pabrik)
+DEFAULT_THRESHOLDS = {
+    "cpu_warn": 85.0,
+    "cpu_average": 90.0,
+    "cpu_danger": 95.0,
+    "ram_warn": 85.0,
+    "ram_average": 90.0,
+    "ram_danger": 95.0,
+    "disk_warn": 90.0,
+    "disk_average": 92.5,
+    "disk_danger": 95.0,
+    "swap_warn": 80.0,
+    "swap_average": 86.0,
+    "swap_danger": 92.0,
+    "ssh_fail_warn": 5,
+    "ssh_fail_danger": 10,
+}
+
+_RETENTION_LIMITS = {
+    "login_attempts_days": 1,
+    "audit_logs_days": 365,
+    "commands_days": 180,
+    "log_requests_days": 30,
+    "resolved_problems_days": 30,
+}
+
+
+def get_global_thresholds(db: Session) -> dict:
+    """Ambil ambang batas global dari tabel system_settings (fallback ke DEFAULT_THRESHOLDS)."""
+    try:
+        row = db.query(SystemSetting).filter(SystemSetting.key == "thresholds").first()
+        if row and row.value:
+            data = json.loads(row.value)
+            res = dict(DEFAULT_THRESHOLDS)
+            for k in res:
+                if k in data and data[k] is not None and str(data[k]).strip() != "":
+                    try:
+                        res[k] = int(data[k]) if "fail" in k else float(data[k])
+                    except (ValueError, TypeError):
+                        pass
+            return res
+    except Exception:
+        pass
+    return dict(DEFAULT_THRESHOLDS)
 
 # Daftar layanan krusial yang dipantau status kegagalannya
 CRITICAL_SERVICES = {

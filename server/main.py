@@ -4,7 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from config import settings
-from routers import api_agent, auth, servers, problems, terminal, files, users
+from routers import api_agent, auth, servers, problems, terminal, files, users, audit
+from routers import settings as settings_router
 
 app = FastAPI(
     title="Pantau Server",
@@ -30,6 +31,8 @@ app.include_router(servers.router)
 app.include_router(files.router)
 app.include_router(problems.router)
 app.include_router(terminal.router)
+app.include_router(audit.router)
+app.include_router(settings_router.router)
 
 @app.get("/api/health")
 def healthcheck():

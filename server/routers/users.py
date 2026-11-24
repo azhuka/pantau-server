@@ -12,6 +12,7 @@ from routers.auth import get_current_user
 from models.user import User
 from models.server import Server
 from security_auth import OPERATOR_PERMISSIONS
+import security_auth
 
 router = APIRouter(prefix="/api/users", tags=["User Management"])
 
@@ -47,13 +48,25 @@ class UserStatusUpdateRequest(BaseModel):
     is_active: int = Field(..., ge=0, le=1)
 
 
+class TotpConfirmRequest(BaseModel):
+    secret: str
+    code: str
+
+
+class TotpDisableRequest(BaseModel):
+    password: str
+
+
 class UserResponse(BaseModel):
     id: int
     username: str
     role: str
     is_active: int
+    totp_enabled: int = 0
     created_at: Optional[datetime] = None
     last_login_at: Optional[datetime] = None
+    last_login_ip: Optional[str] = None
+    password_changed_at: Optional[datetime] = None
     created_by: Optional[str] = None
     permissions: Optional[Dict[str, bool]] = None
     allowed_server_ids: Optional[List[int]] = None
@@ -68,8 +81,11 @@ class UserProfileResponse(BaseModel):
     role: str
     is_master_admin: bool
     is_active: int
+    totp_enabled: int = 0
     created_at: Optional[datetime] = None
     last_login_at: Optional[datetime] = None
+    last_login_ip: Optional[str] = None
+    password_changed_at: Optional[datetime] = None
 
 
 def validate_password_strength(password: str) -> None:
@@ -98,6 +114,7 @@ def validate_password_strength(password: str) -> None:
 # ---------------------------------------------------------------------------
 # Metadata Endpoints
 # ---------------------------------------------------------------------------
+@router.get("/metadata")
 @router.get("/meta/metadata")
 def get_user_metadata(
     user: User = Depends(get_current_user),
@@ -126,6 +143,7 @@ def get_user_metadata(
 # ---------------------------------------------------------------------------
 # Current User Self-Service Endpoints
 # ---------------------------------------------------------------------------
+@router.get("/profile", response_model=UserProfileResponse)
 @router.get("/me", response_model=UserProfileResponse)
 def get_user_profile(user: User = Depends(get_current_user)):
     """Melihat profil akun yang sedang login."""
@@ -436,3 +454,94 @@ def delete_user(
     db.commit()
 
     return {"ok": True, "message": f"User '{username_deleted}' has been deleted."}
+
+
+# ---------------------------------------------------------------------------
+# Two-Factor Authentication (2FA / TOTP RFC 6238) Endpoints
+# ---------------------------------------------------------------------------
+@router.post("/2fa/init")
+def api_user_2fa_init(user: User = Depends(get_current_user)):
+    """Inisialisasi setup 2FA TOTP (Google Authenticator / Aegis / dsb)."""
+    raw_secret = security_auth.generate_totp_secret()
+    formatted_secret = security_auth.format_secret_display(raw_secret)
+    totp_uri = security_auth.generate_totp_uri(raw_secret, user.username)
+    qr_data_url = security_auth.generate_qr_data_url(totp_uri)
+    return {
+        "ok": True,
+        "raw_secret": raw_secret,
+        "formatted_secret": formatted_secret,
+        "totp_uri": totp_uri,
+        "qr_data_url": qr_data_url,
+    }
+
+
+@router.post("/2fa/confirm")
+def api_user_2fa_confirm(
+    req: TotpConfirmRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Konfirmasi kode 6 digit untuk mengaktifkan 2FA."""
+    if not security_auth.verify_totp(req.secret, req.code):
+        raise HTTPException(status_code=400, detail="Kode autentikasi 2FA tidak valid atau sudah kedaluwarsa.")
+
+    plain_codes, hashed_codes = security_auth.generate_recovery_codes(8)
+    user.totp_secret = req.secret
+    user.totp_enabled = 1
+    user.recovery_codes = json.dumps(hashed_codes)
+    db.commit()
+    return {
+        "ok": True,
+        "message": "Autentikasi dua langkah (2FA) berhasil diaktifkan.",
+        "recovery_codes": plain_codes,
+    }
+
+
+@router.post("/2fa/disable")
+def api_user_2fa_disable(
+    req: TotpDisableRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Nonaktifkan 2FA untuk akun sendiri."""
+    if not verify_password(req.password, user.password_hash):
+        raise HTTPException(status_code=400, detail="Kata sandi akun salah.")
+
+    user.totp_secret = None
+    user.totp_enabled = 0
+    user.recovery_codes = None
+    db.commit()
+    return {"ok": True, "message": "2FA telah berhasil dinonaktifkan."}
+
+
+@router.post("/2fa/regenerate-recovery")
+def api_user_2fa_regenerate_recovery(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Generate ulang kode pemulihan (recovery codes) 2FA."""
+    if not user.totp_enabled:
+        raise HTTPException(status_code=400, detail="2FA belum aktif untuk akun ini.")
+    plain_codes, hashed_codes = security_auth.generate_recovery_codes(8)
+    user.recovery_codes = json.dumps(hashed_codes)
+    db.commit()
+    return {"ok": True, "recovery_codes": plain_codes}
+
+
+@router.post("/{user_id}/reset-2fa")
+def api_admin_reset_user_2fa(
+    user_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Reset darurat 2FA operator oleh Master Admin."""
+    if not user.is_master_admin:
+        raise HTTPException(status_code=403, detail="Hanya Master Admin yang berhak mereset 2FA pengguna.")
+    target = db.query(User).filter(User.id == user_id).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="Pengguna tidak ditemukan.")
+    target.totp_secret = None
+    target.totp_enabled = 0
+    target.recovery_codes = None
+    db.commit()
+    return {"ok": True, "message": f"2FA untuk pengguna '{target.username}' telah dinonaktifkan."}

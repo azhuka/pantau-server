@@ -14,6 +14,7 @@
           {{ t('audit_subtitle') }}
         </p>
       </div>
+
       <button
         @click="loadAuditLogs"
         class="px-2.5 py-1 text-xs font-mono font-bold rounded bg-cyan-950/80 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-800 hover:text-white transition cursor-pointer flex items-center gap-1.5"
@@ -28,7 +29,68 @@
       </button>
     </div>
 
-    <!-- Audit Table -->
+    <!-- Filter & Search Toolbar Card -->
+    <div class="p-3.5 px-4 rounded-xl bg-[#080d1a] border border-cyan-900/40 flex items-center justify-between flex-wrap gap-3 font-mono text-xs">
+      <div class="flex items-center gap-3 flex-wrap flex-1">
+        <!-- Period Filter -->
+        <div class="flex items-center gap-1.5">
+          <span class="text-gray-400 text-[11px]">Periode:</span>
+          <select
+            v-model="filterPeriod"
+            @change="loadAuditLogs"
+            class="bg-[#111827] border border-gray-800 rounded px-2.5 py-1 text-gray-200 text-xs focus:border-cyan-500 outline-none"
+          >
+            <option value="24h">24 Jam Terakhir</option>
+            <option value="today">Hari Ini</option>
+            <option value="7d">7 Hari Terakhir</option>
+            <option value="30d">30 Hari Terakhir</option>
+            <option value="all">Semua Riwayat</option>
+          </select>
+        </div>
+
+        <!-- Status Filter -->
+        <div class="flex items-center gap-1.5">
+          <span class="text-gray-400 text-[11px]">Status:</span>
+          <select
+            v-model="filterStatus"
+            @change="loadAuditLogs"
+            class="bg-[#111827] border border-gray-800 rounded px-2.5 py-1 text-gray-200 text-xs focus:border-cyan-500 outline-none"
+          >
+            <option value="">Semua Status</option>
+            <option value="SUCCESS">Berhasil (SUCCESS)</option>
+            <option value="FAILED">Gagal (FAILED)</option>
+          </select>
+        </div>
+
+        <!-- Limit -->
+        <div class="flex items-center gap-1.5">
+          <span class="text-gray-400 text-[11px]">Batas:</span>
+          <select
+            v-model="filterLimit"
+            @change="loadAuditLogs"
+            class="bg-[#111827] border border-gray-800 rounded px-2.5 py-1 text-gray-200 text-xs focus:border-cyan-500 outline-none"
+          >
+            <option :value="50">50 Baris</option>
+            <option :value="100">100 Baris</option>
+            <option :value="200">200 Baris</option>
+            <option :value="500">500 Baris</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Search Input -->
+      <div class="w-full sm:w-64">
+        <input
+          v-model="searchKeyword"
+          @keyup.enter="loadAuditLogs"
+          type="search"
+          placeholder="Cari kata kunci (Enter)..."
+          class="w-full bg-[#111827] border border-gray-800 rounded px-3 py-1 text-xs text-gray-200 focus:border-cyan-500 outline-none"
+        />
+      </div>
+    </div>
+
+    <!-- Audit Table Card -->
     <div class="hud-tactical-card rounded-xl overflow-hidden shadow-2xl mb-8">
       <span class="hud-corner-tr"></span>
       <span class="hud-corner-bl"></span>
@@ -55,9 +117,12 @@
             <tr v-for="log in auditLogs" :key="log.id" class="hover:bg-cyan-950/20 transition">
               <td class="py-2.5 px-4 text-gray-400 whitespace-nowrap">{{ log.created_at || '-' }}</td>
               <td class="py-2.5 px-4 font-bold text-gray-100 whitespace-nowrap">{{ log.username }}</td>
-              <td class="py-2.5 px-4 text-cyan-400 whitespace-nowrap font-semibold">{{ log.server_name || `#${log.server_id}` }}</td>
+              <td class="py-2.5 px-4 text-cyan-400 whitespace-nowrap font-semibold">{{ log.server_name }}</td>
               <td class="py-2.5 px-4 whitespace-nowrap">
-                <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-cyan-950 text-cyan-300 border border-cyan-800">
+                <span
+                  class="px-2 py-0.5 rounded text-[11px] font-bold border"
+                  :class="getActionBadgeClass(log.action)"
+                >
                   {{ log.action }}
                 </span>
               </td>
@@ -68,7 +133,10 @@
                 {{ log.target }}
               </td>
               <td class="py-2.5 px-4 text-center whitespace-nowrap">
-                <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">
+                <span
+                  class="px-2 py-0.5 rounded text-[11px] font-bold border"
+                  :class="isResultSuccess(log.result) ? 'bg-emerald-950 text-emerald-300 border-emerald-800' : 'bg-rose-950 text-rose-300 border-rose-800'"
+                >
                   {{ log.result || 'SUCCESS' }}
                 </span>
               </td>
@@ -89,10 +157,27 @@ const { t } = useI18n()
 const loading = ref(false)
 const auditLogs = ref([])
 
+const filterPeriod = ref('24h')
+const filterStatus = ref('')
+const filterLimit = ref(50)
+const searchKeyword = ref('')
+
 async function loadAuditLogs() {
   loading.value = true
   try {
-    const res = await fetch('/api/audit?limit=50')
+    const token = localStorage.getItem('pantau_token')
+    const params = new URLSearchParams({
+      limit: String(filterLimit.value),
+      period: filterPeriod.value,
+    })
+    if (filterStatus.value) params.set('status', filterStatus.value)
+    if (searchKeyword.value.trim()) params.set('q', searchKeyword.value.trim())
+
+    const res = await fetch(`/api/audit?${params.toString()}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    })
     if (res.ok) {
       auditLogs.value = await res.json()
     }
@@ -101,6 +186,26 @@ async function loadAuditLogs() {
   } finally {
     loading.value = false
   }
+}
+
+function isResultSuccess(res) {
+  if (!res) return true
+  const lower = String(res).toLowerCase()
+  return !(lower.includes('fail') || lower.includes('gagal') || lower.includes('error'))
+}
+
+function getActionBadgeClass(action) {
+  const act = String(action).toLowerCase()
+  if (act.includes('delete') || act.includes('rm') || act.includes('kill') || act.includes('block') || act.includes('lock')) {
+    return 'bg-rose-950/80 text-rose-300 border-rose-800'
+  }
+  if (act.includes('add') || act.includes('create') || act.includes('start') || act.includes('unlock') || act.includes('enable')) {
+    return 'bg-emerald-950/80 text-emerald-300 border-emerald-800'
+  }
+  if (act.includes('update') || act.includes('upgrade') || act.includes('restart') || act.includes('reset')) {
+    return 'bg-amber-950/80 text-amber-300 border-amber-800'
+  }
+  return 'bg-cyan-950 text-cyan-300 border-cyan-800'
 }
 
 onMounted(() => {

@@ -174,6 +174,16 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.38
+
+### Fitur & Penyempurnaan:
+- **Menu Dropdown Baku Aksi ▾ Tabel Pengguna:** Mematuhi Aturan 3 GEMINI.md dengan menyediakan aksi Detail Pengguna, Kelola 2FA, Edit Pengguna, Reset Password, Kunci/Buka Kunci, dan Hapus Pengguna.
+- **Modal Detail Pengguna (ViewUserModal):** Visualisasi lengkap dossier akun pengguna mencakup status aktif, status 2FA, login terakhir & IP, riwayat ubah password, tanggal & pembuat akun, cakupan server, serta matriks 16 izin granular aktif.
+- **Dukungan Penuh 2FA / TOTP RFC 6238:** Setup 2FA mandiri via QR code, verifikasi 6-digit TOTP, 8 recovery codes pemulihan darurat, serta modal Admin2faModal bagi Master Admin.
+- **Sub-Tab Master Control & Ambang Batas Insiden (Thresholds):** Konfigurasi ambang batas fisik deteksi masalah CPU, RAM, Disk, Swap, dan percobaan SSH gagal, inspeksi penyimpanan tabel MySQL InnoDB (pantau_db) dan SQL OPTIMIZE TABLE.
+- **Penyelarasan Router Audit Trail (Tab 03):** Pembangunan endpoint /api/audit terhubung ke tabel audit_logs dengan filter pencarian instan dan filter periode.
+
+
 ### Versi v0.1.37
 
 - Mengadopsi matriks 16 izin granular (OPERATOR_PERMISSIONS) pada backend server/routers/users.py dan frontend SettingsView.\n- Menambahkan 4 preset wewenang operator: Sudo Penuh, Pemeliharaan, Monitoring L1, dan Kosongkan.\n- Menerapkan pendelegasian cakupan server (Server Scope): Semua Server (Global) atau Server Tertentu via allowed_server_ids.\n- Membangun Modal Edit Pengguna (EditUserModal.vue) untuk menyunting peran, status, izin modular, dan cakupan server secara interaktif.\n- Menambahkan endpoint metadata /api/users/meta/metadata dan endpoint update user PUT /api/users/{id}.\n- Memecah komponen modal secara modular: AddUserModal.vue, EditUserModal.vue, dan ResetPasswordModal.vue (<250 baris).\n- Memutakhirkan seluruh kamus i18n bilingual untuk 16 izin, preset, dan cakupan server.
