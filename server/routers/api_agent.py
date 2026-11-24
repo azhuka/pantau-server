@@ -187,16 +187,3 @@ def api_agent_file_result(
     """Penerimaan hasil eksekusi operasi file agen."""
     return {"ok": True}
 
-@router.get("/api/agent/terminal-requests")
-async def api_agent_terminal_requests(
-    x_api_key: str = Header(alias="X-Api-Key", default=""),
-    db: Session = Depends(get_db)
-):
-    """Long-poll handler (5s) untuk permintaan terminal sesi agar agen beroperasi tenang."""
-    await asyncio.sleep(5.0)
-    return {"session_id": None}
-
-@router.post("/api/agent/terminal/{session_id}/close")
-def api_terminal_close(session_id: str):
-    """Pemberitahuan penutupan sesi terminal dari agen."""
-    return {"ok": True}

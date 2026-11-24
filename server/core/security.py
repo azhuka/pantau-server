@@ -1,13 +1,16 @@
 import jwt
 import bcrypt
 import threading
+import time
 from datetime import datetime, timedelta
 from typing import Optional, Callable
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from config import settings
-from core.database import get_db
+from core.database import get_db, SessionLocal
+from core.utils import hash_api_key
+from models.server import Server
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
 
@@ -123,4 +126,37 @@ def set_file_manager_unlock(user_id: int, server_id: int, duration_minutes: int)
 def revoke_file_manager_unlock(user_id: int, server_id: int) -> None:
     with _file_manager_unlocks_lock:
         _file_manager_unlocks.pop((user_id, server_id), None)
+
+
+# ---------------------------------------------------------------------------
+# Pelacak Validasi Kunci Agen In-Memory (Zero DB hammering)
+# ---------------------------------------------------------------------------
+_AGENT_KEY_CACHE: dict[str, tuple[int, float]] = {}
+_AGENT_KEY_CACHE_LOCK = threading.Lock()
+
+
+def _get_cached_server_id(raw_key: str) -> Optional[int]:
+    """Resolusi ID server dari API key dengan cache in-memory 120 detik non-blocking."""
+    if not raw_key:
+        return None
+    hk = hash_api_key(raw_key)
+    now = time.time()
+    with _AGENT_KEY_CACHE_LOCK:
+        cached = _AGENT_KEY_CACHE.get(hk)
+        if cached and cached[1] > now:
+            return cached[0]
+
+    with SessionLocal() as db:
+        srv = (
+            db.query(Server.id)
+            .filter((Server.api_key == hk) | (Server.api_key == raw_key), Server.is_active == 1)
+            .first()
+        )
+        if not srv:
+            return None
+        sid = srv[0]
+        with _AGENT_KEY_CACHE_LOCK:
+            _AGENT_KEY_CACHE[hk] = (sid, now + 120.0)
+        return sid
+
 

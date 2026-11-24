@@ -174,6 +174,15 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.31
+
+- **Penyempurnaan Arsitektur Web Terminal (Multi-Node PTY Bridge):**
+  - Mengintegrasikan modul TerminalSessionBridge dan TerminalBridgeDispatcher pada server/routers/terminal.py untuk mengalirkan I/O terminal secara instan ke agen telemetri aset target.
+  - Menghapus eksekusi proses lokal tunggal /bin/bash di host server, sehingga setiap tab terminal yang dibuka dari modal rincian aset terhubung langsung secara fisik ke node aset yang bersangkutan.
+  - Menyediakan endpoint streaming dua arah agen (/api/agent/terminal-requests, /api/agent/terminal/{session_id}/stdin, /api/agent/terminal/{session_id}/stdout, /api/agent/terminal/{session_id}/close) dengan escape sequence sanitization.
+  - Mengimplementasikan _get_cached_server_id pada server/core/security.py dengan cache memori 120 detik untuk validasi API key agen secara efisien.
+
+
 ### Versi v0.1.30
 
 ### Keamanan & Pengetatan Akses Operasional (v0.1.30)
