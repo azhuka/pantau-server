@@ -817,7 +817,6 @@
       @unignore-problem="unignoreProblem"
       @ignore-problem="openIgnoreDialog"
       @ack-problem="handleProblemAck"
-      @unack-problem="handleProblemUnack"
     />
 
     <!-- PROBLEM DETAIL & DIAGNOSTICS MODAL -->
@@ -830,7 +829,6 @@
       @ignore-problem="openIgnoreDialog"
       @terminate-ssh="terminateSshSession"
       @ack-problem="handleProblemAck"
-      @unack-problem="handleProblemUnack"
     />
 
     <!-- IGNORE PROBLEM MODAL -->
@@ -946,30 +944,7 @@ async function handleProblemAck(pid) {
   }
 }
 
-async function handleProblemUnack(pid) {
-  const token = localStorage.getItem('pantau_token')
-  try {
-    const res = await fetch(`/api/problems/${pid}/unack`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      }
-    })
-    const data = await res.json()
-    if (data.ok) {
-      if (selectedProblem.value && selectedProblem.value.id === pid) {
-        selectedProblem.value.acknowledged_by = null
-        selectedProblem.value.acknowledged_at = null
-      }
-      emit('refresh-problems')
-    } else {
-      alert(data.detail || 'Failed to cancel problem acknowledgment')
-    }
-  } catch (err) {
-    console.error('Failed to cancel problem acknowledgment:', err)
-  }
-}
+
 
 async function unignoreProblem(pid) {
   const token = localStorage.getItem('pantau_token')

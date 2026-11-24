@@ -81,7 +81,7 @@
         </button>
 
         <div class="flex items-center gap-2">
-          <!-- Button: Tandai Ditangani (Acknowledge) -->
+          <!-- Button: Tandai Ditangani / Status Ditangani -->
           <button
             v-if="!problem.acknowledged_by && !isViewer"
             @click="$emit('ack-problem', problem.id)"
@@ -91,23 +91,13 @@
             <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
             <span>{{ t('pdm_btn_ack') }}</span>
           </button>
-          <button
-            v-else-if="problem.acknowledged_by && !isViewer"
-            @click="$emit('unack-problem', problem.id)"
-            class="px-2.5 py-1.5 rounded bg-emerald-950/40 hover:bg-rose-950/80 text-emerald-300 hover:text-rose-300 border border-emerald-700/60 hover:border-rose-700/80 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer group shadow-sm"
-            :title="t('pdm_unack_tooltip')"
-          >
-            <svg class="w-3.5 h-3.5 text-emerald-400 group-hover:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-            <svg class="w-3.5 h-3.5 text-rose-400 hidden group-hover:inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            <span class="group-hover:hidden">{{ t('pdm_acked_by') }}: {{ problem.acknowledged_by }}</span>
-            <span class="hidden group-hover:inline">{{ t('pdm_btn_unack') }}</span>
-          </button>
           <span
             v-else-if="problem.acknowledged_by"
-            class="px-2.5 py-1.5 rounded bg-emerald-950/40 text-emerald-300 border border-emerald-700/60 text-xs font-bold flex items-center gap-1.5"
+            class="px-2.5 py-1.5 rounded bg-emerald-950/40 text-emerald-300 border border-emerald-700/60 text-xs font-bold flex items-center gap-1.5 cursor-default select-none"
+            :title="t('dash_acked_by', { user: problem.acknowledged_by })"
           >
             <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-            <span>{{ t('pdm_acked_by') }}: {{ problem.acknowledged_by }}</span>
+            <span>✓ {{ t('dash_badge_handled') }}</span>
           </span>
 
           <button
@@ -154,7 +144,7 @@ const props = defineProps({
   currentUser: { type: Object, default: null }
 })
 
-defineEmits(['close', 'open-server', 'ignore-problem', 'terminate-ssh', 'ack-problem', 'unack-problem'])
+defineEmits(['close', 'open-server', 'ignore-problem', 'terminate-ssh', 'ack-problem'])
 
 const isViewer = computed(() => {
   const r = (props.currentUser?.role || '').toLowerCase()

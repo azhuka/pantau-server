@@ -428,7 +428,6 @@
             :current-user="currentUser"
             @terminate-ssh-problem="terminateSSHSessionFromProblem"
             @ack-problem="handleWorkspaceProblemAck"
-            @unack-problem="handleWorkspaceProblemUnack"
           />
           <WorkspaceServicesPortsTab
             v-else-if="activeSubTab === 'services_ports'"
@@ -1303,28 +1302,7 @@ async function handleWorkspaceProblemAck(problemId) {
   }
 }
 
-async function handleWorkspaceProblemUnack(problemId) {
-  const token = localStorage.getItem('pantau_token')
-  try {
-    const res = await fetch(`/api/problems/${problemId}/unack`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      }
-    })
-    const data = await res.json()
-    if (data.ok) {
-      loadServerData()
-      emit('server-updated')
-      emit('refresh-problems')
-    } else {
-      alert(data.detail || 'Failed to cancel problem acknowledgment')
-    }
-  } catch (err) {
-    console.error('Failed to cancel problem acknowledgment in workspace:', err)
-  }
-}
+
 
 async function dispatchAction(action, params) {
   const token = localStorage.getItem('pantau_token')

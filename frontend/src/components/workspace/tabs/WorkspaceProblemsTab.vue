@@ -45,9 +45,9 @@
               <span
                 v-if="prob.acknowledged_by"
                 class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1"
-                :title="`Handled by ${prob.acknowledged_by}`"
+                :title="t('dash_acked_by', { user: prob.acknowledged_by })"
               >
-                ✓ {{ t('inc_ack_badge') }}: {{ prob.acknowledged_by }}
+                ✓ {{ t('dash_badge_handled') }}
               </span>
               <span
                 v-if="prob.is_ignored"
@@ -69,7 +69,7 @@
             {{ t('ws_sever_ssh_btn') }}
           </button>
 
-          <!-- Ack / Unack Buttons inside Workspace -->
+          <!-- Ack Button / Handled State -->
           <button
             v-if="!prob.acknowledged_by && !isViewer"
             @click="$emit('ack-problem', prob.id)"
@@ -79,17 +79,14 @@
             <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
             <span>{{ t('inc_btn_ack') }}</span>
           </button>
-          <button
-            v-else-if="prob.acknowledged_by && !isViewer"
-            @click="$emit('unack-problem', prob.id)"
-            class="px-2.5 py-1 rounded bg-emerald-950/40 hover:bg-rose-950/80 text-emerald-300 hover:text-rose-300 border border-emerald-700/60 hover:border-rose-700/80 font-bold text-xs transition cursor-pointer flex items-center gap-1 group shadow-sm"
-            :title="t('pdm_unack_tooltip')"
+          <span
+            v-else-if="prob.acknowledged_by"
+            class="px-2.5 py-1 rounded bg-emerald-950/40 text-emerald-300 border border-emerald-700/60 font-bold text-xs flex items-center gap-1 cursor-default select-none"
+            :title="t('dash_acked_by', { user: prob.acknowledged_by })"
           >
-            <svg class="w-3.5 h-3.5 text-emerald-400 group-hover:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-            <svg class="w-3.5 h-3.5 text-rose-400 hidden group-hover:inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            <span class="group-hover:hidden">{{ prob.acknowledged_by }}</span>
-            <span class="hidden group-hover:inline">{{ t('pdm_btn_unack') }}</span>
-          </button>
+            <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>✓ {{ t('dash_badge_handled') }}</span>
+          </span>
         </div>
       </div>
     </div>
@@ -108,7 +105,7 @@ const props = defineProps({
   currentUser: { type: Object, default: null }
 })
 
-defineEmits(['terminate-ssh-problem', 'ack-problem', 'unack-problem'])
+defineEmits(['terminate-ssh-problem', 'ack-problem'])
 
 const isViewer = computed(() => {
   const r = (props.currentUser?.role || '').toLowerCase()

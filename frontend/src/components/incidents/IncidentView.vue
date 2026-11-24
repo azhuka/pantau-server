@@ -44,7 +44,6 @@
       :problems="activeProblems"
       :current-user="currentUser"
       @ack="handleAck"
-      @unack="handleUnack"
       @unignore="handleUnignore"
       @open-ignore-modal="openIgnoreModal"
       @open-workspace="handleOpenWorkspace"
@@ -58,7 +57,7 @@
       @open-workspace="handleOpenWorkspace"
     />
 
-    <!-- Modal 1: Ignore / Mute Incident Modal -->
+    <!-- Modal 1: Ignore Incident Modal -->
     <IgnoreIncidentModal
       :is-open="showIgnoreModal"
       :problem="selectedProblem"
@@ -183,27 +182,6 @@ async function handleAck(probId) {
   }
 }
 
-async function handleUnack(probId) {
-  try {
-    const res = await fetch(`/api/problems/${probId}/unack`, {
-      method: 'POST',
-      headers: getAuthHeaders()
-    })
-    const data = await res.json()
-    if (data.ok) {
-      const idx = activeProblems.value.findIndex(p => p.id === probId)
-      if (idx !== -1) {
-        activeProblems.value[idx].acknowledged_by = null
-        activeProblems.value[idx].acknowledged_at = null
-      }
-    } else {
-      alert(data.detail || 'Failed to unacknowledge incident')
-    }
-  } catch (err) {
-    console.error('Error unacknowledging incident:', err)
-  }
-}
-
 async function handleUnignore(probId) {
   try {
     const res = await fetch(`/api/problems/${probId}/unignore`, {
@@ -214,10 +192,10 @@ async function handleUnignore(probId) {
     if (data.ok) {
       await refreshAll()
     } else {
-      alert(data.detail || 'Failed to unmute incident')
+      alert(data.detail || 'Failed to cancel ignore incident')
     }
   } catch (err) {
-    console.error('Error unmuting incident:', err)
+    console.error('Error unignoring incident:', err)
   }
 }
 

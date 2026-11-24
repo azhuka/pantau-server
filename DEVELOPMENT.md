@@ -451,6 +451,16 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.59
+
+### [v0.1.59] - Standarisasi 7 Kolom Tabel Insiden Aktif, Eliminasi Undo Handled, dan Aksi Dropdown Tunggal
+- **Restrukturisasi 7 Kolom Baku ActiveIncidentsTable:** Mengembalikan susunan kolom canonical mencakup Triggered At, Asset Host, Severity, Incident Description (bukan Anomaly Event), Duration, Solution (Solusi via formatIncidentTip), dan Tindakan.
+- **Eliminasi Total Tombol 'Undo Handled':** Menghapus seluruh tombol pembatalan handled di tabel insiden aktif, tab insiden workspace, SevDetailModal, dan ProblemDetailModal; status penanganan disajikan sebagai badge/status statis ✓ Ditangani (✓ Handled) dengan tooltip Ditangani oleh {operator}.
+- **Standarisasi Dropdown Tindakan (Aksi ▾ / Actions ▾):** Menerapkan aturan GEMINI.md Bagian 3 bahwa tabel dengan >2 aksi wajib menggunakan dropdown seragam untuk menghindari kepadatan tombol inline pada baris data NOC.
+- **Pembersihan Terminologi Mute:** Mengembalikan seluruh string i18n dan modal ke istilah baku Abaikan Insiden / Ignore Incident, DIABAIKAN / IGNORED, dan Pantau Kembali / Cancel Ignore.
+- **Viewer RBAC Isolation:** Memastikan peran Viewer hanya menampilkan tombol ikon tunggal [ 👁 ] (Detail Server) tanpa menu mutasi.
+
+
 ### Versi v0.1.58
 
 ### v0.1.58
