@@ -10,7 +10,6 @@
       @nav="handleNav"
       @logout="handleLogout"
       @login-click="showLoginModal = true"
-      @open-terminal="openTerminalDock"
     />
 
     <!-- MAIN CONTENT VIEWPORT -->
@@ -32,7 +31,6 @@
         :probing-server-id="probingNodeId"
         @open-workspace="openWorkspace"
         @probe-node="handleProbeNode"
-        @open-terminal="openTerminalDock"
         @server-updated="fetchServers"
       />
 

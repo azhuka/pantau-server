@@ -174,6 +174,13 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.30
+
+### Keamanan & Pengetatan Akses Operasional (v0.1.30)
+- **Pengamanan Akses Terminal (Eksklusif Modal Rincian Aset):** Menghapus seluruh tombol pemicu terminal terbuka di Navbar atas dan dropdown tabel inventaris aset.
+- **Prinsip NOC Kritis:** Akses konsol web terminal kini sakral dan eksklusif hanya dapat diluncurkan dari dalam jendela kontrol taktis modal rincian aset (ServerWorkspaceModal).
+
+
 ### Versi v0.1.29
 
 ### Fitur & Penyempurnaan Taktis (v0.1.29)

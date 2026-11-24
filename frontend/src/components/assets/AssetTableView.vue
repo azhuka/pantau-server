@@ -421,23 +421,10 @@
                         <span>{{ t('act_inject_key') }}</span>
                       </button>
 
-                      <!-- 5. Native Terminal -->
-                      <button
-                        @click="openNativeTerminal(s)"
-                        class="w-full px-2.5 py-1.5 rounded hover:bg-cyan-950/70 text-gray-200 hover:text-cyan-300 flex items-center gap-2.5 transition cursor-pointer"
-                      >
-                        <svg class="w-3.5 h-3.5 text-cyan-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <rect width="20" height="16" x="2" y="4" rx="2"/>
-                          <path d="m6 10 3 2-3 2"/>
-                          <path d="M12 14h4"/>
-                        </svg>
-                        <span>{{ t('act_native_terminal') }}</span>
-                      </button>
-
                       <!-- Divider -->
                       <div class="border-t border-cyan-950/80 my-1"></div>
 
-                      <!-- 6. Delete Host -->
+                      <!-- 5. Delete Host -->
                       <button
                         @click="openDeleteHost(s)"
                         class="w-full px-2.5 py-1.5 rounded hover:bg-rose-950/40 text-rose-400 hover:text-rose-300 flex items-center gap-2.5 transition cursor-pointer"
@@ -541,7 +528,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['open-workspace', 'probe-node', 'open-terminal', 'server-updated'])
+const emit = defineEmits(['open-workspace', 'probe-node', 'server-updated'])
 
 const { t } = useI18n()
 
@@ -605,11 +592,6 @@ function openInjectKey(s) {
   closeDropdown()
   selectedServer.value = s
   isInjectKeyOpen.value = true
-}
-
-function openNativeTerminal(s) {
-  closeDropdown()
-  emit('open-terminal', s)
 }
 
 function openDeleteHost(s) {

@@ -16,7 +16,7 @@
           <div class="font-bold text-sm tracking-wider text-gray-100 flex items-center gap-2 font-mono">
             <span class="text-cyan-400 font-extrabold">{{ t('app_name') }}</span>
             <span class="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-800/60 tracking-normal">
-              v0.1.29
+              v0.1.30
             </span>
           </div>
           <div class="text-[10px] text-gray-400 tracking-widest font-mono uppercase flex items-center gap-1.5">
@@ -94,19 +94,6 @@
 
     <!-- RIGHT: RADAR STATUS, I18N SWITCHER, OPERATOR PROFILE -->
     <div class="flex items-center gap-3">
-      <!-- Global Terminal Dock Trigger Button -->
-      <button
-        @click="$emit('open-terminal')"
-        class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#060a14] hover:bg-cyan-950/60 border border-cyan-900/60 hover:border-cyan-500/60 text-xs font-mono font-bold text-gray-300 hover:text-cyan-300 transition cursor-pointer"
-        title="Open Multi-Tab Web Terminal Dock"
-      >
-        <svg class="w-3.5 h-3.5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="4 17 10 11 4 5"/>
-          <line x1="12" y1="19" x2="20" y2="19"/>
-        </svg>
-        <span>TERMINAL</span>
-      </button>
-
       <!-- Live Heartbeat Radar Beacon -->
       <div class="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded bg-[#060a14] border border-cyan-900/40 text-xs font-mono font-semibold text-emerald-400">
         <span class="w-2 h-2 rounded-full bg-emerald-400 beacon-live beacon-radar"></span>
@@ -157,7 +144,7 @@ const props = defineProps({
   user: Object,
 })
 
-defineEmits(['nav', 'logout', 'login-click', 'open-terminal'])
+defineEmits(['nav', 'logout', 'login-click'])
 
 const { locale, toggleLocale, t } = useI18n()
 </script>
