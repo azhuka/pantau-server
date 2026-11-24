@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from config import settings
-from routers import api_agent, auth, servers, problems, terminal, files
+from routers import api_agent, auth, servers, problems, terminal, files, users
 
 app = FastAPI(
     title="Pantau Server",
@@ -25,6 +25,7 @@ app.add_middleware(
 # Include Backend Routers
 app.include_router(api_agent.router)
 app.include_router(auth.router)
+app.include_router(users.router)
 app.include_router(servers.router)
 app.include_router(files.router)
 app.include_router(problems.router)

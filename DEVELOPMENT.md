@@ -174,6 +174,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.36
+
+- Membangun endpoint profil mandiri dan ganti password di server/routers/users.py.\n- Membangun direktori akun pengguna di SettingsView.vue dengan kapabilitas tambah user, reset password, dan toggle status.\n- Menerapkan proteksi integritas akun: larangan hapus akun sendiri dan master-admin.\n- Melengkapi seluruh kamus bilingual i18n dan menambahkan sakelar bahasa terpadu di Navbar.\n- Menyembunyikan otomatis bilah kontrol paginasi jika baris data <= 10.
+
+
 ### Versi v0.1.35
 
 - Memperbaiki layout fullscreen terminal di ServerWorkspaceTerminal.vue menggunakan Teleport to body sehingga bebas dari containing block modal card (backdrop-filter & overflow: hidden).
