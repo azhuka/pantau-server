@@ -7,26 +7,20 @@ const translations = {
   id,
 }
 
-const savedLocale = typeof localStorage !== 'undefined' ? (localStorage.getItem('pantau_locale') || 'en') : 'en'
-export const currentLocale = ref(translations[savedLocale] ? savedLocale : 'en')
+// Strict English-only interface policy (for now)
+export const currentLocale = ref('en')
 
 export function setLocale(locale) {
-  if (translations[locale]) {
-    currentLocale.value = locale
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('pantau_locale', locale)
-    }
-  }
+  currentLocale.value = 'en'
 }
 
 export function toggleLocale() {
-  const next = currentLocale.value === 'en' ? 'id' : 'en'
-  setLocale(next)
+  currentLocale.value = 'en'
 }
 
 export function t(key, params = {}) {
-  const dict = translations[currentLocale.value] || translations.en
-  let text = dict[key] || translations.en[key] || key
+  const dict = translations.en
+  let text = dict[key] || translations.id[key] || key
   for (const [k, v] of Object.entries(params)) {
     text = text.replace(new RegExp(`\\{${k}\\}`, 'g'), v)
   }

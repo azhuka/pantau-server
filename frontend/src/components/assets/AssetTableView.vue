@@ -355,6 +355,7 @@
                 <div class="inline-flex items-center gap-1 noc-action-dropdown-container relative">
                   <!-- Tombol VIEW (Membuka Jendela Rincian Aset) -->
                   <button
+                    v-if="!isViewer"
                     @click="$emit('open-workspace', s.id, 'overview')"
                     class="px-2 py-1 rounded bg-cyan-950/80 hover:bg-cyan-700 text-cyan-300 hover:text-white border border-cyan-500/50 text-xs font-bold shadow-[0_0_8px_rgba(56,189,248,0.2)] transition cursor-pointer flex items-center gap-1"
                     :title="t('tooltip_view')"
@@ -364,6 +365,18 @@
                       <circle cx="12" cy="12" r="3"/>
                     </svg>
                     <span>{{ t('btn_view') || 'View' }}</span>
+                  </button>
+                  <button
+                    v-else
+                    @click="$emit('open-workspace', s.id, 'overview')"
+                    class="w-[26px] h-[26px] min-w-[26px] p-0 flex items-center justify-center rounded bg-cyan-950/80 hover:bg-cyan-700 text-cyan-300 hover:text-white border border-cyan-500/50 transition cursor-pointer"
+                    :title="t('tooltip_view')"
+                    :aria-label="t('btn_view') || 'View'"
+                  >
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
                   </button>
 
                   <!-- Shortcut PROBE INSTAN (Hanya untuk non-viewer yang memiliki izin) -->

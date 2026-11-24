@@ -16,7 +16,7 @@
           <div class="font-bold text-sm tracking-wider text-gray-100 flex items-center gap-2 font-mono">
             <span class="text-cyan-400 font-extrabold">{{ t('app_name') }}</span>
             <span class="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-800/60 tracking-normal">
-              v0.1.59
+              v0.1.60
             </span>
           </div>
           <div class="text-[10px] text-gray-400 tracking-widest font-mono uppercase flex items-center gap-1.5">
@@ -121,27 +121,13 @@
       </nav>
     </div>
 
-    <!-- RIGHT: RADAR STATUS, I18N SWITCHER, OPERATOR PROFILE -->
+    <!-- RIGHT: RADAR STATUS & OPERATOR PROFILE -->
     <div class="flex items-center gap-3">
       <!-- Live Heartbeat Radar Beacon -->
       <div class="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded bg-[#060a14] border border-cyan-900/40 text-xs font-mono font-semibold text-emerald-400">
         <span class="w-2 h-2 rounded-full bg-emerald-400 beacon-live beacon-radar"></span>
         <span class="tracking-wider text-[11px]">FEED // LIVE</span>
       </div>
-
-      <!-- Multi-Language i18n Switcher Button (EN / ID) -->
-      <button
-        @click="toggleLocale"
-        class="px-2.5 py-1 rounded bg-[#0e1628] border border-cyan-500/30 hover:border-cyan-400 text-xs font-mono font-bold text-gray-200 hover:text-cyan-300 transition cursor-pointer flex items-center gap-1.5 shadow-sm"
-        :title="t('nav_switch_lang')"
-      >
-        <svg class="w-3.5 h-3.5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10" />
-          <line x1="2" y1="12" x2="22" y2="12" />
-          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-        </svg>
-        <span class="tracking-widest">{{ locale.toUpperCase() }}</span>
-      </button>
 
       <!-- Operator User Badge -->
       <div v-if="user" class="flex items-center gap-2.5 border-l border-gray-800 pl-3.5">
@@ -212,5 +198,5 @@ const props = defineProps({
 
 defineEmits(['nav', 'logout', 'login-click'])
 
-const { locale, toggleLocale, t } = useI18n()
+const { t } = useI18n()
 </script>

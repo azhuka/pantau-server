@@ -782,7 +782,7 @@ export default {
   inc_col_durasi: 'Duration',
   inc_col_solution: 'Solution',
   inc_col_status: 'State',
-  inc_col_tindakan: 'Tindakan',
+  inc_col_tindakan: 'Actions',
   inc_act_dropdown: 'Actions',
   inc_ack_badge: 'HANDLED BY',
   inc_ignored_badge: 'IGNORED UNTIL',

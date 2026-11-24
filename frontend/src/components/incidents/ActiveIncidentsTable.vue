@@ -111,20 +111,20 @@
                 <button
                   v-if="!canOperate"
                   @click="$emit('open-workspace', { server_id: prob.server_id, problem: prob })"
-                  class="p-1.5 rounded hover:bg-cyan-900/40 text-cyan-400 transition cursor-pointer"
+                  class="w-[26px] h-[26px] min-w-[26px] p-0 flex items-center justify-center rounded bg-gray-800/80 hover:bg-cyan-950 text-gray-300 hover:text-cyan-300 border border-gray-700/80 transition cursor-pointer"
                   :title="t('inc_btn_workspace')"
                   :aria-label="t('inc_btn_workspace')"
                 >
-                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                 </button>
 
                 <!-- Operator / Admin: Standard Dropdown -->
-                <details v-else class="relative inline-block text-left noc-act-dropdown">
-                  <summary class="px-2.5 py-1 rounded bg-[#0b1324] hover:bg-cyan-950/60 text-cyan-300 border border-gray-700 hover:border-cyan-500 font-bold text-[11px] transition cursor-pointer flex items-center gap-1.5 list-none select-none">
+                <details v-else class="relative inline-block text-left noc-act-dropdown z-50">
+                  <summary class="h-6 min-w-[58px] px-2 py-0.5 rounded bg-[#0b1324] hover:bg-cyan-950/60 text-cyan-300 border border-gray-700 hover:border-cyan-500 font-bold text-[11px] transition cursor-pointer flex items-center justify-between gap-1 list-none select-none">
                     <span>{{ t('inc_act_dropdown') }}</span>
                     <span class="text-[10px]">▾</span>
                   </summary>
-                  <div class="absolute right-0 mt-1 w-44 rounded-md bg-[#0a0f1d] border border-gray-700 shadow-2xl py-1 z-50 text-xs font-mono">
+                  <div class="absolute right-0 mt-1 w-44 rounded-md bg-[#0a0f1d] border border-gray-700 shadow-2xl py-1 z-[9999] text-xs font-mono">
                     <button
                       @click="$emit('open-workspace', { server_id: prob.server_id, problem: prob })"
                       class="w-full text-left px-3 py-1.5 hover:bg-cyan-950/50 text-cyan-300 flex items-center gap-2 cursor-pointer"

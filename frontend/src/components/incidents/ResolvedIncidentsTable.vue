@@ -126,14 +126,16 @@
                 </span>
               </td>
               <td class="py-2.5 px-3 text-right whitespace-nowrap">
-                <button
-                  @click="$emit('open-workspace', { server_id: prob.server_id, problem: prob })"
-                  class="px-2.5 py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 font-bold text-[11px] transition cursor-pointer inline-flex items-center gap-1"
-                  :title="t('inc_btn_workspace')"
-                >
-                  <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                  <span>{{ t('inc_btn_workspace') }}</span>
-                </button>
+                <div class="inline-flex items-center justify-end">
+                  <button
+                    @click="$emit('open-workspace', { server_id: prob.server_id, problem: prob })"
+                    class="w-[26px] h-[26px] min-w-[26px] p-0 flex items-center justify-center rounded bg-gray-800/80 hover:bg-cyan-950 text-gray-300 hover:text-cyan-300 border border-gray-700/80 transition cursor-pointer"
+                    :title="t('inc_btn_workspace')"
+                    :aria-label="t('inc_btn_workspace')"
+                  >
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>

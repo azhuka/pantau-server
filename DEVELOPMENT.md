@@ -451,6 +451,38 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.60
+
+### v0.1.60 — Antarmuka Eksklusif Bahasa Inggris & Standardisasi Ergonomi Tombol NOC (2026-11-25)
+
+- **Strict English-Only Interface:**
+  - Mengunci `frontend/src/i18n/index.js` secara eksklusif ke bahasa Inggris (`en`) dan mengabaikan nilai lokal lama di `localStorage`.
+  - Menghapus tombol pengalih bahasa (i18n switcher) dari `Navbar.vue` dan `LoginModal.vue`.
+  - Memperbaiki kamus `en.js` untuk kunci `inc_col_tindakan: 'Actions'` menggantikan kata bahasa Indonesia yang tersisa.
+- **NOC Button Ergonomics Standard (Blueprint Parity):**
+  - Mengonversi tombol aksi pada `ResolvedIncidentsTable.vue` dari tombol teks panjang menjadi tombol mikro icon-only baku 26x26px `[ 👁 ]` dengan tooltip informatif `Server Details`.
+  - Memastikan peran Viewer pada `AssetTableView.vue` dan `ActiveIncidentsTable.vue` selalu menggunakan 1 tombol mikro 26x26px `[ 👁 ]` tanpa teks label.
+  - Mempertahankan dropdown `Actions ▾` pada baris Operator dengan dimensi baku (~58px min-width, 24px height) dan elevasi z-index 9999.
+- **Higienitas Komponen Vue:**
+  - Memastikan 100% berkas komponen Vue yang diubah (`Navbar.vue`, `LoginModal.vue`, `ActiveIncidentsTable.vue`, `ResolvedIncidentsTable.vue`) berukuran strictly di bawah 250 baris.
+
+
+### Versi v0.1.60
+
+### v0.1.60 — Antarmuka Eksklusif Bahasa Inggris & Standardisasi Ergonomi Tombol NOC (2026-11-25)
+
+- **Strict English-Only Interface:**
+  - Mengunci `frontend/src/i18n/index.js` secara eksklusif ke bahasa Inggris (`en`) dan mengabaikan nilai lokal lama di `localStorage`.
+  - Menghapus tombol pengalih bahasa (i18n switcher) dari `Navbar.vue` dan `LoginModal.vue`.
+  - Memperbaiki kamus `en.js` untuk kunci `inc_col_tindakan: 'Actions'` menggantikan kata bahasa Indonesia yang tersisa.
+- **NOC Button Ergonomics Standard (Blueprint Parity):**
+  - Mengonversi tombol aksi pada `ResolvedIncidentsTable.vue` dari tombol teks panjang menjadi tombol mikro icon-only baku 26x26px `[ 👁 ]` dengan tooltip informatif `Server Details`.
+  - Memastikan peran Viewer pada `AssetTableView.vue` dan `ActiveIncidentsTable.vue` selalu menggunakan 1 tombol mikro 26x26px `[ 👁 ]` tanpa teks label.
+  - Mempertahankan dropdown `Actions ▾` pada baris Operator dengan dimensi baku (~58px min-width, 24px height) dan elevasi z-index 9999.
+- **Higienitas Komponen Vue:**
+  - Memastikan 100% berkas komponen Vue yang diubah (`Navbar.vue`, `LoginModal.vue`, `ActiveIncidentsTable.vue`, `ResolvedIncidentsTable.vue`) berukuran strictly di bawah 250 baris.
+
+
 ### Versi v0.1.59
 
 ### [v0.1.59] - Standarisasi 7 Kolom Tabel Insiden Aktif, Eliminasi Undo Handled, dan Aksi Dropdown Tunggal
