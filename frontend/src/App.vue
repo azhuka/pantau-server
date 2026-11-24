@@ -243,7 +243,7 @@ function openTerminalDock(target = null) {
     const srvWithDir = { ...srv, workingDirectory: initialPath }
     terminalDockInitialServer.value = srvWithDir
     if (terminalDockRef.value) {
-      terminalDockRef.value.openNewTabForServer(srvWithDir)
+      terminalDockRef.value.requestOpenTabForServer(srvWithDir)
     }
   }
 }

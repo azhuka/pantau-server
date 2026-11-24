@@ -78,7 +78,7 @@
                 <div
                   v-for="s in filteredServers"
                   :key="s.id"
-                  @click="openNewTabForServer(s)"
+                  @click="requestOpenTabForServer(s)"
                   class="px-2 py-1.5 hover:bg-cyan-950/40 rounded cursor-pointer flex items-center justify-between transition"
                 >
                   <span class="font-bold text-gray-200">{{ s.hostname }}</span>
@@ -186,6 +186,16 @@
         </div>
       </div>
     </div>
+
+    <!-- TERMINAL STEP-UP AUTHENTICATION (UNLOCK) MODAL -->
+    <TerminalUnlockModal
+      :is-open="showUnlockModal"
+      :server="unlockTargetServer"
+      :user-has-totp="userHasTotp"
+      :default-reason="unlockReason"
+      @close="onTerminalUnlockClosed"
+      @unlocked="onTerminalUnlocked"
+    />
   </div>
 </template>
 
@@ -194,6 +204,8 @@ import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { Terminal } from 'xterm'
 import { FitAddon } from 'xterm-addon-fit'
 import 'xterm/css/xterm.css'
+import TerminalUnlockModal from './TerminalUnlockModal.vue'
+import { useI18n } from '../../i18n'
 
 const props = defineProps({
   isOpen: { type: Boolean, default: false },
@@ -205,11 +217,19 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'minimize', 'restore'])
 
+const { t } = useI18n()
+
 const isMaximized = ref(false)
 const showNewTabDropdown = ref(false)
 const hostSearchQuery = ref('')
 const activeTabId = ref(null)
 const tabs = ref([])
+
+// Step-Up Authentication Modal State
+const showUnlockModal = ref(false)
+const unlockTargetServer = ref(null)
+const userHasTotp = ref(false)
+const unlockReason = ref('')
 
 const allAssets = computed(() => props.assetsList?.length ? props.assetsList : props.fleetServers)
 
@@ -237,13 +257,83 @@ function selectTab(id) {
   showNewTabDropdown.value = false
   nextTick(() => {
     const active = tabs.value.find(t => t.id === id)
-    if (active && active.fit) {
+    if (active && active.fit && active.term) {
       try {
         active.fit.fit()
+        active.term.refresh(0, active.term.rows - 1)
         active.term.focus()
       } catch (e) {}
     }
+    requestAnimationFrame(() => {
+      if (active && active.fit && active.term) {
+        try {
+          active.fit.fit()
+          active.term.refresh(0, active.term.rows - 1)
+        } catch (e) {}
+      }
+    })
   })
+}
+
+async function requestOpenTabForServer(server, initialPath = '') {
+  if (!server || !server.id) return
+  showNewTabDropdown.value = false
+
+  const existing = tabs.value.find(t => t.serverId === server.id)
+  if (existing) {
+    selectTab(existing.id)
+    if (initialPath) {
+      sendCdToTab(existing, initialPath)
+    }
+    return
+  }
+
+  try {
+    const token = localStorage.getItem('pantau_token') || ''
+    const headers = token ? { Authorization: `Bearer ${token}` } : {}
+    const res = await fetch(`/api/servers/${server.id}/terminal/status`, { headers })
+    const status = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      throw new Error(status.detail || `HTTP ${res.status}`)
+    }
+
+    if (!status.allow_web_terminal) {
+      alert(t('term_disabled_msg') || 'Web Terminal is disabled for this server.')
+      return
+    }
+    if (!status.can_terminal) {
+      alert(t('term_no_permission_msg') || 'Access denied: You do not have Web Terminal permission.')
+      return
+    }
+
+    if (status.is_unlocked && status.remaining_seconds > 0) {
+      openNewTabForServer({ ...server, workingDirectory: initialPath })
+    } else {
+      unlockTargetServer.value = { ...server, workingDirectory: initialPath }
+      userHasTotp.value = Boolean(status.user_has_totp)
+      unlockReason.value = ''
+      showUnlockModal.value = true
+    }
+  } catch (err) {
+    console.error('Failed to check terminal status', err)
+    alert('Error checking terminal status: ' + (err.message || 'Error'))
+  }
+}
+
+function onTerminalUnlocked(payload) {
+  showUnlockModal.value = false
+  if (unlockTargetServer.value) {
+    openNewTabForServer(unlockTargetServer.value)
+    unlockTargetServer.value = null
+  }
+}
+
+function onTerminalUnlockClosed() {
+  showUnlockModal.value = false
+  unlockTargetServer.value = null
+  if (tabs.value.length === 0) {
+    emit('close')
+  }
 }
 
 function clearActiveTerminal() {
@@ -439,20 +529,21 @@ function closeTab(tabId) {
 // Watch initialServer to open tab automatically when opened with a server
 watch(() => props.initialServer, (newServer) => {
   if (newServer && props.isOpen) {
-    openNewTabForServer(newServer)
+    requestOpenTabForServer(newServer)
   }
 }, { immediate: true })
 
 watch(() => props.isOpen, (open) => {
   if (open) {
     if (props.initialServer && tabs.value.length === 0) {
-      openNewTabForServer(props.initialServer)
+      requestOpenTabForServer(props.initialServer)
     } else if (tabs.value.length > 0 && activeTabId.value) {
       nextTick(() => {
         const active = tabs.value.find(t => t.id === activeTabId.value)
-        if (active && active.fit) {
+        if (active && active.fit && active.term) {
           try {
             active.fit.fit()
+            active.term.refresh(0, active.term.rows - 1)
             active.term.focus()
           } catch (e) {}
         }
@@ -464,8 +555,11 @@ watch(() => props.isOpen, (open) => {
 watch(isMaximized, () => {
   nextTick(() => {
     const active = tabs.value.find(t => t.id === activeTabId.value)
-    if (active && active.fit) {
-      try { active.fit.fit() } catch (e) {}
+    if (active && active.fit && active.term) {
+      try {
+        active.fit.fit()
+        active.term.refresh(0, active.term.rows - 1)
+      } catch (e) {}
     }
   })
 })
@@ -478,6 +572,7 @@ onUnmounted(() => {
 })
 
 defineExpose({
+  requestOpenTabForServer,
   openNewTabForServer,
   selectTab,
   tabs

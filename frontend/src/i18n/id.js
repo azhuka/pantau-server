@@ -499,4 +499,19 @@ export default {
   toast_key_failed: 'Injeksi key gagal',
   toast_host_deleted: 'Host berhasil dihapus dari inventaris',
   toast_delete_failed: 'Gagal menghapus host',
+
+  // Terminal Step-Up Authentication Modal
+  modal_terminal_unlock_title: 'Otentikasi Akses Terminal Root',
+  terminal_unlock_desc: 'Akses shell interaktif memberikan akses root pada sistem aset. Masukkan password akun Anda untuk membuka sesi.',
+  terminal_unlock_pwd_label: 'Password Akun Pengguna:',
+  terminal_unlock_pwd_placeholder: 'Masukkan password login Anda',
+  terminal_unlock_totp_label: 'Kode Otentikator 2FA (TOTP):',
+  terminal_unlock_totp_placeholder: '6-digit kode authenticator',
+  terminal_unlock_duration_label: 'Durasi Izin Sesi:',
+  terminal_unlock_reason_label: 'Tujuan / Alasan Akses (Opsional, untuk audit log):',
+  terminal_unlock_reason_placeholder: 'Contoh: Investigasi performa sistem',
+  btn_unlock_terminal: 'Buka Kunci',
+  terminal_15_min: '15 Menit',
+  terminal_30_min: '30 Menit',
+  terminal_60_min: '60 Menit (1 Jam)',
 }

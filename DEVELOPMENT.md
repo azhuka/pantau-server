@@ -174,6 +174,14 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.32
+
+#### Perbaikan Bug & Penyempurnaan Keamanan Terminal:
+- **Modal Otentikasi Bertingkat (Step-Up Auth):** Menambahkan komponen `TerminalUnlockModal.vue` dan menghapus bypass `is_master_admin` pada endpoint status terminal backend, mewajibkan verifikasi password akun (+ TOTP jika aktif) sebelum sesi terminal diizinkan terbuka.
+- **Pembersihan Layar Hitam (Black Canvas Fix):** Memperbaiki siklus hidup xterm.js di `TerminalDockModal.vue` dengan pemanggilan `term.refresh(0, term.rows - 1)` dan `fit.fit()` saat tab berganti, menghilangkan masalah kanvas hitam pekat saat berpindah antar aset.
+- **Penyelarasan Antrean Polling Agen Multi-Node:** Memperkenalkan query `wait=false` pada `/api/agent/terminal-requests` agar agen di seluruh node fisik langsung menerima sinyal inisiasi sesi tanpa terhambat long-polling internal.
+
+
 ### Versi v0.1.31
 
 - **Penyempurnaan Arsitektur Web Terminal (Multi-Node PTY Bridge):**

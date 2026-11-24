@@ -499,4 +499,19 @@ export default {
   toast_key_failed: 'Key provisioning failed',
   toast_host_deleted: 'Host removed from inventory',
   toast_delete_failed: 'Failed to delete host',
+
+  // Terminal Step-Up Authentication Modal
+  modal_terminal_unlock_title: 'Root Terminal Access Authentication',
+  terminal_unlock_desc: 'Interactive shell grants privileged root access on the target node. Enter your account password to authorize session.',
+  terminal_unlock_pwd_label: 'User Account Password:',
+  terminal_unlock_pwd_placeholder: 'Enter your login password',
+  terminal_unlock_totp_label: '2FA Authenticator Code (TOTP):',
+  terminal_unlock_totp_placeholder: '6-digit authenticator code',
+  terminal_unlock_duration_label: 'Session Lease Duration:',
+  terminal_unlock_reason_label: 'Purpose / Access Reason (Optional, for audit log):',
+  terminal_unlock_reason_placeholder: 'e.g. Application performance debugging',
+  btn_unlock_terminal: 'Authorize & Unlock',
+  terminal_15_min: '15 Minutes',
+  terminal_30_min: '30 Minutes',
+  terminal_60_min: '60 Minutes (1 Hour)',
 }

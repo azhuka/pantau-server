@@ -198,7 +198,7 @@ def api_terminal_status(
     allow_term = bool(getattr(server, "allow_web_terminal", 1))
     user_can = user.has_perm("can_terminal")
     remaining = get_terminal_lease_remaining(user.id, sid)
-    unlocked = remaining > 0 or user.is_master_admin
+    unlocked = remaining > 0
 
     return {
         "server_id": sid,
@@ -399,7 +399,7 @@ async def websocket_terminal(
             await websocket.close(code=4403)
             return
 
-        if not (user.is_master_admin or is_terminal_unlocked(user.id, sid)):
+        if not is_terminal_unlocked(user.id, sid):
             await websocket.send_text(
                 json.dumps(
                     {
@@ -450,7 +450,7 @@ async def websocket_terminal(
 
     try:
         while not bridge.closed:
-            if not (is_master or is_terminal_unlocked(user_id, sid)):
+            if not is_terminal_unlocked(user_id, sid):
                 try:
                     await websocket.send_text(
                         json.dumps(
@@ -516,14 +516,15 @@ async def websocket_terminal(
 @router.get("/api/agent/terminal-requests")
 async def api_agent_terminal_requests(
     x_api_key: str = Header(alias="X-Api-Key"),
+    wait: bool = Query(default=True),
 ):
-    """Agen mem-poll permintaan pembukaan terminal session realtime (long-poll 15 dtk)."""
+    """Agen mem-poll permintaan pembukaan terminal session realtime (long-poll 15 dtk jika wait=True)."""
     server_id = _get_cached_server_id(x_api_key)
     if not server_id:
         raise HTTPException(status_code=401, detail="Invalid API key")
 
     sess_id = await term_dispatcher.pop_pending_open(server_id)
-    if sess_id:
+    if sess_id or not wait:
         return {"session_id": sess_id}
 
     event = await term_dispatcher.get_or_create_event(server_id)
