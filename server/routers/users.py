@@ -11,6 +11,7 @@ from core.security import verify_password, get_password_hash
 from routers.auth import get_current_user
 from models.user import User
 from models.server import Server
+from models.misc import AuditLog
 from security_auth import OPERATOR_PERMISSIONS
 import security_auth
 
@@ -38,7 +39,11 @@ class UserCreateRequest(BaseModel):
 
 
 class UserUpdateRequest(BaseModel):
-    role: Optional[str] = Field(None, pattern="^(operator|viewer)$")
+    username: Optional[str] = None
+    password: Optional[str] = None
+    confirm_password: Optional[str] = None
+    current_password: Optional[str] = None
+    role: Optional[str] = Field(None, pattern="^(master_admin|operator|viewer)$")
     is_active: Optional[int] = Field(None, ge=0, le=1)
     permissions: Optional[Dict[str, bool]] = None
     allowed_server_ids: Optional[List[int]] = None
@@ -283,8 +288,8 @@ def update_user(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Menyunting akun pengguna: peran, status, matriks wewenang granular, dan cakupan aset server."""
-    if not (user.is_master_admin or user.has_perm("can_manage_users")):
+    """Menyunting akun pengguna: kredensial, peran, status, matriks wewenang granular, dan cakupan aset server."""
+    if user_id != user.id and not (user.is_master_admin or user.has_perm("can_manage_users")):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied: You do not have permission to manage users."
@@ -294,45 +299,100 @@ def update_user(
     if not target:
         raise HTTPException(status_code=404, detail="User not found.")
 
-    if target.is_master_admin:
-        if not user.is_master_admin:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only master-admin can edit the master-admin account."
-            )
-        if req.role and req.role not in ("master_admin", "master-admin"):
-            raise HTTPException(
-                status_code=400,
-                detail="Cannot change role of master-admin account."
-            )
-    else:
-        if req.role is not None:
-            target.role = req.role
+    if target.is_master_admin and not user.is_master_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only master-admin can edit the master-admin account."
+        )
 
-    if req.is_active is not None:
-        if target.id == user.id and req.is_active == 0:
+    # 1. Update Username
+    if req.username and req.username.strip():
+        clean_user = req.username.strip()
+        if not re.match(r"^[a-zA-Z0-9_\-\.]{3,50}$", clean_user):
             raise HTTPException(
                 status_code=400,
-                detail="You cannot deactivate your own account."
+                detail="Username must be 3-50 alphanumeric characters (letters, numbers, _, -, .)."
             )
-        if target.is_master_admin and req.is_active == 0:
-            raise HTTPException(
-                status_code=400,
-                detail="The master-admin account cannot be deactivated."
-            )
-        target.is_active = req.is_active
+        if clean_user != target.username:
+            if user_id == user.id:
+                cur_pwd = (req.current_password or "").strip()
+                if not cur_pwd or not verify_password(cur_pwd, target.password_hash):
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Current password is incorrect."
+                    )
+            dup = db.query(User).filter(User.username == clean_user, User.id != target.id).first()
+            if dup:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Username '{clean_user}' is already taken."
+                )
+            target.username = clean_user
 
-    if target.role in ("operator", "operator_utama", "operator_pembantu"):
-        if req.permissions is not None:
-            target.permissions = json.dumps(req.permissions)
-        if req.allowed_server_ids is not None:
-            target.allowed_server_ids = json.dumps(sorted(req.allowed_server_ids))
+    # 2. Update Password (Self or Admin Override)
+    if req.password and req.password.strip():
+        pwd_clean = req.password.strip()
+        if user_id == user.id:
+            cur_pwd = (req.current_password or "").strip()
+            if not cur_pwd or not verify_password(cur_pwd, target.password_hash):
+                raise HTTPException(
+                    status_code=400,
+                    detail="Current password is incorrect."
+                )
+        if req.confirm_password and pwd_clean != req.confirm_password.strip():
+            raise HTTPException(
+                status_code=400,
+                detail="New password and confirmation do not match."
+            )
+        validate_password_strength(pwd_clean)
+        target.password_hash = get_password_hash(pwd_clean)
+        target.password_changed_at = datetime.utcnow()
+
+    # 3. Update Role, Status, Permissions, Scope (Only when editing other users, or admin)
+    if user_id != user.id:
+        if target.is_master_admin:
+            if req.role and req.role not in ("master_admin", "master-admin"):
+                raise HTTPException(
+                    status_code=400,
+                    detail="Cannot change role of master-admin account."
+                )
         else:
-            # Jika eksplisit null, jadikan global (seluruh server)
+            if req.role is not None:
+                target.role = req.role
+
+        if req.is_active is not None:
+            if target.is_master_admin and req.is_active == 0:
+                raise HTTPException(
+                    status_code=400,
+                    detail="The master-admin account cannot be deactivated."
+                )
+            target.is_active = req.is_active
+
+        if target.role in ("operator", "operator_utama", "operator_pembantu"):
+            if req.permissions is not None:
+                target.permissions = json.dumps(req.permissions)
+            if req.allowed_server_ids is not None:
+                target.allowed_server_ids = json.dumps(sorted(req.allowed_server_ids))
+            else:
+                target.allowed_server_ids = None
+        elif target.role == "viewer":
+            target.permissions = None
             target.allowed_server_ids = None
-    elif target.role == "viewer":
-        target.permissions = None
-        target.allowed_server_ids = None
+
+    # Record Audit Log
+    try:
+        audit = AuditLog(
+            user_id=user.id,
+            username=user.username,
+            action="user_edit",
+            target=f"{target.username} ({target.role})",
+            result="SUCCESS",
+            server_name="system",
+            created_at=datetime.utcnow(),
+        )
+        db.add(audit)
+    except Exception:
+        pass
 
     db.commit()
     db.refresh(target)

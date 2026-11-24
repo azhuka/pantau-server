@@ -34,46 +34,46 @@
       <div class="flex items-center gap-3 flex-wrap flex-1">
         <!-- Period Filter -->
         <div class="flex items-center gap-1.5">
-          <span class="text-gray-400 text-[11px]">Periode:</span>
+          <span class="text-gray-400 text-[11px]">{{ t('audit_period') }}</span>
           <select
             v-model="filterPeriod"
             @change="loadAuditLogs"
             class="bg-[#111827] border border-gray-800 rounded px-2.5 py-1 text-gray-200 text-xs focus:border-cyan-500 outline-none"
           >
-            <option value="24h">24 Jam Terakhir</option>
-            <option value="today">Hari Ini</option>
-            <option value="7d">7 Hari Terakhir</option>
-            <option value="30d">30 Hari Terakhir</option>
-            <option value="all">Semua Riwayat</option>
+            <option value="24h">{{ t('audit_period_24h') }}</option>
+            <option value="today">{{ t('audit_period_today') }}</option>
+            <option value="7d">{{ t('audit_period_7d') }}</option>
+            <option value="30d">{{ t('audit_period_30d') }}</option>
+            <option value="all">{{ t('audit_period_all') }}</option>
           </select>
         </div>
 
         <!-- Status Filter -->
         <div class="flex items-center gap-1.5">
-          <span class="text-gray-400 text-[11px]">Status:</span>
+          <span class="text-gray-400 text-[11px]">{{ t('audit_filter_status') }}</span>
           <select
             v-model="filterStatus"
             @change="loadAuditLogs"
             class="bg-[#111827] border border-gray-800 rounded px-2.5 py-1 text-gray-200 text-xs focus:border-cyan-500 outline-none"
           >
-            <option value="">Semua Status</option>
-            <option value="SUCCESS">Berhasil (SUCCESS)</option>
-            <option value="FAILED">Gagal (FAILED)</option>
+            <option value="">{{ t('audit_status_all') }}</option>
+            <option value="SUCCESS">{{ t('audit_status_success') }}</option>
+            <option value="FAILED">{{ t('audit_status_failed') }}</option>
           </select>
         </div>
 
         <!-- Limit -->
         <div class="flex items-center gap-1.5">
-          <span class="text-gray-400 text-[11px]">Batas:</span>
+          <span class="text-gray-400 text-[11px]">{{ t('audit_limit') }}</span>
           <select
             v-model="filterLimit"
             @change="loadAuditLogs"
             class="bg-[#111827] border border-gray-800 rounded px-2.5 py-1 text-gray-200 text-xs focus:border-cyan-500 outline-none"
           >
-            <option :value="50">50 Baris</option>
-            <option :value="100">100 Baris</option>
-            <option :value="200">200 Baris</option>
-            <option :value="500">500 Baris</option>
+            <option :value="50">50 {{ t('audit_limit_rows', { count: '' }).trim() }}</option>
+            <option :value="100">100 {{ t('audit_limit_rows', { count: '' }).trim() }}</option>
+            <option :value="200">200 {{ t('audit_limit_rows', { count: '' }).trim() }}</option>
+            <option :value="500">500 {{ t('audit_limit_rows', { count: '' }).trim() }}</option>
           </select>
         </div>
       </div>
@@ -84,7 +84,7 @@
           v-model="searchKeyword"
           @keyup.enter="loadAuditLogs"
           type="search"
-          placeholder="Cari kata kunci (Enter)..."
+          :placeholder="t('audit_search_placeholder')"
           class="w-full bg-[#111827] border border-gray-800 rounded px-3 py-1 text-xs text-gray-200 focus:border-cyan-500 outline-none"
         />
       </div>

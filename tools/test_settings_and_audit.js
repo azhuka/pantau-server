@@ -22,11 +22,12 @@ print(create_access_token({'sub': 'master-admin'}))
     page.on('console', msg => console.log('PAGE LOG:', msg.text()));
     page.on('pageerror', err => console.error('PAGE ERROR:', err.message));
 
-    await page.goto('http://localhost:8401/', { waitUntil: 'networkidle2' });
+    await page.goto('http://localhost:8401/', { waitUntil: 'domcontentloaded' });
 
-    // Inject token & user into localStorage
+    // Inject token & user into localStorage, setting lang to 'en'
     await page.evaluate((tok) => {
       localStorage.setItem('pantau_token', tok);
+      localStorage.setItem('pantau_lang', 'en');
       localStorage.setItem('pantau_user', JSON.stringify({
         id: 1,
         username: 'master-admin',
@@ -36,63 +37,78 @@ print(create_access_token({'sub': 'master-admin'}))
     }, token);
 
     // Reload page with authenticated state
-    await page.goto('http://localhost:8401/', { waitUntil: 'networkidle2' });
+    await page.goto('http://localhost:8401/', { waitUntil: 'domcontentloaded' });
     await new Promise(r => setTimeout(r, 1000));
 
     // 1. Navigate to 04 // Settings
     console.log('Navigating to Settings view...');
     await page.evaluate(() => {
       const btns = Array.from(document.querySelectorAll('nav button'));
-      const btn = btns.find(b => b.textContent.includes('Settings') || b.textContent.includes('04') || b.textContent.includes('Pengaturan'));
+      const btn = btns.find(b => b.textContent.includes('Settings') || b.textContent.includes('04'));
       if (btn) btn.click();
     });
     await new Promise(r => setTimeout(r, 1200));
 
-    // Open Dropdown "Actions ▾" on the second row (sysadmin_sadri)
-    console.log('Opening Actions ▾ dropdown on operator row...');
+    // Screenshot 1: Settings Default View (English, Edit button on profile, Icon-only dropdown in table)
+    await page.screenshot({ path: '/home/bos/pantau-server/screenshots/v0139_settings_en_overview.png', fullPage: true });
+    console.log('Saved screenshots/v0139_settings_en_overview.png');
+
+    // 2. Open Action Dropdown on 2nd row (sysadmin_sadri)
+    console.log('Clicking icon-only action button in table...');
     await page.evaluate(() => {
-      const dropdownBtns = Array.from(document.querySelectorAll('table tbody tr button'));
-      const actBtn = dropdownBtns.find(b => b.textContent.includes('Action') || b.textContent.includes('Aksi'));
-      if (actBtn) actBtn.click();
+      const actBtns = Array.from(document.querySelectorAll('table tbody tr button[title="Actions"]'));
+      if (actBtns.length > 1) {
+        actBtns[1].click();
+      } else if (actBtns.length > 0) {
+        actBtns[0].click();
+      }
     });
     await new Promise(r => setTimeout(r, 600));
 
-    await page.screenshot({ path: '/home/bos/pantau-server/screenshots/v0138_settings_rbac_dropdown.png', fullPage: true });
-    console.log('Saved screenshots/v0138_settings_rbac_dropdown.png');
+    await page.screenshot({ path: '/home/bos/pantau-server/screenshots/v0139_settings_action_dropdown.png', fullPage: true });
+    console.log('Saved screenshots/v0139_settings_action_dropdown.png');
 
-    // Click "Detail Pengguna" inside dropdown
-    console.log('Opening Detail Pengguna (ViewUserModal)...');
+    // 3. Open Edit User Modal (clicking Edit inside dropdown)
+    console.log('Opening Edit User Modal...');
     await page.evaluate(() => {
-      const btns = Array.from(document.querySelectorAll('button'));
-      const detailBtn = btns.find(b => b.textContent.includes('Detail Pengguna') || b.textContent.includes('User Details'));
-      if (detailBtn) detailBtn.click();
+      const btns = Array.from(document.querySelectorAll('div.absolute button'));
+      const editBtn = btns.find(b => b.textContent.trim() === 'Edit' || b.textContent.includes('Edit'));
+      if (editBtn) editBtn.click();
     });
     await new Promise(r => setTimeout(r, 800));
 
-    await page.screenshot({ path: '/home/bos/pantau-server/screenshots/v0138_view_user_modal.png', fullPage: true });
-    console.log('Saved screenshots/v0138_view_user_modal.png');
+    await page.screenshot({ path: '/home/bos/pantau-server/screenshots/v0139_edit_user_modal.png', fullPage: true });
+    console.log('Saved screenshots/v0139_edit_user_modal.png');
 
-    // Close Detail modal
+    // Close Edit modal
     await page.evaluate(() => {
       const btns = Array.from(document.querySelectorAll('button'));
-      const closeBtn = btns.find(b => b.textContent.includes('Close') || b.textContent.includes('Tutup'));
-      if (closeBtn) closeBtn.click();
+      const cancelBtn = btns.find(b => b.textContent.includes('Cancel'));
+      if (cancelBtn) cancelBtn.click();
     });
-    await new Promise(r => setTimeout(r, 500));
+    await new Promise(r => setTimeout(r, 600));
 
-    // Switch to Tab 2: Master Control & Ambang Batas
-    console.log('Switching to Master Control & Thresholds sub-tab...');
+    // 4. Open 2FA Setup Modal
+    console.log('Opening Setup 2FA Modal...');
     await page.evaluate(() => {
       const btns = Array.from(document.querySelectorAll('button'));
-      const mcBtn = btns.find(b => b.textContent.includes('Master Control'));
-      if (mcBtn) mcBtn.click();
+      const enable2faBtn = btns.find(b => b.textContent.includes('Enable 2FA Now'));
+      if (enable2faBtn) enable2faBtn.click();
     });
-    await new Promise(r => setTimeout(r, 1000));
+    await new Promise(r => setTimeout(r, 1200));
 
-    await page.screenshot({ path: '/home/bos/pantau-server/screenshots/v0138_master_control.png', fullPage: true });
-    console.log('Saved screenshots/v0138_master_control.png');
+    await page.screenshot({ path: '/home/bos/pantau-server/screenshots/v0139_setup_2fa_modal.png', fullPage: true });
+    console.log('Saved screenshots/v0139_setup_2fa_modal.png');
 
-    // 2. Navigate to 03 // Audit Trail
+    // Close 2FA modal
+    await page.evaluate(() => {
+      const btns = Array.from(document.querySelectorAll('button'));
+      const cancelBtn = btns.find(b => b.textContent.includes('Cancel') || b.textContent.includes('Done'));
+      if (cancelBtn) cancelBtn.click();
+    });
+    await new Promise(r => setTimeout(r, 600));
+
+    // 5. Navigate to 03 // Audit Trail
     console.log('Navigating to Audit Trail view...');
     await page.evaluate(() => {
       const btns = Array.from(document.querySelectorAll('nav button'));
@@ -101,12 +117,12 @@ print(create_access_token({'sub': 'master-admin'}))
     });
     await new Promise(r => setTimeout(r, 1200));
 
-    await page.screenshot({ path: '/home/bos/pantau-server/screenshots/v0138_audit_trail.png', fullPage: true });
-    console.log('Saved screenshots/v0138_audit_trail.png');
+    await page.screenshot({ path: '/home/bos/pantau-server/screenshots/v0139_audit_trail_en.png', fullPage: true });
+    console.log('Saved screenshots/v0139_audit_trail_en.png');
 
-    console.log('ALL VERIFICATION SCREENSHOTS CAPTURED SUCCESSFULLY!');
+    console.log('All automated verification screenshots captured successfully!');
   } catch (err) {
-    console.error('Test execution error:', err);
+    console.error('Test error:', err);
     process.exit(1);
   } finally {
     await browser.close();

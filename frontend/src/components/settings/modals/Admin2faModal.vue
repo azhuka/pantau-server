@@ -7,10 +7,10 @@
           <div class="w-3 h-3 rounded-full bg-amber-400"></div>
           <div>
             <h3 class="text-sm font-bold text-gray-100 uppercase tracking-wider">
-              Kelola 2FA Operator
+              Manage Operator 2FA
             </h3>
             <p class="text-[11px] text-gray-400 font-mono mt-0.5">
-              Reset Darurat Autentikasi Dua Langkah
+              Emergency Two-Factor Authentication Reset
             </p>
           </div>
         </div>
@@ -30,26 +30,26 @@
             <span class="font-bold text-gray-100 font-mono">{{ user.username }}</span>
           </div>
           <div class="flex items-center justify-between">
-            <span class="text-gray-400">Peran:</span>
+            <span class="text-gray-400">Role:</span>
             <span class="text-cyan-300 font-semibold">{{ user.role }}</span>
           </div>
           <div class="flex items-center justify-between">
-            <span class="text-gray-400">Status 2FA Saat Ini:</span>
+            <span class="text-gray-400">Current 2FA Status:</span>
             <span
               class="font-bold"
               :class="user.totp_enabled ? 'text-emerald-400' : 'text-amber-400'"
             >
-              {{ user.totp_enabled ? '● 2FA Aktif' : '○ 2FA Nonaktif' }}
+              {{ user.totp_enabled ? '● 2FA Active' : '○ 2FA Disabled' }}
             </span>
           </div>
         </div>
 
         <div v-if="user.totp_enabled" class="p-3 rounded-lg bg-amber-950/40 border border-amber-800/60 text-amber-200 text-[11px] leading-relaxed">
           <p class="font-bold mb-1">Master Admin Notice:</p>
-          Resetting 2FA will revoke the current TOTP secret key and all recovery codes for operator <strong>{{ user.username }}</strong>.
+          Resetting 2FA will immediately revoke the current TOTP secret key and all backup recovery codes for operator <strong>{{ user.username }}</strong>.
         </div>
         <div v-else class="p-3 rounded-lg bg-gray-900/60 border border-gray-800 text-gray-400 text-[11px]">
-          Akun operator ini saat ini belum mengaktifkan perlindungan 2FA. Operator dapat mengaktifkannya mandiri saat login.
+          This operator has not enabled 2FA yet. The operator can configure it independently upon signing in.
         </div>
 
         <div v-if="errorMsg" class="p-2 rounded bg-rose-950/80 border border-rose-800 text-rose-300 text-[11px]">
@@ -94,7 +94,7 @@ const loading = ref(false)
 const errorMsg = ref('')
 
 async function handleReset2fa() {
-  if (!confirm(`Yakin ingin mereset dan mematikan 2FA untuk operator ${props.user.username}?`)) return
+  if (!confirm(`Are you sure you want to reset and disable 2FA for operator ${props.user.username}?`)) return
   loading.value = true
   errorMsg.value = ''
   try {
@@ -106,7 +106,7 @@ async function handleReset2fa() {
       },
     })
     const data = await res.json()
-    if (!res.ok) throw new Error(data.detail || 'Gagal mereset 2FA operator')
+    if (!res.ok) throw new Error(data.detail || 'Failed to reset operator 2FA')
     emit('updated')
     emit('close')
   } catch (err) {

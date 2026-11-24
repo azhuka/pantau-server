@@ -5,10 +5,10 @@
       <div>
         <h2 class="text-xs font-bold text-gray-200 uppercase tracking-widest font-mono flex items-center gap-2">
           <span class="w-2 h-2 rounded-full bg-cyan-400 beacon-live"></span>
-          <span>// {{ activeTab === 'rbac' ? 'SYSTEM SETTINGS & AUTHORITY CONTROL (RBAC)' : 'MASTER CONTROL & THRESHOLDS' }}</span>
+          <span>// {{ activeTab === 'rbac' ? t('settings_title') : t('settings_subtab_master_control') }}</span>
         </h2>
         <p class="text-xs text-gray-400 font-mono mt-1">
-          {{ activeTab === 'rbac' ? 'Manajemen kredensial operator, autentikasi 2FA, dan matriks hak akses 3-tier.' : 'Pusat kendali internal, ambang batas insiden fisik, dan optimasi database MySQL.' }}
+          {{ activeTab === 'rbac' ? t('settings_header_desc_rbac') : t('settings_header_desc_mc') }}
         </p>
       </div>
 
@@ -20,7 +20,7 @@
           :class="activeTab === 'rbac' ? 'bg-cyan-950 text-cyan-300 border border-cyan-700/60 shadow-sm' : 'text-gray-400 hover:text-gray-200'"
         >
           <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          <span>Otoritas & Pengguna</span>
+          <span>{{ t('settings_subtab_rbac') }}</span>
         </button>
         <button
           @click="activeTab = 'master_control'"
@@ -28,7 +28,7 @@
           :class="activeTab === 'master_control' ? 'bg-cyan-950 text-cyan-300 border border-cyan-700/60 shadow-sm' : 'text-gray-400 hover:text-gray-200'"
         >
           <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-          <span>Master Control & Ambang Batas</span>
+          <span>{{ t('settings_subtab_master_control') }}</span>
         </button>
       </div>
     </div>
@@ -47,7 +47,7 @@
     <div v-if="activeTab === 'rbac'" class="space-y-6">
       <!-- Operator Identity & 2FA Cards Grid -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <!-- Panel 1: Profile & Password Change -->
+        <!-- Panel 1: Profile & Credentials Edit -->
         <div class="p-4 rounded-xl bg-[#080d1a] border border-cyan-900/40 relative flex flex-col justify-between">
           <div>
             <div class="flex items-center justify-between flex-wrap gap-3 pb-3 border-b border-gray-800/80">
@@ -66,61 +66,92 @@
                     </span>
                   </div>
                   <div class="text-[11px] text-gray-400 font-mono mt-0.5">
-                    Login Terakhir: {{ formatTime(profile?.last_login_at) }}
+                    {{ t('settings_col_last_login') }}: {{ formatTime(profile?.last_login_at) }}
                   </div>
                 </div>
               </div>
 
+              <!-- Button labeled simply "Edit" per Blueprint -->
               <button
-                @click="showChangePwd = !showChangePwd"
+                @click="toggleEditProfile"
                 class="px-2.5 py-1 rounded bg-gray-900 hover:bg-cyan-950 border border-gray-700 hover:border-cyan-600/50 text-xs font-mono text-gray-200 hover:text-cyan-300 transition cursor-pointer flex items-center gap-1.5"
+                :title="t('settings_btn_edit')"
               >
-                <span>Ubah Password</span>
-                <span class="text-[10px]">{{ showChangePwd ? '▲' : '▼' }}</span>
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+                <span>{{ t('settings_btn_edit') }}</span>
+                <span class="text-[10px]">{{ showEditProfile ? '▲' : '▼' }}</span>
               </button>
             </div>
 
-            <!-- Password Change Form -->
-            <div v-if="showChangePwd" class="mt-4 pt-2">
-              <form @submit.prevent="handleSelfPasswordChange" class="space-y-2.5 max-w-md">
+            <!-- Profile & Credentials Edit Form -->
+            <div v-if="showEditProfile" class="mt-4 pt-2">
+              <form @submit.prevent="handleSelfEdit" class="space-y-2.5 max-w-md font-mono text-xs">
                 <div>
-                  <label class="block text-[11px] font-mono text-gray-400 mb-0.5">Password Saat Ini</label>
+                  <label class="block text-[11px] text-gray-400 mb-0.5">{{ t('settings_col_username') }}</label>
                   <input
-                    v-model="pwdForm.current_password"
+                    v-model="editProfileForm.username"
+                    type="text"
+                    required
+                    minlength="3"
+                    maxlength="50"
+                    class="w-full bg-[#111827] border border-gray-800 text-gray-100 text-xs rounded px-2.5 py-1.5 focus:border-cyan-500 outline-none"
+                  />
+                </div>
+                <div>
+                  <label class="block text-[11px] text-gray-400 mb-0.5">
+                    {{ t('settings_current_pwd') }} <span class="text-rose-400">*</span>
+                  </label>
+                  <input
+                    v-model="editProfileForm.current_password"
                     type="password"
                     required
-                    class="w-full bg-[#111827] border border-gray-800 text-gray-100 text-xs rounded px-2.5 py-1.5 font-mono focus:border-cyan-500 outline-none"
+                    placeholder="Verify identity"
+                    class="w-full bg-[#111827] border border-gray-800 text-gray-100 text-xs rounded px-2.5 py-1.5 focus:border-cyan-500 outline-none"
                   />
                 </div>
                 <div class="grid grid-cols-2 gap-2">
                   <div>
-                    <label class="block text-[11px] font-mono text-gray-400 mb-0.5">Password Baru</label>
+                    <label class="block text-[11px] text-gray-400 mb-0.5">
+                      {{ t('settings_new_pwd') }} <span class="text-gray-500 text-[10px]">{{ t('settings_opt_optional') }}</span>
+                    </label>
                     <input
-                      v-model="pwdForm.new_password"
+                      v-model="editProfileForm.new_password"
                       type="password"
-                      required
                       minlength="8"
-                      class="w-full bg-[#111827] border border-gray-800 text-gray-100 text-xs rounded px-2.5 py-1.5 font-mono focus:border-cyan-500 outline-none"
+                      placeholder="Optional"
+                      class="w-full bg-[#111827] border border-gray-800 text-gray-100 text-xs rounded px-2.5 py-1.5 focus:border-cyan-500 outline-none"
                     />
                   </div>
                   <div>
-                    <label class="block text-[11px] font-mono text-gray-400 mb-0.5">Konfirmasi</label>
+                    <label class="block text-[11px] text-gray-400 mb-0.5">{{ t('settings_confirm_pwd') }}</label>
                     <input
-                      v-model="pwdForm.confirm_password"
+                      v-model="editProfileForm.confirm_password"
                       type="password"
-                      required
                       minlength="8"
-                      class="w-full bg-[#111827] border border-gray-800 text-gray-100 text-xs rounded px-2.5 py-1.5 font-mono focus:border-cyan-500 outline-none"
+                      placeholder="Confirm"
+                      class="w-full bg-[#111827] border border-gray-800 text-gray-100 text-xs rounded px-2.5 py-1.5 focus:border-cyan-500 outline-none"
                     />
                   </div>
                 </div>
-                <button
-                  type="submit"
-                  :disabled="pwdLoading"
-                  class="px-3 py-1 rounded bg-cyan-700 hover:bg-cyan-600 disabled:opacity-50 text-white text-xs font-mono font-bold transition cursor-pointer"
-                >
-                  {{ pwdLoading ? t('saving', 'Saving...') : t('settings_change_pwd_btn') }}
-                </button>
+                <div class="flex items-center gap-2 pt-1">
+                  <button
+                    type="submit"
+                    :disabled="editProfileLoading"
+                    class="px-3 py-1.5 rounded bg-cyan-700 hover:bg-cyan-600 disabled:opacity-50 text-white text-xs font-bold transition cursor-pointer"
+                  >
+                    {{ editProfileLoading ? t('saving', 'Saving...') : t('settings_btn_save') }}
+                  </button>
+                  <button
+                    type="button"
+                    @click="showEditProfile = false"
+                    class="px-3 py-1.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs transition cursor-pointer"
+                  >
+                    {{ t('settings_btn_cancel') }}
+                  </button>
+                </div>
               </form>
             </div>
           </div>
@@ -136,9 +167,9 @@
                 </div>
                 <div>
                   <h3 class="text-xs font-bold text-gray-200 uppercase tracking-wider">
-                    Autentikasi Dua Langkah (2FA)
+                    {{ t('settings_2fa_title') }}
                   </h3>
-                  <p class="text-[10px] text-gray-400">Standar RFC 6238 TOTP Authenticator</p>
+                  <p class="text-[10px] text-gray-400">{{ t('settings_2fa_standard') }}</p>
                 </div>
               </div>
 
@@ -146,18 +177,18 @@
                 class="text-[10px] font-bold px-2 py-0.5 rounded"
                 :class="profile?.totp_enabled ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' : 'bg-amber-950 text-amber-300 border border-amber-800'"
               >
-                {{ profile?.totp_enabled ? '● 2FA Aktif' : '⚠ Nonaktif' }}
+                {{ profile?.totp_enabled ? t('settings_2fa_active_badge') : t('settings_2fa_disabled_badge') }}
               </span>
             </div>
 
             <p class="text-xs text-gray-300 mt-3 leading-relaxed">
-              {{ profile?.totp_enabled ? 'Akun Anda telah diamankan dengan autentikator dua langkah (Google Authenticator, Aegis, 2FAS, atau Authy).' : 'Lindungi akun Anda dari akses ilegal dengan mengaktifkan verifikasi dua langkah (2FA).' }}
+              {{ profile?.totp_enabled ? t('settings_2fa_enabled_desc') : t('settings_2fa_disabled_desc') }}
             </p>
           </div>
 
           <div class="mt-4 pt-3 border-t border-gray-800/80 flex items-center justify-between">
             <span class="text-[11px] text-gray-400">
-              {{ profile?.totp_enabled ? 'Perlindungan Kriptografis Aktif' : 'Belum Terpasang' }}
+              {{ profile?.totp_enabled ? t('settings_2fa_status_protected') : t('settings_2fa_status_unprotected') }}
             </span>
 
             <div class="flex items-center gap-2">
@@ -166,14 +197,14 @@
                 @click="showSetup2faModal = true"
                 class="px-3 py-1.5 rounded bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold transition cursor-pointer flex items-center gap-1.5"
               >
-                <span>Aktifkan 2FA Sekarang</span>
+                <span>{{ t('settings_2fa_enable_btn') }}</span>
               </button>
               <button
                 v-else
                 @click="handleDisableOwn2fa"
                 class="px-3 py-1.5 rounded bg-rose-950/80 hover:bg-rose-900 border border-rose-800 text-rose-300 text-xs font-bold transition cursor-pointer"
               >
-                <span>Matikan 2FA</span>
+                <span>{{ t('settings_2fa_disable_btn') }}</span>
               </button>
             </div>
           </div>
@@ -187,10 +218,10 @@
           <div>
             <h3 class="text-xs font-bold text-gray-200 uppercase tracking-widest font-mono flex items-center gap-2">
               <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
-              <span>// DIREKTORI PENGGUNA & HAK AKSES (RBAC)</span>
+              <span>// {{ t('settings_users_title') }}</span>
             </h3>
             <p class="text-xs text-gray-400 font-mono mt-0.5">
-              Daftar akun terdaftar, pengaturan wewenang modular, dan cakupan server.
+              {{ t('settings_dir_desc') }}
             </p>
           </div>
 
@@ -199,26 +230,26 @@
             class="px-3 py-1.5 rounded bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-mono font-bold transition cursor-pointer flex items-center gap-1.5 shadow-sm"
           >
             <span>+</span>
-            <span>Tambah Pengguna Baru</span>
+            <span>{{ t('settings_add_user_btn') }}</span>
           </button>
         </div>
 
         <!-- KPI Strip -->
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 font-mono">
           <div class="p-2.5 rounded bg-[#0e1628] border border-gray-800 text-center">
-            <div class="text-[10px] text-gray-400 uppercase font-semibold">Total Pengguna</div>
+            <div class="text-[10px] text-gray-400 uppercase font-semibold">{{ t('settings_kpi_total') }}</div>
             <div class="text-base font-extrabold text-gray-100 mt-0.5">{{ users.length }}</div>
           </div>
           <div class="p-2.5 rounded bg-[#0e1628] border border-gray-800 text-center">
-            <div class="text-[10px] text-cyan-400 uppercase font-semibold">Master Admin</div>
+            <div class="text-[10px] text-cyan-400 uppercase font-semibold">{{ t('settings_kpi_master') }}</div>
             <div class="text-base font-extrabold text-cyan-300 mt-0.5">{{ users.filter(u => u.role === 'master_admin').length }}</div>
           </div>
           <div class="p-2.5 rounded bg-[#0e1628] border border-gray-800 text-center">
-            <div class="text-[10px] text-emerald-400 uppercase font-semibold">Operator</div>
+            <div class="text-[10px] text-emerald-400 uppercase font-semibold">{{ t('settings_kpi_operator') }}</div>
             <div class="text-base font-extrabold text-emerald-300 mt-0.5">{{ users.filter(u => u.role === 'operator').length }}</div>
           </div>
           <div class="p-2.5 rounded bg-[#0e1628] border border-gray-800 text-center">
-            <div class="text-[10px] text-amber-400 uppercase font-semibold">Viewer (Tamu)</div>
+            <div class="text-[10px] text-amber-400 uppercase font-semibold">{{ t('settings_kpi_viewer') }}</div>
             <div class="text-base font-extrabold text-amber-300 mt-0.5">{{ users.filter(u => u.role === 'viewer').length }}</div>
           </div>
         </div>
@@ -227,27 +258,27 @@
         <div class="flex items-center justify-between flex-wrap gap-2.5 pt-2 border-t border-gray-800/80 font-mono text-xs">
           <div class="flex items-center gap-2 flex-wrap flex-1">
             <div class="flex items-center gap-1.5">
-              <span class="text-gray-400 text-[11px]">Peran:</span>
+              <span class="text-gray-400 text-[11px]">{{ t('settings_filter_role') }}</span>
               <select
                 v-model="userRoleFilter"
                 class="bg-[#111827] border border-gray-800 rounded px-2.5 py-1 text-gray-200 text-xs focus:border-cyan-500 outline-none"
               >
-                <option value="">Semua Peran</option>
-                <option value="master_admin">Master Admin</option>
-                <option value="operator">Operator</option>
-                <option value="viewer">Viewer</option>
+                <option value="">{{ t('settings_all_roles') }}</option>
+                <option value="master_admin">{{ t('settings_role_master_admin') }}</option>
+                <option value="operator">{{ t('settings_role_operator') }}</option>
+                <option value="viewer">{{ t('settings_role_viewer') }}</option>
               </select>
             </div>
 
             <div class="flex items-center gap-1.5">
-              <span class="text-gray-400 text-[11px]">Status:</span>
+              <span class="text-gray-400 text-[11px]">{{ t('settings_filter_status') }}</span>
               <select
                 v-model="userStatusFilter"
                 class="bg-[#111827] border border-gray-800 rounded px-2.5 py-1 text-gray-200 text-xs focus:border-cyan-500 outline-none"
               >
-                <option value="">Semua Status</option>
-                <option value="active">Aktif</option>
-                <option value="disabled">Terkunci</option>
+                <option value="">{{ t('settings_all_status') }}</option>
+                <option value="active">{{ t('settings_status_active') }}</option>
+                <option value="disabled">{{ t('settings_status_disabled') }}</option>
               </select>
             </div>
           </div>
@@ -256,7 +287,7 @@
             <input
               v-model="userSearchQuery"
               type="search"
-              placeholder="Cari pengguna (username)..."
+              :placeholder="t('settings_search_placeholder')"
               class="w-full bg-[#111827] border border-gray-800 rounded px-3 py-1 text-xs text-gray-200 focus:border-cyan-500 outline-none"
             />
           </div>
@@ -285,17 +316,17 @@
                 <td class="py-2.5 px-3">
                   <div class="flex items-center gap-2">
                     <span class="font-bold text-gray-100 font-mono text-xs">{{ u.username }}</span>
-                    <span v-if="u.id === profile?.id" class="text-[10px] text-cyan-400 font-normal">(Anda)</span>
+                    <span v-if="u.id === profile?.id" class="text-[10px] text-cyan-400 font-normal">{{ t('settings_you') }}</span>
                   </div>
                   <div v-if="u.role === 'operator'" class="flex items-center gap-1.5 mt-1">
                     <span class="px-1.5 py-0.5 rounded text-[9px] bg-cyan-950 text-cyan-300 border border-cyan-800/80 font-bold">
-                      {{ countPerms(u.permissions) }} Perms
+                      {{ t('settings_perms_badge', { count: countPerms(u.permissions) }) }}
                     </span>
                     <span
                       class="px-1.5 py-0.5 rounded text-[9px] font-bold"
                       :class="!u.allowed_server_ids || u.allowed_server_ids.length === 0 ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' : 'bg-amber-950 text-amber-300 border border-amber-800'"
                     >
-                      {{ !u.allowed_server_ids || u.allowed_server_ids.length === 0 ? 'Semua Server' : `${u.allowed_server_ids.length} Server` }}
+                      {{ !u.allowed_server_ids || u.allowed_server_ids.length === 0 ? t('settings_all_servers') : t('settings_scope_servers', { count: u.allowed_server_ids.length }) }}
                     </span>
                   </div>
                 </td>
@@ -314,7 +345,7 @@
                       :class="u.is_active ? 'text-emerald-400' : 'text-rose-400'"
                     >
                       <span class="w-1.5 h-1.5 rounded-full" :class="u.is_active ? 'bg-emerald-400' : 'bg-rose-400'"></span>
-                      <span>{{ u.is_active ? 'Aktif' : 'Terkunci' }}</span>
+                      <span>{{ u.is_active ? t('settings_status_active') : t('settings_status_disabled') }}</span>
                     </span>
                     <span class="text-gray-600">/</span>
                     <span
@@ -329,15 +360,20 @@
                   {{ formatTime(u.last_login_at) }}
                 </td>
                 <td class="py-2.5 px-3 text-right">
-                  <!-- Unified Dropdown "Aksi ▾" Menu -->
+                  <!-- Unified Dropdown: ICON-ONLY SVG Button (Zero Text Label per User Mandate) -->
                   <div class="relative inline-block text-left">
                     <button
                       type="button"
                       @click.stop="toggleActionDropdown(u.id)"
-                      class="px-2.5 py-1 text-xs font-mono font-bold rounded bg-gray-900 hover:bg-cyan-950 border border-gray-700 hover:border-cyan-600/50 text-gray-200 hover:text-cyan-300 transition cursor-pointer flex items-center gap-1 shadow-sm"
+                      class="p-1.5 rounded bg-gray-900 hover:bg-cyan-950 border border-gray-700 hover:border-cyan-600/50 text-gray-300 hover:text-cyan-300 transition cursor-pointer flex items-center justify-center shadow-sm"
+                      :title="t('settings_col_actions')"
+                      aria-label="Actions"
                     >
-                      <span>{{ t('settings_action_dropdown') }}</span>
-                      <span class="text-[10px]">▾</span>
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="1.5"></circle>
+                        <circle cx="12" cy="5" r="1.5"></circle>
+                        <circle cx="12" cy="19" r="1.5"></circle>
+                      </svg>
                     </button>
 
                     <!-- Dropdown Content -->
@@ -354,7 +390,7 @@
                           class="w-full px-3 py-1.5 text-left text-gray-200 hover:text-white hover:bg-cyan-950/80 flex items-center gap-2 cursor-pointer transition"
                         >
                           <svg class="w-3.5 h-3.5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                          <span>Detail Pengguna</span>
+                          <span>{{ t('settings_action_detail') }}</span>
                         </button>
 
                         <!-- Kelola 2FA (Admin Reset) -->
@@ -365,7 +401,7 @@
                           class="w-full px-3 py-1.5 text-left text-gray-200 hover:text-white hover:bg-cyan-950/80 flex items-center gap-2 cursor-pointer transition"
                         >
                           <svg class="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                          <span>Kelola 2FA</span>
+                          <span>{{ t('settings_action_manage_2fa') }}</span>
                         </button>
                       </div>
 
@@ -378,7 +414,7 @@
                           class="w-full px-3 py-1.5 text-left text-gray-200 hover:text-white hover:bg-cyan-950/80 flex items-center gap-2 cursor-pointer transition"
                         >
                           <svg class="w-3.5 h-3.5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-                          <span>Edit Pengguna</span>
+                          <span>{{ t('settings_btn_edit') }}</span>
                         </button>
 
                         <!-- Reset Password -->
@@ -388,7 +424,7 @@
                           class="w-full px-3 py-1.5 text-left text-gray-200 hover:text-white hover:bg-cyan-950/80 flex items-center gap-2 cursor-pointer transition"
                         >
                           <svg class="w-3.5 h-3.5 text-yellow-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                          <span>Reset Password</span>
+                          <span>{{ t('settings_action_reset') }}</span>
                         </button>
                       </div>
 
@@ -401,7 +437,7 @@
                           :class="u.is_active ? 'text-amber-400 hover:bg-amber-950/60' : 'text-emerald-400 hover:bg-emerald-950/60'"
                         >
                           <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
-                          <span>{{ u.is_active ? 'Kunci Akun' : 'Buka Kunci' }}</span>
+                          <span>{{ u.is_active ? t('settings_action_lock') : t('settings_action_unlock') }}</span>
                         </button>
 
                         <!-- Hapus Pengguna -->
@@ -411,7 +447,7 @@
                           class="w-full px-3 py-1.5 text-left text-rose-400 hover:bg-rose-950/60 flex items-center gap-2 cursor-pointer transition"
                         >
                           <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-                          <span>Hapus Pengguna</span>
+                          <span>{{ t('settings_action_delete') }}</span>
                         </button>
                       </div>
                     </div>
@@ -504,9 +540,10 @@ const userSearchQuery = ref('')
 
 const openDropdownId = ref(null)
 
-const showChangePwd = ref(false)
-const pwdLoading = ref(false)
-const pwdForm = ref({
+const showEditProfile = ref(false)
+const editProfileLoading = ref(false)
+const editProfileForm = ref({
+  username: '',
   current_password: '',
   new_password: '',
   confirm_password: '',
@@ -547,6 +584,16 @@ onUnmounted(() => {
 
 function toggleActionDropdown(userId) {
   openDropdownId.value = openDropdownId.value === userId ? null : userId
+}
+
+function toggleEditProfile() {
+  showEditProfile.value = !showEditProfile.value
+  if (showEditProfile.value && profile.value) {
+    editProfileForm.value.username = profile.value.username || ''
+    editProfileForm.value.current_password = ''
+    editProfileForm.value.new_password = ''
+    editProfileForm.value.confirm_password = ''
+  }
 }
 
 const filteredUsers = computed(() => {
@@ -602,6 +649,9 @@ async function loadProfile() {
     })
     if (res.ok) {
       profile.value = await res.json()
+      if (editProfileForm.value.username === '') {
+        editProfileForm.value.username = profile.value.username || ''
+      }
     }
   } catch (err) {
     console.error('Failed to load profile:', err)
@@ -646,11 +696,11 @@ function onSelf2faEnabled() {
   loadProfile()
   loadUsers()
   flashType.value = 'success'
-  flashMsg.value = 'Autentikasi dua langkah (2FA) berhasil diaktifkan untuk akun Anda.'
+  flashMsg.value = 'Two-factor authentication (2FA) has been enabled for your account.'
 }
 
 async function handleDisableOwn2fa() {
-  const pwd = prompt('Masukkan kata sandi akun Anda untuk mematikan 2FA:')
+  const pwd = prompt('Enter your account password to disable 2FA:')
   if (!pwd) return
   try {
     const token = localStorage.getItem('pantau_token')
@@ -663,56 +713,62 @@ async function handleDisableOwn2fa() {
       body: JSON.stringify({ password: pwd }),
     })
     const data = await res.json()
-    if (!res.ok) throw new Error(data.detail || 'Gagal mematikan 2FA')
+    if (!res.ok) throw new Error(data.detail || 'Failed to disable 2FA')
     loadProfile()
     loadUsers()
     flashType.value = 'success'
-    flashMsg.value = '2FA telah berhasil dimatikan.'
+    flashMsg.value = '2FA has been disabled successfully.'
   } catch (err) {
     alert(err.message)
   }
 }
 
-async function handleSelfPasswordChange() {
-  if (pwdForm.value.new_password !== pwdForm.value.confirm_password) {
+async function handleSelfEdit() {
+  if (editProfileForm.value.new_password && editProfileForm.value.new_password !== editProfileForm.value.confirm_password) {
     flashType.value = 'error'
-    flashMsg.value = 'Password baru dan konfirmasi tidak cocok.'
+    flashMsg.value = 'New password and confirmation do not match.'
     return
   }
-  pwdLoading.value = true
+  editProfileLoading.value = true
   flashMsg.value = ''
   try {
     const token = localStorage.getItem('pantau_token')
-    const res = await fetch('/api/users/change-password', {
-      method: 'POST',
+    const payload = {
+      username: editProfileForm.value.username.trim(),
+      current_password: editProfileForm.value.current_password,
+      password: editProfileForm.value.new_password.trim() || null,
+      confirm_password: editProfileForm.value.confirm_password.trim() || null,
+    }
+    const res = await fetch(`/api/users/${profile.value.id}`, {
+      method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({
-        current_password: pwdForm.value.current_password,
-        new_password: pwdForm.value.new_password,
-      }),
+      body: JSON.stringify(payload),
     })
     const data = await res.json()
-    if (!res.ok) throw new Error(data.detail || 'Gagal mengubah password')
+    if (!res.ok) throw new Error(data.detail || 'Failed to update account credentials')
     flashType.value = 'success'
-    flashMsg.value = 'Password Anda berhasil diperbarui.'
-    showChangePwd.value = false
-    pwdForm.value = { current_password: '', new_password: '', confirm_password: '' }
-    loadProfile()
+    flashMsg.value = 'Account credentials updated successfully.'
+    showEditProfile.value = false
+    editProfileForm.value.current_password = ''
+    editProfileForm.value.new_password = ''
+    editProfileForm.value.confirm_password = ''
+    await loadProfile()
+    await loadUsers()
   } catch (err) {
     flashType.value = 'error'
     flashMsg.value = err.message
   } finally {
-    pwdLoading.value = false
+    editProfileLoading.value = false
   }
 }
 
 async function toggleUserStatus(u) {
   const targetState = u.is_active ? 0 : 1
-  const actionText = targetState ? 'aktifkan' : 'kunci'
-  if (!confirm(`Yakin ingin ${actionText} akun pengguna '${u.username}'?`)) return
+  const actionText = targetState ? 'activate' : 'lock'
+  if (!confirm(`Are you sure you want to ${actionText} user '${u.username}'?`)) return
   try {
     const token = localStorage.getItem('pantau_token')
     const res = await fetch(`/api/users/${u.id}/status`, {
@@ -724,9 +780,9 @@ async function toggleUserStatus(u) {
       body: JSON.stringify({ is_active: targetState }),
     })
     const data = await res.json()
-    if (!res.ok) throw new Error(data.detail || 'Gagal mengubah status akun')
+    if (!res.ok) throw new Error(data.detail || 'Failed to update user status')
     flashType.value = 'success'
-    flashMsg.value = `Status akun '${u.username}' berhasil diperbarui.`
+    flashMsg.value = `Status for '${u.username}' updated successfully.`
     loadUsers()
   } catch (err) {
     flashType.value = 'error'
@@ -735,7 +791,7 @@ async function toggleUserStatus(u) {
 }
 
 async function deleteUser(u) {
-  if (!confirm(`Hapus akun pengguna '${u.username}' secara permanen? Seluruh sesi aktif akan dicabut.`)) return
+  if (!confirm(`Permanently delete user account '${u.username}'? All active sessions will be terminated.`)) return
   try {
     const token = localStorage.getItem('pantau_token')
     const res = await fetch(`/api/users/${u.id}`, {
@@ -743,9 +799,9 @@ async function deleteUser(u) {
       headers: { 'Authorization': `Bearer ${token}` },
     })
     const data = await res.json()
-    if (!res.ok) throw new Error(data.detail || 'Gagal menghapus pengguna')
+    if (!res.ok) throw new Error(data.detail || 'Failed to delete user')
     flashType.value = 'success'
-    flashMsg.value = `Pengguna '${u.username}' telah dihapus.`
+    flashMsg.value = `User '${u.username}' has been deleted.`
     loadUsers()
   } catch (err) {
     flashType.value = 'error'
@@ -756,29 +812,29 @@ async function deleteUser(u) {
 function onUserCreated() {
   showAddModal.value = false
   flashType.value = 'success'
-  flashMsg.value = 'Pengguna baru berhasil didaftarkan.'
+  flashMsg.value = 'New user created successfully.'
   loadUsers()
 }
 
 function onUserUpdated() {
   showEditModal.value = false
   flashType.value = 'success'
-  flashMsg.value = 'Data wewenang dan akun pengguna berhasil diperbarui.'
+  flashMsg.value = 'User credentials and permissions updated successfully.'
   loadUsers()
 }
 
 function onPasswordReset() {
   showResetModal.value = false
   flashType.value = 'success'
-  flashMsg.value = 'Password pengguna berhasil direset.'
+  flashMsg.value = 'User password reset successfully.'
 }
 
 function formatTime(iso) {
-  if (!iso) return '-'
+  if (!iso) return 'Never'
   try {
     const d = new Date(iso)
     if (isNaN(d.getTime())) return iso
-    return d.toLocaleString('id-ID', {
+    return d.toLocaleString('en-US', {
       day: '2-digit',
       month: 'short',
       year: 'numeric',

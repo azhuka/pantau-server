@@ -308,9 +308,9 @@ async function handleSaveThresholds() {
       body: JSON.stringify(thForm),
     })
     const data = await res.json()
-    if (!res.ok) throw new Error(data.detail || 'Gagal menyimpan threshold')
+    if (!res.ok) throw new Error(data.detail || 'Failed to save thresholds')
     flashType.value = 'success'
-    flashMsg.value = 'Ambang batas insiden global berhasil diperbarui.'
+    flashMsg.value = 'Global incident thresholds updated successfully.'
   } catch (err) {
     flashType.value = 'error'
     flashMsg.value = err.message
@@ -320,7 +320,7 @@ async function handleSaveThresholds() {
 }
 
 async function handleResetThresholds() {
-  if (!confirm('Kembalikan seluruh ambang batas insiden ke setelan bawaan pabrik?')) return
+  if (!confirm('Reset all incident thresholds to system defaults?')) return
   savingThresholds.value = true
   flashMsg.value = ''
   try {
@@ -330,10 +330,10 @@ async function handleResetThresholds() {
       headers: { 'Authorization': `Bearer ${token}` },
     })
     const data = await res.json()
-    if (!res.ok) throw new Error(data.detail || 'Gagal mereset threshold')
+    if (!res.ok) throw new Error(data.detail || 'Failed to reset thresholds')
     if (data.thresholds) Object.assign(thForm, data.thresholds)
     flashType.value = 'success'
-    flashMsg.value = 'Ambang batas berhasil dikembalikan ke bawaan pabrik.'
+    flashMsg.value = 'Incident thresholds reset to defaults.'
   } catch (err) {
     flashType.value = 'error'
     flashMsg.value = err.message
@@ -343,7 +343,7 @@ async function handleResetThresholds() {
 }
 
 async function handleOptimizeDb() {
-  if (!confirm('Jalankan perintah SQL OPTIMIZE TABLE untuk defragmentasi dan reklamasi ruang disk basis data?')) return
+  if (!confirm('Execute SQL OPTIMIZE TABLE commands to defragment and reclaim storage space?')) return
   optimizingDb.value = true
   flashMsg.value = ''
   try {
@@ -353,9 +353,9 @@ async function handleOptimizeDb() {
       headers: { 'Authorization': `Bearer ${token}` },
     })
     const data = await res.json()
-    if (!res.ok) throw new Error(data.detail || 'Gagal optimasi database')
+    if (!res.ok) throw new Error(data.detail || 'Failed to optimize database')
     flashType.value = 'success'
-    flashMsg.value = data.message || 'Optimasi basis data selesai!'
+    flashMsg.value = data.message || 'Database optimization completed successfully.'
     loadMasterControlStatus()
   } catch (err) {
     flashType.value = 'error'
@@ -384,8 +384,8 @@ function formatUptime(seconds) {
   const d = Math.floor(seconds / 86400)
   const h = Math.floor((seconds % 86400) / 3600)
   const m = Math.floor((seconds % 3600) / 60)
-  if (d > 0) return `${d}h ${h}j ${m}m`
-  if (h > 0) return `${h}j ${m}m`
+  if (d > 0) return `${d}d ${h}h ${m}m`
+  if (h > 0) return `${h}h ${m}m`
   return `${m}m`
 }
 </script>

@@ -15,6 +15,51 @@
       </div>
 
       <form @submit.prevent="handleSubmit" class="space-y-4">
+        <!-- Username Input -->
+        <div>
+          <label class="block text-xs font-mono font-medium text-gray-300 mb-1">
+            {{ t('settings_col_username') }}
+          </label>
+          <input
+            v-model="form.username"
+            type="text"
+            required
+            minlength="3"
+            maxlength="50"
+            class="w-full bg-[#161f30] border border-[#1f2937] text-gray-100 text-xs rounded-lg px-3 py-2 font-mono focus:outline-none focus:border-cyan-500"
+          />
+        </div>
+
+        <!-- Optional Password Reset / Update -->
+        <div class="p-3 rounded-lg bg-[#0c1322] border border-gray-800 space-y-2">
+          <div class="flex items-center justify-between flex-wrap gap-1">
+            <span class="text-xs font-mono font-bold text-gray-300">
+              {{ t('settings_new_pwd') }} <span class="text-gray-500 font-normal text-[11px]">{{ t('settings_opt_optional') }}</span>
+            </span>
+            <span class="text-[10px] text-gray-400 font-mono">{{ t('settings_pwd_optional_hint') }}</span>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div>
+              <input
+                v-model="form.password"
+                type="password"
+                minlength="8"
+                placeholder="New password (optional)"
+                class="w-full bg-[#161f30] border border-[#1f2937] text-gray-100 text-xs rounded-lg px-3 py-2 font-mono focus:outline-none focus:border-cyan-500"
+              />
+            </div>
+            <div>
+              <input
+                v-model="form.confirm_password"
+                type="password"
+                minlength="8"
+                placeholder="Confirm new password"
+                class="w-full bg-[#161f30] border border-[#1f2937] text-gray-100 text-xs rounded-lg px-3 py-2 font-mono focus:outline-none focus:border-cyan-500"
+              />
+            </div>
+          </div>
+        </div>
+
         <!-- Role & Status -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
@@ -174,7 +219,7 @@
           </div>
         </div>
 
-        <div v-if="error" class="p-2 rounded bg-rose-950/60 border border-rose-800/60 text-rose-300 text-xs font-mono">
+        <div v-if="error" class="p-2.5 rounded bg-rose-950/60 border border-rose-800/60 text-rose-300 text-xs font-mono">
           {{ error }}
         </div>
 
@@ -230,6 +275,9 @@ const error = ref('')
 const scopeType = ref(props.user.allowed_server_ids && props.user.allowed_server_ids.length > 0 ? 'custom' : 'all')
 
 const form = reactive({
+  username: props.user.username || '',
+  password: '',
+  confirm_password: '',
   role: props.user.role || 'operator',
   is_active: props.user.is_active ?? 1,
   permissions: {},
@@ -274,11 +322,18 @@ function clearAllServers() {
 }
 
 async function handleSubmit() {
+  if (form.password && form.password !== form.confirm_password) {
+    error.value = 'New password and confirmation do not match.'
+    return
+  }
   loading.value = true
   error.value = ''
   try {
     const token = localStorage.getItem('pantau_token')
     const payload = {
+      username: form.username.trim(),
+      password: form.password.trim() || null,
+      confirm_password: form.confirm_password.trim() || null,
       role: form.role,
       is_active: form.is_active,
       permissions: form.role === 'operator' ? form.permissions : null,
@@ -298,6 +353,7 @@ async function handleSubmit() {
       throw new Error(data.detail || 'Failed to update user')
     }
     emit('updated', data)
+    emit('close')
   } catch (err) {
     error.value = err.message
   } finally {

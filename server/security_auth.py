@@ -15,6 +15,10 @@ from typing import Optional, Tuple, List, Dict
 
 try:
     import qrcode
+    try:
+        import qrcode.image.svg
+    except Exception:
+        pass
 except ImportError:
     qrcode = None
 
@@ -144,7 +148,7 @@ def generate_totp_uri(secret: str, username: str, issuer: str = "Pantau Server")
 
 
 def generate_qr_data_url(uri: str) -> str:
-    """Hasilkan Data URL Base64 PNG dari QR Code."""
+    """Hasilkan Data URL Base64 PNG atau SVG dari QR Code."""
     if qrcode is None:
         return ""
     qr = qrcode.QRCode(
@@ -155,11 +159,23 @@ def generate_qr_data_url(uri: str) -> str:
     )
     qr.add_data(uri)
     qr.make(fit=True)
-    img = qr.make_image(fill_color="#0f172a", back_color="#ffffff")
-    buf = io.BytesIO()
-    img.save(buf, format="PNG")
-    b64 = base64.b64encode(buf.getvalue()).decode("ascii")
-    return f"data:image/png;base64,{b64}"
+    try:
+        img = qr.make_image(fill_color="#0f172a", back_color="#ffffff")
+        buf = io.BytesIO()
+        img.save(buf, format="PNG")
+        b64 = base64.b64encode(buf.getvalue()).decode("ascii")
+        return f"data:image/png;base64,{b64}"
+    except Exception:
+        try:
+            if hasattr(qrcode, "image") and hasattr(qrcode.image, "svg"):
+                img = qr.make_image(image_factory=qrcode.image.svg.SvgPathImage)
+                buf = io.BytesIO()
+                img.save(buf)
+                b64 = base64.b64encode(buf.getvalue()).decode("ascii")
+                return f"data:image/svg+xml;base64,{b64}"
+        except Exception:
+            pass
+        return ""
 
 
 def compute_totp(secret: str, interval: int = 30, for_time: Optional[int] = None) -> str:

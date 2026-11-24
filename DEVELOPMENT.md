@@ -174,6 +174,16 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.39
+
+### v0.1.39 (2026-11-24) — Standardisasi Bahasa Inggris Baku, Tampilan 2FA Presisi, Alur Kerja Edit Akun, dan Tombol Aksi Ikon Murni
+- **Standardisasi Penuh Bahasa Inggris Sysadmin:** Mengganti seluruh teks statis antarmuka pada Settings (RBAC & Master Control) dan Audit Trail ke Bahasa Inggris baku NOC dengan kamus i18n terpadu.
+- **Perbaikan Total 2FA Setup (RFC 6238 TOTP):** Memperbaiki dependensi QR Code dan penanganan fallback SVG pada backend, menyajikan manual secret key dengan kontras tinggi (cyan-300 pada latar gelap) berpemisah spasi per 4 karakter, serta menghilangkan error 500.
+- **Penyelarasan Alur Kerja Edit Akun (Blueprint Parity):** Menyederhanakan tombol profil menjadi 'Edit' murni untuk memperbarui username dan password secara langsung. Menambahkan input Username dan Password (Opsional) pada EditUserModal untuk pembaruan kredensial yang berfungsi penuh.
+- **Ergonomi Kolom Tindakan Ikon Murni:** Menghapus label teks 'Actions ▾' / 'Aksi ▾' pada baris tabel direktori pengguna dan menggantinya dengan tombol ikon SVG monokromatik 3-titik vertikal demi efisiensi kepadatan data NOC.
+- **Pengujian & Validasi Lapangan:** Memvalidasi kompilasi backend, build Vite frontend, dan verifikasi 100% armada server aktif.
+
+
 ### Versi v0.1.38
 
 ### Fitur & Penyempurnaan:
