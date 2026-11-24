@@ -9,9 +9,23 @@
           // SSL/TLS CERTIFICATE TRACKING
         </h3>
       </div>
-      <span class="text-xs text-emerald-400 font-bold">ALL VALID</span>
+      <span class="text-xs font-bold" :class="certificates.length > 0 ? 'text-emerald-400' : 'text-gray-400'">
+        {{ certificates.length > 0 ? `${certificates.length} ACTIVE` : '0 DISCOVERED' }}
+      </span>
     </div>
-    <div class="overflow-x-auto">
+
+    <!-- Empty State when no SSL certs found on this host -->
+    <div v-if="certificates.length === 0" class="text-xs text-gray-400 py-8 text-center font-mono">
+      <svg class="w-8 h-8 text-gray-600 mx-auto mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+      </svg>
+      <div>{{ t('ssl_empty_desc') || 'No SSL/TLS certificates discovered on this host.' }}</div>
+      <div class="text-[11px] text-gray-500 mt-1">{{ t('ssl_empty_hint') || 'Certificates are tracked from standard web server stores (/etc/letsencrypt, /etc/ssl).' }}</div>
+    </div>
+
+    <!-- Real SSL Certificates Table -->
+    <div v-else class="overflow-x-auto">
       <table class="w-full text-left text-xs border-collapse">
         <thead class="border-b border-cyan-500/20 text-gray-400 uppercase font-bold tracking-wider">
           <tr>
@@ -45,9 +59,9 @@ const props = defineProps({
 })
 
 const certificates = computed(() => {
-  if (props.sslCertsList && props.sslCertsList.length > 0) return props.sslCertsList
-  return [
-    { domain: 'noc.pantau.internal', issuer: "Let's Encrypt Authority X3", expires: '2027-02-15', days_left: '86 days' }
-  ]
+  if (props.sslCertsList && Array.isArray(props.sslCertsList) && props.sslCertsList.length > 0) {
+    return props.sslCertsList
+  }
+  return []
 })
 </script>

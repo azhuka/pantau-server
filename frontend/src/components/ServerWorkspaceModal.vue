@@ -431,6 +431,7 @@
             :services="servicesList"
             :ports="portsList"
             @restart-service="restartService"
+            @service-action="handleServiceAction"
           />
           <WorkspaceProcessesTab
             v-else-if="activeSubTab === 'processes'"
@@ -440,6 +441,7 @@
           <WorkspaceFirewallTab
             v-else-if="activeSubTab === 'firewall'"
             :firewall-data="firewallData"
+            @firewall-action="handleGenericAction"
           />
           <WorkspaceAccountsTab
             v-else-if="activeSubTab === 'accounts'"
@@ -450,10 +452,12 @@
           <WorkspaceCronTab
             v-else-if="activeSubTab === 'cron'"
             :cron-data="cronData"
+            @cron-action="handleGenericAction"
           />
           <WorkspaceFimTab
             v-else-if="activeSubTab === 'fim'"
             :fim-events="fimEventsList"
+            @fim-action="handleGenericAction"
           />
           <WorkspacePackagesTab
             v-else-if="activeSubTab === 'packages'"
@@ -1219,12 +1223,32 @@ async function executeGuardrailAction() {
 
 async function restartService(unitName) {
   if (!confirm(t('confirm_restart_service', { unit: unitName }))) return
-  await dispatchAction('restart_service', { unit: unitName })
+  await dispatchAction('restart_service', { name: unitName, unit: unitName })
 }
 
-async function killProcess(pid) {
-  if (!confirm(t('confirm_kill_proc', { pid }))) return
-  await dispatchAction('kill_process', { pid, signal: 'SIGTERM' })
+async function handleServiceAction({ action, unit }) {
+  if (action === 'restart_service') {
+    return restartService(unit)
+  }
+  const verb = action === 'start_service' ? 'Start' : (action === 'stop_service' ? 'Stop' : 'Reload')
+  if (!confirm(`${verb} systemd service '${unit}' on target host?`)) return
+  await dispatchAction(action, { name: unit, unit })
+}
+
+async function handleGenericAction({ action, params }) {
+  await dispatchAction(action, params)
+}
+
+async function killProcess(payload) {
+  const pid = typeof payload === 'object' ? payload.pid : payload
+  const signal = typeof payload === 'object' && payload.signal ? payload.signal : 'SIGTERM'
+  const pname = typeof payload === 'object' ? payload.pname : ''
+  const isKill = signal === 'SIGKILL'
+  const msg = isKill
+    ? `Force terminate (SIGKILL) process PID ${pid} (${pname || 'process'})?`
+    : `Send ${signal} to process PID ${pid} (${pname || 'process'})?`
+  if (!confirm(msg)) return
+  await dispatchAction('kill_process', { pid, signal, pname })
 }
 
 async function terminateSSHSession(user, tty) {

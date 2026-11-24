@@ -1,10 +1,12 @@
 <template>
-  <div class="hud-tactical-card rounded-xl p-4 font-mono">
+  <div class="hud-tactical-card rounded-xl p-4 font-mono space-y-3">
     <span class="hud-corner-tr"></span>
     <span class="hud-corner-bl"></span>
-    <div class="flex items-center justify-between mb-3">
-      <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider">// {{ t('ws_cron_title') }}</h3>
-      <span class="text-xs text-gray-400">{{ (cronData?.jobs || []).length }} tasks</span>
+    <div class="flex items-center justify-between mb-3 border-b border-cyan-500/20 pb-2 flex-wrap gap-2">
+      <div class="flex items-center gap-2">
+        <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider">// {{ t('ws_cron_title') }}</h3>
+        <span class="text-xs text-gray-400">({{ (cronData?.jobs || []).length }} scheduled)</span>
+      </div>
     </div>
     <div v-if="(cronData?.jobs || []).length === 0" class="text-xs text-gray-400 py-8 text-center font-mono">
       {{ t('ws_cron_empty') }}
@@ -17,11 +19,12 @@
             <th class="py-2.5 px-3">{{ t('ws_col_user') }}</th>
             <th class="py-2.5 px-3">{{ t('ws_col_exec') }}</th>
             <th class="py-2.5 px-3">{{ t('ws_col_source') }}</th>
+            <th class="py-2.5 px-3 text-right">{{ t('col_actions') || 'Actions' }}</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-800/40">
           <tr v-for="(j, idx) in cronData?.jobs || []" :key="idx" class="hover:bg-cyan-950/20">
-            <td class="py-2.5 px-3 font-bold text-amber-300">{{ j.schedule }}</td>
+            <td class="py-2.5 px-3 font-bold text-amber-300 font-mono">{{ j.schedule }}</td>
             <td class="py-2.5 px-3 text-gray-300 font-medium">{{ j.user || 'root' }}</td>
             <td
               class="py-2.5 px-3 text-gray-200 truncate max-w-md cursor-help hover:text-cyan-200"
@@ -30,6 +33,18 @@
               {{ j.command }}
             </td>
             <td class="py-2.5 px-3 text-gray-400">{{ j.source || '-' }}</td>
+            <td class="py-2.5 px-3 text-right">
+              <div class="flex items-center justify-end gap-1.5">
+                <button
+                  type="button"
+                  @click="runCron(j)"
+                  class="px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-700/60 hover:bg-cyan-900 text-[11px] font-bold transition cursor-pointer"
+                  :title="`Execute command on-demand: ${j.command}`"
+                >
+                  Run Now
+                </button>
+              </div>
+            </td>
           </tr>
         </tbody>
       </table>
@@ -45,4 +60,17 @@ const { t } = useI18n()
 defineProps({
   cronData: { type: Object, default: () => ({ jobs: [] }) }
 })
+
+const emit = defineEmits(['cron-action'])
+
+function runCron(job) {
+  if (!confirm(`Run cron command immediately on host: \n\n${job.command}`)) return
+  emit('cron-action', {
+    action: 'cron_run',
+    params: {
+      user: job.user || 'root',
+      command: job.command
+    }
+  })
+}
 </script>

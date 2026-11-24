@@ -174,6 +174,16 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.43
+
+### v0.1.43 (2026-11-24)
+- **Blueprint Parity 2-Kolom Manajemen Pengguna:** Mengadopsi tata letak 2-kolom resmi dari `users.html` dengan Tabel Pengguna Terdaftar di kiri dan Kartu Tambah Pengguna Baru di kanan.
+- **Pemisahan Modal Kredensial & Wewenang:** Tombol `Edit` mandiri pada profil aktif (`EditSelfModal`), aksi `Atur Izin` untuk matriks izin operator (`EditPermsModal`), dan `Reset Password` tanpa duplikasi tombol yang membingungkan.
+- **Standar Ergonomi Kolom Tindakan:** Menggunakan tombol ikon SVG 3-titik vertikal murni tanpa label teks memanjang sesuai aturan ergonomi NOC.
+- **Pembersihan Data Palsu (Zero-Fake Data):** Menghapus fallback array palsu pada tab FIM (`/etc/passwd`) dan tab SSL (`noc.pantau.internal`), menggantikannya dengan penanganan status kosong yang jujur tingkat kernel.
+- **Paritas Kontrol Taktis Workspace:** Menambahkan aksi Start/Stop/Reload/Restart pada unit systemd, penanganan sinyal POSIX (SIGTERM, SIGKILL, SIGSTOP, SIGCONT) pada manajer proses, sakelar UFW & formulir blokir IP pada Firewall, serta eksekusi instan Cron.
+
+
 ### Versi v0.1.42
 
 ### [0.1.42] - 2026-11-24

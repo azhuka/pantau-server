@@ -1,37 +1,102 @@
 <template>
-  <div class="hud-tactical-card rounded-xl p-4 font-mono">
+  <div class="hud-tactical-card rounded-xl p-4 font-mono space-y-4">
     <span class="hud-corner-tr"></span>
     <span class="hud-corner-bl"></span>
-    <div class="flex items-center justify-between mb-3">
+    <div class="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-cyan-500/20">
       <div class="flex items-center gap-2">
         <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider">// {{ t('ws_fw_title') }}</h3>
         <span
           class="px-2 py-0.5 rounded text-[11px] uppercase font-bold"
-          :class="firewallData?.status === 'active' ? 'bg-emerald-950 text-emerald-300 border border-emerald-700/60' : 'bg-gray-800 text-gray-400'"
+          :class="firewallData?.status === 'active' ? 'bg-emerald-950 text-emerald-300 border border-emerald-700/60' : 'bg-gray-800 text-gray-400 border border-gray-700'"
         >
           {{ firewallData?.status || 'unknown' }}
         </span>
       </div>
+
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          @click="toggleUfw"
+          class="px-2.5 py-1 rounded text-xs font-bold transition cursor-pointer flex items-center gap-1.5"
+          :class="firewallData?.status === 'active' ? 'bg-rose-950 text-rose-300 border border-rose-800 hover:bg-rose-900' : 'bg-emerald-950 text-emerald-300 border border-emerald-800 hover:bg-emerald-900'"
+        >
+          <span>{{ firewallData?.status === 'active' ? 'Disable UFW' : 'Enable UFW' }}</span>
+        </button>
+        <button
+          type="button"
+          @click="$emit('firewall-action', { action: 'ufw_reload', params: {} })"
+          class="px-2.5 py-1 rounded bg-cyan-950 text-cyan-300 border border-cyan-700/60 hover:bg-cyan-900 text-xs font-bold transition cursor-pointer"
+          title="Reload UFW firewall rules"
+        >
+          <span>Reload</span>
+        </button>
+      </div>
     </div>
+
+    <!-- Quick Block IP Form -->
+    <div class="p-3 rounded-lg bg-[#070c18] border border-cyan-900/40 space-y-2">
+      <div class="text-[11px] font-bold text-gray-300 uppercase">// Manual IP Blocklist</div>
+      <form @submit.prevent="submitBlockIp" class="flex items-center gap-2 flex-wrap">
+        <input
+          v-model="blockIpInput"
+          type="text"
+          placeholder="IP Address (e.g. 192.168.1.50 or 10.0.0.0/24)"
+          required
+          class="bg-[#0b1326] border border-gray-800 focus:border-rose-500 rounded px-3 py-1.5 text-xs text-gray-200 outline-none flex-1 min-w-[200px]"
+        />
+        <input
+          v-model="blockCommentInput"
+          type="text"
+          placeholder="Comment (optional, e.g. SSH brute force)"
+          class="bg-[#0b1326] border border-gray-800 focus:border-rose-500 rounded px-3 py-1.5 text-xs text-gray-200 outline-none w-48"
+        />
+        <button
+          type="submit"
+          class="px-3 py-1.5 rounded bg-rose-950 hover:bg-rose-900 border border-rose-800 text-rose-300 text-xs font-bold transition cursor-pointer flex items-center gap-1.5"
+        >
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+          <span>Block IP</span>
+        </button>
+      </form>
+    </div>
+
+    <!-- Firewall Rules Table -->
     <div v-if="(firewallData?.rules || []).length === 0" class="text-xs text-gray-400 py-8 text-center font-mono">
-      {{ t('ws_fw_empty') }}
+      {{ t('ws_fw_empty') || 'No active firewall rules configured.' }}
     </div>
     <div v-else class="overflow-x-auto">
       <table class="w-full text-left text-xs border-collapse">
         <thead class="border-b border-cyan-500/20 text-gray-400 uppercase font-bold tracking-wider">
           <tr>
-            <th class="py-2.5 px-3">{{ t('ws_col_to') }}</th>
-            <th class="py-2.5 px-3">{{ t('ws_col_action') }}</th>
-            <th class="py-2.5 px-3">{{ t('ws_col_from') }}</th>
+            <th class="py-2.5 px-3">{{ t('ws_col_to') || 'To (Port/Service)' }}</th>
+            <th class="py-2.5 px-3">{{ t('ws_col_action') || 'Action' }}</th>
+            <th class="py-2.5 px-3">{{ t('ws_col_from') || 'From (Source)' }}</th>
+            <th class="py-2.5 px-3 text-right">{{ t('col_actions') || 'Actions' }}</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-800/40">
           <tr v-for="(r, idx) in firewallData.rules" :key="idx" class="hover:bg-cyan-950/20">
             <td class="py-2.5 px-3 font-semibold text-gray-200">{{ r.to || r.target }}</td>
             <td class="py-2.5 px-3">
-              <span class="text-emerald-400 font-bold">{{ r.action || 'ALLOW' }}</span>
+              <span
+                class="px-2 py-0.5 rounded text-[10px] font-bold"
+                :class="(r.action || 'ALLOW').toUpperCase().includes('DENY') || (r.action || '').toUpperCase().includes('REJECT') ? 'bg-rose-950 text-rose-300 border border-rose-700' : 'bg-emerald-950 text-emerald-300 border border-emerald-700'"
+              >
+                {{ r.action || 'ALLOW' }}
+              </span>
             </td>
             <td class="py-2.5 px-3 text-gray-400">{{ r.from || 'Anywhere' }}</td>
+            <td class="py-2.5 px-3 text-right">
+              <button
+                v-if="r.from && r.from !== 'Anywhere' && ((r.action || '').toUpperCase().includes('DENY') || (r.action || '').toUpperCase().includes('REJECT'))"
+                type="button"
+                @click="$emit('firewall-action', { action: 'unblock_ip', params: { ip: r.from } })"
+                class="px-2 py-0.5 rounded bg-gray-900 hover:bg-emerald-950 border border-gray-700 text-gray-300 hover:text-emerald-300 text-[11px] font-bold transition cursor-pointer"
+                title="Unblock IP from UFW"
+              >
+                Unblock
+              </button>
+            </td>
           </tr>
         </tbody>
       </table>
@@ -40,11 +105,40 @@
 </template>
 
 <script setup>
+import { ref } from 'vue'
 import { useI18n } from '../../../i18n'
 
 const { t } = useI18n()
 
-defineProps({
+const props = defineProps({
   firewallData: { type: Object, default: () => ({ status: 'unknown', rules: [] }) }
 })
+
+const emit = defineEmits(['firewall-action'])
+
+const blockIpInput = ref('')
+const blockCommentInput = ref('')
+
+function toggleUfw() {
+  const currentStatus = props.firewallData?.status
+  const nextAction = currentStatus === 'active' ? 'ufw_disable' : 'ufw_enable'
+  const promptMsg = currentStatus === 'active'
+    ? 'Are you sure you want to DISABLE UFW firewall on this host?'
+    : 'Are you sure you want to ENABLE UFW firewall on this host?'
+  if (!confirm(promptMsg)) return
+  emit('firewall-action', { action: nextAction, params: {} })
+}
+
+function submitBlockIp() {
+  if (!blockIpInput.value.trim()) return
+  emit('firewall-action', {
+    action: 'block_ip',
+    params: {
+      ip: blockIpInput.value.trim(),
+      comment: blockCommentInput.value.trim()
+    }
+  })
+  blockIpInput.value = ''
+  blockCommentInput.value = ''
+}
 </script>
