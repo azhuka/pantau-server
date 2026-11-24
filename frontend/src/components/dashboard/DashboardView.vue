@@ -195,7 +195,7 @@
         </div>
 
         <button
-          @click="$emit('nav', 'assets')"
+          @click="$emit('nav', 'incidents')"
           class="text-xs text-cyan-400 hover:text-cyan-300 transition font-mono flex items-center gap-1.5 cursor-pointer font-semibold"
         >
           <span>{{ t('dash_full_history') }}</span>

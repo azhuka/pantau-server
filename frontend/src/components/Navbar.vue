@@ -16,7 +16,7 @@
           <div class="font-bold text-sm tracking-wider text-gray-100 flex items-center gap-2 font-mono">
             <span class="text-cyan-400 font-extrabold">{{ t('app_name') }}</span>
             <span class="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-800/60 tracking-normal">
-              v0.1.54
+              v0.1.55
             </span>
           </div>
           <div class="text-[10px] text-gray-400 tracking-widest font-mono uppercase flex items-center gap-1.5">
@@ -42,7 +42,34 @@
           <span>{{ t('nav_dashboard') }}</span>
         </button>
 
-        <!-- 2: ASSET INVENTORY -->
+        <!-- 2: INCIDENTS -->
+        <button
+          @click="$emit('nav', 'incidents')"
+          :class="[
+            'px-3 py-1.5 rounded transition-all cursor-pointer flex items-center gap-2 font-semibold tracking-wide border',
+            activeTab === 'incidents'
+              ? 'bg-cyan-950/50 text-cyan-300 border-cyan-500/60 font-bold shadow-[0_0_10px_rgba(56,189,248,0.2)]'
+              : 'text-gray-400 hover:text-gray-100 hover:bg-gray-800/40 border-transparent'
+          ]"
+        >
+          <span class="text-cyan-400/70">02 //</span>
+          <span>{{ t('nav_incidents') }}</span>
+          <span
+            v-if="problemCount > 0"
+            class="text-[10px] px-1.5 py-0.2 rounded font-bold ml-0.5 border bg-amber-500/20 text-amber-300 border-amber-500/40 flex items-center gap-0.5"
+          >
+            <span>⚠</span>
+            <span>{{ problemCount }}</span>
+          </span>
+          <span
+            v-else
+            class="text-[10px] px-1.5 py-0.2 rounded font-bold ml-0.5 border bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+          >
+            ✓ 0
+          </span>
+        </button>
+
+        <!-- 3: ASSET INVENTORY -->
         <button
           @click="$emit('nav', 'assets')"
           :class="[
@@ -52,7 +79,7 @@
               : 'text-gray-400 hover:text-gray-100 hover:bg-gray-800/40 border-transparent'
           ]"
         >
-          <span class="text-cyan-400/70">02 //</span>
+          <span class="text-cyan-400/70">03 //</span>
           <span>{{ t('nav_assets') }}</span>
           <span
             v-if="serverCount"
@@ -62,7 +89,7 @@
           </span>
         </button>
 
-        <!-- 3: AUDIT TRAIL -->
+        <!-- 4: AUDIT TRAIL -->
         <button
           v-if="user?.is_master_admin || user?.permissions?.can_audit"
           @click="$emit('nav', 'audit')"
@@ -73,11 +100,11 @@
               : 'text-gray-400 hover:text-gray-100 hover:bg-gray-800/40 border-transparent'
           ]"
         >
-          <span class="text-cyan-400/70">03 //</span>
+          <span class="text-cyan-400/70">04 //</span>
           <span>{{ t('nav_audit') }}</span>
         </button>
 
-        <!-- 4: SETTINGS & RBAC -->
+        <!-- 5: SETTINGS & RBAC -->
         <button
           v-if="user?.is_master_admin || user?.permissions?.can_manage_users || user?.permissions?.can_manage_viewers"
           @click="$emit('nav', 'settings')"
@@ -88,7 +115,7 @@
               : 'text-gray-400 hover:text-gray-100 hover:bg-gray-800/40 border-transparent'
           ]"
         >
-          <span class="text-cyan-400/70">04 //</span>
+          <span class="text-cyan-400/70">05 //</span>
           <span>{{ t('nav_settings') }}</span>
         </button>
       </nav>

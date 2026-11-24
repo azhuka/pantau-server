@@ -49,7 +49,15 @@
         @refresh-problems="fetchProblems"
       />
 
-      <!-- HALAMAN 2: ASSET INVENTORY TABLE -->
+      <!-- HALAMAN 2: INCIDENTS (Pusat Kendali & Resolusi Insiden) -->
+      <IncidentView
+        v-else-if="activeTab === 'incidents'"
+        :servers="servers"
+        :current-user="currentUser"
+        @open-workspace="openWorkspace"
+      />
+
+      <!-- HALAMAN 3: ASSET INVENTORY TABLE -->
       <AssetTableView
         v-else-if="activeTab === 'assets'"
         :servers="servers"
@@ -173,6 +181,7 @@ import DashboardView from './components/dashboard/DashboardView.vue'
 import AssetTableView from './components/assets/AssetTableView.vue'
 import AuditView from './components/audit/AuditView.vue'
 import SettingsView from './components/settings/SettingsView.vue'
+import IncidentView from './components/incidents/IncidentView.vue'
 import ServerWorkspaceModal from './components/ServerWorkspaceModal.vue'
 import LoginModal from './components/LoginModal.vue'
 
@@ -212,7 +221,7 @@ const workspaceHost = computed(() => {
 })
 
 function canAccessTab(tab) {
-  if (tab === 'dashboard' || tab === 'assets') return true
+  if (tab === 'dashboard' || tab === 'incidents' || tab === 'assets') return true
   if (tab === 'audit') return Boolean(currentUser.value?.is_master_admin || currentUser.value?.permissions?.can_audit)
   if (tab === 'settings') return Boolean(currentUser.value?.is_master_admin || currentUser.value?.permissions?.can_manage_users || currentUser.value?.permissions?.can_manage_viewers)
   return false
@@ -230,7 +239,7 @@ function handleNav(tab) {
 
 function syncTabFromHash() {
   const hash = window.location.hash.replace(/^#/, '')
-  if (['dashboard', 'assets', 'audit', 'settings'].includes(hash)) {
+  if (['dashboard', 'incidents', 'assets', 'audit', 'settings'].includes(hash)) {
     if (canAccessTab(hash)) {
       activeTab.value = hash
     } else {
@@ -243,8 +252,22 @@ function syncTabFromHash() {
 const initialFloatingTool = ref(null)
 
 function openWorkspace(sid, tool = null) {
-  workspaceServerId.value = sid
-  initialFloatingTool.value = tool
+  if (typeof sid === 'object' && sid !== null) {
+    const targetSid = sid.server_id || sid.id
+    let targetTool = sid.tool || sid.tab || tool
+    if (!targetTool && sid.problem) {
+      const k = sid.problem.key || ''
+      if (k.startsWith('service_down')) targetTool = 'services'
+      else if (k.startsWith('ssh_')) targetTool = 'ssh'
+      else if (k.startsWith('high_cpu') || k.startsWith('high_ram')) targetTool = 'processes'
+      else if (k.startsWith('disk_') || k.startsWith('mount_')) targetTool = 'storage'
+    }
+    workspaceServerId.value = targetSid
+    initialFloatingTool.value = targetTool
+  } else {
+    workspaceServerId.value = sid
+    initialFloatingTool.value = tool
+  }
   isWorkspaceOpen.value = true
   isWorkspaceMinimized.value = false
 }
@@ -404,10 +427,12 @@ function handleGlobalKeydown(e) {
   if (e.key === '1') {
     handleNav('dashboard')
   } else if (e.key === '2') {
-    handleNav('assets')
+    handleNav('incidents')
   } else if (e.key === '3') {
-    handleNav('audit')
+    handleNav('assets')
   } else if (e.key === '4') {
+    handleNav('audit')
+  } else if (e.key === '5') {
     handleNav('settings')
   }
 }

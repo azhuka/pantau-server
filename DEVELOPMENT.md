@@ -253,10 +253,142 @@ Daemon agen di server klien adalah ujung tombak pengumpulan telemetri armada. Ag
 
 ---
 
-## 7. Standar Versi SemVer & Peta Jalan Fase Pengembangan
+## 7. Arsitektur Pusat Kendali & Siklus Hidup Insiden (Incident Command & Resolution Architecture)
+
+Manajemen insiden pada Pantau Server dirancang berdasarkan prinsip **kewaspadaan situasional tinggi (*high situational awareness*)** dan **penanganan berbasis bukti fisik tingkat kernel (*evidence-based mitigation*)**. Platform memisahkan secara tegas antara pemantauan makro pasif di Dasbor dan eksekusi mitigasi taktis di Pusat Kendali Insiden (*Incident Command Center*).
+
+```mermaid
+flowchart TD
+    subgraph Detection["1. Deteksi Dinamis & Evaluasi (problem_service.py)"]
+        Det_Agent["Telemetri Agen /proc, systemd, /proc/net"] --> Det_Eval["Evaluasi Ambang Batas & State Mesin"]
+        Det_Eval --> Det_Sev["Klasifikasi 4-Tingkat Keparahan (Tier-Aware)"]
+    end
+
+    subgraph ActiveState["2. Triase & Penanganan Insiden Aktif (IncidentView.vue)"]
+        Det_Sev --> Act_Ticket["Penerbitan Tiket Insiden (server_problems)"]
+        Act_Ticket --> Act_Triage["Pil Triase: Danger, Critical, Warning, Info, Diabaikan"]
+        Act_Triage --> Act_Ack["Tangani (Acknowledge) - Tandai Sedang Ditangani Operator"]
+        Act_Triage --> Act_Ignore["Abaikan Berbatas Waktu (2h, 24h, 7d, perm) + Alasan"]
+        Act_Triage --> Act_Mitigate["Aksi Langsung: Putus Sesi SSH, Restart Service, Workspace"]
+    end
+
+    subgraph AutoHeal["3. Pemulihan Otomatis & Penutupan Tiket (Auto-Healing)"]
+        Act_Mitigate --> Auto_Check["Kondisi Fisik Normal Terdeteksi Kembali"]
+        Act_Ticket --> Auto_Check
+        Auto_Check --> Auto_Close["Penutupan Tiket Atomik (resolved_at = now)"]
+        Auto_Close --> Auto_Audit["Pencatatan Audit Trail Masalah Selesai"]
+    end
+
+    subgraph Archive["4. Arsip Riwayat & Metrik Kinerja NOC (Resolved Archive)"]
+        Auto_Close --> Res_Arch["Tabel Rekapitulasi Riwayat Insiden Teratasi"]
+        Res_Arch --> Res_MTTR["Kalkulasi Waktu Pemulihan Rata-Rata (MTTR)"]
+        Res_Arch --> Res_Filter["Filter Rentang Tanggal (Hari ini, 24j, 7h, Kustom)"]
+    end
+```
+
+### 7.1 Filosofi Pemisahan Tanggung Jawab: Dasbor Pasif vs Pusat Insiden
+1. **Dasbor Murni Pasif (`DashboardView.vue`):** Berfungsi eksklusif sebagai layar pengawasan makro 24/7/365 (*overview situational awareness*). Dasbor memuat banner KPI 3-kartu, ringkasan insiden pasif satu baris, dan tabel armada utuh tanpa tombol aksi/mutasi.
+2. **Pusat Kendali Insiden Terdedikasi (`IncidentView.vue`):** Berdiri sebagai stasiun kerja mandiri pada rute navigasi utama (`02 // Incidents`), dilengkapi indikator *live badge* dinamis di navbar (`[ ⚠️ 2 ]`). Halaman ini memberikan ruang leluasa bagi operator untuk melakukan triase massal, menelaah panduan solusi (*remediation tips*), meninjau frekuensi insiden kambuh (*flapping detection*), mengeksekusi mitigasi langsung, menyetel ambang batas (*thresholds*), serta menganalisis efektivitas pemulihan sistem (MTTR).
+
+---
+
+### 7.2 Taksonomi 4-Tingkat Keparahan Baku (Severity Taxonomy)
+
+Sistem menolak taksonomi rancu dan menetapkan 4 tingkatan keparahan semantik baku berpedoman pada warna tematik NOC:
+
+| Tingkat Keparahan | Warna Semantik | Denyut Visual | Kriteria & Kondisi Lapangan Terukur |
+|---|---|---|---|
+| **`info`** | **Biru Muda** (`#38bdf8`) | Statis (Tanpa Kedip) | Pemberitahuan pembaruan non-ancaman, ketersediaan paket pembaruan OS (`apt_updates`), atau pembaruan konfigurasi rutin. |
+| **`warning`** | **Kuning Amber** (`#f59e0b`) | `.radar-warning` (Denyut Lembut) | Potensi gangguan operasional ringan di mana layanan inti tetap berjalan normal: koneksi SSH legal pengguna terdaftar, utilisasi CPU/RAM/Disk tinggi pada server non-produksi (Tier 2), atau disk melewati ambang 85%. |
+| **`critical`** | **Oranye Pekat** (`#ea580c`) | `.radar-critical` (Denyut Cepat) | Layanan krusial terganggu atau mati: Nginx/MariaDB/Docker berstatus *failed*, koneksi SSH mencurigakan (akses langsung root dari IP asing), atau node produksi tidak melapor selama 60–180 detik. |
+| **`danger`** | **Merah Crimson** (`#ef4444`) | `.radar-critical` (Denyut Cepat) | Kelumpuhan sistem total atau ancaman integritas fisik: server produksi offline (> 180 detik), partisi penyimpanan *read-only* (`disk_ro_root`), memori/CPU habis (> 95% pada Tier 1), atau *kernel panic*. |
+
+> [!IMPORTANT]
+> **Tier-Aware Triaging:** Node non-produksi (Tier 2: lab, staging, pengujian) dibatasi tingkat keparahan maksimalnya hingga tingkat `warning`. Tingkat `critical` dan `danger` dikhususkan secara eksklusif bagi node produksi vital (Tier 1) untuk membasmi kelelahan alarm (*alert fatigue*).
+
+---
+
+### 7.3 Siklus Hidup Insiden Penuh (The 6-Stage Incident Lifecycle)
+
+1. **Tahap 1: Deteksi Dinamis & Evaluasi Mandiri (`evaluate_server_problems`)**
+   - Dievaluasi otomatis setiap kali agen melapor (siklus 3–5 detik) atau melalui pengecekan keheningan node (`check_all_servers_stale`).
+   - Mengevaluasi layanan systemd krusial, sesi interaktif login `/dev/pts`, partisi mount point, status read-only, ketersediaan paket keamanan OS, dan utilisasi sumber daya.
+   - Peredaman Otomatis (*Maintenance Suppression*): Node dalam status `is_maintenance = 1` diredam evaluasi alarmnya agar tidak memicu insiden palsu selama jendela pemeliharaan resmi.
+
+2. **Tahap 2: Triase & Penanganan Operator (*Acknowledge / Tangani*)**
+   - Operator dapat menandai insiden sebagai **"Ditangani" (*Acknowledged*)** untuk memberikan sinyal kepada seluruh personel NOC bahwa anomali sedang dalam proses investigasi teknis aktif.
+   - Nama operator dan waktu penanganan dicatat secara permanen di basis data (`acknowledged_by`, `acknowledged_at`).
+
+3. **Tahap 3: Pengabaian Berbatas Waktu (*Timed Ignore System*)**
+   - Untuk insiden yang diketahui penyebabnya namun belum dapat diselesaikan seketika (misal lonjakan CPU akibat backup terjadwal), operator dapat mengabaikan insiden dengan batas waktu terukur:
+     - `2 Jam`, `24 Jam` (rekomendasi), `7 Hari`, `30 Hari`, atau `Permanen / Hingga Pulih`.
+   - **Wajib Alasan & Audit:** Operator wajib memasukkan alasan pengabaian yang dicatat ke `AuditLog`.
+   - **Pencegahan Alarm Macet (*Auto-Expiry*):** Begitu batas waktu tercapai (`ignored_until < now`), sistem secara otomatis membatalkan status pengabaian dan mengembalikan insiden ke antrean aktif tanpa campur tangan manual.
+
+4. **Tahap 4: Mitigasi Lapangan Taktis (*Direct Action Mitigation*)**
+   - Tiket insiden menyediakan tindakan mitigasi terarah:
+     - **Putus Sesi SSH:** Memutuskan sambungan paksa sesi penyusupan SSH seketika melalui transmisi perintah aman ke agen klien (`/api/problems/{pid}/terminate-ssh`).
+     - **Investigasi Workspace Terfokus:** Mengarahkan operator langsung membuka *Server Workspace Modal* pada tab yang bersangkutan (misal insiden *service down* langsung membuka tab *Services*, insiden utilisasi CPU langsung membuka tab *Tasks/Process*).
+
+5. **Tahap 5: Pemulihan Otomatis Bebas Residu (*Auto-Healing & Auto-Close*)**
+   - Begitu kondisi fisik normal kembali terdeteksi dari laporan agen (service berjalan kembali, beban CPU/RAM normal, sesi SSH ditutup, atau koneksi host tersambung ulang):
+     - Sistem secara atomik menutup tiket (`resolved_at = now`) dan membubuhkan catatan pemulihan fisik (`resolved_note`: `service_up`, `server_online`, `session_closed`, `auto`).
+     - Sistem mencatat log audit peristiwa `masalah_selesai`.
+     - Operator tidak perlu menutup tiket secara manual, membasmi masalah tiket "zombie" yang tertinggal.
+
+6. **Tahap 6: Arsip Riwayat & Analisis Waktu Pemulihan (MTTR Engine)**
+   - Tiket yang telah teratasi diarsipkan ke tabel riwayat resolusi permanen.
+   - **Kalkulasi MTTR (*Mean Time to Resolve*):** Sistem menghitung durasi rata-rata pemulihan anomali (waktu mulai s/d waktu selesai), membedakan antara insiden yang pulih otomatis versus ditangani manual oleh operator.
+   - **Deteksi Insiden Kambuh (*Flapping Detection*):** Menghitung frekuensi kemunculan insiden dengan kunci identik dalam rentang 24 jam terakhir (`count_24h`), membantu mendeteksi layanan yang mengalami *restart-loop* atau ketidakstabilan hardware kronis.
+
+---
+
+### 7.4 Spesifikasi Antarmuka Terdedikasi: `IncidentView.vue` (Komponen Modular <250 Baris)
+
+Sesuai standar batas ukuran berkas, halaman Pusat Insiden didekomposisi menjadi arsitektur modular yang terisolasi:
+
+```
+frontend/src/components/incidents/
+  ├── IncidentView.vue              # Kontainer utama & bilah sub-tab navigasi (<180 baris)
+  ├── ActiveIncidentsTab.vue        # Tabel insiden aktif, pil triase, filter host & aksi (<250 baris)
+  ├── ResolvedIncidentsTab.vue      # Tabel arsip teratasi, banner MTTR, & filter rentang (<250 baris)
+  └── modals/
+        ├── IgnoreIncidentModal.vue     # Dialog pemilihan durasi pengabaian & alasan (<150 baris)
+        ├── IncidentThresholdModal.vue  # Formulir ambang batas global CPU/RAM/Disk/SSH (<200 baris)
+        └── ProblemDetailModal.vue      # Modal inspeksi diagnosa mendalam & data teknis (<250 baris)
+```
+
+#### Komponen Sub-Tab 1: Insiden Aktif (`ActiveIncidentsTab.vue`)
+- **Pil Triase Cepat:** `Semua`, `Kritis (Danger)`, `Gawat (Critical)`, `Peringatan (Warning)`, `Info`, `Diabaikan`.
+- **Filter Multi-Kriteria:** Filter Server, Filter Grup Aset, dan Kolom Pencarian reaktif.
+- **Tabel Kepadatan Tinggi (High NOC Density):**
+  - Kolom: Waktu Mulai, Aset, Tingkat Keparahan, Kejadian & Lencana Kambuh (`kambuh X×`), Durasi Aktif, Panduan Solusi Taktis (*Remediation Tip*), dan Klaster Tindakan.
+  - Aksi Baris: Tombol Rincian / Workspace, Tangani (*Acknowledge*), Abaikan (*Ignore*), dan aksi mitigasi langsung.
+
+#### Komponen Sub-Tab 2: Riwayat Teratasi (`ResolvedIncidentsTab.vue`)
+- **Banner Statistik Pemulihan:** Total Teratasi, MTTR Rata-rata Tim NOC, Jumlah Penanganan Manual Operator.
+- **Filter Periode:** `Hari Ini (Today)`, `24 Jam Terakhir`, `7 Hari`, `30 Hari`, dan `Rentang Tanggal Kustom`.
+- **Paginasi Universal:** Tunduk pada aturan baku $\le 10$ baris disembunyikan otomatis, $> 10$ baris menampilkan kontrol paginasi.
+
+---
+
+### 7.5 Matriks Penegakan Keamanan & Kontrol Akses RBAC
+
+| Aksi / Kapabilitas Insiden | Master Admin (`master_admin`) | Operator Berwenang (`operator`) | Viewer / Guest (`viewer`) |
+|---|---|---|---|
+| **Melihat Insiden Aktif & Riwayat** | **YA** (Global) | **YA** (Sesuai `allowed_server_ids`) | **YA** (Observasi Murni) |
+| **Menandai Ditangani (*Acknowledge*)** | **YA** | **YA** (Tercatat atas nama operator) | **DIBLOKIR MUTLAK** *(Hidden & 403)* |
+| **Abaikan Insiden (*Timed Ignore*)** | **YA** | **YA** (Wajib izin `can_manage_servers`) | **DIBLOKIR MUTLAK** *(Hidden & 403)* |
+| **Aktifkan Kembali (*Unignore*)** | **YA** | **YA** (Wajib izin `can_manage_servers`) | **DIBLOKIR MUTLAK** *(Hidden & 403)* |
+| **Putus Sesi SSH dari Tiket** | **YA** | **YA** (Wajib izin `can_users_sys`) | **DIBLOKIR MUTLAK** *(Hidden & 403)* |
+| **Konfigurasi Ambang Batas (*Thresholds*)** | **YA** | **YA** (Khusus `operator_utama` / `can_manage_servers`) | **DIBLOKIR MUTLAK** *(Hidden & 403)* |
+
+---
+
+## 8. Standar Versi SemVer & Peta Jalan Fase Pengembangan
 
 Penomoran versi proyek mengikuti kaidah **Semantic Versioning (SemVer)**: `vMAJOR.MINOR.PATCH`.
-* **Baseline Saat Ini:** **`v0.1.0`** (Fondasi Arsitektur Bersih, SPA 4 Halaman, & API Inti).
+* **Baseline Saat Ini:** **`v0.1.54`** (Fondasi Arsitektur Bersih, Matriks Aset Berdensitas Tinggi, Pengelola Kolom Reaktif, & Integrasi API Inti).
 
 ```
 FASE 1: Fondasi Arsitektur & Antarmuka Taktis Solid (Status: SELESAI v0.1.0)
@@ -318,6 +450,17 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 ---
 
 ## Catatan Perubahan (Changelog)
+
+### Versi v0.1.55
+
+- **Pusat Kendali & Penanganan Insiden (02 // Incidents):** Mengimplementasikan antarmuka dual-tabel terpadu untuk pemantauan insiden fisik aktif dan rekaman kronologis pemulihan (MTTR).
+- **Protokol Minor vs Mayor Incident Triage:** Tombol 'Tangani' mencatat akuntabilitas operator tanpa mematikan alarm fisik; aksi 'Abaikan' menyetel jeda waktu (2j, 24j, 7h, 30h, permanen) dengan alasan operasional wajib; tombol 'Asset Details' memicu peluncuran modal taktis Workspace untuk perbaikan fisik.
+- **Auto-Healing Lifecycle:** Penutupan insiden dilakukan murni melalui pelaporan telemetri kernel Linux agen klien tanpa manipulasi penutupan manual palsu.
+- **Pita Statistik MTTR (Mean Time to Recovery):** Menghitung durasi pemulihan rata-rata, rasio auto-heal vs tindakan operator, serta histori insiden per periode.
+- **Modal Ambang Batas Global (Thresholds Governance):** Pengaturan batas ambang alarm metrik (CPU, RAM, Disk, Swap, SSH) secara dinamis dari antarmuka.
+- **RBAC Read-Only Isolation:** Memastikan akun peran Viewer/Guest terisolasi murni tanpa izin mutasi atau tombol penanganan insiden.
+- **Pematuhan Aturan Modularitas & Paginasi:** Seluruh komponen di bawah 250 baris (ActiveIncidentsTable.vue, ResolvedIncidentsTable.vue, IncidentView.vue, IgnoreIncidentModal.vue, IncidentThresholdModal.vue) dan paginasi otomatis tersembunyi bila baris <= 10.
+
 
 ### Versi v0.1.54
 

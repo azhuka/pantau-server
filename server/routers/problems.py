@@ -16,18 +16,49 @@ router = APIRouter(prefix="/api/problems", tags=["Problems & Alerts"])
 @router.get("")
 def list_problems(
     active_only: bool = True,
+    server_id: int | None = None,
+    severity: str | None = None,
+    period: str | None = None,
+    start_date: str | None = None,
+    end_date: str | None = None,
+    limit: int = 150,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Mengambil daftar insiden / masalah operasional & keamanan NOC."""
     check_all_servers_stale(db)
     query = db.query(ServerProblem, Server.hostname, Server.group_name).join(Server, Server.id == ServerProblem.server_id)
+    
+    now = datetime.utcnow()
     if active_only:
         query = query.filter(ServerProblem.resolved_at == None)
+    else:
+        # Jika melihat arsip riwayat teratasi
+        query = query.filter(ServerProblem.resolved_at != None)
+        if period == "today":
+            start_of_day = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            query = query.filter(ServerProblem.resolved_at >= start_of_day)
+        elif period == "24h":
+            query = query.filter(ServerProblem.resolved_at >= now - timedelta(hours=24))
+        elif period == "7d":
+            query = query.filter(ServerProblem.resolved_at >= now - timedelta(days=7))
+        elif period == "30d":
+            query = query.filter(ServerProblem.resolved_at >= now - timedelta(days=30))
+        elif period == "custom" and start_date and end_date:
+            try:
+                s_dt = datetime.fromisoformat(start_date)
+                e_dt = datetime.fromisoformat(end_date).replace(hour=23, minute=59, second=59)
+                query = query.filter(ServerProblem.resolved_at >= s_dt, ServerProblem.resolved_at <= e_dt)
+            except Exception:
+                pass
+
+    if server_id:
+        query = query.filter(ServerProblem.server_id == server_id)
+    if severity and severity != "all":
+        query = query.filter(ServerProblem.severity == severity)
     
-    problems = query.order_by(ServerProblem.id.desc()).limit(100).all()
+    problems = query.order_by(ServerProblem.id.desc()).limit(limit).all()
     result = []
-    now = datetime.utcnow()
     
     for prob, hostname, group_name in problems:
         if not user.can_access_server(prob.server_id):
@@ -60,6 +91,12 @@ def list_problems(
         elif prob.key.startswith("service_down:"):
             action = "restart_service"
 
+        # Hitung durasi terukur
+        duration_sec = None
+        if prob.started_at:
+            end_t = prob.resolved_at or now
+            duration_sec = max(0, int((end_t - prob.started_at).total_seconds()))
+
         result.append({
             "id": prob.id,
             "server_id": prob.server_id,
@@ -72,7 +109,10 @@ def list_problems(
             "started_at": prob.started_at.isoformat() if prob.started_at else None,
             "resolved_at": prob.resolved_at.isoformat() if prob.resolved_at else None,
             "resolved_note": prob.resolved_note,
+            "duration_sec": duration_sec,
             "is_active": prob.is_active,
+            "acknowledged_by": prob.acknowledged_by,
+            "acknowledged_at": prob.acknowledged_at.isoformat() if prob.acknowledged_at else None,
             "is_ignored": is_ign,
             "ignored_until": prob.ignored_until.isoformat() if prob.ignored_until else None,
             "ignored_by": prob.ignored_by,
@@ -83,6 +123,175 @@ def list_problems(
         })
 
     return {"ok": True, "problems": result}
+
+
+@router.get("/stats")
+def get_incident_stats(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Mengambil ringkasan statistik insiden aktif & metrik kinerja pemulihan (MTTR)."""
+    # 1. Hitung ringkasan insiden aktif
+    active_probs = db.query(ServerProblem).filter(ServerProblem.resolved_at == None).all()
+    counts = {"danger": 0, "critical": 0, "warning": 0, "info": 0, "ignored": 0, "active_total": 0}
+    for p in active_probs:
+        if not user.can_access_server(p.server_id):
+            continue
+        if p.is_ignored:
+            counts["ignored"] += 1
+        else:
+            counts["active_total"] += 1
+            sev = (p.severity or "").lower()
+            if sev in counts:
+                counts[sev] += 1
+
+    # 2. Hitung statistik riwayat pemulihan (30 hari terakhir) untuk kalkulasi MTTR
+    since_30d = datetime.utcnow() - timedelta(days=30)
+    resolved_probs = db.query(ServerProblem).filter(
+        ServerProblem.resolved_at != None,
+        ServerProblem.resolved_at >= since_30d
+    ).all()
+
+    total_resolved = 0
+    auto_count = 0
+    manual_count = 0
+    total_duration_sec = 0.0
+
+    for p in resolved_probs:
+        if not user.can_access_server(p.server_id):
+            continue
+        total_resolved += 1
+        if p.started_at and p.resolved_at:
+            dur = (p.resolved_at - p.started_at).total_seconds()
+            if dur > 0:
+                total_duration_sec += dur
+        if p.acknowledged_by or p.resolved_note == "manual":
+            manual_count += 1
+        else:
+            auto_count += 1
+
+    avg_mttr_sec = (total_duration_sec / total_resolved) if total_resolved > 0 else 0
+    if avg_mttr_sec < 60:
+        mttr_str = f"{int(avg_mttr_sec)}s"
+    elif avg_mttr_sec < 3600:
+        mttr_str = f"{int(avg_mttr_sec // 60)}m {int(avg_mttr_sec % 60)}s"
+    else:
+        h = int(avg_mttr_sec // 3600)
+        m = int((avg_mttr_sec % 3600) // 60)
+        mttr_str = f"{h}h {m}m"
+
+    return {
+        "ok": True,
+        "active": counts,
+        "resolved": {
+            "total": total_resolved,
+            "auto_count": auto_count,
+            "manual_count": manual_count,
+            "avg_mttr_seconds": avg_mttr_sec,
+            "avg_mttr_formatted": mttr_str if total_resolved > 0 else "-"
+        }
+    }
+
+
+@router.get("/thresholds")
+def get_thresholds_endpoint(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Mengambil konfigurasi ambang batas global insiden."""
+    from services.problem_service import get_global_thresholds, DEFAULT_THRESHOLDS
+    current = get_global_thresholds(db)
+    return {"ok": True, "thresholds": current, "defaults": DEFAULT_THRESHOLDS}
+
+
+@router.post("/thresholds")
+def update_thresholds_endpoint(
+    body: dict = Body(...),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Memperbarui ambang batas global insiden (Khusus Master Admin / Operator Utama)."""
+    if user.is_viewer:
+        raise HTTPException(status_code=403, detail="Access denied: Viewer accounts cannot edit thresholds")
+    if not user.is_master_admin and not user.has_perm("can_manage_servers"):
+        raise HTTPException(status_code=403, detail="Access denied: Permission can_manage_servers is required")
+
+    from services.problem_service import DEFAULT_THRESHOLDS
+    from models.misc import SystemSetting
+
+    new_thresholds = dict(DEFAULT_THRESHOLDS)
+    for k in DEFAULT_THRESHOLDS:
+        if k in body and body[k] is not None:
+            try:
+                new_thresholds[k] = int(body[k]) if "fail" in k else float(body[k])
+            except (ValueError, TypeError):
+                pass
+
+    setting = db.query(SystemSetting).filter(SystemSetting.key == "thresholds").first()
+    now = datetime.utcnow()
+    if not setting:
+        setting = SystemSetting(key="thresholds", value=json.dumps(new_thresholds), updated_at=now)
+        db.add(setting)
+    else:
+        setting.value = json.dumps(new_thresholds)
+        setting.updated_at = now
+
+    audit = AuditLog(
+        server_id=None,
+        username=user.username,
+        action="update_thresholds",
+        target="global_thresholds",
+        result="berhasil",
+        meta=f"Ambang batas insiden diperbarui oleh {user.username}",
+        created_at=now
+    )
+    db.add(audit)
+    db.commit()
+
+    return {"ok": True, "thresholds": new_thresholds, "message": "Ambang batas insiden berhasil diperbarui"}
+
+
+@router.post("/{pid}/ack")
+def acknowledge_problem_action(
+    pid: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Tandai insiden sedang ditangani oleh operator (Acknowledge). Insiden tetap aktif secara fisik."""
+    if user.is_viewer:
+        raise HTTPException(status_code=403, detail="Access denied: Viewer accounts cannot acknowledge incidents")
+
+    prob = db.query(ServerProblem).filter(ServerProblem.id == pid, ServerProblem.resolved_at == None).first()
+    if not prob:
+        raise HTTPException(status_code=404, detail="Active incident not found")
+
+    if prob.server_id and not user.can_access_server(prob.server_id):
+        raise HTTPException(status_code=403, detail="Access denied: You do not have permission for this server")
+
+    now = datetime.utcnow()
+    prob.acknowledged_by = user.username
+    prob.acknowledged_at = now
+    prob.updated_at = now
+
+    audit = AuditLog(
+        server_id=prob.server_id,
+        username=user.username,
+        action="problem_ack",
+        target=prob.message[:100],
+        result="berhasil",
+        meta=f"Insiden ditandai sedang ditangani oleh {user.username}",
+        created_at=now
+    )
+    db.add(audit)
+    db.commit()
+
+    return {
+        "ok": True,
+        "id": pid,
+        "acknowledged_by": user.username,
+        "acknowledged_at": now.isoformat(),
+        "message": f"Insiden berhasil ditandai sedang ditangani oleh {user.username}"
+    }
 
 
 @router.post("/{pid}/ignore")

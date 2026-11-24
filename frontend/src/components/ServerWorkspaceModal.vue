@@ -8,6 +8,7 @@
   >
     <!-- Modal Window Card (Tactical Cyber Command Deck) -->
     <div
+      id="server-workspace-modal"
       :class="[
         'hud-tactical-card shadow-2xl flex flex-col transition-all duration-200 overflow-hidden relative',
         isMaximized
