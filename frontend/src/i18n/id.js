@@ -514,4 +514,32 @@ export default {
   terminal_15_min: '15 Menit',
   terminal_30_min: '30 Menit',
   terminal_60_min: '60 Menit (1 Jam)',
+  terminal_unlock_failed: 'Gagal membuka kunci terminal',
+  terminal_auth_error: 'Gagal memverifikasi otentikasi',
+  terminal_err_invalid_pwd: 'Password akun salah. Akses terminal ditolak.',
+  terminal_err_invalid_totp: 'Kode 2FA / TOTP tidak valid atau telah kedaluwarsa.',
+  terminal_err_pwd_required: 'Password akun pengguna diperlukan.',
+
+  // Terminal Close & Lock Confirm Modals
+  modal_terminal_close_title: 'Konfirmasi Penutupan Terminal',
+  terminal_close_desc_1: 'Sesi shell dan proses yang sedang berjalan di server klien akan tetap aktif di latar belakang tanpa terputus.',
+  terminal_close_desc_2: 'Anda dapat membuka kembali terminal kapan saja untuk melihat perkembangannya.',
+  btn_close_terminal_view: 'Tutup Jendela Terminal',
+
+  modal_terminal_lock_title: 'Kunci Terminal & Putus Sesi?',
+  terminal_lock_desc_1: 'Mengunci terminal akan mencabut izin akses terminal dan memutus sesi koneksi aktif di server ini.',
+  terminal_lock_desc_2: 'Sesi terminal dan proses yang sedang berjalan akan dihentikan. Anda harus membuka kunci kembali jika ingin mengakses shell di kemudian waktu.',
+  btn_lock_terminal_confirm: 'Kunci & Putus Sesi',
+
+  term_title_default: 'Terminal Bawaan · shell operator',
+  term_session_active_badge: 'Sesi sedang aktif',
+  term_lease_tooltip: 'Sisa durasi otentikasi terminal',
+  term_lock_tooltip: 'Kunci terminal dan putus sesi koneksi aktif',
+  term_clear_tooltip: 'Bersihkan Layar Konsol',
+  term_fullscreen_tooltip: 'Layar Penuh (Full Screen)',
+  term_exit_fullscreen_tooltip: 'Keluar dari Layar Penuh',
+  term_close_tooltip: 'Tutup Jendela Terminal',
+  term_resize_handle_tooltip: 'Tarik ke atas atau bawah untuk mengubah tinggi terminal',
+  term_connecting: 'Menghubungkan ke agen server...',
+  term_session_closed: 'Sesi shell ditutup',
 }

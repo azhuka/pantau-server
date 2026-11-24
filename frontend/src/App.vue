@@ -69,19 +69,7 @@
       @close="closeWorkspace"
       @minimize="minimizeWorkspace"
       @switch-server="onWorkspaceSwitchServer"
-      @open-terminal="openTerminalDock"
       @server-updated="onServerUpdated"
-    />
-
-    <!-- GLOBAL MULTI-TAB WEB TERMINAL DOCK (xterm.js) -->
-    <TerminalDockModal
-      ref="terminalDockRef"
-      :is-open="isTerminalDockOpen"
-      :is-minimized="isTerminalDockMinimized"
-      :assets-list="servers"
-      :initial-server="terminalDockInitialServer"
-      @close="closeTerminalDock"
-      @minimize="minimizeTerminalDock"
     />
 
     <!-- WORKSPACE SHELF (Bilah Rak Mengambang untuk Jendela Diminimalkan) -->
@@ -137,56 +125,6 @@
       </div>
     </div>
 
-    <!-- TERMINAL DOCK SHELF (Bilah Rak Mengambang untuk Terminal Dock Diminimalkan) -->
-    <div
-      v-if="isTerminalDockOpen && isTerminalDockMinimized"
-      class="fixed bottom-10 z-[20000] bg-[#080d19]/95 border border-cyan-500/50 rounded-xl shadow-2xl p-2 px-4 flex items-center gap-3 backdrop-blur-md transition-all hover:border-cyan-400 group select-none"
-      :style="{ right: (isWorkspaceOpen && isWorkspaceMinimized) ? '340px' : '24px' }"
-    >
-      <div
-        class="flex items-center gap-2.5 cursor-pointer"
-        @click="restoreTerminalDock"
-        title="Restore Multi-Tab Terminal Dock"
-      >
-        <svg class="w-4 h-4 text-cyan-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="4 17 10 11 4 5"/>
-          <line x1="12" y1="19" x2="20" y2="19"/>
-        </svg>
-        <div>
-          <div class="text-xs font-bold text-gray-100 font-mono flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded-full bg-emerald-400 beacon-live"></span>
-            <span>{{ t('term_dock_title') || 'TERMINAL DOCK' }}</span>
-            <span class="text-xs text-cyan-300 font-semibold">({{ terminalTabsCount }} active)</span>
-          </div>
-          <div class="text-[11px] text-gray-400 font-medium">{{ t('term_keep_alive') || 'Keep-Alive Session' }}</div>
-        </div>
-      </div>
-
-      <div class="flex items-center gap-1.5 border-l border-gray-700/80 pl-2.5 font-mono">
-        <button
-          @click="restoreTerminalDock"
-          class="p-1 px-2 rounded bg-cyan-950/80 border border-cyan-600/50 text-cyan-300 hover:bg-cyan-800 hover:text-white text-xs transition cursor-pointer font-bold inline-flex items-center gap-1"
-          title="Restore Terminal Dock"
-        >
-          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect width="18" height="18" x="3" y="3" rx="2"/>
-            <line x1="3" y1="9" x2="21" y2="9"/>
-          </svg>
-          <span>{{ t('term_restore') || 'Restore' }}</span>
-        </button>
-        <button
-          @click="closeTerminalDock"
-          class="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-rose-400 hover:bg-rose-950/40 text-xs transition cursor-pointer font-bold"
-          title="Close All Terminal Sessions"
-        >
-          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <line x1="18" y1="6" x2="6" y2="18"/>
-            <line x1="6" y1="6" x2="18" y2="18"/>
-          </svg>
-        </button>
-      </div>
-    </div>
-
     <!-- Login Modal -->
     <LoginModal
       v-if="showLoginModal"
@@ -204,7 +142,6 @@ import AssetTableView from './components/assets/AssetTableView.vue'
 import AuditView from './components/audit/AuditView.vue'
 import SettingsView from './components/settings/SettingsView.vue'
 import ServerWorkspaceModal from './components/ServerWorkspaceModal.vue'
-import TerminalDockModal from './components/terminal/TerminalDockModal.vue'
 import LoginModal from './components/LoginModal.vue'
 
 const { t } = useI18n()
@@ -213,54 +150,6 @@ const activeTab = ref('dashboard') // 'dashboard', 'assets', 'audit', 'settings'
 const workspaceServerId = ref(null)
 const isWorkspaceOpen = ref(false)
 const isWorkspaceMinimized = ref(false)
-
-// Global Multi-Tab Terminal Dock State
-const isTerminalDockOpen = ref(false)
-const isTerminalDockMinimized = ref(false)
-const terminalDockInitialServer = ref(null)
-const terminalDockRef = ref(null)
-
-const terminalTabsCount = computed(() => {
-  return terminalDockRef.value?.tabs?.length || 0
-})
-
-function openTerminalDock(target = null) {
-  isTerminalDockOpen.value = true
-  isTerminalDockMinimized.value = false
-  let srv = null
-  let initialPath = ''
-  if (target && target.server) {
-    srv = target.server
-    initialPath = target.initialPath || target.workingDirectory || ''
-  } else if (target) {
-    srv = target
-    initialPath = target.workingDirectory || ''
-  } else {
-    srv = servers.value.length > 0 ? servers.value[0] : null
-  }
-
-  if (srv) {
-    const srvWithDir = { ...srv, workingDirectory: initialPath }
-    terminalDockInitialServer.value = srvWithDir
-    if (terminalDockRef.value) {
-      terminalDockRef.value.requestOpenTabForServer(srvWithDir)
-    }
-  }
-}
-
-function minimizeTerminalDock() {
-  isTerminalDockMinimized.value = true
-}
-
-function restoreTerminalDock() {
-  isTerminalDockMinimized.value = false
-}
-
-function closeTerminalDock() {
-  isTerminalDockOpen.value = false
-  isTerminalDockMinimized.value = false
-  terminalDockInitialServer.value = null
-}
 
 function onServerUpdated(updated) {
   if (!updated || !updated.id) return

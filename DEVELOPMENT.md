@@ -174,6 +174,15 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.33
+
+### v0.1.33 - Standardisasi Bahasa Antarmuka & Integrasi Terminal Taktis Host
+- **Standardisasi Respons API Exception**: Mengganti seluruh pesan kesalahan backend pada server/routers/terminal.py, auth.py, servers.py, problems.py, dan files.py menjadi Bahasa Inggris baku, serta menerapkan pemetaan dinamis translateError() di frontend agar pesan kesalahan otentikasi step-up terminal selalu adaptif terhadap bahasa aktif (EN default / ID).
+- **Integrasi Terminal Taktis Host**: Mengembalikan alur kerja Web Terminal berbasis xterm.js langsung ke dalam jendela kerja aset (ServerWorkspaceModal.vue) dengan bilah judul lengkap: Beacon sesi aktif, Penghitung mundur masa sewa (lease timer), Tombol Kunci Terminal merah (Lock), Bersihkan layar, Mode layar penuh, dan Tombol Tutup (Close).
+- **Dialog Konfirmasi Aksi Taktis**: Menambahkan modal konfirmasi penutupan terminal (TerminalCloseConfirmModal) yang menegaskan proses shell tetap berjalan di latar belakang, serta modal konfirmasi penguncian (TerminalLockConfirmModal) untuk pencabutan izin dan terminasi sesi.
+- **Pembersihan Dock Mengambang**: Menghapus komponen dock terminal mengambang lepas dari App.vue sehingga konsol terminal tetap berada secara eksklusif dan aman di dalam inspeksi aset.
+
+
 ### Versi v0.1.32
 
 #### Perbaikan Bug & Penyempurnaan Keamanan Terminal:

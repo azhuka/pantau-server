@@ -189,11 +189,11 @@ def api_terminal_status(
 ):
     """Cek status izin dan sisa durasi sewa (lease) otentikasi terminal untuk server ini."""
     if not user.can_access_server(sid):
-        raise HTTPException(status_code=403, detail="Akses ditolak")
+        raise HTTPException(status_code=403, detail="Access denied")
 
     server = db.query(Server).filter(Server.id == sid, Server.is_active == 1).first()
     if not server:
-        raise HTTPException(status_code=404, detail="Server tidak ditemukan")
+        raise HTTPException(status_code=404, detail="Server not found")
 
     allow_term = bool(getattr(server, "allow_web_terminal", 1))
     user_can = user.has_perm("can_terminal")
@@ -221,15 +221,15 @@ def api_terminal_unlock(
     if not user.has_perm("can_terminal"):
         raise HTTPException(
             status_code=403,
-            detail="Akses ditolak: Anda tidak memiliki wewenang Terminal Shell Web",
+            detail="Access denied: You do not have Web Terminal permission",
         )
 
     if not user.can_access_server(sid):
-        raise HTTPException(status_code=403, detail="Akses ditolak")
+        raise HTTPException(status_code=403, detail="Access denied")
 
     server = db.query(Server).filter(Server.id == sid, Server.is_active == 1).first()
     if not server:
-        raise HTTPException(status_code=404, detail="Server tidak ditemukan")
+        raise HTTPException(status_code=404, detail="Server not found")
 
     password = str(body.get("password") or "").strip()
     totp_code = str(body.get("totp") or "").strip()
@@ -238,7 +238,7 @@ def api_terminal_unlock(
     reason = str(body.get("reason") or "").strip()[:255]
 
     if not password:
-        raise HTTPException(status_code=400, detail="Password akun pengguna diperlukan")
+        raise HTTPException(status_code=400, detail="User account password is required")
 
     if not verify_password(password, user.password_hash):
         audit = AuditLog(
@@ -246,13 +246,13 @@ def api_terminal_unlock(
             username=user.username,
             action="terminal_unlock_fail",
             target=server.hostname,
-            result="gagal",
-            meta="Password salah saat membuka kunci terminal",
+            result="failed",
+            meta="Invalid password during terminal unlock challenge",
             created_at=datetime.utcnow()
         )
         db.add(audit)
         db.commit()
-        raise HTTPException(status_code=401, detail="Password akun salah. Akses terminal ditolak.")
+        raise HTTPException(status_code=401, detail="Invalid account password. Terminal access denied.")
 
     if user.totp_enabled and user.totp_secret:
         if not totp_code or not security_auth.verify_totp(user.totp_secret, totp_code):
@@ -261,13 +261,13 @@ def api_terminal_unlock(
                 username=user.username,
                 action="terminal_unlock_fail",
                 target=server.hostname,
-                result="gagal",
-                meta="Kode 2FA salah saat membuka kunci terminal",
+                result="failed",
+                meta="Invalid 2FA code during terminal unlock challenge",
                 created_at=datetime.utcnow()
             )
             db.add(audit)
             db.commit()
-            raise HTTPException(status_code=401, detail="Kode 2FA / TOTP tidak valid atau telah kedaluwarsa")
+            raise HTTPException(status_code=401, detail="Invalid or expired 2FA / TOTP code")
 
     set_terminal_unlock(user.id, sid, duration_minutes)
     audit = AuditLog(
@@ -275,8 +275,8 @@ def api_terminal_unlock(
         username=user.username,
         action="terminal_unlock",
         target=server.hostname,
-        result="berhasil",
-        meta=f"Durasi: {duration_minutes}m, alasan: {reason}" if reason else f"Durasi: {duration_minutes}m",
+        result="success",
+        meta=f"Duration: {duration_minutes}m, reason: {reason}" if reason else f"Duration: {duration_minutes}m",
         created_at=datetime.utcnow()
     )
     db.add(audit)
@@ -285,7 +285,7 @@ def api_terminal_unlock(
     return {
         "ok": True,
         "remaining_seconds": duration_minutes * 60,
-        "message": f"Kunci terminal berhasil dibuka ({duration_minutes} menit)",
+        "message": f"Terminal unlocked for {duration_minutes} minutes",
     }
 
 
@@ -297,7 +297,7 @@ async def api_terminal_lock(
 ):
     """Kunci kembali akses terminal dan putus sesi aktif jika ada."""
     if not user.can_access_server(sid):
-        raise HTTPException(status_code=403, detail="Akses ditolak")
+        raise HTTPException(status_code=403, detail="Access denied")
 
     revoke_terminal_unlock(user.id, sid)
     await term_dispatcher.close_session_by_server(sid)
@@ -310,14 +310,14 @@ async def api_terminal_lock(
         username=user.username,
         action="terminal_lock",
         target=hostname,
-        result="berhasil",
-        meta="Sesi terminal dikunci kembali oleh operator",
+        result="success",
+        meta="Terminal session locked by operator",
         created_at=datetime.utcnow(),
     )
     db.add(audit)
     db.commit()
 
-    return {"ok": True, "message": "Terminal berhasil dikunci"}
+    return {"ok": True, "message": "Terminal locked successfully"}
 
 
 @router.websocket("/ws/servers/{sid}/terminal")
@@ -367,7 +367,7 @@ async def websocket_terminal(
                 json.dumps(
                     {
                         "type": "stdout",
-                        "data": "\r\n\x1b[31;1m[ACCESS DENIED] Izin Web Terminal (can_terminal) tidak aktif untuk akun Anda.\x1b[0m\r\n",
+                        "data": "\r\n\x1b[31;1m[ACCESS DENIED] Web Terminal permission (can_terminal) is not enabled for your account.\x1b[0m\r\n",
                     }
                 )
             )
@@ -392,7 +392,7 @@ async def websocket_terminal(
                 json.dumps(
                     {
                         "type": "stdout",
-                        "data": "\r\n\x1b[31;1m[ACCESS DENIED] Web Terminal dinonaktifkan untuk server ini pada konfigurasi sistem.\x1b[0m\r\n",
+                        "data": "\r\n\x1b[31;1m[ACCESS DENIED] Web Terminal is disabled for this server in system configuration.\x1b[0m\r\n",
                     }
                 )
             )
@@ -404,7 +404,7 @@ async def websocket_terminal(
                 json.dumps(
                     {
                         "type": "stdout",
-                        "data": "\r\n\x1b[31;1m[TERMINAL TERKUNCI] Otentikasi sudo step-up diperlukan untuk membuka terminal.\x1b[0m\r\n",
+                        "data": "\r\n\x1b[31;1m[TERMINAL LOCKED] Step-up authentication is required to access terminal.\x1b[0m\r\n",
                     }
                 )
             )
@@ -549,9 +549,9 @@ async def api_agent_terminal_stdin(
 
     bridge = term_dispatcher.get_session(session_id)
     if not bridge or bridge.closed:
-        raise HTTPException(status_code=410, detail="Sesi terminal sudah ditutup")
+        raise HTTPException(status_code=410, detail="Terminal session has been closed")
     if bridge.server_id != server_id:
-        raise HTTPException(status_code=403, detail="Akses ditolak: Sesi terminal bukan milik server ini")
+        raise HTTPException(status_code=403, detail="Access denied: Terminal session belongs to another host")
 
     try:
         while True:
@@ -582,9 +582,9 @@ async def api_agent_terminal_stdout(
 
     bridge = term_dispatcher.get_session(session_id)
     if not bridge or bridge.closed:
-        raise HTTPException(status_code=410, detail="Sesi terminal sudah ditutup")
+        raise HTTPException(status_code=410, detail="Terminal session has been closed")
     if bridge.server_id != server_id:
-        raise HTTPException(status_code=403, detail="Akses ditolak: Sesi terminal bukan milik server ini")
+        raise HTTPException(status_code=403, detail="Access denied: Terminal session belongs to another host")
 
     chunk = body.get("chunk", "")
     busy = body.get("busy", None)
@@ -622,11 +622,11 @@ async def api_agent_terminal_close(
     bridge = term_dispatcher.get_session(session_id)
     if bridge:
         if bridge.server_id != server_id:
-            raise HTTPException(status_code=403, detail="Akses ditolak: Sesi terminal bukan milik server ini")
+            raise HTTPException(status_code=403, detail="Access denied: Terminal session belongs to another host")
         if bridge.browser_ws:
             try:
                 await bridge.browser_ws.send_text(
-                    json.dumps({"type": "stdout", "data": "\r\n\x1b[90m[Sesi shell selesai]\x1b[0m\r\n"})
+                    json.dumps({"type": "stdout", "data": "\r\n\x1b[90m[Shell session terminated]\x1b[0m\r\n"})
                 )
                 await bridge.browser_ws.close()
             except Exception:

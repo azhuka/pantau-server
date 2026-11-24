@@ -494,19 +494,19 @@ def dispatch_server_action(
     # RBAC Granular Permission Enforcement
     if action in ("restart_service", "stop_service", "start_service", "reload_service", "enable_service", "disable_service"):
         if not user.has_perm("can_services"):
-            raise HTTPException(status_code=403, detail="Akses ditolak: Izin Kontrol Services (can_services) diperlukan")
+            raise HTTPException(status_code=403, detail="Access denied: Service Control permission (can_services) is required")
     elif action in ("kill_process", "suspend_process", "resume_process"):
         if not user.has_perm("can_processes"):
-            raise HTTPException(status_code=403, detail="Akses ditolak: Izin Manajer Proses (can_processes) diperlukan")
+            raise HTTPException(status_code=403, detail="Access denied: Process Manager permission (can_processes) is required")
     elif action in ("reboot_host", "poweroff_host", "shutdown_host"):
         if not user.has_perm("can_server_control"):
-            raise HTTPException(status_code=403, detail="Akses ditolak: Izin Kontrol Host (can_server_control) diperlukan")
+            raise HTTPException(status_code=403, detail="Access denied: Host Control permission (can_server_control) is required")
     elif action in ("terminate_ssh_session", "lock_user", "unlock_user", "delete_user", "create_user"):
         if not user.has_perm("can_users_sys"):
-            raise HTTPException(status_code=403, detail="Akses ditolak: Izin Manajemen User Sistem (can_users_sys) diperlukan")
+            raise HTTPException(status_code=403, detail="Access denied: System Users permission (can_users_sys) is required")
     elif action in ("block_ip", "unblock_ip", "toggle_ufw"):
         if not user.has_perm("can_firewall"):
-            raise HTTPException(status_code=403, detail="Akses ditolak: Izin Kontrol Firewall (can_firewall) diperlukan")
+            raise HTTPException(status_code=403, detail="Access denied: Firewall Control permission (can_firewall) is required")
 
     # Safety Guardrails: Proteksi Proses Kritis (Anti-Host Crash / Anti-Brick)
     if action in ("kill_process", "suspend_process"):
@@ -520,7 +520,7 @@ def dispatch_server_action(
         if pid <= 1 or any(cp in pname_lower for cp in critical_procs):
             raise HTTPException(
                 status_code=400,
-                detail=f"Proses krusial '{pname or 'PID ' + str(pid)}' dilindungi oleh sistem demi keselamatan dan stabilitas server!"
+                detail=f"Critical process '{pname or 'PID ' + str(pid)}' is protected by system guardrails!"
             )
 
     # Safety Guardrails: Proteksi Service Kritis (Mencegah putus koneksi agen / SSH)
@@ -530,7 +530,7 @@ def dispatch_server_action(
         if any(cs in sname for cs in critical_services):
             raise HTTPException(
                 status_code=400,
-                detail=f"Service krusial '{params.get('name')}' dilindungi dan tidak boleh dihentikan demi menjaga stabilitas dan konektivitas host!"
+                detail=f"Critical service '{params.get('name')}' is protected and cannot be stopped!"
             )
 
     # Proteksi Proxmox HA pada aksi Power OFF / Reboot
@@ -539,7 +539,7 @@ def dispatch_server_action(
         if target_srv and getattr(target_srv, "is_proxmox_ha", 0) == 1:
             raise HTTPException(
                 status_code=400,
-                detail="Server dilindungi oleh Proxmox HA. Lakukan kontrol daya melalui Proxmox VE Web UI / Cluster Manager."
+                detail="Host is protected by Proxmox HA. Perform power actions via Proxmox VE Web UI / Cluster Manager."
             )
 
     cmd = Command(
@@ -786,7 +786,7 @@ def update_server(
 ):
     """Pembaruan konfigurasi host aset (hostname, ip_address, group_name, tier, platform_override, notes)."""
     if not (user.is_master_admin or user.has_perm("can_server_control")):
-        raise HTTPException(status_code=403, detail="Akses ditolak: Izin can_server_control diperlukan")
+        raise HTTPException(status_code=403, detail="Access denied: Host Control permission (can_server_control) is required")
 
     server = db.query(Server).filter(Server.id == sid).first()
     if not server:
@@ -915,7 +915,7 @@ def inject_server_key(
 ):
     """Injeksi SSH Public Key ke node aset."""
     if not (user.is_master_admin or user.has_perm("can_server_control")):
-        raise HTTPException(status_code=403, detail="Akses ditolak: Izin can_server_control diperlukan")
+        raise HTTPException(status_code=403, detail="Access denied: Host Control permission (can_server_control) is required")
 
     server = db.query(Server).filter(Server.id == sid).first()
     if not server:
@@ -923,7 +923,7 @@ def inject_server_key(
 
     password = body.get("password") or ""
     if not password:
-        raise HTTPException(status_code=400, detail="Password diperlukan untuk injeksi key")
+        raise HTTPException(status_code=400, detail="Password is required for key injection")
 
     ssh_dir = os.path.expanduser("~/.ssh")
     os.makedirs(ssh_dir, exist_ok=True, mode=0o700)
@@ -981,7 +981,7 @@ def delete_server(
 ):
     """Hapus host dari pemantauan aktif NOC (Soft delete is_active=0)."""
     if not (user.is_master_admin or user.has_perm("can_server_control")):
-        raise HTTPException(status_code=403, detail="Akses ditolak: Izin can_server_control diperlukan")
+        raise HTTPException(status_code=403, detail="Access denied: Host Control permission (can_server_control) is required")
 
     server = db.query(Server).filter(Server.id == sid).first()
     if not server:

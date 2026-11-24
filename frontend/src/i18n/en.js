@@ -514,4 +514,32 @@ export default {
   terminal_15_min: '15 Minutes',
   terminal_30_min: '30 Minutes',
   terminal_60_min: '60 Minutes (1 Hour)',
+  terminal_unlock_failed: 'Failed to unlock terminal',
+  terminal_auth_error: 'Failed to verify authentication',
+  terminal_err_invalid_pwd: 'Invalid account password. Terminal access denied.',
+  terminal_err_invalid_totp: 'Invalid or expired 2FA / TOTP code.',
+  terminal_err_pwd_required: 'User account password is required.',
+
+  // Terminal Close & Lock Confirm Modals
+  modal_terminal_close_title: 'Terminal Window Close Confirmation',
+  terminal_close_desc_1: 'The shell session and running background processes on the client node will remain active without interruption.',
+  terminal_close_desc_2: 'You can reopen the terminal anytime to inspect progress.',
+  btn_close_terminal_view: 'Close Terminal Window',
+
+  modal_terminal_lock_title: 'Lock Terminal & Terminate Session?',
+  terminal_lock_desc_1: 'Locking the terminal revokes authorization and terminates the active shell connection on this node.',
+  terminal_lock_desc_2: 'Any active process in this shell will be terminated. You will need to authenticate again to access the terminal later.',
+  btn_lock_terminal_confirm: 'Lock & Disconnect Session',
+
+  term_title_default: 'Embedded Terminal · operator shell',
+  term_session_active_badge: 'Active Session',
+  term_lease_tooltip: 'Remaining terminal authentication lease duration',
+  term_lock_tooltip: 'Lock terminal and disconnect active session',
+  term_clear_tooltip: 'Clear Console Screen',
+  term_fullscreen_tooltip: 'Full Screen',
+  term_exit_fullscreen_tooltip: 'Exit Full Screen',
+  term_close_tooltip: 'Close Terminal Window',
+  term_resize_handle_tooltip: 'Drag up or down to resize terminal height',
+  term_connecting: 'Connecting to server agent...',
+  term_session_closed: 'Shell session closed',
 }

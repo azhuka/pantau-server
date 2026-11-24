@@ -94,14 +94,14 @@ def ignore_problem_action(
 ):
     """Abaikan insiden (tunda alarm dan sembunyikan dari daftar aktif)."""
     if user.is_viewer:
-        raise HTTPException(status_code=403, detail="Akses ditolak: Akun Viewer tidak memiliki izin mengabaikan insiden")
+        raise HTTPException(status_code=403, detail="Access denied: Viewer accounts cannot ignore incidents")
 
     prob = db.query(ServerProblem).filter(ServerProblem.id == pid, ServerProblem.resolved_at == None).first()
     if not prob:
-        raise HTTPException(status_code=404, detail="Insiden aktif tidak ditemukan")
+        raise HTTPException(status_code=404, detail="Active incident not found")
 
     if prob.server_id and not user.can_access_server(prob.server_id):
-        raise HTTPException(status_code=403, detail="Akses ditolak: Anda tidak memiliki wewenang atas server ini")
+        raise HTTPException(status_code=403, detail="Access denied: You do not have permission for this server")
 
     duration = str(body.get("duration", "24h")).lower().strip()
     reason = str(body.get("reason", "")).strip()[:255] or None
@@ -166,14 +166,14 @@ def unignore_problem_action(
 ):
     """Batalkan pengabaian / aktifkan kembali pemantauan insiden."""
     if user.is_viewer:
-        raise HTTPException(status_code=403, detail="Akses ditolak: Akun Viewer tidak memiliki izin memulihkan pengabaian")
+        raise HTTPException(status_code=403, detail="Access denied: Viewer accounts cannot unignore incidents")
 
     prob = db.query(ServerProblem).filter(ServerProblem.id == pid, ServerProblem.resolved_at == None).first()
     if not prob:
-        raise HTTPException(status_code=404, detail="Insiden tidak ditemukan")
+        raise HTTPException(status_code=404, detail="Incident not found")
 
     if prob.server_id and not user.can_access_server(prob.server_id):
-        raise HTTPException(status_code=403, detail="Akses ditolak: Anda tidak memiliki wewenang atas server ini")
+        raise HTTPException(status_code=403, detail="Access denied: You do not have permission for this server")
 
     now = datetime.utcnow()
     # Bersihkan seluruh riwayat pengabaian pada masalah ini dan key terkait di server ini
@@ -217,11 +217,11 @@ def terminate_ssh_session_action(
         raise HTTPException(status_code=404, detail="Active problem not found")
     
     if not prob.key.startswith("ssh_active_session:"):
-        raise HTTPException(status_code=400, detail="Bukan tiket insiden sesi SSH aktif")
+        raise HTTPException(status_code=400, detail="Target incident is not an active SSH session")
 
     parts = prob.key.split(":")
     if len(parts) < 3:
-        raise HTTPException(status_code=400, detail="Format key insiden tidak valid")
+        raise HTTPException(status_code=400, detail="Invalid incident key format")
     
     user_name = parts[1]
     tty_name = parts[2].replace("_", "/")

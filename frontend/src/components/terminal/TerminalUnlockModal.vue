@@ -202,12 +202,27 @@ async function submitUnlock() {
       })
       emit('close')
     } else {
-      errorMsg.value = data?.message || 'Gagal membuka kunci terminal'
+      errorMsg.value = translateError(data?.message || data?.detail)
     }
   } catch (err) {
-    errorMsg.value = err.message || 'Gagal memverifikasi otentikasi'
+    errorMsg.value = translateError(err.message)
   } finally {
     submitting.value = false
   }
+}
+
+function translateError(msg) {
+  if (!msg) return t('terminal_auth_error')
+  const str = String(msg)
+  if (str.includes('Invalid account password') || str.includes('Password akun salah') || str.includes('Invalid password')) {
+    return t('terminal_err_invalid_pwd')
+  }
+  if (str.includes('2FA') || str.includes('TOTP')) {
+    return t('terminal_err_invalid_totp')
+  }
+  if (str.includes('password is required') || str.includes('password diperlukan')) {
+    return t('terminal_err_pwd_required')
+  }
+  return str
 }
 </script>

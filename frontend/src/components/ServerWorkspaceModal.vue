@@ -224,6 +224,7 @@
             <button
               @click="openTerminalModal"
               class="px-2.5 py-1 text-xs text-gray-200 hover:text-cyan-300 hover:bg-cyan-950/60 rounded transition cursor-pointer flex items-center gap-1.5 font-bold"
+              :class="isTerminalOpen ? 'bg-cyan-950/90 text-cyan-300 border border-cyan-500/70 shadow-[0_0_10px_rgba(56,189,248,0.25)]' : ''"
               :title="t('tooltip_terminal_btn')"
             >
               <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -332,6 +333,16 @@
             </button>
           </div>
         </div>
+      </div>
+
+      <!-- 2.5 INTEGRATED WEB TERMINAL PANEL (Terintegrasi, Persis Seperti Blueprint Asli) -->
+      <div v-if="isTerminalOpen && server" class="px-4 bg-[#080d1a] border-b border-cyan-500/20">
+        <ServerWorkspaceTerminal
+          :server="server"
+          :lease-seconds="terminalLeaseSeconds"
+          @request-close="showTerminalCloseModal = true"
+          @request-lock="showTerminalLockModal = true"
+        />
       </div>
 
       <!-- 3. SUB-TABS NAVIGATION BAR (Tab Taktis Ramping) -->
@@ -655,6 +666,30 @@
         </div>
       </div>
     </div>
+
+    <!-- Terminal Unlock (Step-Up Auth) Modal -->
+    <TerminalUnlockModal
+      :is-open="showTerminalUnlockModal"
+      :server="server"
+      :user-has-totp="userHasTotp"
+      @close="showTerminalUnlockModal = false"
+      @unlocked="onTerminalUnlocked"
+    />
+
+    <!-- Terminal Close Confirm Modal -->
+    <TerminalCloseConfirmModal
+      :is-open="showTerminalCloseModal"
+      @close="showTerminalCloseModal = false"
+      @confirm="confirmCloseTerminal"
+    />
+
+    <!-- Terminal Lock Confirm Modal -->
+    <TerminalLockConfirmModal
+      :is-open="showTerminalLockModal"
+      :server="server"
+      @close="showTerminalLockModal = false"
+      @confirm="confirmLockTerminal"
+    />
   </div>
 </template>
 
@@ -673,6 +708,10 @@ import WorkspaceFimTab from './workspace/tabs/WorkspaceFimTab.vue'
 import WorkspacePackagesTab from './workspace/tabs/WorkspacePackagesTab.vue'
 import WorkspaceSslTab from './workspace/tabs/WorkspaceSslTab.vue'
 import WorkspaceLogsTab from './workspace/tabs/WorkspaceLogsTab.vue'
+import ServerWorkspaceTerminal from './terminal/ServerWorkspaceTerminal.vue'
+import TerminalUnlockModal from './terminal/TerminalUnlockModal.vue'
+import TerminalCloseConfirmModal from './terminal/TerminalCloseConfirmModal.vue'
+import TerminalLockConfirmModal from './terminal/TerminalLockConfirmModal.vue'
 
 const props = defineProps({
   serverId: Number,
@@ -706,8 +745,102 @@ const servicesPortsMode = ref('services') // 'services' or 'ports'
 const showGuardrailModal = ref(false)
 const guardrailAction = ref('reboot') // 'reboot' or 'poweroff'
 
-function openTerminalModal() {
-  emit('open-terminal', server.value || { id: currentServerId.value, hostname: server.value?.hostname || 'Server' })
+// Integrated Terminal State (Matches original blueprint)
+const isTerminalOpen = ref(false)
+const showTerminalUnlockModal = ref(false)
+const showTerminalCloseModal = ref(false)
+const showTerminalLockModal = ref(false)
+const userHasTotp = ref(false)
+const terminalLeaseSeconds = ref(0)
+let terminalLeaseTimer = null
+
+async function openTerminalModal() {
+  if (!server.value || !currentServerId.value) return
+
+  if (isTerminalOpen.value) {
+    showTerminalCloseModal.value = true
+    return
+  }
+
+  try {
+    const token = localStorage.getItem('pantau_token') || ''
+    const headers = token ? { Authorization: `Bearer ${token}` } : {}
+    const res = await fetch(`/api/servers/${currentServerId.value}/terminal/status`, { headers })
+    const data = await res.json().catch(() => ({}))
+
+    if (!res.ok) {
+      alert(data.detail || 'Gagal memeriksa status terminal')
+      return
+    }
+
+    if (!data.allow_web_terminal) {
+      alert(t('term_disabled_msg') || 'Web Terminal is disabled for this server.')
+      return
+    }
+    if (!data.can_terminal) {
+      alert(t('term_no_permission_msg') || 'Access denied: You do not have Web Terminal permission.')
+      return
+    }
+
+    if (data.is_unlocked && data.remaining_seconds > 0) {
+      isTerminalOpen.value = true
+      startLeaseCountdown(data.remaining_seconds)
+    } else {
+      userHasTotp.value = Boolean(data.user_has_totp)
+      showTerminalUnlockModal.value = true
+    }
+  } catch (err) {
+    alert('Gagal menginisialisasi sesi terminal: ' + (err.message || 'Error'))
+  }
+}
+
+function onTerminalUnlocked(payload) {
+  isTerminalOpen.value = true
+  startLeaseCountdown(payload?.remaining_seconds || 900)
+}
+
+function confirmCloseTerminal() {
+  showTerminalCloseModal.value = false
+  isTerminalOpen.value = false
+}
+
+async function confirmLockTerminal() {
+  showTerminalLockModal.value = false
+  try {
+    const token = localStorage.getItem('pantau_token') || ''
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    }
+    await fetch(`/api/servers/${currentServerId.value}/terminal/lock`, {
+      method: 'POST',
+      headers
+    })
+  } catch (err) {
+    console.error('Failed to lock terminal:', err)
+  }
+  isTerminalOpen.value = false
+  stopLeaseCountdown()
+}
+
+function startLeaseCountdown(seconds) {
+  stopLeaseCountdown()
+  terminalLeaseSeconds.value = seconds
+  terminalLeaseTimer = setInterval(() => {
+    if (terminalLeaseSeconds.value > 0) {
+      terminalLeaseSeconds.value -= 1
+    } else {
+      stopLeaseCountdown()
+      isTerminalOpen.value = false
+    }
+  }, 1000)
+}
+
+function stopLeaseCountdown() {
+  if (terminalLeaseTimer) {
+    clearInterval(terminalLeaseTimer)
+    terminalLeaseTimer = null
+  }
 }
 
 // Dedicated Floating File Manager State
@@ -718,7 +851,7 @@ function openFileManagerModal() {
 }
 
 function handleTerminalFromFm(payload) {
-  emit('open-terminal', payload)
+  openTerminalModal()
 }
 
 const servicesList = ref([])
@@ -896,6 +1029,8 @@ function handleBackdropClick() {
 function selectHost(sid) {
   showHostDropdown.value = false
   currentServerId.value = sid
+  isTerminalOpen.value = false
+  stopLeaseCountdown()
   emit('switch-server', sid)
 }
 
@@ -932,6 +1067,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyDown)
+  stopLeaseCountdown()
 })
 
 // Mode Pemeliharaan (Maintenance Mode)

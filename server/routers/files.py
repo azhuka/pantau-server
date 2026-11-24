@@ -19,9 +19,9 @@ router = APIRouter(prefix="/api/servers/{sid}/files", tags=["Files"])
 def check_file_manager_access(user: User, sid: int) -> None:
     """Validasi otentikasi node scope dan izin RBAC can_file_manager."""
     if not user.can_access_server(sid):
-        raise HTTPException(status_code=403, detail="Akses ditolak: Anda tidak memiliki wewenang atas server ini.")
+        raise HTTPException(status_code=403, detail="Access denied: You do not have permission for this server.")
     if not user.has_perm("can_file_manager"):
-        raise HTTPException(status_code=403, detail="Akses ditolak: Izin File Manager (can_file_manager) diperlukan.")
+        raise HTTPException(status_code=403, detail="Access denied: File Manager permission (can_file_manager) is required.")
 
 PROTECTED_SYSTEM_PATHS = {
     "/", "/root", "/home", "/etc", "/var", "/usr", "/bin", "/sbin", "/boot",

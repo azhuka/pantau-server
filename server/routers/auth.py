@@ -37,10 +37,10 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
     if not user or not verify_password(req.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Username atau kata sandi tidak valid"
+            detail="Invalid username or password"
         )
     if not user.is_active:
-        raise HTTPException(status_code=403, detail="Akun dinonaktifkan")
+        raise HTTPException(status_code=403, detail="Account is disabled")
 
     user.last_login_at = datetime.utcnow()
     db.commit()
