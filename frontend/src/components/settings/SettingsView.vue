@@ -23,6 +23,7 @@
           <span>{{ t('settings_subtab_rbac') }}</span>
         </button>
         <button
+          v-if="profile?.is_master_admin"
           @click="activeTab = 'master_control'"
           class="px-3 py-1.5 rounded transition cursor-pointer flex items-center gap-1.5 font-bold"
           :class="activeTab === 'master_control' ? 'bg-cyan-950 text-cyan-300 border border-cyan-700/60 shadow-sm' : 'text-gray-400 hover:text-gray-200'"
@@ -73,7 +74,7 @@
 
               <!-- Button Edit Profile (Tier 2: Icon + Label) -->
               <button
-                v-if="profile"
+                v-if="profile && profile.role !== 'viewer'"
                 @click="showEditSelfModal = true"
                 class="px-3 py-1.5 rounded bg-gray-900 hover:bg-cyan-950 border border-gray-700 hover:border-cyan-600/50 text-xs text-gray-200 hover:text-cyan-300 transition cursor-pointer flex items-center gap-1.5 font-bold shadow-sm"
                 :title="t('settings_btn_edit')"
@@ -159,7 +160,7 @@
             </span>
 
             <div class="flex items-center gap-2">
-              <template v-if="!profile?.totp_enabled">
+              <template v-if="!profile?.totp_enabled && profile?.role !== 'viewer'">
                 <button
                   @click="showSetup2faModal = true"
                   class="px-3 py-1.5 rounded bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold transition cursor-pointer flex items-center gap-1.5"
@@ -225,12 +226,12 @@
         </div>
 
         <!-- KPI Strip -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div :class="profile?.is_master_admin ? 'grid grid-cols-2 sm:grid-cols-4 gap-2' : 'grid grid-cols-1 sm:grid-cols-3 gap-2'">
           <div class="p-2.5 rounded bg-[#0e1628] border border-gray-800 text-center">
             <div class="text-[10px] text-gray-400 uppercase font-semibold">{{ t('settings_kpi_total') }}</div>
             <div class="text-base font-extrabold text-gray-100 mt-0.5">{{ users.length }}</div>
           </div>
-          <div class="p-2.5 rounded bg-[#0e1628] border border-gray-800 text-center">
+          <div v-if="profile?.is_master_admin" class="p-2.5 rounded bg-[#0e1628] border border-gray-800 text-center">
             <div class="text-[10px] text-cyan-400 uppercase font-semibold">{{ t('settings_kpi_master') }}</div>
             <div class="text-base font-extrabold text-cyan-300 mt-0.5">{{ users.filter(u => u.role === 'master_admin').length }}</div>
           </div>
@@ -254,7 +255,7 @@
                 class="bg-[#111827] border border-gray-800 rounded px-2.5 py-1 text-gray-200 text-xs focus:border-cyan-500 outline-none"
               >
                 <option value="">{{ t('settings_all_roles') }}</option>
-                <option value="master_admin">{{ t('settings_role_master_admin') }}</option>
+                <option v-if="profile?.is_master_admin" value="master_admin">{{ t('settings_role_master_admin') }}</option>
                 <option value="operator">{{ t('settings_role_operator') }}</option>
                 <option value="viewer">{{ t('settings_role_viewer') }}</option>
               </select>
@@ -439,9 +440,9 @@
         class="rounded-lg bg-[#0b1326] border border-cyan-800/80 shadow-2xl py-1 text-xs divide-y divide-gray-800 transition-all select-none"
       >
         <div class="py-0.5">
-          <!-- Atur Izin (Only for Operator) -->
+          <!-- Atur Izin (HANYA Master Admin yang berhak mengedit wewenang operator) -->
           <button
-            v-if="activeDropdownUser.role === 'operator' && (profile?.is_master_admin || profile?.permissions?.can_manage_users)"
+            v-if="activeDropdownUser.role === 'operator' && profile?.is_master_admin"
             type="button"
             @click="openEditPermsModal(activeDropdownUser); closeDropdown()"
             class="w-full px-3 py-1.5 text-left text-cyan-300 hover:text-white hover:bg-cyan-950/80 flex items-center gap-2 cursor-pointer transition font-bold"
@@ -452,7 +453,7 @@
 
           <!-- Reset Password -->
           <button
-            v-if="profile?.is_master_admin || profile?.permissions?.can_manage_users"
+            v-if="profile?.is_master_admin || profile?.permissions?.can_manage_users || (profile?.permissions?.can_manage_viewers && activeDropdownUser.role === 'viewer')"
             type="button"
             @click="openResetModal(activeDropdownUser); closeDropdown()"
             class="w-full px-3 py-1.5 text-left text-gray-200 hover:text-white hover:bg-cyan-950/80 flex items-center gap-2 cursor-pointer transition"
@@ -473,7 +474,7 @@
           </button>
         </div>
 
-        <div v-if="activeDropdownUser.role !== 'master_admin' && activeDropdownUser.id !== profile?.id" class="py-0.5">
+        <div v-if="activeDropdownUser.role !== 'master_admin' && activeDropdownUser.id !== profile?.id && (profile?.is_master_admin || profile?.permissions?.can_manage_users || (profile?.permissions?.can_manage_viewers && activeDropdownUser.role === 'viewer'))" class="py-0.5">
           <!-- Kunci / Buka Kunci -->
           <button
             type="button"

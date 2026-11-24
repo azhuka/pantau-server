@@ -2,7 +2,7 @@ import os
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
-    APP_VERSION: str = "0.1.45"
+    APP_VERSION: str = "0.1.46"
     DB_HOST: str = "127.0.0.1"
     DB_PORT: int = 3306
     DB_USER: str = "pantau_db"

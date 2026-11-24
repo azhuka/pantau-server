@@ -104,4 +104,23 @@ def api_get_audit_logs(
             "meta": r.meta,
         })
 
+    # Zero-Knowledge Master Admin Masking for Operator/Non-Master-Admin
+    if not user_actor.is_master_admin:
+        master_admin_names = {
+            u.username for u in db.query(User).filter(User.role.in_(["master_admin", "master-admin"])).all()
+        }
+        if user.strip() in master_admin_names:
+            return []
+
+        for item in results:
+            if item["username"] in master_admin_names:
+                item["username"] = "Sistem"
+            target_str = str(item["target"] or "")
+            for m in master_admin_names:
+                if m in target_str:
+                    target_str = target_str.replace(m, "Sistem")
+            if "master_admin" in target_str or "master-admin" in target_str:
+                target_str = target_str.replace("master_admin", "sistem").replace("master-admin", "sistem")
+            item["target"] = target_str
+
     return results

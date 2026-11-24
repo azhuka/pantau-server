@@ -319,6 +319,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.46
+
+- **Enforce Zero-Knowledge Master Admin:** Akun `master-admin` disembunyikan secara absolut dari pandangan Operator (penyaringan baris pada `GET /api/users`, penyembunyian kartu KPI counter di UI, dan respons netral `404 Not Found` saat dicoba dimanipulasi oleh akun non-master-admin).\n- **Audit Trail Masking:** Menyamarkan otomatis seluruh aktivitas Master Admin menjadi aktor `"Sistem"` dan menyembunyikan Master Admin dari filter pencarian bagi Operator.\n- **Strict Permissions Guard:** Mengunci hak mengubah wewenang (`permissions`) operator lain secara eksklusif hanya untuk Master Admin.\n- **Viewer Isolation Guard:** Memblokir seluruh akses mutasi, pengelolaan pengguna, pengaturan profil sendiri, dan audit trail bagi akun Viewer.
+
+
 ### Versi v0.1.45
 
 - **Universal Teleport Action Dropdown:** Menerapkan `<Teleport to="body">` dan kalkulasi posisi `fixed` pintar (drop-up/drop-down) pada seluruh tabel aplikasi (`AssetTableView.vue`, `WorkspaceServicesPortsTab.vue`, `WorkspaceProcessesTab.vue`, `RemoteFileManagerModal.vue`), melenyapkan tuntas isu clipping batas scroll container.\n- **Fix TDZ Runtime Bug:** Memperbaiki urutan inisialisasi `activeSSHSessions` sebelum `subTabs` pada `ServerWorkspaceModal.vue`.

@@ -186,6 +186,12 @@ def change_own_password(
     db: Session = Depends(get_db),
 ):
     """Ganti kata sandi mandiri bagi pengguna yang sedang login."""
+    if user.is_viewer:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Viewers cannot change credentials directly. Managed by administrator."
+        )
+
     if not verify_password(req.current_password, user.password_hash):
         raise HTTPException(
             status_code=400,
@@ -216,13 +222,27 @@ def list_users(
     db: Session = Depends(get_db),
 ):
     """Melihat seluruh daftar pengguna terdaftar lengkap dengan wewenang dan cakupan server."""
-    if not (user.is_master_admin or user.has_perm("can_manage_users") or user.has_perm("can_manage_viewers")):
+    if user.is_viewer:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied: Viewers do not have user management permissions."
+        )
+
+    if user.is_master_admin:
+        query = db.query(User)
+    elif user.has_perm("can_manage_users"):
+        # Zero-Knowledge: Master Admin disembunyikan total dari pandangan Operator
+        query = db.query(User).filter(~User.role.in_(["master_admin", "master-admin"]))
+    elif user.has_perm("can_manage_viewers"):
+        # Operator terbatas hanya melihat akun berkategori viewer
+        query = db.query(User).filter(User.role.in_(["viewer", "guest", "tamu"]))
+    else:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied: You do not have user management permissions."
         )
 
-    users = db.query(User).order_by(User.id.asc()).all()
+    users = query.order_by(User.id.asc()).all()
     out = []
     for u in users:
         out.append({
@@ -230,8 +250,11 @@ def list_users(
             "username": u.username,
             "role": u.role,
             "is_active": u.is_active,
+            "totp_enabled": int(u.totp_enabled or 0),
             "created_at": u.created_at,
             "last_login_at": u.last_login_at,
+            "last_login_ip": getattr(u, "last_login_ip", None),
+            "password_changed_at": getattr(u, "password_changed_at", None),
             "created_by": u.created_by,
             "permissions": u.get_permissions(),
             "allowed_server_ids": u.get_allowed_server_ids(),
@@ -246,7 +269,16 @@ def create_user(
     db: Session = Depends(get_db),
 ):
     """Membuat akun pengguna baru (Operator dengan izin modular atau Viewer)."""
-    if not (user.is_master_admin or user.has_perm("can_manage_users")):
+    if user.is_viewer:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied: Viewers do not have user management permissions."
+        )
+
+    can_manage_users = user.is_master_admin or user.has_perm("can_manage_users")
+    can_manage_viewers = can_manage_users or user.has_perm("can_manage_viewers")
+
+    if not can_manage_viewers:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied: You do not have permission to create users."
@@ -262,18 +294,28 @@ def create_user(
 
     validate_password_strength(req.password)
 
-    perms_json = None
-    if req.role == "operator" and req.permissions:
-        perms_json = json.dumps(req.permissions)
+    # Larangan membuat akun master-admin
+    if not user.is_master_admin and req.role in ("master_admin", "master-admin"):
+        raise HTTPException(status_code=400, detail="Cannot create master-admin account.")
 
+    # Operator terbatas hanya bisa membuat role viewer
+    if not can_manage_users:
+        assigned_role = "viewer"
+    else:
+        assigned_role = req.role if req.role in ("operator", "viewer") else "viewer"
+
+    perms_json = None
     allowed_servers_json = None
-    if req.role == "operator" and req.allowed_server_ids is not None:
-        allowed_servers_json = json.dumps(sorted(req.allowed_server_ids))
+    if assigned_role == "operator":
+        if req.permissions:
+            perms_json = json.dumps(req.permissions)
+        if req.allowed_server_ids is not None:
+            allowed_servers_json = json.dumps(sorted(req.allowed_server_ids))
 
     new_user = User(
         username=clean_username,
         password_hash=get_password_hash(req.password),
-        role=req.role,
+        role=assigned_role,
         is_active=1,
         created_by=user.username,
         password_changed_at=datetime.utcnow(),
@@ -289,8 +331,11 @@ def create_user(
         "username": new_user.username,
         "role": new_user.role,
         "is_active": new_user.is_active,
+        "totp_enabled": int(new_user.totp_enabled or 0),
         "created_at": new_user.created_at,
         "last_login_at": new_user.last_login_at,
+        "last_login_ip": getattr(new_user, "last_login_ip", None),
+        "password_changed_at": getattr(new_user, "password_changed_at", None),
         "created_by": new_user.created_by,
         "permissions": new_user.get_permissions(),
         "allowed_server_ids": new_user.get_allowed_server_ids(),
@@ -305,21 +350,34 @@ def update_user(
     db: Session = Depends(get_db),
 ):
     """Menyunting akun pengguna: kredensial, peran, status, matriks wewenang granular, dan cakupan aset server."""
-    if user_id != user.id and not (user.is_master_admin or user.has_perm("can_manage_users")):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied: You do not have permission to manage users."
-        )
+    # Self edit check
+    if user_id == user.id:
+        if user.is_viewer:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Viewers cannot edit account credentials directly."
+            )
+        target = user
+    else:
+        can_manage_users = user.is_master_admin or user.has_perm("can_manage_users")
+        can_manage_viewers = can_manage_users or user.has_perm("can_manage_viewers")
+        if not can_manage_viewers:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied: You do not have permission to manage users."
+            )
 
-    target = db.query(User).filter(User.id == user_id).first()
-    if not target:
-        raise HTTPException(status_code=404, detail="User not found.")
+        target = db.query(User).filter(User.id == user_id).first()
+        if not target:
+            raise HTTPException(status_code=404, detail="User not found.")
 
-    if target.is_master_admin and not user.is_master_admin:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only master-admin can edit the master-admin account."
-        )
+        # Zero-Knowledge Stealth: Non-Master-Admins cannot touch Master Admin (Must be 404!)
+        if target.is_master_admin and not user.is_master_admin:
+            raise HTTPException(status_code=404, detail="User not found.")
+
+        # Operator terbatas hanya berwenang mengelola viewer (Must be 404!)
+        if not can_manage_users and target.role != "viewer":
+            raise HTTPException(status_code=404, detail="User not found.")
 
     # 1. Update Username
     if req.username and req.username.strip():
@@ -364,7 +422,7 @@ def update_user(
         target.password_hash = get_password_hash(pwd_clean)
         target.password_changed_at = datetime.utcnow()
 
-    # 3. Update Role, Status, Permissions, Scope (Only when editing other users, or admin)
+    # 3. Update Role, Status, Permissions, Scope (Only when editing OTHER users)
     if user_id != user.id:
         if target.is_master_admin:
             if req.role and req.role not in ("master_admin", "master-admin"):
@@ -374,6 +432,10 @@ def update_user(
                 )
         else:
             if req.role is not None:
+                if req.role in ("master_admin", "master-admin"):
+                    raise HTTPException(status_code=400, detail="Cannot promote user to master-admin.")
+                if not (user.is_master_admin or user.has_perm("can_manage_users")):
+                    req.role = "viewer"
                 target.role = req.role
 
         if req.is_active is not None:
@@ -384,14 +446,24 @@ def update_user(
                 )
             target.is_active = req.is_active
 
-        if target.role in ("operator", "operator_utama", "operator_pembantu"):
-            if req.permissions is not None:
+        # Permissions: HANYA Master Admin yang berhak mengedit wewenang operator lain!
+        if req.permissions is not None:
+            if not user.is_master_admin:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Only master-admin can edit operator permissions."
+                )
+            if target.role in ("operator", "operator_utama", "operator_pembantu"):
                 target.permissions = json.dumps(req.permissions)
-            if req.allowed_server_ids is not None:
+
+        # Allowed server ids
+        if req.allowed_server_ids is not None:
+            if target.role in ("operator", "operator_utama", "operator_pembantu"):
                 target.allowed_server_ids = json.dumps(sorted(req.allowed_server_ids))
             else:
                 target.allowed_server_ids = None
-        elif target.role == "viewer":
+
+        if target.role == "viewer":
             target.permissions = None
             target.allowed_server_ids = None
 
@@ -418,8 +490,11 @@ def update_user(
         "username": target.username,
         "role": target.role,
         "is_active": target.is_active,
+        "totp_enabled": int(target.totp_enabled or 0),
         "created_at": target.created_at,
         "last_login_at": target.last_login_at,
+        "last_login_ip": getattr(target, "last_login_ip", None),
+        "password_changed_at": getattr(target, "password_changed_at", None),
         "created_by": target.created_by,
         "permissions": target.get_permissions(),
         "allowed_server_ids": target.get_allowed_server_ids(),
@@ -434,7 +509,9 @@ def toggle_user_status(
     db: Session = Depends(get_db),
 ):
     """Mengaktifkan atau menonaktifkan akun pengguna."""
-    if not (user.is_master_admin or user.has_perm("can_manage_users")):
+    can_manage_users = user.is_master_admin or user.has_perm("can_manage_users")
+    can_manage_viewers = can_manage_users or user.has_perm("can_manage_viewers")
+    if not can_manage_viewers:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied: You do not have permission to manage user status."
@@ -442,6 +519,14 @@ def toggle_user_status(
 
     target = db.query(User).filter(User.id == user_id).first()
     if not target:
+        raise HTTPException(status_code=404, detail="User not found.")
+
+    # Zero-Knowledge Stealth: Non-Master-Admins cannot touch Master Admin (Must be 404!)
+    if target.is_master_admin and not user.is_master_admin:
+        raise HTTPException(status_code=404, detail="User not found.")
+
+    # Operator terbatas hanya berwenang mengelola viewer
+    if not can_manage_users and target.role != "viewer":
         raise HTTPException(status_code=404, detail="User not found.")
 
     if target.id == user.id:
@@ -471,7 +556,9 @@ def reset_user_password(
     db: Session = Depends(get_db),
 ):
     """Reset kata sandi pengguna lain oleh administrator."""
-    if not (user.is_master_admin or user.has_perm("can_manage_users")):
+    can_manage_users = user.is_master_admin or user.has_perm("can_manage_users")
+    can_manage_viewers = can_manage_users or user.has_perm("can_manage_viewers")
+    if not can_manage_viewers:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied: You do not have permission to reset user passwords."
@@ -481,11 +568,13 @@ def reset_user_password(
     if not target:
         raise HTTPException(status_code=404, detail="User not found.")
 
+    # Zero-Knowledge Stealth: Non-Master-Admins cannot touch Master Admin (Must be 404!)
     if target.is_master_admin and not user.is_master_admin:
-        raise HTTPException(
-            status_code=403,
-            detail="Only master-admin can reset the master-admin password."
-        )
+        raise HTTPException(status_code=404, detail="User not found.")
+
+    # Operator terbatas hanya berwenang mengelola viewer
+    if not can_manage_users and target.role != "viewer":
+        raise HTTPException(status_code=404, detail="User not found.")
 
     validate_password_strength(req.new_password)
 
@@ -503,7 +592,9 @@ def delete_user(
     db: Session = Depends(get_db),
 ):
     """Menghapus akun pengguna."""
-    if not (user.is_master_admin or user.has_perm("can_manage_users")):
+    can_manage_users = user.is_master_admin or user.has_perm("can_manage_users")
+    can_manage_viewers = can_manage_users or user.has_perm("can_manage_viewers")
+    if not can_manage_viewers:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied: You do not have permission to delete users."
@@ -511,6 +602,14 @@ def delete_user(
 
     target = db.query(User).filter(User.id == user_id).first()
     if not target:
+        raise HTTPException(status_code=404, detail="User not found.")
+
+    # Zero-Knowledge Stealth: Non-Master-Admins cannot touch Master Admin (Must be 404!)
+    if target.is_master_admin and not user.is_master_admin:
+        raise HTTPException(status_code=404, detail="User not found.")
+
+    # Operator terbatas hanya berwenang mengelola viewer
+    if not can_manage_users and target.role != "viewer":
         raise HTTPException(status_code=404, detail="User not found.")
 
     if target.id == user.id:
@@ -538,6 +637,12 @@ def delete_user(
 @router.post("/2fa/init")
 def api_user_2fa_init(user: User = Depends(get_current_user)):
     """Inisialisasi setup 2FA TOTP (Google Authenticator / Aegis / dsb)."""
+    if user.is_viewer:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Viewers cannot configure 2FA. Managed by administrator."
+        )
+
     raw_secret = security_auth.generate_totp_secret()
     formatted_secret = security_auth.format_secret_display(raw_secret)
     totp_uri = security_auth.generate_totp_uri(raw_secret, user.username)
@@ -558,6 +663,12 @@ def api_user_2fa_confirm(
     db: Session = Depends(get_db),
 ):
     """Konfirmasi kode 6 digit untuk mengaktifkan 2FA."""
+    if user.is_viewer:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Viewers cannot configure 2FA. Managed by administrator."
+        )
+
     if not security_auth.verify_totp(req.secret, req.code):
         raise HTTPException(status_code=400, detail="Kode autentikasi 2FA tidak valid atau sudah kedaluwarsa.")
 
@@ -580,6 +691,12 @@ def api_user_2fa_disable(
     db: Session = Depends(get_db),
 ):
     """Nonaktifkan 2FA untuk akun sendiri."""
+    if user.is_viewer:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Viewers cannot configure 2FA. Managed by administrator."
+        )
+
     if not verify_password(req.password, user.password_hash):
         raise HTTPException(status_code=400, detail="Kata sandi akun salah.")
 
@@ -596,6 +713,12 @@ def api_user_2fa_regenerate_recovery(
     db: Session = Depends(get_db),
 ):
     """Generate ulang kode pemulihan (recovery codes) 2FA."""
+    if user.is_viewer:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Viewers cannot configure 2FA. Managed by administrator."
+        )
+
     if not user.totp_enabled:
         raise HTTPException(status_code=400, detail="2FA belum aktif untuk akun ini.")
     plain_codes, hashed_codes = security_auth.generate_recovery_codes(8)

@@ -76,6 +76,8 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
             "username": user.username,
             "role": user.role,
             "is_master_admin": user.is_master_admin,
+            "is_operator": user.is_operator,
+            "is_viewer": user.is_viewer,
             "totp_enabled": bool(user.totp_enabled),
             "permissions": user.get_permissions(),
             "allowed_server_ids": user.get_allowed_server_ids()
@@ -133,6 +135,8 @@ def login_2fa(req: Login2faRequest, db: Session = Depends(get_db)):
             "username": user.username,
             "role": user.role,
             "is_master_admin": user.is_master_admin,
+            "is_operator": user.is_operator,
+            "is_viewer": user.is_viewer,
             "totp_enabled": bool(user.totp_enabled),
             "permissions": user.get_permissions(),
             "allowed_server_ids": user.get_allowed_server_ids()
@@ -146,6 +150,8 @@ def get_me(user: User = Depends(get_current_user)):
         "username": user.username,
         "role": user.role,
         "is_master_admin": user.is_master_admin,
+        "is_operator": user.is_operator,
+        "is_viewer": user.is_viewer,
         "totp_enabled": bool(user.totp_enabled),
         "permissions": user.get_permissions(),
         "allowed_server_ids": user.get_allowed_server_ids()

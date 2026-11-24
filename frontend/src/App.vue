@@ -37,12 +37,12 @@
 
       <!-- HALAMAN 3: AUDIT TRAIL (Log Akuntabilitas Aksi Operator) -->
       <AuditView
-        v-else-if="activeTab === 'audit'"
+        v-else-if="activeTab === 'audit' && (currentUser?.is_master_admin || currentUser?.permissions?.can_audit)"
       />
 
       <!-- HALAMAN 4: SETTINGS & RBAC (Otoritas & Ambang Batas) -->
       <SettingsView
-        v-else-if="activeTab === 'settings'"
+        v-else-if="activeTab === 'settings' && (currentUser?.is_master_admin || currentUser?.permissions?.can_manage_users || currentUser?.permissions?.can_manage_viewers)"
       />
     </main>
 
