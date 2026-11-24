@@ -1,6 +1,7 @@
+import json
 import re
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Dict
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
@@ -9,6 +10,8 @@ from core.database import get_db
 from core.security import verify_password, get_password_hash
 from routers.auth import get_current_user
 from models.user import User
+from models.server import Server
+from security_auth import OPERATOR_PERMISSIONS
 
 router = APIRouter(prefix="/api/users", tags=["User Management"])
 
@@ -29,6 +32,15 @@ class UserCreateRequest(BaseModel):
     username: str = Field(..., min_length=3, max_length=50)
     password: str = Field(..., min_length=8)
     role: str = Field("operator", pattern="^(operator|viewer)$")
+    permissions: Optional[Dict[str, bool]] = None
+    allowed_server_ids: Optional[List[int]] = None
+
+
+class UserUpdateRequest(BaseModel):
+    role: Optional[str] = Field(None, pattern="^(operator|viewer)$")
+    is_active: Optional[int] = Field(None, ge=0, le=1)
+    permissions: Optional[Dict[str, bool]] = None
+    allowed_server_ids: Optional[List[int]] = None
 
 
 class UserStatusUpdateRequest(BaseModel):
@@ -43,6 +55,8 @@ class UserResponse(BaseModel):
     created_at: Optional[datetime] = None
     last_login_at: Optional[datetime] = None
     created_by: Optional[str] = None
+    permissions: Optional[Dict[str, bool]] = None
+    allowed_server_ids: Optional[List[int]] = None
 
     class Config:
         from_attributes = True
@@ -79,6 +93,34 @@ def validate_password_strength(password: str) -> None:
             status_code=400,
             detail="Password must contain at least one number (0-9)."
         )
+
+
+# ---------------------------------------------------------------------------
+# Metadata Endpoints
+# ---------------------------------------------------------------------------
+@router.get("/meta/metadata")
+def get_user_metadata(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Kembalikan kamus matriks 16 izin granular dan daftar seluruh aset server aktif."""
+    if not (user.is_master_admin or user.has_perm("can_manage_users") or user.has_perm("can_manage_viewers")):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+
+    servers = (
+        db.query(Server.id, Server.hostname, Server.ip_address)
+        .filter(Server.is_active == 1)
+        .order_by(Server.hostname.asc())
+        .all()
+    )
+
+    return {
+        "permissions": OPERATOR_PERMISSIONS,
+        "servers": [
+            {"id": s.id, "hostname": s.hostname, "ip_address": s.ip_address}
+            for s in servers
+        ]
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -134,7 +176,7 @@ def list_users(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Melihat seluruh daftar pengguna terdaftar."""
+    """Melihat seluruh daftar pengguna terdaftar lengkap dengan wewenang dan cakupan server."""
     if not (user.is_master_admin or user.has_perm("can_manage_users") or user.has_perm("can_manage_viewers")):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -142,7 +184,20 @@ def list_users(
         )
 
     users = db.query(User).order_by(User.id.asc()).all()
-    return users
+    out = []
+    for u in users:
+        out.append({
+            "id": u.id,
+            "username": u.username,
+            "role": u.role,
+            "is_active": u.is_active,
+            "created_at": u.created_at,
+            "last_login_at": u.last_login_at,
+            "created_by": u.created_by,
+            "permissions": u.get_permissions(),
+            "allowed_server_ids": u.get_allowed_server_ids(),
+        })
+    return out
 
 
 @router.post("", response_model=UserResponse)
@@ -151,14 +206,13 @@ def create_user(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Membuat akun pengguna baru (Operator atau Viewer)."""
+    """Membuat akun pengguna baru (Operator dengan izin modular atau Viewer)."""
     if not (user.is_master_admin or user.has_perm("can_manage_users")):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied: You do not have permission to create users."
         )
 
-    # Validasi nama pengguna unik
     clean_username = req.username.strip()
     existing = db.query(User).filter(User.username == clean_username).first()
     if existing:
@@ -169,6 +223,14 @@ def create_user(
 
     validate_password_strength(req.password)
 
+    perms_json = None
+    if req.role == "operator" and req.permissions:
+        perms_json = json.dumps(req.permissions)
+
+    allowed_servers_json = None
+    if req.role == "operator" and req.allowed_server_ids is not None:
+        allowed_servers_json = json.dumps(sorted(req.allowed_server_ids))
+
     new_user = User(
         username=clean_username,
         password_hash=get_password_hash(req.password),
@@ -176,12 +238,98 @@ def create_user(
         is_active=1,
         created_by=user.username,
         password_changed_at=datetime.utcnow(),
+        permissions=perms_json,
+        allowed_server_ids=allowed_servers_json,
     )
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
 
-    return new_user
+    return {
+        "id": new_user.id,
+        "username": new_user.username,
+        "role": new_user.role,
+        "is_active": new_user.is_active,
+        "created_at": new_user.created_at,
+        "last_login_at": new_user.last_login_at,
+        "created_by": new_user.created_by,
+        "permissions": new_user.get_permissions(),
+        "allowed_server_ids": new_user.get_allowed_server_ids(),
+    }
+
+
+@router.put("/{user_id}", response_model=UserResponse)
+def update_user(
+    user_id: int,
+    req: UserUpdateRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Menyunting akun pengguna: peran, status, matriks wewenang granular, dan cakupan aset server."""
+    if not (user.is_master_admin or user.has_perm("can_manage_users")):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied: You do not have permission to manage users."
+        )
+
+    target = db.query(User).filter(User.id == user_id).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found.")
+
+    if target.is_master_admin:
+        if not user.is_master_admin:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only master-admin can edit the master-admin account."
+            )
+        if req.role and req.role not in ("master_admin", "master-admin"):
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot change role of master-admin account."
+            )
+    else:
+        if req.role is not None:
+            target.role = req.role
+
+    if req.is_active is not None:
+        if target.id == user.id and req.is_active == 0:
+            raise HTTPException(
+                status_code=400,
+                detail="You cannot deactivate your own account."
+            )
+        if target.is_master_admin and req.is_active == 0:
+            raise HTTPException(
+                status_code=400,
+                detail="The master-admin account cannot be deactivated."
+            )
+        target.is_active = req.is_active
+
+    if target.role in ("operator", "operator_utama", "operator_pembantu"):
+        if req.permissions is not None:
+            target.permissions = json.dumps(req.permissions)
+        if req.allowed_server_ids is not None:
+            target.allowed_server_ids = json.dumps(sorted(req.allowed_server_ids))
+        else:
+            # Jika eksplisit null, jadikan global (seluruh server)
+            target.allowed_server_ids = None
+    elif target.role == "viewer":
+        target.permissions = None
+        target.allowed_server_ids = None
+
+    db.commit()
+    db.refresh(target)
+
+    return {
+        "id": target.id,
+        "username": target.username,
+        "role": target.role,
+        "is_active": target.is_active,
+        "created_at": target.created_at,
+        "last_login_at": target.last_login_at,
+        "created_by": target.created_by,
+        "permissions": target.get_permissions(),
+        "allowed_server_ids": target.get_allowed_server_ids(),
+    }
 
 
 @router.put("/{user_id}/status")

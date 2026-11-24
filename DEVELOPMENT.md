@@ -174,6 +174,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.37
+
+- Mengadopsi matriks 16 izin granular (OPERATOR_PERMISSIONS) pada backend server/routers/users.py dan frontend SettingsView.\n- Menambahkan 4 preset wewenang operator: Sudo Penuh, Pemeliharaan, Monitoring L1, dan Kosongkan.\n- Menerapkan pendelegasian cakupan server (Server Scope): Semua Server (Global) atau Server Tertentu via allowed_server_ids.\n- Membangun Modal Edit Pengguna (EditUserModal.vue) untuk menyunting peran, status, izin modular, dan cakupan server secara interaktif.\n- Menambahkan endpoint metadata /api/users/meta/metadata dan endpoint update user PUT /api/users/{id}.\n- Memecah komponen modal secara modular: AddUserModal.vue, EditUserModal.vue, dan ResetPasswordModal.vue (<250 baris).\n- Memutakhirkan seluruh kamus i18n bilingual untuk 16 izin, preset, dan cakupan server.
+
+
 ### Versi v0.1.36
 
 - Membangun endpoint profil mandiri dan ganti password di server/routers/users.py.\n- Membangun direktori akun pengguna di SettingsView.vue dengan kapabilitas tambah user, reset password, dan toggle status.\n- Menerapkan proteksi integritas akun: larangan hapus akun sendiri dan master-admin.\n- Melengkapi seluruh kamus bilingual i18n dan menambahkan sakelar bahasa terpadu di Navbar.\n- Menyembunyikan otomatis bilah kontrol paginasi jika baris data <= 10.
