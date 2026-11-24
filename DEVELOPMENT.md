@@ -319,6 +319,13 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.51
+
+- Penegasan Prinsip Dasbor Zero-Hidden: Menetapkan aturan baku bahwa halaman dasbor (DashboardView.vue) mutlak dilarang memiliki paginasi; seluruh node armada dan insiden wajib tampil terbuka secara utuh seketika demi kecepatan baca situasi operator NOC tanpa distraksi.
+- Eliminasi Paginasi pada DashboardView.vue: Menghapus seluruh variabel pemotongan paginasi (paginatedServers, currentServerPage, totalServerPages) dan markup bilah paginasi dari komponen dasbor.
+- Kodifikasi Aturan Baku pada GEMINI.md, AGENTS.md, dan DEVELOPMENT.md: Membatasi penerapan paginasi universal hanya untuk tabel data sekunder (AssetTableView.vue, AuditView.vue, dan modal-modal rincian).
+
+
 ### Versi v0.1.50
 
 - Audit Menyeluruh & Penguatan RBAC Dasbor: Menghubungkan konteks pengguna login (currentUser) ke DashboardView dan seluruh modal anak (ProblemDetailModal, SevDetailModal, IgnoreProblemModal).

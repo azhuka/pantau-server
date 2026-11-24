@@ -52,7 +52,7 @@ tools/                  # Otomasi rilis (sop_release.py), test_terminal_dock.js,
    - `models/`: Skema relasional InnoDB murni.
    - `frontend/components/`: Komponen kecil terfokus (<250 baris). Dilarang menyatukan ribuan baris template ke satu berkas monolitik.
 2. **Batas Cakupan UI (Scope Boundary):**
-   - **Dasbor Murni Pasif (`DashboardView.vue`):** Khusus pemantauan makro 24/7/365 (Banner KPI 3-kartu, tabel insiden pasif). **Dilarang keras menambah kolom atau tombol aksi/mutasi di dasbor.** Navigasi baris pasif via klik baris (`cursor-pointer`).
+   - **Dasbor Murni Pasif & Zero-Hidden (`DashboardView.vue`):** Khusus pemantauan makro 24/7/365 (Banner KPI 3-kartu, tabel insiden pasif, tabel armada utuh). **Dilarang keras menambah kolom atau tombol aksi/mutasi di dasbor.** Navigasi baris pasif via klik baris (`cursor-pointer`). **Paginasi mutlak dilarang di dasbor**: seluruh node wajib tampil langsung tanpa disembunyikan di balik halaman berikutnya demi kecepatan baca situasi (*zero-hidden situational awareness*).
    - **Jendela Kontrol Taktis Mengambang (`ServerWorkspaceModal.vue`):** Seluruh investigasi mikro dan aksi kontrol (restart service, kill process, putus sesi, audit port, firewall) berada eksklusif di dalam modal mengambang `85vw x 85vh`.
 3. **Web Terminal Dock Baku (xterm.js):**
    - Wajib menggunakan **Global Multi-Tab Terminal Dock** berbasis `xterm.js` + `xterm-addon-fit.js`.
@@ -69,8 +69,8 @@ tools/                  # Otomasi rilis (sop_release.py), test_terminal_dock.js,
    - *Tier 3 (Ikon Saja + Tooltip Informatif):* Aksi padat baris tabel demi *NOC Data Density*.
    - *Tier 4 (Ikon + Label + Tooltip Konsekuensi):* Aksi kritis sistemik (`Update OS`, `Reboot`, `Power Off`).
    - Dilarang keras menggunakan karakter emoji kartun bawaan OS. Gunakan SVG monokromatik.
-7. **Paginasi Otomatis ($\le 10$ Baris Sembunyi):**
-   - Jika baris data $\le 10$, bilah paginasi **wajib disembunyikan otomatis (`display: none !important`)**. Hanya tampil jika $> 10$ baris.
+7. **Paginasi Otomatis ($\le 10$ Baris Sembunyi pada Tabel Sekunder):**
+   - Pada tabel sekunder (`AssetTableView`, `AuditView`, modal keparahan): jika baris data $\le 10$, bilah paginasi **wajib disembunyikan otomatis (`display: none !important`)**. Hanya tampil jika $> 10$ baris. (Paginasi mutlak tidak berlaku di halaman dasbor).
 8. **Prinsip Ponytail (Anti-Bloat & Lazy Senior Dev Mode):**
    - Selesaikan masalah dengan **diff terkecil yang menuntaskan tugas secara utuh**.
    - Dilarang memperkenalkan abstraksi spekulatif, wrapper kosong, atau kode "untuk nanti".

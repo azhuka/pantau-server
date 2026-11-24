@@ -457,7 +457,7 @@
           </thead>
           <tbody class="divide-y divide-gray-800/40 bg-[#090e1c]/40">
             <tr
-              v-for="s in paginatedServers"
+              v-for="s in filteredServers"
               :key="s.id"
               @click="$emit('inspect-node', s.id)"
               class="hover:bg-cyan-950/20 transition-colors cursor-pointer group"
@@ -720,7 +720,7 @@
         </div>
 
         <div
-          v-for="s in paginatedServers"
+          v-for="s in filteredServers"
           :key="s.id"
           @click="$emit('inspect-node', s.id)"
           class="hud-tactical-card p-3.5 rounded-lg transition-all cursor-pointer group flex flex-col justify-between hover:border-cyan-400/60"
@@ -770,38 +770,6 @@
               <span v-if="s.info_count > 0" class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-sky-950 text-sky-300 border border-sky-700" :title="s.info_msgs">{{ s.info_count }}</span>
             </div>
           </div>
-        </div>
-      </div>
-
-      <!-- Bilah Paginasi Otomatis (Jika-Maka <= 10 Sembunyi Baku) -->
-      <div
-        v-if="totalServerPages > 1"
-        class="table-pagination-bar px-4 py-2.5 bg-[#070c18] border-t border-cyan-500/20 flex items-center justify-between text-xs text-gray-400 font-mono"
-      >
-        <div>
-          {{ t('sdm_page_info', { current: currentServerPage, total: totalServerPages }) || `Page ${currentServerPage} of ${totalServerPages}` }}
-          <span class="text-gray-500 ml-1">({{ filteredServers.length }} {{ t('dash_kpi_host') || 'nodes' }})</span>
-        </div>
-        <div class="flex items-center gap-1.5">
-          <button
-            :disabled="currentServerPage === 1"
-            @click="currentServerPage--"
-            class="px-2.5 py-1 rounded bg-gray-900 border border-gray-800 disabled:opacity-30 cursor-pointer hover:border-cyan-500/40 text-gray-300 font-bold transition"
-            :title="t('sdm_prev') || 'Previous'"
-          >
-            {{ t('sdm_prev') || 'Prev' }}
-          </button>
-          <span class="px-2 py-0.5 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-800/80 font-bold">
-            {{ currentServerPage }}
-          </span>
-          <button
-            :disabled="currentServerPage === totalServerPages"
-            @click="currentServerPage++"
-            class="px-2.5 py-1 rounded bg-gray-900 border border-gray-800 disabled:opacity-30 cursor-pointer hover:border-cyan-500/40 text-gray-300 font-bold transition"
-            :title="t('sdm_next') || 'Next'"
-          >
-            {{ t('sdm_next') || 'Next' }}
-          </button>
         </div>
       </div>
     </div>
@@ -1150,18 +1118,6 @@ const filteredServers = computed(() => {
     if (aVal > bVal) return sortAsc.value ? 1 : -1
     return 0
   })
-})
-
-const currentServerPage = ref(1)
-const serverPageSize = 10
-const totalServerPages = computed(() => Math.ceil(filteredServers.value.length / serverPageSize) || 1)
-const paginatedServers = computed(() => {
-  const start = (currentServerPage.value - 1) * serverPageSize
-  return filteredServers.value.slice(start, start + serverPageSize)
-})
-
-watch([selectedGroup, assetFilter], () => {
-  currentServerPage.value = 1
 })
 
 function formatFullTime(isoStr) {
