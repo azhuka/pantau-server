@@ -1019,10 +1019,18 @@ function toggleMaximize() {
 }
 
 function handleClose() {
+  if (isTerminalOpen.value) {
+    showTerminalCloseModal.value = true
+    return
+  }
   emit('close')
 }
 
 function handleBackdropClick() {
+  if (isTerminalOpen.value) {
+    showTerminalCloseModal.value = true
+    return
+  }
   emit('close')
 }
 

@@ -174,6 +174,14 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.35
+
+- Memperbaiki layout fullscreen terminal di ServerWorkspaceTerminal.vue menggunakan Teleport to body sehingga bebas dari containing block modal card (backdrop-filter & overflow: hidden).
+- Menyelaraskan proporsi default tinggi terminal menjadi 320px (resizable hingga 60vh) agar subtabs dan telemetri host tetap terlihat nyaman.
+- Menambahkan pencegahan penutupan modal tak sengaja saat sesi terminal masih aktif via konfirmasi penutupan resmi.
+- Memastikan seluruh kontrol tombol titlebar (Clear, Fullscreen, Close, Lock) 100% terlihat dan tidak terpotong pada berbagai resolusi viewport.
+
+
 ### Versi v0.1.34
 
 ### v0.1.34 - Penyelarasan Estetika Visual & Ergonomi Web Terminal
