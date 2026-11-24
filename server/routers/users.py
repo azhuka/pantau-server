@@ -87,10 +87,13 @@ class UserProfileResponse(BaseModel):
     is_master_admin: bool
     is_active: int
     totp_enabled: int = 0
+    recovery_codes_count: int = 0
     created_at: Optional[datetime] = None
     last_login_at: Optional[datetime] = None
     last_login_ip: Optional[str] = None
     password_changed_at: Optional[datetime] = None
+    permissions: Optional[dict] = None
+    allowed_server_ids: Optional[list] = None
 
 
 def validate_password_strength(password: str) -> None:
@@ -152,14 +155,27 @@ def get_user_metadata(
 @router.get("/me", response_model=UserProfileResponse)
 def get_user_profile(user: User = Depends(get_current_user)):
     """Melihat profil akun yang sedang login."""
+    rec_count = 0
+    if user.recovery_codes:
+        try:
+            codes = json.loads(user.recovery_codes)
+            rec_count = len(codes) if isinstance(codes, list) else 0
+        except Exception:
+            rec_count = 0
     return {
         "id": user.id,
         "username": user.username,
         "role": user.role,
         "is_master_admin": user.is_master_admin,
         "is_active": user.is_active,
+        "totp_enabled": int(user.totp_enabled or 0),
+        "recovery_codes_count": rec_count,
         "created_at": user.created_at,
         "last_login_at": user.last_login_at,
+        "last_login_ip": getattr(user, "last_login_ip", None),
+        "password_changed_at": getattr(user, "password_changed_at", None),
+        "permissions": user.get_permissions(),
+        "allowed_server_ids": user.get_allowed_server_ids(),
     }
 
 

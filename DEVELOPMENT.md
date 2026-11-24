@@ -174,6 +174,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.44
+
+- **Fix Dropdown Clipping:** Mengimplementasikan `<Teleport to="body">` dan perhitungan posisi `fixed` pintar (drop-up/drop-down) pada menu dropdown tindakan tabel pengguna (`SettingsView.vue`), melenyapkan isu terpotong pada batas container `overflow-x-auto`.\n- **Streamlined Modal Architecture:** Menyempurnakan alur kerja manajemen pengguna menjadi tabel satu kolom penuh (`full-width`) dengan seluruh mutasi berbasis modal terpadu (`AddUserModal.vue`, `EditSelfModal.vue`, `EditPermsModal.vue`, `ResetPasswordModal.vue`, `RecoveryCodesModal.vue`).
+
+
 ### Versi v0.1.43
 
 ### v0.1.43 (2026-11-24)
