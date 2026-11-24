@@ -111,6 +111,16 @@ export default {
   col_last_seen: 'Last Seen',
   col_actions: 'Actions',
 
+  // Column Customizer
+  col_customizer_btn: 'Columns',
+  col_customizer_title: 'Customize Columns',
+  col_customizer_presets: 'Quick Presets',
+  col_preset_all: 'All',
+  col_preset_perf: 'Performance',
+  col_preset_inventory: 'Inventory',
+  col_customizer_reset: 'Reset',
+  col_locked: 'Locked',
+
   // Action Cluster Buttons
   btn_view: 'View',
   btn_metrics: 'Metrics',

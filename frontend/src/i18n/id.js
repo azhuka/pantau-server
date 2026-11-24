@@ -111,6 +111,16 @@ export default {
   col_last_seen: 'Waktu Lapor',
   col_actions: 'Tindakan',
 
+  // Column Customizer
+  col_customizer_btn: 'Kolom',
+  col_customizer_title: 'Sesuaikan Kolom',
+  col_customizer_presets: 'Pilihan Cepat',
+  col_preset_all: 'Semua',
+  col_preset_perf: 'Kinerja',
+  col_preset_inventory: 'Inventaris',
+  col_customizer_reset: 'Reset',
+  col_locked: 'Terkunci',
+
   // Klaster Tombol Aksi
   btn_view: 'Rincian',
   btn_metrics: 'Metrik',

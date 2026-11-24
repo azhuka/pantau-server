@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-4">
     <!-- TOOLBAR ATAS (Search, Filter, Groups) -->
-    <div class="hud-tactical-card p-3.5 px-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
+    <div class="hud-tactical-card relative z-30 p-3.5 px-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
       <span class="hud-corner-tr"></span>
       <span class="hud-corner-bl"></span>
 
@@ -51,13 +51,21 @@
           </button>
         </div>
 
+        <!-- Column Customizer Dropdown -->
+        <ColumnCustomizerDropdown
+          :columns="columnsConfig"
+          @toggle="toggleColumn"
+          @preset="applyColumnPreset"
+          @reset="resetColumns"
+        />
+
         <!-- Search Input -->
         <div class="relative">
           <input
             v-model="searchQuery"
             type="text"
             :placeholder="t('search_placeholder')"
-            class="bg-[#060a14] border border-cyan-900/50 focus:border-cyan-400 rounded px-3 py-1 text-xs text-gray-100 placeholder-gray-500 w-64 focus:outline-none transition font-mono"
+            class="bg-[#060a14] border border-cyan-900/50 focus:border-cyan-400 rounded px-3 py-1 text-xs text-gray-100 placeholder-gray-500 w-56 focus:outline-none transition font-mono"
           />
           <span class="absolute right-2.5 top-2 text-xs text-gray-500 pointer-events-none">
             <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -73,38 +81,38 @@
       <span class="hud-corner-tr"></span>
       <span class="hud-corner-bl"></span>
 
-      <div class="overflow-x-auto">
+      <div class="overflow-x-auto custom-scrollbar">
         <table class="w-full text-left text-xs font-mono border-collapse">
           <thead>
             <tr class="bg-[#070c18]/90 border-b border-cyan-500/20 text-gray-400 font-bold tracking-wider select-none">
-              <th class="py-2.5 px-3 w-16 text-center">{{ t('col_status') }}</th>
-              <th @click="setSort('hostname')" class="py-2.5 px-4 min-w-[180px] cursor-pointer hover:text-cyan-300 transition select-none">
+              <th v-if="isColVisible('status')" class="py-2 px-2 w-14 text-center">{{ t('col_status') }}</th>
+              <th v-if="isColVisible('hostname')" @click="setSort('hostname')" class="py-2 px-2.5 min-w-[150px] cursor-pointer hover:text-cyan-300 transition select-none">
                 {{ t('col_server') }} <span class="text-[10px] text-gray-500">↕</span>
               </th>
-              <th class="py-2.5 px-3 min-w-[130px]">{{ t('col_ip') }}</th>
-              <th @click="setSort('platform_label')" class="py-2.5 px-3 min-w-[110px] cursor-pointer hover:text-cyan-300 transition select-none">
+              <th v-if="isColVisible('ip')" class="py-2 px-2 min-w-[110px]">{{ t('col_ip') }}</th>
+              <th v-if="isColVisible('platform')" @click="setSort('platform_label')" class="py-2 px-2 min-w-[100px] cursor-pointer hover:text-cyan-300 transition select-none">
                 {{ t('col_platform') }} <span class="text-[10px] text-gray-500">↕</span>
               </th>
-              <th @click="setSort('os_label')" class="py-2.5 px-3 min-w-[130px] cursor-pointer hover:text-cyan-300 transition select-none">
+              <th v-if="isColVisible('os')" @click="setSort('os_label')" class="py-2 px-2 min-w-[125px] cursor-pointer hover:text-cyan-300 transition select-none">
                 {{ t('col_os') }} <span class="text-[10px] text-gray-500">↕</span>
               </th>
-              <th @click="setSort('cpu')" class="py-2.5 px-3 min-w-[125px] cursor-pointer hover:text-cyan-300 transition select-none">
+              <th v-if="isColVisible('cpu')" @click="setSort('cpu')" class="py-2 px-2 min-w-[95px] cursor-pointer hover:text-cyan-300 transition select-none">
                 {{ t('col_cpu') }} <span class="text-[10px] text-gray-500">↕</span>
               </th>
-              <th @click="setSort('mem_pct')" class="py-2.5 px-3 min-w-[135px] cursor-pointer hover:text-cyan-300 transition select-none">
+              <th v-if="isColVisible('memory')" @click="setSort('mem_pct')" class="py-2 px-2 min-w-[110px] cursor-pointer hover:text-cyan-300 transition select-none">
                 {{ t('col_memory') }} <span class="text-[10px] text-gray-500">↕</span>
               </th>
-              <th @click="setSort('disk_pct')" class="py-2.5 px-3 min-w-[105px] cursor-pointer hover:text-cyan-300 transition select-none">
+              <th v-if="isColVisible('storage')" @click="setSort('disk_pct')" class="py-2 px-2 min-w-[85px] cursor-pointer hover:text-cyan-300 transition select-none">
                 {{ t('col_storage') }} <span class="text-[10px] text-gray-500">↕</span>
               </th>
-              <th @click="setSort('uptime')" class="py-2.5 px-3 min-w-[90px] cursor-pointer hover:text-cyan-300 transition select-none">
+              <th v-if="isColVisible('uptime')" @click="setSort('uptime')" class="py-2 px-2 min-w-[75px] cursor-pointer hover:text-cyan-300 transition select-none">
                 {{ t('col_uptime') }} <span class="text-[10px] text-gray-500">↕</span>
               </th>
-              <th class="py-2.5 px-3 min-w-[95px] text-center">{{ t('col_agent') }}</th>
-              <th @click="setSort('last_seen')" class="py-2.5 px-3 min-w-[105px] cursor-pointer hover:text-cyan-300 transition select-none">
+              <th v-if="isColVisible('agent')" class="py-2 px-2 min-w-[85px] text-center">{{ t('col_agent') }}</th>
+              <th v-if="isColVisible('last_seen')" @click="setSort('last_seen')" class="py-2 px-2 min-w-[80px] cursor-pointer hover:text-cyan-300 transition select-none">
                 {{ t('col_last_seen') }} <span class="text-[10px] text-gray-500">↕</span>
               </th>
-              <th class="py-2.5 px-4 text-right min-w-[200px]">{{ t('col_actions') }}</th>
+              <th v-if="isColVisible('actions')" class="py-2 px-2.5 text-right w-32 min-w-[125px]">{{ t('col_actions') }}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-800/40 bg-[#090e1c]/40">
@@ -114,7 +122,7 @@
               class="hover:bg-cyan-950/20 transition-colors group"
             >
               <!-- 1. STATUS -->
-              <td class="py-2.5 px-3 text-center whitespace-nowrap">
+              <td v-if="isColVisible('status')" class="py-2 px-2 text-center whitespace-nowrap">
                 <span
                   v-if="s.is_maintenance"
                   class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-bold bg-amber-950/80 text-amber-300 border border-amber-600/60"
@@ -146,7 +154,7 @@
               </td>
 
               <!-- 2. SERVER (Hostname, Group, Environment) -->
-              <td class="py-2.5 px-4 whitespace-nowrap">
+              <td v-if="isColVisible('hostname')" class="py-2 px-2.5 whitespace-nowrap">
                 <div class="flex items-center gap-1.5">
                   <span class="font-bold text-gray-100 group-hover:text-cyan-300 transition text-sm">
                     {{ s.hostname }}
@@ -212,7 +220,7 @@
               </td>
 
               <!-- 3. IP / IFACE -->
-              <td class="py-2.5 px-3 whitespace-nowrap">
+              <td v-if="isColVisible('ip')" class="py-2 px-2 whitespace-nowrap">
                 <div
                   class="text-cyan-300 font-semibold text-xs cursor-help hover:text-cyan-200"
                   :title="s.ip_address || '-'"
@@ -225,50 +233,49 @@
               </td>
 
               <!-- 4. PLATFORM -->
-              <td class="py-2.5 px-3 whitespace-nowrap text-gray-300 text-xs">
+              <td v-if="isColVisible('platform')" class="py-2 px-2 whitespace-nowrap text-gray-300 text-xs">
                 <div
                   class="cursor-help"
                   :title="`${s.platform_label || s.platform_type || 'Unknown'} - ${s.hardware_model || s.arch || ''}`"
                 >
-                  <div class="flex items-center gap-1.5">
+                  <div class="flex items-center gap-1">
                     <span
                       v-if="s.platform_type === 'lxc'"
-                      class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-cyan-950/80 text-cyan-300 border border-cyan-700/60 inline-flex items-center gap-1"
+                      class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-cyan-950/80 text-cyan-300 border border-cyan-700/60 inline-flex items-center gap-1"
                     >
                       <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
                       <span>LXC</span>
                     </span>
                     <span
                       v-else-if="s.platform_type === 'baremetal'"
-                      class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-700/60 inline-flex items-center gap-1"
+                      class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-700/60 inline-flex items-center gap-1"
                     >
                       <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
                       <span>BAREMETAL</span>
                     </span>
                     <span
                       v-else-if="s.platform_type === 'vm'"
-                      class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-purple-950/80 text-purple-300 border border-purple-700/60 inline-flex items-center gap-1"
+                      class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-950/80 text-purple-300 border border-purple-700/60 inline-flex items-center gap-1"
                     >
                       <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
                       <span>{{ s.platform_short || 'VM' }}</span>
                     </span>
-                    <span v-else class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-gray-900 text-gray-300 border border-gray-700">
+                    <span v-else class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-gray-900 text-gray-300 border border-gray-700">
                       {{ s.platform_short || 'AUTO' }}
                     </span>
-                    <span class="font-medium text-gray-200">{{ s.platform_label || s.platform_type || '-' }}</span>
                   </div>
-                  <div v-if="s.hardware_model || s.arch" class="text-gray-500 text-[11px] truncate max-w-[150px] mt-0.5" :title="s.hardware_model || s.arch">
+                  <div v-if="s.hardware_model || s.arch" class="text-gray-400 text-[11px] truncate max-w-[125px] mt-0.5 font-mono" :title="s.hardware_model || s.arch">
                     {{ s.hardware_model || s.arch }}
                   </div>
                 </div>
               </td>
 
               <!-- 5. OS & KERNEL -->
-              <td class="py-2.5 px-3 whitespace-nowrap text-gray-300 text-xs">
+              <td v-if="isColVisible('os')" class="py-2 px-2 whitespace-nowrap text-gray-300 text-xs">
                 <div class="text-gray-200 font-medium">{{ s.os_label || '-' }}</div>
                 <div
                   v-if="s.kernel"
-                  class="text-gray-500 text-[11px] truncate max-w-[130px] cursor-help hover:text-cyan-300 transition"
+                  class="text-gray-500 text-[11px] truncate max-w-[125px] cursor-help hover:text-cyan-300 transition"
                   :title="s.kernel"
                 >
                   {{ s.kernel }}
@@ -276,7 +283,7 @@
               </td>
 
               <!-- 6. CPU & LOAD -->
-              <td class="py-2.5 px-3 whitespace-nowrap">
+              <td v-if="isColVisible('cpu')" class="py-2 px-2 whitespace-nowrap">
                 <div class="flex items-center justify-between text-xs mb-1">
                   <span :class="s.cpu > 80 ? 'text-rose-400 font-bold' : 'text-gray-200 font-medium'">{{ (s.cpu || 0).toFixed(1) }}%</span>
                   <span class="text-gray-500 text-[11px]">L {{ (s.load1 || 0).toFixed(2) }}</span>
@@ -290,7 +297,7 @@
               </td>
 
               <!-- 7. MEMORY (RAM & SWAP) -->
-              <td class="py-2.5 px-3 whitespace-nowrap">
+              <td v-if="isColVisible('memory')" class="py-2 px-2 whitespace-nowrap">
                 <div class="flex items-center justify-between text-xs mb-1">
                   <span :class="s.mem_pct > 80 ? 'text-rose-400 font-bold' : 'text-gray-200 font-medium'">{{ (s.mem_pct || 0).toFixed(1) }}%</span>
                   <span class="text-gray-400 text-[11px]">{{ formatBytes(s.mem_used) }}</span>
@@ -304,7 +311,7 @@
               </td>
 
               <!-- 8. STORAGE -->
-              <td class="py-2.5 px-3 whitespace-nowrap">
+              <td v-if="isColVisible('storage')" class="py-2 px-2 whitespace-nowrap">
                 <div class="text-xs text-gray-300 mb-1">
                   <span :class="(s.disk_pct || 0) > 85 ? 'text-rose-400 font-bold' : 'text-gray-200 font-medium'">
                     {{ s.disk_pct || 0 }}%
@@ -320,12 +327,12 @@
               </td>
 
               <!-- 9. UPTIME -->
-              <td class="py-2.5 px-3 whitespace-nowrap text-gray-300 text-xs">
+              <td v-if="isColVisible('uptime')" class="py-2 px-2 whitespace-nowrap text-gray-300 text-xs">
                 {{ formatUptime(s.uptime_secs) }}
               </td>
 
               <!-- 10. AGENT & PACKAGES -->
-              <td class="py-2.5 px-3 whitespace-nowrap text-center">
+              <td v-if="isColVisible('agent')" class="py-2 px-2 whitespace-nowrap text-center">
                 <span v-if="s.agent_version" class="px-2 py-0.5 rounded text-[11px] bg-gray-900 text-gray-300 border border-gray-700/80 font-bold">
                   v{{ s.agent_version }}
                 </span>
@@ -339,17 +346,17 @@
               </td>
 
               <!-- 11. LAST SEEN -->
-              <td class="py-2.5 px-3 whitespace-nowrap text-gray-400 text-xs">
+              <td v-if="isColVisible('last_seen')" class="py-2 px-2 whitespace-nowrap text-gray-400 text-xs">
                 <div>{{ formatRelativeTime(s.last_seen) }}</div>
               </td>
 
               <!-- 12. KLASTER TOMBOL TINDAKAN (TACTICAL COMMAND CONTROLLER) -->
-              <td class="py-2.5 px-4 whitespace-nowrap text-right" @click.stop>
-                <div class="inline-flex items-center gap-1.5 noc-action-dropdown-container relative">
+              <td v-if="isColVisible('actions')" class="py-2 px-2.5 whitespace-nowrap text-right" @click.stop>
+                <div class="inline-flex items-center gap-1 noc-action-dropdown-container relative">
                   <!-- Tombol VIEW (Membuka Jendela Rincian Aset) -->
                   <button
                     @click="$emit('open-workspace', s.id, 'overview')"
-                    class="px-2.5 py-1 rounded bg-cyan-950/80 hover:bg-cyan-700 text-cyan-300 hover:text-white border border-cyan-500/50 text-xs font-bold shadow-[0_0_8px_rgba(56,189,248,0.2)] transition cursor-pointer flex items-center gap-1.5"
+                    class="px-2 py-1 rounded bg-cyan-950/80 hover:bg-cyan-700 text-cyan-300 hover:text-white border border-cyan-500/50 text-xs font-bold shadow-[0_0_8px_rgba(56,189,248,0.2)] transition cursor-pointer flex items-center gap-1"
                     :title="t('tooltip_view')"
                   >
                     <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -359,25 +366,12 @@
                     <span>{{ t('btn_view') || 'View' }}</span>
                   </button>
 
-                  <!-- Shortcut METRICS -->
-                  <button
-                    @click="$emit('open-workspace', s.id, 'overview')"
-                    class="w-7 h-7 flex items-center justify-center rounded bg-[#0b1324] hover:bg-cyan-950 text-cyan-400 hover:text-cyan-300 border border-cyan-800/40 transition cursor-pointer"
-                    :title="t('tooltip_metrics')"
-                  >
-                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <line x1="18" y1="20" x2="18" y2="10"/>
-                      <line x1="12" y1="20" x2="12" y2="4"/>
-                      <line x1="6" y1="20" x2="6" y2="14"/>
-                    </svg>
-                  </button>
-
                   <!-- Shortcut PROBE INSTAN (Hanya untuk non-viewer yang memiliki izin) -->
                   <button
                     v-if="!isViewer && userPerms.can_probing !== false"
                     @click="onProbeClick(s.id)"
                     :disabled="probingServerId === s.id"
-                    class="w-7 h-7 flex items-center justify-center rounded bg-[#0b1324] hover:bg-emerald-950 text-emerald-400 hover:text-emerald-300 border border-cyan-800/40 transition cursor-pointer disabled:opacity-60"
+                    class="w-6.5 h-6.5 flex items-center justify-center rounded bg-[#0b1324] hover:bg-emerald-950 text-emerald-400 hover:text-emerald-300 border border-cyan-800/40 transition cursor-pointer disabled:opacity-60"
                     :title="t('tooltip_sync')"
                   >
                     <svg
@@ -402,7 +396,7 @@
                     <button
                       type="button"
                       @click.stop="toggleDropdown(s, $event)"
-                      class="w-7 h-7 flex items-center justify-center rounded transition cursor-pointer border"
+                      class="w-6.5 h-6.5 flex items-center justify-center rounded transition cursor-pointer border"
                       :class="activeDropdownId === s.id ? 'bg-cyan-950 text-cyan-300 border-cyan-500/60 shadow-[0_0_8px_rgba(56,189,248,0.25)]' : 'bg-[#0b1324] hover:bg-gray-800 text-gray-400 hover:text-white border-gray-700/80'"
                       :title="t('btn_more') || 'More Actions'"
                       aria-label="Actions"
@@ -420,7 +414,7 @@
 
             <!-- EMPTY STATE ROW (Kondisi Bersih Awal) -->
             <tr v-if="filteredServers.length === 0">
-              <td colspan="12" class="py-14 px-4 text-center">
+              <td :colspan="visibleColumnsCount" class="py-14 px-4 text-center">
                 <div class="flex flex-col items-center justify-center gap-2">
                   <svg class="w-8 h-8 text-gray-600 mb-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                     <rect width="20" height="8" x="2" y="2" rx="2" ry="2"/>
@@ -613,6 +607,7 @@ import EditHostModal from './modals/EditHostModal.vue'
 import EditNoteModal from './modals/EditNoteModal.vue'
 import InjectKeyModal from './modals/InjectKeyModal.vue'
 import DeleteHostModal from './modals/DeleteHostModal.vue'
+import ColumnCustomizerDropdown from './ColumnCustomizerDropdown.vue'
 
 const props = defineProps({
   servers: {
@@ -632,6 +627,100 @@ const props = defineProps({
 const emit = defineEmits(['open-workspace', 'probe-node', 'server-updated'])
 
 const { t } = useI18n()
+
+// --- ENTERPRISE COLUMN VISIBILITY & CUSTOMIZER ---
+const STORAGE_COLS_KEY = 'pantau_asset_matrix_columns_v1'
+
+const defaultColumns = [
+  { id: 'status', key: 'col_status', locked: true, visible: true },
+  { id: 'hostname', key: 'col_server', locked: true, visible: true },
+  { id: 'ip', key: 'col_ip', locked: false, visible: true },
+  { id: 'platform', key: 'col_platform', locked: false, visible: true },
+  { id: 'os', key: 'col_os', locked: false, visible: true },
+  { id: 'cpu', key: 'col_cpu', locked: false, visible: true },
+  { id: 'memory', key: 'col_memory', locked: false, visible: true },
+  { id: 'storage', key: 'col_storage', locked: false, visible: true },
+  { id: 'uptime', key: 'col_uptime', locked: false, visible: true },
+  { id: 'agent', key: 'col_agent', locked: false, visible: true },
+  { id: 'last_seen', key: 'col_last_seen', locked: false, visible: true },
+  { id: 'actions', key: 'col_actions', locked: true, visible: true }
+]
+
+function loadSavedColumnVisibility() {
+  try {
+    const raw = localStorage.getItem(STORAGE_COLS_KEY)
+    if (raw) {
+      const savedIds = JSON.parse(raw)
+      if (Array.isArray(savedIds)) {
+        const idSet = new Set(savedIds)
+        return defaultColumns.map(col => ({
+          ...col,
+          visible: col.locked ? true : idSet.has(col.id)
+        }))
+      }
+    }
+  } catch (err) {
+    console.warn('Failed to load saved column preference:', err)
+  }
+  return defaultColumns.map(col => ({ ...col }))
+}
+
+const rawColumns = ref(loadSavedColumnVisibility())
+
+const columnsConfig = computed(() => {
+  return rawColumns.value.map(col => ({
+    ...col,
+    label: t(col.key) || col.id
+  }))
+})
+
+function saveColumnsPreference() {
+  try {
+    const visibleIds = rawColumns.value.filter(c => c.visible).map(c => c.id)
+    localStorage.setItem(STORAGE_COLS_KEY, JSON.stringify(visibleIds))
+  } catch (err) {
+    console.warn('Failed to save column preference:', err)
+  }
+}
+
+function isColVisible(colId) {
+  const col = rawColumns.value.find(c => c.id === colId)
+  return col ? col.visible : true
+}
+
+const visibleColumnsCount = computed(() => {
+  return rawColumns.value.filter(c => c.visible).length || 1
+})
+
+function toggleColumn(colId, visible) {
+  const target = rawColumns.value.find(c => c.id === colId)
+  if (target && !target.locked) {
+    target.visible = visible
+    saveColumnsPreference()
+  }
+}
+
+function applyColumnPreset(presetName) {
+  if (presetName === 'all') {
+    rawColumns.value.forEach(col => { col.visible = true })
+  } else if (presetName === 'perf') {
+    const perfCols = new Set(['status', 'hostname', 'cpu', 'memory', 'storage', 'uptime', 'last_seen', 'actions'])
+    rawColumns.value.forEach(col => {
+      col.visible = col.locked || perfCols.has(col.id)
+    })
+  } else if (presetName === 'inventory') {
+    const invCols = new Set(['status', 'hostname', 'ip', 'platform', 'os', 'agent', 'uptime', 'actions'])
+    rawColumns.value.forEach(col => {
+      col.visible = col.locked || invCols.has(col.id)
+    })
+  }
+  saveColumnsPreference()
+}
+
+function resetColumns() {
+  rawColumns.value = defaultColumns.map(col => ({ ...col }))
+  saveColumnsPreference()
+}
 
 const userPerms = computed(() => {
   if (!props.currentUser) return {}

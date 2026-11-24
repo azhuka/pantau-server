@@ -319,6 +319,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.54
+
+- **Frontend / Assets (AssetTableView.vue & ColumnCustomizerDropdown.vue):** Mengeliminasi overflow clipping pada tabel matriks aset melalui optimasi kepadatan NOC (>340px ruang dihemat). Mengintegrasikan komponen pengelola kustomisasi kolom reaktif dengan Quick Presets (All, Performance, Inventory) dan persistensi localStorage. Menghilangkan redundansi string pada kolom Platform dan merampingkan klaster kolom Tindakan.
+
+
 ### Versi v0.1.53
 
 ### [v0.1.53] - 2026-11-25
