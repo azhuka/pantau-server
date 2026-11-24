@@ -319,6 +319,17 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.53
+
+### [v0.1.53] - 2026-11-25
+#### Diperbaiki (Fixed)
+- **Eliminasi Total Fallback Palsu Platform & Hardware (Root Cause Resolution):**
+  - Mengatasi akar masalah di  (): menambahkan pengaliran data fisik lengkap dari  dan  yang sebelumnya terabaikan (, , , , , , , , x86_64, , , , , ).
+  - Menghapus seluruh string hardcode dan fallback tiruan di  (menghapus , , , ).
+  - Menghapus fallback tiruan di  dan menyajikan data CPU, cores, arch, dan model mesin riil dari .
+  - Hasil verifikasi fisik: 7 aset teridentifikasi akurat sebagai *LXC Container* pada server HPE ProLiant Gen11 dan ASUS, 1 aset teridentifikasi akurat sebagai fisik *Baremetal* Dell PowerEdge R440, dan 2 aset sebagai *VM (KVM)* QEMU.
+
+
 ### Versi v0.1.52
 
 ### [v0.1.52] - 2026-11-25

@@ -82,8 +82,12 @@
                 {{ t('col_server') }} <span class="text-[10px] text-gray-500">↕</span>
               </th>
               <th class="py-2.5 px-3 min-w-[130px]">{{ t('col_ip') }}</th>
-              <th class="py-2.5 px-3 min-w-[110px]">{{ t('col_platform') }}</th>
-              <th class="py-2.5 px-3 min-w-[130px]">{{ t('col_os') }}</th>
+              <th @click="setSort('platform_label')" class="py-2.5 px-3 min-w-[110px] cursor-pointer hover:text-cyan-300 transition select-none">
+                {{ t('col_platform') }} <span class="text-[10px] text-gray-500">↕</span>
+              </th>
+              <th @click="setSort('os_label')" class="py-2.5 px-3 min-w-[130px] cursor-pointer hover:text-cyan-300 transition select-none">
+                {{ t('col_os') }} <span class="text-[10px] text-gray-500">↕</span>
+              </th>
               <th @click="setSort('cpu')" class="py-2.5 px-3 min-w-[125px] cursor-pointer hover:text-cyan-300 transition select-none">
                 {{ t('col_cpu') }} <span class="text-[10px] text-gray-500">↕</span>
               </th>
@@ -211,32 +215,63 @@
               <td class="py-2.5 px-3 whitespace-nowrap">
                 <div
                   class="text-cyan-300 font-semibold text-xs cursor-help hover:text-cyan-200"
-                  :title="s.ip_address || '127.0.0.1'"
+                  :title="s.ip_address || '-'"
                 >
                   {{ s.ip_address || '-' }}
                 </div>
-                <div class="text-[11px] text-gray-500 font-mono">ens18 · MTU 1500</div>
+                <div v-if="s.net_iface" class="text-[11px] text-gray-500 font-mono">
+                  {{ s.net_iface }}
+                </div>
               </td>
 
               <!-- 4. PLATFORM -->
               <td class="py-2.5 px-3 whitespace-nowrap text-gray-300 text-xs">
                 <div
                   class="cursor-help"
-                  :title="`${s.platform || 'KVM Virtual Machine'} (${s.arch || 'x86_64'})`"
+                  :title="`${s.platform_label || s.platform_type || 'Unknown'} - ${s.hardware_model || s.arch || ''}`"
                 >
-                  <div>{{ s.platform || 'KVM Virtual' }}</div>
-                  <div class="text-gray-500 text-[11px]">{{ s.arch || 'x86_64' }}</div>
+                  <div class="flex items-center gap-1.5">
+                    <span
+                      v-if="s.platform_type === 'lxc'"
+                      class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-cyan-950/80 text-cyan-300 border border-cyan-700/60 inline-flex items-center gap-1"
+                    >
+                      <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                      <span>LXC</span>
+                    </span>
+                    <span
+                      v-else-if="s.platform_type === 'baremetal'"
+                      class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-700/60 inline-flex items-center gap-1"
+                    >
+                      <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                      <span>BAREMETAL</span>
+                    </span>
+                    <span
+                      v-else-if="s.platform_type === 'vm'"
+                      class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-purple-950/80 text-purple-300 border border-purple-700/60 inline-flex items-center gap-1"
+                    >
+                      <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+                      <span>{{ s.platform_short || 'VM' }}</span>
+                    </span>
+                    <span v-else class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-gray-900 text-gray-300 border border-gray-700">
+                      {{ s.platform_short || 'AUTO' }}
+                    </span>
+                    <span class="font-medium text-gray-200">{{ s.platform_label || s.platform_type || '-' }}</span>
+                  </div>
+                  <div v-if="s.hardware_model || s.arch" class="text-gray-500 text-[11px] truncate max-w-[150px] mt-0.5" :title="s.hardware_model || s.arch">
+                    {{ s.hardware_model || s.arch }}
+                  </div>
                 </div>
               </td>
 
               <!-- 5. OS & KERNEL -->
               <td class="py-2.5 px-3 whitespace-nowrap text-gray-300 text-xs">
-                <div class="text-gray-200 font-medium">{{ s.os_label || 'Linux' }}</div>
+                <div class="text-gray-200 font-medium">{{ s.os_label || '-' }}</div>
                 <div
+                  v-if="s.kernel"
                   class="text-gray-500 text-[11px] truncate max-w-[130px] cursor-help hover:text-cyan-300 transition"
-                  :title="s.kernel || 'Kernel 6.1.x'"
+                  :title="s.kernel"
                 >
-                  {{ s.kernel || 'Kernel 6.1.x' }}
+                  {{ s.kernel }}
                 </div>
               </td>
 
@@ -291,8 +326,8 @@
 
               <!-- 10. AGENT & PACKAGES -->
               <td class="py-2.5 px-3 whitespace-nowrap text-center">
-                <span class="px-2 py-0.5 rounded text-[11px] bg-gray-900 text-gray-300 border border-gray-700/80 font-bold">
-                  v{{ s.agent_version || '0.1.0' }}
+                <span v-if="s.agent_version" class="px-2 py-0.5 rounded text-[11px] bg-gray-900 text-gray-300 border border-gray-700/80 font-bold">
+                  v{{ s.agent_version }}
                 </span>
                 <span
                   v-if="s.apt_upgradable > 0"
@@ -303,10 +338,9 @@
                 </span>
               </td>
 
-              <!-- 11. LAST SEEN & PING -->
+              <!-- 11. LAST SEEN -->
               <td class="py-2.5 px-3 whitespace-nowrap text-gray-400 text-xs">
                 <div>{{ formatRelativeTime(s.last_seen) }}</div>
-                <div class="text-emerald-400/90 font-semibold text-[11px]">● 12ms ping</div>
               </td>
 
               <!-- 12. KLASTER TOMBOL TINDAKAN (TACTICAL COMMAND CONTROLLER) -->

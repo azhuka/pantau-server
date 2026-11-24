@@ -76,6 +76,34 @@ async function run() {
       throw new Error('Table header <tr> still has "uppercase" class! GEMINI.md Rule 3 violation.');
     }
 
+    // AUDIT PLATFORM & HARDWARE INTEGRITY (ANTI-HARDCODE GATE)
+    const platformAudit = await pageAdmin.evaluate(() => {
+      const rows = Array.from(document.querySelectorAll('table tbody tr'));
+      return rows.map(r => {
+        const host = r.querySelector('td:nth-child(2) span')?.textContent?.trim() || '';
+        const ip = r.querySelector('td:nth-child(3)')?.textContent?.trim() || '';
+        const plat = r.querySelector('td:nth-child(4)')?.textContent?.trim() || '';
+        const os = r.querySelector('td:nth-child(5)')?.textContent?.trim() || '';
+        const agent = r.querySelector('td:nth-child(10)')?.textContent?.trim() || '';
+        return { host, ip, plat, os, agent };
+      });
+    });
+    console.log('Platform & Hardware Audit in DOM:', platformAudit);
+
+    const hasLxc = platformAudit.some(r => r.plat.includes('LXC'));
+    const hasBaremetal = platformAudit.some(r => r.plat.includes('BAREMETAL') || r.plat.includes('Baremetal'));
+    const hasVm = platformAudit.some(r => r.plat.includes('VM'));
+    const hasHardcodedKvmFallback = platformAudit.some(r => r.plat === 'KVM Virtual');
+    const hasFakeIface = platformAudit.some(r => r.ip.includes('ens18 · MTU 1500'));
+
+    console.log(`Platform Checks: hasLxc=${hasLxc}, hasBaremetal=${hasBaremetal}, hasVm=${hasVm}, hasFakeFallback=${hasHardcodedKvmFallback}, hasFakeIface=${hasFakeIface}`);
+
+    if (!hasLxc) throw new Error('Missing LXC platform detection in Asset Matrix!');
+    if (!hasBaremetal) throw new Error('Missing BAREMETAL platform detection in Asset Matrix!');
+    if (!hasVm) throw new Error('Missing VM platform detection in Asset Matrix!');
+    if (hasHardcodedKvmFallback) throw new Error('Detected hardcoded "KVM Virtual" fallback in Asset Matrix!');
+    if (hasFakeIface) throw new Error('Detected fake hardcoded "ens18 · MTU 1500" in Asset Matrix!');
+
     // Check action buttons for admin: Probe and Dropdown must be present
     const adminActionChecks = await pageAdmin.evaluate(() => {
       const probeBtns = document.querySelectorAll('table tbody button[title*="Sync"], table tbody button[title*="Probe"]');

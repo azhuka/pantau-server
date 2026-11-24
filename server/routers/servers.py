@@ -34,44 +34,50 @@ def _classify_platform(platform_dict: dict | None, override: str | None = None) 
     """Klasifikasi tipe platform host: LXC Container, VM (KVM/dll), atau Baremetal."""
     if override in ("baremetal", "vm", "lxc"):
         if override == "baremetal":
-            return {"type": "baremetal", "label": "Baremetal", "short_label": "BAREMETAL"}
+            return {"type": "baremetal", "label": "Baremetal", "short_label": "Baremetal", "virt": "Baremetal"}
         elif override == "vm":
-            return {"type": "vm", "label": "Mesin Virtual (VM)", "short_label": "VM"}
+            return {"type": "vm", "label": "Mesin Virtual (VM)", "short_label": "VM", "virt": "VM"}
         elif override == "lxc":
-            return {"type": "lxc", "label": "LXC Container", "short_label": "LXC"}
+            return {"type": "lxc", "label": "LXC Container", "short_label": "LXC", "virt": "LXC"}
 
     if not isinstance(platform_dict, dict) or not platform_dict:
-        return {"type": "pending", "label": "Auto Deteksi", "short_label": "AUTO"}
+        return {"type": "pending", "label": "Auto Deteksi", "short_label": "AUTO", "virt": "Auto"}
 
     virt = str(platform_dict.get("virt") or "").strip().upper()
     vendor = str(platform_dict.get("vendor") or "").strip()
     product = str(platform_dict.get("product") or "").strip()
-    p_type = platform_dict.get("platform_type")
+    p_type = str(platform_dict.get("platform_type") or "").strip().lower()
 
     if p_type == "lxc" or virt in ("LXC", "LXC-LIBVIRT", "DOCKER", "PODMAN", "CONTAINER", "WSL", "SYSTEMD-NSPAWN"):
         return {
             "type": "lxc",
-            "virt": virt or "LXC",
-            "label": "LXC Container",
+            "virt": platform_dict.get("virt") or "LXC",
+            "label": platform_dict.get("platform_label") or "LXC Container",
             "short_label": "LXC",
+            "vendor": vendor,
+            "product": product,
         }
 
     vm_types = ("KVM", "QEMU", "VMWARE", "XEN", "VIRTUALBOX", "ORACLE", "HYPERV", "BOCHS", "BHYVE")
     is_vm = p_type == "vm" or virt in vm_types or any(x in (vendor + product).upper() for x in ("QEMU", "KVM", "VMWARE", "VIRTUALBOX"))
     if is_vm:
-        v_name = virt if virt in vm_types else "KVM"
+        v_name = platform_dict.get("virt") or "KVM"
         return {
             "type": "vm",
             "virt": v_name,
-            "label": f"VM ({v_name})" if v_name != "VM" else "Virtual Machine",
+            "label": platform_dict.get("platform_label") or (f"VM ({v_name})" if v_name != "VM" else "Virtual Machine"),
             "short_label": f"VM ({v_name})" if v_name != "VM" else "VM",
+            "vendor": vendor,
+            "product": product,
         }
 
     return {
         "type": "baremetal",
         "virt": "Baremetal",
-        "label": "Baremetal",
-        "short_label": "BAREMETAL",
+        "label": platform_dict.get("platform_label") or "Baremetal",
+        "short_label": "Baremetal",
+        "vendor": vendor,
+        "product": product,
     }
 
 @router.get("")
@@ -219,7 +225,27 @@ def list_servers(user: User = Depends(get_current_user), db: Session = Depends(g
                 hw_specs = json.loads(extra.hardware_specs) if isinstance(extra.hardware_specs, str) else extra.hardware_specs
             except Exception:
                 hw_specs = {}
-        plat_info = _classify_platform(hw_specs.get("platform", {}))
+
+        plat_dict = hw_specs.get("platform", {}) if isinstance(hw_specs, dict) else {}
+        plat_info = _classify_platform(plat_dict, override=s.platform_override)
+
+        plat_vendor = str(plat_dict.get("vendor") or "").strip()
+        plat_product = str(plat_dict.get("product") or "").strip()
+        hardware_model = f"{plat_vendor} {plat_product}".strip()
+        if not hardware_model or hardware_model.upper() in ("UNKNOWN", "NONE"):
+            hardware_model = plat_info.get("virt", "")
+
+        # Ambil primary network interface dari telemetri hardware real
+        net_specs = hw_specs.get("network", {}) if isinstance(hw_specs, dict) else {}
+        net_ifaces = net_specs.get("interfaces", []) if isinstance(net_specs, dict) else []
+        primary_iface = None
+        if isinstance(net_ifaces, list):
+            for ifc in net_ifaces:
+                if isinstance(ifc, dict) and ifc.get("name") and not ifc.get("name", "").startswith(("veth", "br-", "docker", "tailscale", "fake", "lo")):
+                    primary_iface = ifc.get("name")
+                    break
+            if not primary_iface and net_ifaces and isinstance(net_ifaces[0], dict):
+                primary_iface = net_ifaces[0].get("name")
 
         tot_svcs = services_counts.get(s.id, 0)
         down_svcs = down_services_by_server.get(s.id, 0)
@@ -237,8 +263,24 @@ def list_servers(user: User = Depends(get_current_user), db: Session = Depends(g
             "mem_pct": mem_pct,
             "disk_pct": disk_pct,
             "uptime_secs": latest_snap.uptime_secs if latest_snap else 0,
+            # Platform & Hardware facts directly from physical agent telemetry
             "platform_type": plat_info["type"],
-            "platform_label": plat_info["short_label"],
+            "platform_label": plat_info["label"],
+            "platform_short": plat_info["short_label"],
+            "platform_vendor": plat_vendor,
+            "platform_product": plat_product,
+            "hardware_model": hardware_model,
+            "net_iface": primary_iface or "",
+            # OS, Kernel, Architecture, Agent Version, and Packages from server_extras
+            "kernel": extra.kernel if extra and extra.kernel else "",
+            "os_label": extra.os_label if extra and extra.os_label else "",
+            "arch": extra.arch if extra and extra.arch else "",
+            "agent_version": extra.agent_version if extra and extra.agent_version else "",
+            "apt_upgradable": extra.apt_upgradable if extra and extra.apt_upgradable else 0,
+            # Real performance telemetry from latest snapshot
+            "load1": latest_snap.load1 if latest_snap else 0.0,
+            "mem_used": latest_snap.mem_used if latest_snap else 0,
+            "mem_total": latest_snap.mem_total if latest_snap else 0,
             "services_total": tot_svcs,
             "services_up": up_svcs,
             "active_problems_count": active_problems_count,

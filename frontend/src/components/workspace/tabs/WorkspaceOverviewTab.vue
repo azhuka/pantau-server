@@ -84,17 +84,25 @@
         <div class="grid grid-cols-2 gap-3 text-xs">
           <div>
             <span class="text-gray-500">{{ t('ws_cpu_model') }}</span>
-            <div class="text-gray-200 truncate mt-0.5 font-bold">{{ server?.hardware?.cpu_model || '-' }}</div>
+            <div class="text-gray-200 truncate mt-0.5 font-bold" :title="server?.hardware?.cpu?.model || server?.hardware?.cpu_model">
+              {{ server?.hardware?.cpu?.model || server?.hardware?.cpu_model || '-' }}
+            </div>
           </div>
           <div>
             <span class="text-gray-500">{{ t('ws_core_capacity') }}</span>
-            <div class="text-gray-200 mt-0.5 font-bold">{{ server?.hardware?.cores || 1 }} Core(s)</div>
+            <div class="text-gray-200 mt-0.5 font-bold">{{ server?.hardware?.cpu?.cores || server?.hardware?.cores || 1 }} Core(s)</div>
           </div>
           <div>
             <span class="text-gray-500">{{ t('ws_arch') }}</span>
-            <div class="text-gray-200 mt-0.5 font-bold">{{ server?.arch || 'x86_64' }}</div>
+            <div class="text-gray-200 mt-0.5 font-bold">{{ server?.arch || server?.hardware?.cpu?.arch || '-' }}</div>
           </div>
           <div>
+            <span class="text-gray-500">{{ t('col_platform') }}</span>
+            <div class="text-gray-200 truncate mt-0.5 font-bold" :title="[server?.hardware?.platform?.vendor, server?.hardware?.platform?.product].filter(Boolean).join(' ')">
+              {{ server?.hardware?.platform?.platform_label || server?.hardware?.platform?.virt || server?.platform_label || '-' }}
+            </div>
+          </div>
+          <div class="col-span-2">
             <span class="text-gray-500">{{ t('ws_asset_group') }}</span>
             <div class="flex items-center gap-1.5 mt-0.5">
               <span class="text-cyan-400 font-bold">{{ server?.group_name || 'Default' }}</span>
@@ -118,6 +126,9 @@
                   <path d="M8.5 2h7"/>
                   <path d="M7 16h10"/>
                 </svg>
+              </span>
+              <span v-if="server?.hardware?.platform?.product" class="text-gray-500 text-[11px] ml-2 truncate" :title="[server?.hardware?.platform?.vendor, server?.hardware?.platform?.product].filter(Boolean).join(' ')">
+                · {{ [server?.hardware?.platform?.vendor, server?.hardware?.platform?.product].filter(Boolean).join(' ') }}
               </span>
             </div>
           </div>
