@@ -90,7 +90,8 @@ const { t, locale } = useI18n()
 
 const props = defineProps({
   isOpen: Boolean,
-  problem: { type: Object, default: null }
+  problem: { type: Object, default: null },
+  currentUser: { type: Object, default: null }
 })
 
 const emit = defineEmits(['close', 'ignored'])
@@ -101,6 +102,12 @@ const submitting = ref(false)
 
 async function submitIgnore() {
   if (!props.problem) return
+  const r = (props.currentUser?.role || '').toLowerCase()
+  if (['viewer', 'guest', 'tamu'].includes(r)) {
+    alert('Access denied: Viewer accounts cannot ignore incidents.')
+    emit('close')
+    return
+  }
   submitting.value = true
   try {
     const token = localStorage.getItem('pantau_token')

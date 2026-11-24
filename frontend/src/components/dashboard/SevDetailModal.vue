@@ -96,7 +96,7 @@
                   </button>
 
                   <button
-                    v-if="p.is_ignored"
+                    v-if="p.is_ignored && !isViewer"
                     @click="$emit('unignore-problem', p.id)"
                     class="p-1.5 rounded bg-amber-950/80 text-amber-400 border border-amber-700/80 hover:bg-amber-800 hover:text-white transition cursor-pointer"
                     :title="t('sdm_act_unignore_tooltip')"
@@ -107,7 +107,7 @@
                     </svg>
                   </button>
                   <button
-                    v-else
+                    v-else-if="!isViewer"
                     @click="$emit('ignore-problem', p)"
                     class="p-1.5 rounded bg-gray-900 text-gray-400 border border-gray-700/80 hover:bg-gray-800 hover:text-amber-400 transition cursor-pointer"
                     :title="t('sdm_act_ignore_tooltip')"
@@ -158,10 +158,16 @@ const { t, locale } = useI18n()
 const props = defineProps({
   isOpen: Boolean,
   severity: { type: String, default: 'danger' },
-  problems: { type: Array, default: () => [] }
+  problems: { type: Array, default: () => [] },
+  currentUser: { type: Object, default: null }
 })
 
 defineEmits(['close', 'open-problem-detail', 'open-server', 'unignore-problem', 'ignore-problem'])
+
+const isViewer = computed(() => {
+  const r = (props.currentUser?.role || '').toLowerCase()
+  return !props.currentUser || ['viewer', 'guest', 'tamu'].includes(r)
+})
 
 const search = ref('')
 const currentPage = ref(1)
@@ -202,7 +208,7 @@ const filteredList = computed(() => {
   if (props.severity === 'ignored') {
     list = list.filter(p => p.is_ignored)
   } else {
-    list = list.filter(p => !p.is_ignored && (
+    list = list.filter(p => (p.is_active || !p.resolved_at) && !p.is_ignored && (
       p.severity === props.severity ||
       (props.severity === 'critical' && p.severity === 'average') ||
       (props.severity === 'info' && (!p.severity || p.severity === 'info'))

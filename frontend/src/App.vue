@@ -43,6 +43,7 @@
         v-if="activeTab === 'dashboard'"
         :servers="servers"
         :problems="problems"
+        :current-user="currentUser"
         @inspect-node="openWorkspace"
         @nav="handleNav"
         @refresh-problems="fetchProblems"
@@ -74,6 +75,7 @@
         v-else
         :servers="servers"
         :problems="problems"
+        :current-user="currentUser"
         @inspect-node="openWorkspace"
         @nav="handleNav"
         @refresh-problems="fetchProblems"

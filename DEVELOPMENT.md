@@ -319,6 +319,16 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.50
+
+- Audit Menyeluruh & Penguatan RBAC Dasbor: Menghubungkan konteks pengguna login (currentUser) ke DashboardView dan seluruh modal anak (ProblemDetailModal, SevDetailModal, IgnoreProblemModal).
+- Proteksi Mutlak Akun Viewer (Read-Only): Menyembunyikan seluruh tombol mutasi (Ignore Problem, Unignore Problem, Terminate SSH Session) dari akun peninjau (viewer/guest/tamu) di UI modal.
+- Pengerasan Backend Authorization (problems.py): Menambahkan proteksi penolakan HTTP 403 bagi akun viewer pada endpoint terminate-ssh, validasi cakupan akses server (can_access_server), dan penegakan izin granular can_users_sys bagi operator.
+- Presisi Waktu WITA (Satellite Chrono): Mengimplementasikan kalkulasi jam sistem berpresisi tinggi berbasis zona waktu Asia/Makassar (UTC+8) via Intl.DateTimeFormat agar selalu akurat di zona waktu peramban mana pun.
+- Paginasi Otomatis Tabel & Grid Armada: Menerapkan aturan baku Jika-Maka <= 10 baris otomatis disembunyikan tanpa kontrol kosong, dan hanya aktif jika baris data > 10 node.
+- Konsistensi Filter Insiden Aktif: Menyelaraskan filter insiden pada SevDetailModal agar mengevaluasi p.is_active || !p.resolved_at secara ketat.
+
+
 ### Versi v0.1.49
 
 ### [v0.1.49] - 2026-11-25

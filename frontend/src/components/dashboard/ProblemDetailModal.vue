@@ -102,7 +102,7 @@
 
         <div class="flex items-center gap-2">
           <button
-            v-if="!problem.is_ignored"
+            v-if="!problem.is_ignored && !isViewer"
             @click="$emit('ignore-problem', problem)"
             class="px-3 py-1.5 rounded bg-amber-950/80 text-amber-300 border border-amber-800 hover:bg-amber-800 hover:text-white text-xs font-bold transition cursor-pointer"
             :title="t('pdm_btn_ignore_tooltip')"
@@ -111,7 +111,7 @@
           </button>
 
           <button
-            v-if="problem.action === 'terminate_session'"
+            v-if="problem.action === 'terminate_session' && !isViewer && canTerminateSsh"
             @click="$emit('terminate-ssh', problem)"
             class="px-3 py-1.5 rounded bg-rose-700 hover:bg-rose-600 text-white text-xs font-bold transition cursor-pointer"
             :title="t('pdm_btn_terminate_ssh_tooltip')"
@@ -141,10 +141,23 @@ const { t, locale } = useI18n()
 
 const props = defineProps({
   isOpen: Boolean,
-  problem: { type: Object, default: null }
+  problem: { type: Object, default: null },
+  currentUser: { type: Object, default: null }
 })
 
 defineEmits(['close', 'open-server', 'ignore-problem', 'terminate-ssh'])
+
+const isViewer = computed(() => {
+  const r = (props.currentUser?.role || '').toLowerCase()
+  return !props.currentUser || ['viewer', 'guest', 'tamu'].includes(r)
+})
+
+const canTerminateSsh = computed(() => {
+  if (isViewer.value) return false
+  const r = (props.currentUser?.role || '').toLowerCase()
+  if (['master_admin', 'master-admin', 'operator_utama', 'operator-utama'].includes(r)) return true
+  return Boolean(props.currentUser?.permissions?.can_users_sys)
+})
 
 const copied = ref(false)
 

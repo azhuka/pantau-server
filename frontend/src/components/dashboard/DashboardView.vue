@@ -457,7 +457,7 @@
           </thead>
           <tbody class="divide-y divide-gray-800/40 bg-[#090e1c]/40">
             <tr
-              v-for="s in filteredServers"
+              v-for="s in paginatedServers"
               :key="s.id"
               @click="$emit('inspect-node', s.id)"
               class="hover:bg-cyan-950/20 transition-colors cursor-pointer group"
@@ -720,7 +720,7 @@
         </div>
 
         <div
-          v-for="s in filteredServers"
+          v-for="s in paginatedServers"
           :key="s.id"
           @click="$emit('inspect-node', s.id)"
           class="hud-tactical-card p-3.5 rounded-lg transition-all cursor-pointer group flex flex-col justify-between hover:border-cyan-400/60"
@@ -772,6 +772,38 @@
           </div>
         </div>
       </div>
+
+      <!-- Bilah Paginasi Otomatis (Jika-Maka <= 10 Sembunyi Baku) -->
+      <div
+        v-if="totalServerPages > 1"
+        class="table-pagination-bar px-4 py-2.5 bg-[#070c18] border-t border-cyan-500/20 flex items-center justify-between text-xs text-gray-400 font-mono"
+      >
+        <div>
+          {{ t('sdm_page_info', { current: currentServerPage, total: totalServerPages }) || `Page ${currentServerPage} of ${totalServerPages}` }}
+          <span class="text-gray-500 ml-1">({{ filteredServers.length }} {{ t('dash_kpi_host') || 'nodes' }})</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <button
+            :disabled="currentServerPage === 1"
+            @click="currentServerPage--"
+            class="px-2.5 py-1 rounded bg-gray-900 border border-gray-800 disabled:opacity-30 cursor-pointer hover:border-cyan-500/40 text-gray-300 font-bold transition"
+            :title="t('sdm_prev') || 'Previous'"
+          >
+            {{ t('sdm_prev') || 'Prev' }}
+          </button>
+          <span class="px-2 py-0.5 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-800/80 font-bold">
+            {{ currentServerPage }}
+          </span>
+          <button
+            :disabled="currentServerPage === totalServerPages"
+            @click="currentServerPage++"
+            class="px-2.5 py-1 rounded bg-gray-900 border border-gray-800 disabled:opacity-30 cursor-pointer hover:border-cyan-500/40 text-gray-300 font-bold transition"
+            :title="t('sdm_next') || 'Next'"
+          >
+            {{ t('sdm_next') || 'Next' }}
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- SEVERITY DETAIL MODAL -->
@@ -779,6 +811,7 @@
       :is-open="showSevModal"
       :severity="activeSev"
       :problems="problems"
+      :current-user="currentUser"
       @close="showSevModal = false"
       @open-problem-detail="openProblemDetail"
       @open-server="openHostFromModal"
@@ -790,6 +823,7 @@
     <ProblemDetailModal
       :is-open="showProblemDetailModal"
       :problem="selectedProblem"
+      :current-user="currentUser"
       @close="showProblemDetailModal = false"
       @open-server="openHostFromModal"
       @ignore-problem="openIgnoreDialog"
@@ -800,6 +834,7 @@
     <IgnoreProblemModal
       :is-open="showIgnoreModal"
       :problem="problemToIgnore"
+      :current-user="currentUser"
       @close="showIgnoreModal = false"
       @ignored="handleIgnored"
     />
@@ -807,7 +842,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useI18n } from '../../i18n'
 import {
   formatIncidentMessage,
@@ -831,6 +866,10 @@ const props = defineProps({
   problems: {
     type: Array,
     default: () => []
+  },
+  currentUser: {
+    type: Object,
+    default: null
   }
 })
 
@@ -925,6 +964,13 @@ function handleIgnored() {
 function openHostFromModal(sid) {
   showSevModal.value = false
   showProblemDetailModal.value = false
+  if (props.servers && props.servers.length > 0) {
+    const exists = props.servers.some(s => s.id === sid)
+    if (!exists) {
+      alert(t('access_denied_node') || 'Access denied: You do not have permission for this server.')
+      return
+    }
+  }
   emit('inspect-node', sid)
 }
 
@@ -971,14 +1017,40 @@ const monthsID = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli'
 function updateClock() {
   const now = new Date()
   const isId = locale.value === 'id'
-  const days = isId ? daysID : daysEN
-  const months = isId ? monthsID : monthsEN
-  clockDayStr.value = days[now.getDay()]
-  clockDateStr.value = `${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`
-  clockHours.value = String(now.getHours()).padStart(2, '0')
-  clockMinutes.value = String(now.getMinutes()).padStart(2, '0')
-  clockSeconds.value = String(now.getSeconds()).padStart(2, '0')
-  currentTime.value = now.toLocaleTimeString()
+
+  // Presisi zona waktu WITA (Asia/Makassar, UTC+8) di browser mana pun
+  const witaFormatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Makassar',
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  })
+
+  const parts = witaFormatter.formatToParts(now)
+  const pMap = {}
+  for (const p of parts) {
+    pMap[p.type] = p.value
+  }
+
+  const dayFormatter = new Intl.DateTimeFormat(isId ? 'id-ID' : 'en-US', {
+    timeZone: 'Asia/Makassar',
+    weekday: 'long'
+  })
+  const monthFormatter = new Intl.DateTimeFormat(isId ? 'id-ID' : 'en-US', {
+    timeZone: 'Asia/Makassar',
+    month: 'long'
+  })
+
+  clockDayStr.value = dayFormatter.format(now)
+  clockDateStr.value = `${pMap.day} ${monthFormatter.format(now)} ${pMap.year}`
+  clockHours.value = pMap.hour || '00'
+  clockMinutes.value = pMap.minute || '00'
+  clockSeconds.value = pMap.second || '00'
+  currentTime.value = `${clockHours.value}:${clockMinutes.value}:${clockSeconds.value} WITA`
   currentUtcTime.value = now.toUTCString()
 }
 
@@ -1078,6 +1150,18 @@ const filteredServers = computed(() => {
     if (aVal > bVal) return sortAsc.value ? 1 : -1
     return 0
   })
+})
+
+const currentServerPage = ref(1)
+const serverPageSize = 10
+const totalServerPages = computed(() => Math.ceil(filteredServers.value.length / serverPageSize) || 1)
+const paginatedServers = computed(() => {
+  const start = (currentServerPage.value - 1) * serverPageSize
+  return filteredServers.value.slice(start, start + serverPageSize)
+})
+
+watch([selectedGroup, assetFilter], () => {
+  currentServerPage.value = 1
 })
 
 function formatFullTime(isoStr) {

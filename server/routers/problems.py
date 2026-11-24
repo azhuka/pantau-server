@@ -212,9 +212,18 @@ def terminate_ssh_session_action(
     db: Session = Depends(get_db)
 ):
     """Putus paksa sesi SSH aktif yang terdeteksi pada tiket insiden."""
+    if user.is_viewer:
+        raise HTTPException(status_code=403, detail="Access denied: Viewer accounts cannot terminate sessions")
+
     prob = db.query(ServerProblem).filter(ServerProblem.id == pid).first()
     if not prob or not prob.is_active:
         raise HTTPException(status_code=404, detail="Active problem not found")
+
+    if prob.server_id and not user.can_access_server(prob.server_id):
+        raise HTTPException(status_code=403, detail="Access denied: You do not have permission for this server")
+
+    if not user.is_master_admin and not user.has_perm("can_users_sys"):
+        raise HTTPException(status_code=403, detail="Access denied: System Users permission (can_users_sys) is required to terminate SSH sessions")
     
     if not prob.key.startswith("ssh_active_session:"):
         raise HTTPException(status_code=400, detail="Target incident is not an active SSH session")
