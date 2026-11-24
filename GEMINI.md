@@ -332,6 +332,21 @@ Seluruh penamaan modul, variabel, teks antarmuka, dokumentasi, dan logika sistem
 - **Prinsip Refaktor Tanpa Kompromi (Eradicate Legacy Hacks):**
   - Setiap kali menemukan pola workaround, solusi tambal sulam, atau akal-akalan warisan di modul apa pun yang sedang disentuh, asisten **WAJIB segera membersihkan dan merefaktornya ke fondasi arsitektur yang benar, bersih, dan tangguh** sebelum menyatakan pekerjaan selesai.
 
+---
+
+## 23. Standar Leksikon & Terminologi Baku Komputasi & Jaringan (Standard Computing & Networking Lexicon)
+- **Keseragaman Bahasa & Istilah Mapan:** Seluruh teks antarmuka, variabel kode, nama skema API, dan dokumentasi **WAJIB menggunakan istilah, kata, frasa, dan kalimat yang umum, baku, dan telah dikenal luas dalam dunia network engineering, server administration, Linux kernel, dan operasional NOC**.
+- **Larangan Keras Istilah Karangan & Slang (Anti-Invented / Anti-Slang Terms):**
+  - Dilarang keras mengarang istilah baru, kata-kata dramatis/hiperbolis (seperti *investigate*, emoji petir, *magic*), atau istilah asing yang memicu salah paham dan perbedaan persepsi antar operator.
+  - Penamaan baku mencakup: `Incident Description`, `Actions`, `Solution`, `Severity`, `Duration`, `Server Details`, `Listening Ports`, `Firewall Rules`, `Load Average`, `Latency`, `Throughput`, `Uptime`, `MTTR`.
+
+---
+
+## 24. Mandat Dokumentasi Otonom & Pencatatan Permanen di `DEVELOPMENT.md` (Autonomous & Mandatory Documentation)
+- **Dokumentasi Otonom Tanpa Perintah:** Asisten AI **WAJIB mencatat seluruh pengetahuan baru, aturan, workflow, arsitektur, formulasi ergonomi, dan penerapan metode best practice ke dalam berkas `DEVELOPMENT.md` secara otomatis dan mandiri pada setiap iterasi/rilis, TANPA menunggu instruksi atau perintah eksplisit dari operator**.
+- **`DEVELOPMENT.md` sebagai Single Source of Truth:** Berkas ini adalah buku putih arsitektur permanen dan referensi rekayasa tertinggi bagi kelangsungan sistem Pantau Server. Seluruh aturan yang disepakati atau dirumuskan wajib langsung diabadikan di dalamnya.
+
+
 
 
 

@@ -105,6 +105,19 @@ tools/                  # Otomasi rilis (sop_release.py), test_terminal_dock.js,
 12. **Standar Bahasa Antarmuka Eksklusif Bahasa Inggris (Strict English-Only Interface — For Now):**
    - Seluruh antarmuka web (tab navigasi, header kolom tabel, kartu KPI, tombol kontrol, status badge, teks dialog, modal diagnosa, pesan audit, dan tooltip) **WAJIB murni dan eksklusif menggunakan Bahasa Inggris (`en`)** baku NOC/sysadmin (`Actions`, `Triggered At`, `Incident Description`, `Severity`, `Duration`, `Solution`, `Actions ▾`, `Mark Handled`, `HANDLED`, `Ignore Incident`, `IGNORED`, `Cancel Ignore`, `Server Details`, dll.).
    - Komponen sakelar bahasa atau penerjemahan lokal ditangguhkan untuk sementara waktu guna menjaga keseragaman arsitektur teks dan efisiensi context window.
+13. **Standar Leksikon & Terminologi Baku Komputasi & Jaringan (Standard Computing & Networking Lexicon):**
+   - Seluruh penamaan variabel, modul, kolom tabel, tombol, metrik, pesan audit, status badge, dan dokumentasi **WAJIB menggunakan bahasa, kata, kalimat, dan terminologi yang umum, baku, dan telah mapan dalam dunia network, server engineering, Linux sysadmin, dan NOC**.
+   - Dilarang keras mengarang istilah baru (*invented/colloquial terms*), menggunakan istilah dramatis/hiperbolis (*"investigate"*, *"magic"*, *"unlock"*), atau sinonim asing yang memicu salah paham dan perbedaan persepsi antar operator.
+   - Rujukan terminologi baku:
+     - Entitas yang dipantau: `Assets` / `Hosts` / `Nodes` (Dilarang menggunakan *fleet* atau *armada* di teks antarmuka).
+     - Insiden & Gangguan: `Incidents`, `Active Incidents`, `Resolved Incidents`, `Incident Description`, `Severity`, `Triggered At`, `Duration`, `Solution`, `MTTR (Mean Time to Recovery)`.
+     - Kontrol & Mitigasi: `Actions`, `Actions ▾`, `Server Details`, `Mark Handled`, `HANDLED BY`, `Ignore Incident`, `IGNORED UNTIL`, `Cancel Ignore`.
+     - Infrastruktur & Subsistem: `Services`, `Units`, `Processes`, `PID`, `Listening Ports`, `Sockets`, `Firewall Rules`, `Cron Tasks`, `Storage / Mount Points`.
+     - Metrik & Telemetri: `Telemetry`, `Heartbeat`, `Latency`, `Probe`, `Load Average`, `CPU Usage`, `Memory / RAM`, `Disk Usage`, `Uptime`.
+14. **Mandat Dokumentasi Otonom & Permanen di `DEVELOPMENT.md` (Autonomous & Mandatory Documentation in DEVELOPMENT.md):**
+   - Berkas `DEVELOPMENT.md` adalah *Single Source of Truth* arsitektur, rujukan rekayasa utama, dan basis pengetahuan permanen sistem Pantau Server.
+   - Seluruh pengetahuan teknis baru, aturan sistem, standardisasi alur kerja (*workflows*), formulasi ergonomi tombol/tabel, dan penerapan metode *best practice* **WAJIB dicatat dan diperbarui ke dalam `DEVELOPMENT.md` secara otonom pada setiap iterasi/rilis, bahkan tanpa harus diperintah secara eksplisit oleh operator**.
+   - Setiap keputusan arsitektur atau konvensi baru wajib dituangkan dalam bab yang terstruktur, rapi, dan komprehensif agar selalu menjadi kompas bagi seluruh pengembang dan agen AI di masa depan.
 
 ---
 

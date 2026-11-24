@@ -422,7 +422,54 @@ FASE 5: Hardening Produksi & Peluncuran Resmi (v1.0.0)
 
 ---
 
-## 8. Konvensi Rekayasa & Standar Kontribusi Git
+## 9. Standar Leksikon & Terminologi Komputasi, Jaringan & Server (Standard Computing & Networking Lexicon)
+
+Pantau Server menetapkan kebijakan terminologi yang ketat untuk mencegah ambiguitas operasional (*semantic drift*) dan memastikan seluruh operator NOC memiliki pemahaman teknis yang seragam, presisi, dan sesuai dengan konvensi internasional industri komputasi:
+
+### 9.1 Glosarium Baku Domain NOC & Server Engineering
+1. **Entitas Terpantau (Monitored Infrastructure):**
+   - **`Assets` / `Hosts` / `Nodes`**: Istilah tunggal untuk server, container, router, dan gateway. Menolak istilah informal atau metaforis seperti *"fleet"* atau *"armada"* pada teks antarmuka.
+2. **Triase & Siklus Insiden (Incident Triaging):**
+   - **`Incident`**: Peristiwa gangguan atau anomali fisik kernel/layanan.
+   - **`Active Incidents`**: Insiden yang sedang berlangsung secara fisik di node target.
+   - **`Resolved Incidents`**: Riwayat insiden yang telah pulih secara otomatis (*auto-healed*) atau diselesaikan manual.
+   - **`Incident Description`**: Uraian spesifik gangguan (bukan *"anomaly event"* atau istilah karangan lainnya).
+   - **`Severity`**: Tingkat keparahan 4-tier semantik (`Danger`, `Critical`, `Warning`, `Info`).
+   - **`Triggered At`**: Stempel waktu insiden pertama kali terpicu.
+   - **`Duration`**: Lama waktu gangguan berlangsung sejak terpicu.
+   - **`Solution`**: Rekomendasi mitigasi teknis terukur.
+   - **`MTTR (Mean Time to Recovery)`**: Durasi pemulihan rata-rata dari terpicu hingga tertangani.
+3. **Aksi Kontrol & Mitigasi (Tactical Controls):**
+   - **`Actions` / `Actions ▾`**: Header dan tombol pemicu aksi tunggal terpadu.
+   - **`Server Details`**: Aksi inspeksi membuka Workspace Modal aset.
+   - **`Mark Handled` / `HANDLED BY <user>`**: Penandaan bahwa tiket sedang dalam penanganan aktif operator.
+   - **`Ignore Incident` / `IGNORED UNTIL <time>` / `Cancel Ignore`**: Pembisuan notifikasi sementara berbasis waktu (bukan istilah *"mute"*).
+4. **Subsistem & Layanan Sistem Operasi (OS Subsystems):**
+   - **`Services` / `Units`**: Unit layanan systemd Linux (`active`, `running`, `failed`, `inactive`).
+   - **`Processes` / `PID`**: Proses eksekusi Linux (`kill`, `SIGTERM`, `SIGKILL`, `nice`, `priority`).
+   - **`Listening Ports` / `Sockets`**: Soket jaringan terbuka (`TCP`, `UDP`, `bind IP`, `0.0.0.0` vs `127.0.0.1`, `Public` vs `Internal`).
+   - **`Firewall Rules`**: Aturan penyaringan paket iptables/UFW (`ALLOW`, `DENY`, `LIMIT`, `direction`, `port`).
+   - **`Cron Tasks`**: Penjadwalan tugas berkala crontab dan systemd timers.
+   - **`Storage / Mount Points`**: Partisi dan titik kait filesystem (`/`, `/boot`, `/data`, persentase disk).
+5. **Telemetri & Metrik Jaringan (Telemetry & Metrics):**
+   - **`Telemetry` / `Heartbeat`**: Sinyal denyut status periodik dari agen klien.
+   - **`Load Average`**: Beban antrean komputasi CPU 1, 5, dan 15 menit (`load1`, `load5`, `load15`).
+   - **`Latency` / `Throughput`**: Waktu tempuh paket jaringan (ms) dan kecepatan transfer data (KB/s, MB/s).
+   - **`Uptime`**: Waktu aktif sistem Linux sejak proses boot terakhir.
+
+---
+
+## 10. Mandat Dokumentasi Otonom & Tata Kelola Pengetahuan Arsitektur
+
+Dokumen `DEVELOPMENT.md` adalah **Manifes Rekayasa, Buku Putih Arsitektur, dan Rujukan Tertinggi** bagi kelangsungan sistem Pantau Server.
+
+### 10.1 Prinsip Dokumentasi Mandiri Tanpa Perintah
+- **Pencatatan Otonom:** Seluruh pengetahuan baru, konvensi teknis, perumusan ergonomi antarmuka, spesifikasi keamanan, alur kerja operasional (*workflows*), dan penerapan metode *best practice* **WAJIB dicatat dan diperbarui ke dalam `DEVELOPMENT.md` secara otomatis dan mandiri pada setiap iterasi/rilis, bahkan tanpa harus diperintah oleh operator**.
+- **Anti-Knowledge Drift:** Tidak boleh ada aturan atau logika fungsional yang berjalan di kode tanpa memiliki dasar penjelasan tertulis di dalam `DEVELOPMENT.md`.
+
+---
+
+## 11. Konvensi Rekayasa & Standar Kontribusi Git
 
 Seluruh commit ke repositori Git wajib menggunakan standar **Conventional Commits**:
 
