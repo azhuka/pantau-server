@@ -436,6 +436,12 @@ export default {
   login_verifying: 'Verifying...',
   login_invalid: 'Invalid username or password.',
   login_conn_fail: 'Failed to connect to backend server: ',
+  login_2fa_title: 'Two-Factor Authentication',
+  login_2fa_subtitle: 'Enter the 6-digit authenticator code or emergency recovery code.',
+  login_2fa_label: 'Authenticator Code / Recovery Code:',
+  login_2fa_placeholder: '000000',
+  login_2fa_verify_btn: 'Verify & Sign In',
+  login_2fa_back: '← Back to Credentials',
 
   // Tooltips & Messages
   tooltip_copy: 'Copy',

@@ -174,6 +174,14 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.41
+
+### v0.1.41 (2026-11-24) — Penegakan Autentikasi 2FA pada Login & Eliminasi Workaround
+- **Enforced 2FA on Login Gatekeeper:** Mengamankan endpoint /api/auth/login agar merespons requires_2fa: true dan token pre-autentikasi bertanda tangan HMAC jika akun memiliki 2FA aktif. Menambahkan endpoint /api/auth/login-2fa untuk memvalidasi kode TOTP 6-digit maupun kode pemulihan darurat sekali pakai.
+- **Two-Step Login Modal:** Memperbarui LoginModal.vue dengan transisi mulus dua tahap (kredensial dasar -> tantangan 2FA terisolasi).
+- **Anti-Shortcut Cleanup:** Membuang jalan pintas auto-login hardcoded di App.vue demi kepatuhan penuh pada prinsip keamanan zero-hack.
+
+
 ### Versi v0.1.40
 
 ### v0.1.40 (2026-11-24) — Penyeragaman Alur Sunting Akun & Standarisasi Ergonomi Tombol Aksi

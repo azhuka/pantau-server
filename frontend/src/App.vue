@@ -268,29 +268,6 @@ function checkUrlStandalone() {
 async function checkAuth() {
   let token = localStorage.getItem('pantau_token')
   if (!token) {
-    // Seamless local auto-login for operator session
-    try {
-      const loginRes = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: 'operator', password: 'operator' }),
-      })
-      if (loginRes.ok) {
-        const loginData = await loginRes.json()
-        if (loginData.access_token) {
-          token = loginData.access_token
-          localStorage.setItem('pantau_token', token)
-          currentUser.value = loginData.user
-          showLoginModal.value = false
-          fetchServers()
-          fetchProblems()
-          checkUrlStandalone()
-          return
-        }
-      }
-    } catch (e) {
-      console.warn('Auto-login fallback:', e)
-    }
     showLoginModal.value = true
     return
   }

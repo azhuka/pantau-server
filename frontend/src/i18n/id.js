@@ -436,6 +436,12 @@ export default {
   login_verifying: 'Memverifikasi...',
   login_invalid: 'Kombinasi pengguna dan kata sandi salah.',
   login_conn_fail: 'Gagal terhubung ke backend server: ',
+  login_2fa_title: 'Autentikasi Dua Langkah (2FA)',
+  login_2fa_subtitle: 'Masukkan 6-digit kode otentikator atau kode pemulihan darurat.',
+  login_2fa_label: 'Kode Otentikator / Kode Cadangan:',
+  login_2fa_placeholder: '000000',
+  login_2fa_verify_btn: 'Verifikasi & Masuk',
+  login_2fa_back: '← Kembali ke Kredensial',
 
   // Tooltips & Pesan
   tooltip_copy: 'Salin',
