@@ -18,54 +18,100 @@ AUDIT_ACTION_LABELS = {
     "user_login": "Login",
     "login_2fa": "2FA Login",
     "user_login_2fa": "2FA Login",
+    "2fa_enable": "Enable 2FA",
+    "2fa_disable": "Disable 2FA",
+    "2fa_regen_recovery": "Regenerate 2FA Recovery",
     "logout": "Logout",
     "user_logout": "Logout",
     "server_add": "Add Server",
     "server_edit": "Edit Server",
     "update_server": "Edit Server",
     "update_server_note": "Update Server Note",
+    "server_notes_update": "Update Server Note",
     "inject_key": "Inject SSH Key",
     "server_delete": "Delete Server",
     "delete_server": "Delete Server",
     "key_regenerate": "Regenerate Key",
     "service_add": "Add Service",
     "service_delete": "Delete Service",
+    "service_core_toggle": "Toggle Core Service",
+    "service_recovered": "Service Recovered",
     "user_add": "Add User",
+    "user_create": "Add User",
+    "cmd:user_create": "Add User",
     "user_delete": "Delete User",
+    "cmd:user_delete": "Delete User",
     "user_update": "Update User",
+    "user_edit": "Update User",
+    "user_edit_perms": "Update User Permissions",
+    "user_toggle_active": "Toggle User Status",
+    "user_lock": "Lock User",
+    "cmd:user_lock": "Lock User",
+    "user_unlock": "Unlock User",
+    "cmd:user_unlock": "Unlock User",
+    "change_password": "Change Password",
     "user_password_change": "Change Password",
     "user_password_reset": "Reset User Password",
     "user_2fa_reset": "Reset User 2FA",
     "settings_update": "Update Settings",
     "settings_reset": "Reset Settings",
+    "branding_update": "Update Branding",
     "db_optimize": "Optimize Database",
     "apt_update": "Update OS Packages (apt)",
     "cmd:apt_update": "Update OS Packages (apt)",
     "apt_upgrade": "Upgrade OS Packages (apt)",
     "cmd:apt_upgrade": "Upgrade OS Packages (apt)",
+    "apt_upgrade_interact": "Interactive OS Upgrade (apt)",
+    "apt_pkg_upgrade": "Upgrade Specific Package (apt)",
+    "apt_pkg_clear_cache": "Clear APT Cache",
+    "apt_fix": "Repair APT/DPKG",
     "alert_ack": "Mark Incident Handled",
+    "alert_unack": "Reopen Incident",
     "ack_problem": "Mark Incident Handled",
     "problem_ack": "Mark Incident Handled",
     "problem_unack": "Reopen Incident",
     "problem_ignore": "Ignore Incident",
     "problem_unignore": "Cancel Ignore Incident",
+    "problem_resolve": "Resolve Incident",
+    "incident_detected": "Incident Detected",
+    "incident_resolved": "Incident Resolved",
     "masalah_terdeteksi": "Incident Detected",
     "masalah_selesai": "Incident Resolved",
+    "masalah_pulih": "Incident Resolved",
+    "masalah_danger": "Danger Incident",
+    "masalah_average": "Critical Incident",
+    "masalah_warning": "Warning Incident",
+    "masalah_info": "Info Incident",
+    "eskalasi_insiden": "Incident Escalated",
+    "proxmox_ha_detected": "Proxmox HA Detected",
+    "probe_add": "Add Endpoint Probe",
+    "custom_check": "Custom Check",
+    "cmd:custom_check": "Custom Check",
     "update_thresholds": "Update Thresholds",
     "maintenance_mode": "Maintenance Mode",
+    "maintenance_create": "Create Maintenance Window",
+    "maintenance_complete": "Complete Maintenance Window",
+    "maintenance_delete": "Delete Maintenance Window",
     "restart": "Restart Service",
     "restart_service": "Restart Service",
     "cmd:restart": "Restart Service",
     "cmd:restart_service": "Restart Service",
     "start": "Start Service",
     "start_service": "Start Service",
+    "service_start": "Start Service",
+    "systemd_start": "Start Service",
     "cmd:start": "Start Service",
     "cmd:start_service": "Start Service",
     "stop": "Stop Service",
     "stop_service": "Stop Service",
+    "service_stop": "Stop Service",
+    "systemd_stop": "Stop Service",
     "cmd:stop": "Stop Service",
     "cmd:stop_service": "Stop Service",
+    "reload": "Reload Service",
+    "cmd:reload": "Reload Service",
     "reload_service": "Reload Service",
+    "systemd_reload": "Reload Service",
     "cmd:reload_service": "Reload Service",
     "block_ip": "Block IP",
     "firewall_block": "Block IP",
@@ -88,17 +134,24 @@ AUDIT_ACTION_LABELS = {
     "cmd:terminate_session": "Terminate SSH Session",
     "putus_sesi_ssh": "Terminate SSH Session",
     "terminal_exec": "Terminal Command",
+    "terminal_open": "Open Terminal",
+    "terminal_close": "Close Terminal",
+    "terminal_detach": "Detach Terminal",
+    "terminal_reconnect": "Reconnect Terminal",
+    "terminal_shell_open": "Open Root Terminal",
     "terminal_unlock": "Unlock Terminal",
     "terminal_unlock_fail": "Terminal Unlock Failed",
     "terminal_lock": "Lock Terminal",
     "terminal_connect": "Terminal Connected",
     "terminal_disconnect": "Terminal Disconnected",
     "file_manager_unlock": "Unlock File Manager",
+    "file_manager_unlock_fail": "File Manager Unlock Failed",
     "file_manager_lock": "Lock File Manager",
     "file_save": "Save / Edit File",
     "file_touch": "Create File",
     "file_upload": "Upload File",
     "file_rm": "Delete File / Folder",
+    "file_batch_rm": "Batch Delete Files",
     "file_delete": "Delete File / Folder",
     "file_mkdir": "Create Folder",
     "file_rename": "Rename File",
@@ -109,6 +162,8 @@ AUDIT_ACTION_LABELS = {
     "file_duplicate": "Duplicate File",
     "cron_run": "Run Cron Job",
     "cmd:cron_run": "Run Cron Job",
+    "cron_run_now": "Run Cron Job",
+    "cmd:cron_run_now": "Run Cron Job",
     "cron_add": "Add Cron Job",
     "cmd:cron_add": "Add Cron Job",
     "cron_toggle": "Toggle Cron Job",
@@ -119,12 +174,22 @@ AUDIT_ACTION_LABELS = {
     "cmd:fim_scan": "FIM Verification Scan",
     "fim_rebaseline": "FIM Rebaseline",
     "cmd:fim_rebaseline": "FIM Rebaseline",
+    "fim_path_add": "Add FIM Path",
+    "cmd:fim_path_add": "Add FIM Path",
+    "fim_path_remove": "Remove FIM Path",
+    "cmd:fim_path_remove": "Remove FIM Path",
+    "fim_event_ack_all": "Acknowledge All FIM Events",
     "reboot_host": "Reboot Host",
     "cmd:reboot_host": "Reboot Host",
     "poweroff_host": "Power Off Host",
     "cmd:poweroff_host": "Power Off Host",
     "update_agent": "Agent Update (OTA)",
     "cmd:update_agent": "Agent Update (OTA)",
+    "agent_update": "Agent Update (OTA)",
+    "ota_update": "Agent Update (OTA)",
+    "cmd:ota_update": "Agent Update (OTA)",
+    "ota_upgrade": "Agent Upgrade (OTA)",
+    "cmd:ota_upgrade": "Agent Upgrade (OTA)",
     "restart_agent": "Restart Agent",
     "cmd:restart_agent": "Restart Agent",
 }
@@ -390,6 +455,8 @@ def _extract_command_target(cmd: Command, svc_map: Optional[dict[int, str]] = No
                             if val_s not in parts:
                                 parts.append(val_s)
                             break
+            if not parts and cmd.action not in ("restart_agent", "update_agent"):
+                return "-"
         except (TypeError, ValueError):
             if not parts:
                 return str(cmd.params)[:120]
@@ -397,6 +464,56 @@ def _extract_command_target(cmd: Command, svc_map: Optional[dict[int, str]] = No
     if not parts and cmd.action in ("restart_agent", "update_agent"):
         return "Pantau Agent"
     return " · ".join(parts) if parts else "-"
+
+
+_LEGACY_RESULT_MAP = {
+    "kembali aktif (pulih)": "Service recovered (active)",
+    "berhasil": "Success",
+    "gagal": "Failed",
+    "selesai": "Completed",
+    "antre": "Queued",
+    "terdeteksi": "Detected",
+    "aktif": "Active",
+    "dikirim ke agen": "Dispatched to agent",
+    "diselesaikan manual": "Manually resolved",
+    "pemantauan diaktifkan kembali": "Monitoring resumed",
+    "mode pemeliharaan dinonaktifkan": "Maintenance mode disabled",
+    "ditolak: terdaftar di proxmox ha": "Rejected: Protected by Proxmox HA",
+    "berhasil (sesi lain dicabut)": "Success (other sessions revoked)",
+}
+
+
+def _translate_legacy_result(raw: Optional[str]) -> str:
+    """Normalize historical or agent-emitted Indonesian audit strings into English."""
+    text = (raw or "").strip()
+    if not text:
+        return "SUCCESS"
+    low = text.lower()
+    if low in _LEGACY_RESULT_MAP:
+        return _LEGACY_RESULT_MAP[low]
+    if low.startswith("aksi tidak dikenal oleh agen ini"):
+        m = re.search(r"\('([^']+)'\)", text)
+        act = m.group(1) if m else "action"
+        return f"Unsupported action '{act}' on installed agent version — upgrade agent required"
+    if low.startswith("restart agen"):
+        return "Agent restart scheduled (systemd will restart daemon)"
+    if low.startswith("mode pemeliharaan diaktifkan"):
+        return re.sub(r"(?i)^mode pemeliharaan diaktifkan", "Maintenance mode enabled", text).replace("alasan:", "reason:")
+    if low.startswith("perintah diterima: server akan di-matikan"):
+        return "Command accepted: host power off scheduled in ~4s"
+    if low.startswith("perintah diterima: server akan di-reboot"):
+        return "Command accepted: host reboot scheduled in ~4s"
+    if low.startswith("perintah reboot dibatalkan"):
+        return "Reboot cancelled: systemd is not running as PID 1"
+    if low.startswith("perintah poweroff dibatalkan"):
+        return "Power off cancelled: systemd is not running as PID 1"
+    if low.startswith("optimasi ") and low.endswith(" selesai"):
+        return re.sub(r"(?i)^optimasi (.+) selesai$", r"Optimized \1", text)
+    if low.startswith("gagal:"):
+        return "Failed:" + text[6:]
+    if low.startswith("berhasil (") and text.endswith(")"):
+        return "Success " + text[9:]
+    return text
 
 
 def _resolve_action_keys(action: str) -> set[str]:
@@ -501,18 +618,20 @@ def query_audit_entries_with_meta(
     rows: list[dict[str, Any]] = []
     for r in audit_records:
         srv_name = server_map.get(r.server_id) or ("Control Host" if not r.server_id else f"#{r.server_id}")
+        raw_user = (r.username or "-").strip()
+        norm_user = "System" if raw_user.lower() in ("sistem", "system") else raw_user
         rows.append({
             "id": f"log-{r.id}",
             "_ts": r.created_at or datetime.min,
             "created_at": r.created_at.strftime("%Y-%m-%d %H:%M:%S") if r.created_at else "-",
-            "username": r.username or "-",
+            "username": norm_user,
             "server_id": r.server_id,
             "server_name": srv_name,
             "action": r.action or "-",
             "action_label": AUDIT_ACTION_LABELS.get(r.action, r.action or "-"),
             "target": r.target or "-",
             "result": _normalize_status(r.result),
-            "result_detail": (r.result or "SUCCESS").strip(),
+            "result_detail": _translate_legacy_result(r.result),
             "kind": "log",
             "meta": r.meta,
         })
@@ -559,20 +678,22 @@ def query_audit_entries_with_meta(
     for c in cmd_records:
         key = f"cmd:{c.action}"
         srv_name = server_map.get(c.server_id) or f"#{c.server_id}"
-        res_text = (c.result or "").strip()
+        res_text = _translate_legacy_result(c.result) if (c.result or "").strip() else ""
         if len(res_text) > 160:
             res_text = res_text[:160] + "..."
+        raw_user = (c.issued_by or "-").strip()
+        norm_user = "System" if raw_user.lower() in ("sistem", "system") else raw_user
         rows.append({
             "id": f"cmd-{c.id}",
             "_ts": c.created_at or datetime.min,
             "created_at": c.created_at.strftime("%Y-%m-%d %H:%M:%S") if c.created_at else "-",
-            "username": c.issued_by or "-",
+            "username": norm_user,
             "server_id": c.server_id,
             "server_name": srv_name,
             "action": key,
             "action_label": AUDIT_ACTION_LABELS.get(key, AUDIT_ACTION_LABELS.get(c.action, c.action or "-")),
             "target": _extract_command_target(c, svc_map),
-            "result": _normalize_status(res_text, c.status),
+            "result": _normalize_status(c.result, c.status),
             "result_detail": res_text or (c.status or "SUCCESS").upper(),
             "kind": "cmd",
             "meta": None,

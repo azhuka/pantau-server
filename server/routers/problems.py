@@ -303,8 +303,8 @@ def acknowledge_problem_action(
         username=user.username,
         action="problem_ack",
         target=prob.message[:100],
-        result="berhasil",
-        meta=f"Insiden ditandai sedang ditangani oleh {user.username}",
+        result="success",
+        meta=f"Incident marked as handled by {user.username}",
         created_at=now
     )
     db.add(audit)
@@ -315,7 +315,7 @@ def acknowledge_problem_action(
         "id": pid,
         "acknowledged_by": user.username,
         "acknowledged_at": now.isoformat(),
-        "message": f"Insiden berhasil ditandai sedang ditangani oleh {user.username}"
+        "message": f"Incident marked as handled by {user.username}"
     }
 
 
@@ -347,8 +347,8 @@ def unacknowledge_problem_action(
         username=user.username,
         action="problem_unack",
         target=prob.message[:100],
-        result="berhasil",
-        meta=f"Tanda penanganan insiden dibatalkan oleh {user.username} (sebelumnya: {old_ack})",
+        result="success",
+        meta=f"Incident handled mark cleared by {user.username} (previous: {old_ack})",
         created_at=now
     )
     db.add(audit)
@@ -417,8 +417,8 @@ def ignore_problem_action(
         username=user.username,
         action="problem_ignore",
         target=prob.message[:100],
-        result="berhasil",
-        meta=f"Diabaikan ({duration}) oleh {user.username}: {reason or 'tanpa alasan'}",
+        result="success",
+        meta=f"Ignored ({duration}) by {user.username}: {reason or 'no reason provided'}",
         created_at=now
     )
     db.add(audit)
@@ -432,7 +432,7 @@ def ignore_problem_action(
         "ignore_mode": ignore_mode,
         "ignored_by": user.username,
         "ignored_reason": reason,
-        "message": f"Insiden berhasil diabaikan ({duration})"
+        "message": f"Incident ignored ({duration})"
     }
 
 
@@ -474,14 +474,14 @@ def unignore_problem_action(
         username=user.username,
         action="problem_unignore",
         target=prob.message[:100],
-        result="berhasil",
-        meta=f"Pemantauan diaktifkan kembali oleh {user.username}",
+        result="success",
+        meta=f"Monitoring resumed by {user.username}",
         created_at=now
     )
     db.add(audit)
     db.commit()
 
-    return {"ok": True, "id": pid, "is_ignored": False, "message": "Pemantauan insiden berhasil diaktifkan kembali"}
+    return {"ok": True, "id": pid, "is_ignored": False, "message": "Incident monitoring resumed"}
 
 @router.post("/{pid}/terminate-ssh")
 def terminate_ssh_session_action(
@@ -528,10 +528,10 @@ def terminate_ssh_session_action(
     audit = AuditLog(
         server_id=prob.server_id,
         username=user.username,
-        action="putus_sesi_ssh",
+        action="terminate_ssh_session",
         target=f"{user_name}@{tty_name}",
-        result="antre",
-        meta=f"Operator {user.username} memutuskan paksa sesi SSH {user_name} pada {tty_name}",
+        result="queued",
+        meta=f"Operator {user.username} terminated SSH session {user_name} on {tty_name}",
         created_at=now
     )
     db.add(audit)

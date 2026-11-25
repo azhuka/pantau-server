@@ -137,10 +137,10 @@ def check_server_stale(db: Session, srv: Server, now: datetime = None):
 
             audit = AuditLog(
                 server_id=srv.id,
-                username="sistem",
-                action="masalah_terdeteksi",
+                username="System",
+                action="incident_detected",
                 target="agent_stale",
-                result="terdeteksi",
+                result="detected",
                 meta=f"{srv.hostname}: {msg}",
                 created_at=now
             )
@@ -155,11 +155,11 @@ def check_server_stale(db: Session, srv: Server, now: datetime = None):
 
             audit = AuditLog(
                 server_id=srv.id,
-                username="sistem",
-                action="masalah_selesai",
+                username="System",
+                action="incident_resolved",
                 target="agent_stale",
-                result="selesai",
-                meta=f"{srv.hostname}: node kembali online dan melapor normal",
+                result="resolved",
+                meta=f"{srv.hostname}: node back online and reporting normally",
                 created_at=now
             )
             db.add(audit)
@@ -463,10 +463,10 @@ def evaluate_server_problems(db: Session, srv: Server, report_dict: dict, extras
             audit_msg = f"{srv.hostname}: {inst['message']}"
             audit_log = AuditLog(
                 server_id=srv.id,
-                username="sistem",
-                action="masalah_terdeteksi",
+                username="System",
+                action="incident_detected",
                 target=k,
-                result="terdeteksi",
+                result="detected",
                 meta=audit_msg,
                 created_at=now
             )
@@ -492,11 +492,11 @@ def evaluate_server_problems(db: Session, srv: Server, report_dict: dict, extras
 
             audit = AuditLog(
                 server_id=srv.id,
-                username="sistem",
-                action="masalah_selesai",
+                username="System",
+                action="incident_resolved",
                 target=k,
-                result="selesai",
-                meta=f"{srv.hostname}: anomali {k} telah teratasi ({prob.resolved_note})",
+                result="resolved",
+                meta=f"{srv.hostname}: incident {k} resolved ({prob.resolved_note})",
                 created_at=now
             )
             db.add(audit)

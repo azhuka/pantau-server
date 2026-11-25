@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.69
+
+- **Normalisasi Bahasa Inggris Penuh Audit Trail (`audit_service.py`, `problems.py`, `problem_service.py`):** Mengubah seluruh penulisan `AuditLog` di `problems.py` dan `problem_service.py` ke Bahasa Inggris NOC baku, melengkapi seluruh `AUDIT_ACTION_LABELS` (termasuk `service_recovered`), menormalkan aktor `sistem` menjadi `System`, memperbaiki target `{}` menjadi `-`, serta menambahkan `_translate_legacy_result()` untuk menerjemahkan string hasil historis/agen ke Bahasa Inggris saat pembacaan.
+
+
 ### Versi v0.1.68
 
 - **Penyempurnaan Audit Trail End-to-End (`audit_service.py`, `routers/audit.py`, `AuditView.vue`, `AuditTable.vue`, `AuditFilterBar.vue`):** Memisahkan status `EXECUTING` dari `PENDING`, melengkapi kamus `AUDIT_ACTION_LABELS` dan 8 kategori filter (`cat:system` baru), memperketat Zero-Knowledge `master_admin` masking lintas `target`/`result_detail`/`meta`, menerapkan SQL push-down untuk `status` & `q` serta header `X-Total-Count`/`X-Truncated`, menambahkan live auto-polling 5 detik (`live · HH:MM:SS`) tanpa wipe tabel, `AbortController`, sinkronisasi URL query params, dan kolom `Result / Response`.
