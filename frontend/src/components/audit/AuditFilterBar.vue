@@ -62,7 +62,8 @@
           <option value="">{{ t('audit_status_all') }}</option>
           <option value="SUCCESS">{{ t('audit_status_success') }}</option>
           <option value="FAILED">{{ t('audit_status_failed') }}</option>
-          <option value="PENDING">Pending (PENDING)</option>
+          <option value="EXECUTING">{{ t('audit_status_executing') }}</option>
+          <option value="PENDING">{{ t('audit_status_pending') }}</option>
         </select>
       </div>
 
@@ -104,7 +105,7 @@
       </div>
     </template>
 
-    <!-- Row 2: Quick Period Presets + Live Summary -->
+    <!-- Row 2: Quick Period Presets + Fetch Limit -->
     <template #sub>
       <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">{{ t('flt_preset') }}</span>
       <div class="inline-flex items-center gap-1 flex-wrap">
@@ -126,6 +127,19 @@
         >
           {{ t('flt_preset_custom') }}
         </button>
+      </div>
+      <div class="inline-flex items-center gap-1.5 ml-auto">
+        <label class="text-[10px] font-bold uppercase tracking-wider text-gray-400" for="audit-limit-select">{{ t('audit_limit') }}</label>
+        <select
+          id="audit-limit-select"
+          :value="limit"
+          @change="$emit('update:limit', Number($event.target.value))"
+          class="noc-filter-select !h-6 !text-[11px] !py-0"
+        >
+          <option :value="100">100</option>
+          <option :value="300">300</option>
+          <option :value="500">500</option>
+        </select>
       </div>
     </template>
   </NocFilterPanel>
@@ -150,12 +164,15 @@ const props = defineProps({
   startDate: { type: String, default: '' },
   endDate: { type: String, default: '' },
   search: { type: String, default: '' },
+  limit: { type: Number, default: 300 },
   totalRows: { type: Number, default: 0 },
+  totalCount: { type: Number, default: 0 },
+  truncated: { type: Boolean, default: false },
 })
 
 const emit = defineEmits([
   'update:user', 'update:serverId', 'update:action', 'update:status',
-  'update:period', 'update:startDate', 'update:endDate', 'update:search', 'reset'
+  'update:period', 'update:startDate', 'update:endDate', 'update:search', 'update:limit', 'reset'
 ])
 
 const presets = computed(() => [
@@ -171,8 +188,13 @@ const hasActiveFilters = computed(() => Boolean(
 ))
 
 const summaryLabel = computed(() => {
-  if (props.startDate || props.endDate) return `${props.totalRows} activities (${props.startDate || '...'} to ${props.endDate || 'now'})`
-  return `${props.totalRows} audit activities`
+  const countText = props.truncated && props.totalCount > props.totalRows
+    ? `Showing ${props.totalRows} of ${props.totalCount}+ activities`
+    : props.truncated
+      ? `Showing ${props.totalRows}+ activities (capped)`
+      : `${props.totalRows} audit activities`
+  if (props.startDate || props.endDate) return `${countText} (${props.startDate || '...'} to ${props.endDate || 'now'})`
+  return countText
 })
 
 function selectPreset(val) {

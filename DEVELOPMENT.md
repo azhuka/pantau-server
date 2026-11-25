@@ -527,7 +527,7 @@ Sistem penyaringan data Pantau Server menggunakan primitif modular terstandar **
   - *Active Incidents:* Triage Pills dengan live counter real-time tersinkron 2-arah ke dropdown `Severity`, ditambah filter `Asset`, `Group`, `Search`, `Reset`, dan live count.
   - *Resolved Incidents:* Filter `Asset`, `Severity`, `Resolution Mode` (7 kategori: `Auto-Healed`, `Remediated by Operator`, `Host Reconnected`, `Service Restored`, `Closed (Host Offline)`, `SSH Session Terminated`, `Deduplicated`), `Custom Date Range`, `Quick Presets`, `Search`, dan `Reset`.
 - **Asset Inventory (`AssetTableView.vue` & `AssetFilterBar.vue`):** Filter `Group` dengan hitungan per grup, `Status` (`All`, `Online`, `Offline`, `With Incidents`, `Maintenance`), `Environment` (`Production`, `Non-Production`), pencarian metadata lengkap, Column Customizer, dan `Reset`.
-- **Audit Trail (`AuditView.vue` & `services/audit_service.py`):** Metadata `/api/audit/meta` + penyaringan multi-kriteria atas gabungan `AuditLog` dan `Command`: `Operator` (Zero-Knowledge Master Admin masking), `Asset`, `Action` kategori `<optgroup>`, `Status` (`SUCCESS`, `FAILED`, `PENDING`), `Date Range`, `Debounced Search` (250ms), `Quick Presets`, dan `Reset`.
+- **Audit Trail (`AuditView.vue`, `AuditTable.vue`, `AuditFilterBar.vue`, `services/audit_service.py`):** Metadata `/api/audit/meta` + penyaringan multi-kriteria dengan SQL push-down atas gabungan `AuditLog` dan `Command`: `Operator` (Zero-Knowledge Master Admin masking across `username`, `target`, `result_detail`, & `meta`), `Asset`, `Action` 8 kategori `<optgroup>`, `Status` (`SUCCESS`, `FAILED`, `EXECUTING`, `PENDING`), `Date Range`, `Debounced Search` (250ms), `Quick Presets`, pemilih `Limit` (100/300/500) + header `X-Total-Count`/`X-Truncated`, `AbortController` race guard, sinkronisasi URL query params, live background polling 5 detik (`live · HH:MM:SS`) tanpa table wipe, kolom `Result / Response`, dan `Reset`.
 - **Workspace Sub-Tabs (`ServerWorkspaceModal.vue`):**
   - *Incidents:* Filter `Severity` + `Search` + `Reset`.
   - *Services & Ports:* Systemd filter `Status`, `Boot Startup` (`enabled`, `disabled`, `static/masked`), klik badge status, serta Ports filter `Protocol` (`TCP`/`UDP`), `Access Scope` (`Public`/`Local` akurat berbasis deteksi loopback `127.*` / `::1`), dan `Search`.
@@ -570,6 +570,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 ---
 
 ## Catatan Perubahan (Changelog)
+
+### Versi v0.1.68
+
+- **Penyempurnaan Audit Trail End-to-End (`audit_service.py`, `routers/audit.py`, `AuditView.vue`, `AuditTable.vue`, `AuditFilterBar.vue`):** Memisahkan status `EXECUTING` dari `PENDING`, melengkapi kamus `AUDIT_ACTION_LABELS` dan 8 kategori filter (`cat:system` baru), memperketat Zero-Knowledge `master_admin` masking lintas `target`/`result_detail`/`meta`, menerapkan SQL push-down untuk `status` & `q` serta header `X-Total-Count`/`X-Truncated`, menambahkan live auto-polling 5 detik (`live · HH:MM:SS`) tanpa wipe tabel, `AbortController`, sinkronisasi URL query params, dan kolom `Result / Response`.
+
 
 ### Versi v0.1.67
 

@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-4">
     <!-- Header -->
-    <div class="hud-tactical-card p-3.5 px-4 rounded-xl flex items-center justify-between shadow-lg">
+    <div class="hud-tactical-card p-3.5 px-4 rounded-xl flex items-center justify-between shadow-lg gap-3 flex-wrap">
       <span class="hud-corner-tr"></span>
       <span class="hud-corner-bl"></span>
 
@@ -9,27 +9,26 @@
         <h2 class="text-sm font-bold text-gray-100 uppercase tracking-wider font-mono flex items-center gap-2">
           <span class="w-2 h-2 rounded-full bg-cyan-400 beacon-live"></span>
           <span>// SYSTEM AUDIT TRAIL</span>
+          <span v-if="lastSyncTime" class="text-[11px] font-normal text-emerald-400/90 normal-case tracking-normal">
+            live · {{ lastSyncTime }}
+          </span>
         </h2>
-        <p class="text-xs text-gray-400 font-mono mt-0.5">
-          {{ t('audit_subtitle') }}
-        </p>
+        <p class="text-xs text-gray-400 font-mono mt-0.5">{{ t('audit_subtitle') }}</p>
       </div>
 
       <button
-        @click="loadAuditLogs"
+        type="button"
+        @click="loadAuditLogs({ silent: false })"
         class="px-2.5 py-1 text-xs font-mono font-bold rounded bg-cyan-950/80 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-800 hover:text-white transition cursor-pointer flex items-center gap-1.5"
       >
         <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-          <path d="M3 3v5h5"/>
-          <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
-          <path d="M16 21h5v-5"/>
+          <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>
+          <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/>
         </svg>
         <span>{{ t('audit_reload') }}</span>
       </button>
     </div>
 
-    <!-- Filter & Search Toolbar (Blueprint Multi-Criteria + Quick Presets) -->
     <AuditFilterBar
       :users="metaUsers"
       :servers="metaServers"
@@ -42,7 +41,10 @@
       v-model:startDate="filterStartDate"
       v-model:endDate="filterEndDate"
       v-model:search="searchKeyword"
+      v-model:limit="fetchLimit"
       :total-rows="auditLogs.length"
+      :total-count="totalMatched"
+      :truncated="isTruncated"
       @reset="resetAuditFilters"
     />
 
@@ -51,58 +53,14 @@
       <span class="hud-corner-tr"></span>
       <span class="hud-corner-bl"></span>
 
-      <div v-if="loading" class="p-8 text-center text-xs text-gray-400 font-mono">
+      <div v-if="loading && auditLogs.length === 0" class="p-8 text-center text-xs text-gray-400 font-mono">
         {{ t('audit_loading') }}
       </div>
       <div v-else-if="auditLogs.length === 0" class="p-8 text-center text-xs text-gray-400 font-mono">
         {{ t('audit_empty') }}
       </div>
-      <div v-else class="overflow-x-auto">
-        <table class="w-full text-left text-xs font-mono border-collapse">
-          <thead>
-            <tr class="bg-[#070c18]/90 border-b border-cyan-500/20 text-gray-400 uppercase font-bold tracking-wider select-none">
-              <th class="py-2.5 px-4 w-36">{{ t('audit_col_time') }}</th>
-              <th class="py-2.5 px-4 w-32">{{ t('audit_col_operator') }}</th>
-              <th class="py-2.5 px-4 w-44">{{ t('audit_col_target') }}</th>
-              <th class="py-2.5 px-4 w-44">{{ t('audit_col_action') }}</th>
-              <th class="py-2.5 px-4">{{ t('audit_col_param') }}</th>
-              <th class="py-2.5 px-4 w-28 text-center">{{ t('audit_col_status') }}</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-800/40 bg-[#090e1c]/40">
-            <tr v-for="log in paginatedLogs" :key="log.id" class="hover:bg-cyan-950/20 transition">
-              <td class="py-2.5 px-4 text-gray-400 whitespace-nowrap">{{ log.created_at || '-' }}</td>
-              <td class="py-2.5 px-4 font-bold text-gray-100 whitespace-nowrap">{{ log.username }}</td>
-              <td class="py-2.5 px-4 text-cyan-400 whitespace-nowrap font-semibold">{{ log.server_name }}</td>
-              <td class="py-2.5 px-4 whitespace-nowrap">
-                <span
-                  class="px-2 py-0.5 rounded text-[11px] font-bold border"
-                  :class="getActionBadgeClass(log.action)"
-                >
-                  {{ log.action_label || log.action }}
-                </span>
-              </td>
-              <td
-                class="py-2.5 px-4 text-gray-300 truncate max-w-xs cursor-help hover:text-cyan-300"
-                :title="`${log.target}${log.result_detail && log.result_detail !== log.result ? ' — ' + log.result_detail : ''}`"
-              >
-                {{ log.target }}
-              </td>
-              <td class="py-2.5 px-4 text-center whitespace-nowrap">
-                <span
-                  class="px-2 py-0.5 rounded text-[11px] font-bold border"
-                  :class="statusBadgeClass(log.result)"
-                  :title="log.result_detail || log.result"
-                >
-                  {{ log.result || 'SUCCESS' }}
-                </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <AuditTable v-else :rows="paginatedLogs" />
 
-      <!-- Universal Table Pagination Bar (Hidden if <= 10 items) -->
       <NocTablePagination
         v-model:page="currentPage"
         v-model:pageSize="pageSize"
@@ -115,15 +73,19 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useI18n } from '../../i18n'
+import { apiFetch } from '../../utils/api'
 import NocTablePagination from '../common/NocTablePagination.vue'
 import AuditFilterBar from './AuditFilterBar.vue'
+import AuditTable from './AuditTable.vue'
 
 const { t } = useI18n()
-
 const loading = ref(false)
 const auditLogs = ref([])
+const totalMatched = ref(0)
+const isTruncated = ref(false)
+const lastSyncTime = ref('')
 const metaUsers = ref([])
 const metaServers = ref([])
 const metaCategories = ref([])
@@ -136,10 +98,13 @@ const filterPeriod = ref('24h')
 const filterStartDate = ref('')
 const filterEndDate = ref('')
 const searchKeyword = ref('')
+const fetchLimit = ref(300)
 const currentPage = ref(1)
 const pageSize = ref(10)
 
 let debounceTimer = null
+let pollTimer = null
+let activeController = null
 
 const paginatedLogs = computed(() => {
   if (pageSize.value === 'all') return auditLogs.value
@@ -148,16 +113,54 @@ const paginatedLogs = computed(() => {
   return auditLogs.value.slice(start, start + limit)
 })
 
-watch([filterUser, filterServerId, filterAction, filterStatus, filterPeriod, filterStartDate, filterEndDate], () => {
+function buildQueryParams() {
+  const params = new URLSearchParams({ limit: String(fetchLimit.value), period: filterPeriod.value })
+  if (filterUser.value) params.set('user', filterUser.value)
+  if (filterServerId.value) params.set('server_id', filterServerId.value)
+  if (filterAction.value) params.set('action', filterAction.value)
+  if (filterStatus.value) params.set('status', filterStatus.value)
+  if (filterStartDate.value) params.set('start_date', filterStartDate.value)
+  if (filterEndDate.value) params.set('end_date', filterEndDate.value)
+  if (searchKeyword.value.trim()) params.set('q', searchKeyword.value.trim())
+  return params
+}
+
+function syncUrlQuery() {
+  const params = buildQueryParams()
+  if (params.get('period') === '24h') params.delete('period')
+  if (params.get('limit') === '300') params.delete('limit')
+  const qs = params.toString()
+  window.history.replaceState(null, '', qs ? `${window.location.pathname}?${qs}` : window.location.pathname)
+}
+
+function hydrateFromUrl() {
+  const p = new URLSearchParams(window.location.search)
+  filterUser.value = p.get('user') || ''
+  filterServerId.value = p.get('server_id') || ''
+  filterAction.value = p.get('action') || ''
+  filterStatus.value = p.get('status') || ''
+  filterPeriod.value = p.get('period') || '24h'
+  filterStartDate.value = p.get('start_date') || ''
+  filterEndDate.value = p.get('end_date') || ''
+  searchKeyword.value = p.get('q') || ''
+  const lim = Number(p.get('limit'))
+  if ([100, 300, 500].includes(lim)) fetchLimit.value = lim
+}
+
+watch([filterUser, filterServerId, filterAction, filterStatus, filterPeriod, filterStartDate, filterEndDate, fetchLimit], () => {
   currentPage.value = 1
   if (filterPeriod.value === 'custom' && !filterStartDate.value && !filterEndDate.value) return
-  loadAuditLogs()
+  syncUrlQuery()
+  loadAuditLogs({ silent: auditLogs.value.length > 0 })
 })
 
 watch(searchKeyword, () => {
   currentPage.value = 1
   clearTimeout(debounceTimer)
-  debounceTimer = setTimeout(() => loadAuditLogs(), 250)
+  debounceTimer = setTimeout(() => {
+    syncUrlQuery()
+    loadAuditLogs({ silent: auditLogs.value.length > 0 })
+  }, 250)
 })
 
 function resetAuditFilters() {
@@ -168,13 +171,13 @@ function resetAuditFilters() {
   filterStartDate.value = ''
   filterEndDate.value = ''
   searchKeyword.value = ''
+  fetchLimit.value = 300
   filterPeriod.value = '24h'
 }
 
 async function loadAuditMeta() {
   try {
-    const token = localStorage.getItem('pantau_token')
-    const res = await fetch('/api/audit/meta', { headers: { Authorization: `Bearer ${token}` } })
+    const res = await apiFetch('/api/audit/meta')
     if (res.ok) {
       const m = await res.json()
       metaUsers.value = m.users || []
@@ -184,51 +187,38 @@ async function loadAuditMeta() {
   } catch (e) { console.error('Failed to load audit meta:', e) }
 }
 
-async function loadAuditLogs() {
-  loading.value = true
+async function loadAuditLogs({ silent = false } = {}) {
+  if (activeController) activeController.abort()
+  activeController = new AbortController()
+  if (!silent) loading.value = true
   try {
-    const token = localStorage.getItem('pantau_token')
-    const params = new URLSearchParams({ limit: '300', period: filterPeriod.value })
-    if (filterUser.value) params.set('user', filterUser.value)
-    if (filterServerId.value) params.set('server_id', filterServerId.value)
-    if (filterAction.value) params.set('action', filterAction.value)
-    if (filterStatus.value) params.set('status', filterStatus.value)
-    if (filterStartDate.value) params.set('start_date', filterStartDate.value)
-    if (filterEndDate.value) params.set('end_date', filterEndDate.value)
-    if (searchKeyword.value.trim()) params.set('q', searchKeyword.value.trim())
-
-    const res = await fetch(`/api/audit?${params.toString()}`, { headers: { Authorization: `Bearer ${token}` } })
-    if (res.ok) auditLogs.value = await res.json()
+    const res = await apiFetch(`/api/audit?${buildQueryParams().toString()}`, { signal: activeController.signal })
+    if (res.ok) {
+      const rows = await res.json()
+      auditLogs.value = rows
+      totalMatched.value = Number(res.headers.get('X-Total-Count') || rows.length)
+      isTruncated.value = res.headers.get('X-Truncated') === 'true'
+      lastSyncTime.value = new Date().toLocaleTimeString('en-GB', { hour12: false })
+    }
   } catch (e) {
-    console.error('Failed to load audit logs:', e)
+    if (e.name !== 'AbortError') console.error('Failed to load audit logs:', e)
   } finally {
     loading.value = false
   }
 }
 
-function statusBadgeClass(res) {
-  const up = String(res || '').toUpperCase()
-  if (up === 'FAILED') return 'bg-rose-950 text-rose-300 border-rose-800'
-  if (up === 'PENDING') return 'bg-amber-950 text-amber-300 border-amber-800'
-  return 'bg-emerald-950 text-emerald-300 border-emerald-800'
-}
-
-function getActionBadgeClass(action) {
-  const act = String(action).toLowerCase()
-  if (act.includes('delete') || act.includes('rm') || act.includes('kill') || act.includes('block') || act.includes('lock') || act.includes('poweroff') || act.includes('terminate')) {
-    return 'bg-rose-950/80 text-rose-300 border-rose-800'
-  }
-  if (act.includes('add') || act.includes('create') || act.includes('start') || act.includes('unlock') || act.includes('enable')) {
-    return 'bg-emerald-950/80 text-emerald-300 border-emerald-800'
-  }
-  if (act.includes('update') || act.includes('upgrade') || act.includes('restart') || act.includes('reset') || act.includes('maintenance')) {
-    return 'bg-amber-950/80 text-amber-300 border-amber-800'
-  }
-  return 'bg-cyan-950 text-cyan-300 border-cyan-800'
-}
-
 onMounted(() => {
+  hydrateFromUrl()
   loadAuditMeta()
-  loadAuditLogs()
+  loadAuditLogs({ silent: false })
+  pollTimer = setInterval(() => {
+    if (!document.hidden) loadAuditLogs({ silent: true })
+  }, 5000)
+})
+
+onUnmounted(() => {
+  clearTimeout(debounceTimer)
+  clearInterval(pollTimer)
+  if (activeController) activeController.abort()
 })
 </script>

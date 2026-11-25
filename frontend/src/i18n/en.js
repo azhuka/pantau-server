@@ -266,8 +266,10 @@ export default {
   audit_period_all: 'All History',
   audit_filter_status: 'Status:',
   audit_status_all: 'All Statuses',
-  audit_status_success: 'Success (SUCCESS)',
-  audit_status_failed: 'Failed (FAILED)',
+  audit_status_success: 'Success',
+  audit_status_failed: 'Failed',
+  audit_status_executing: 'Executing',
+  audit_status_pending: 'Pending',
   audit_limit: 'Limit:',
   audit_limit_rows: '{count} Rows',
   audit_search_placeholder: 'Search keywords (Enter)...',
@@ -277,6 +279,7 @@ export default {
   audit_col_action: 'Action',
   audit_col_param: 'Parameters',
   audit_col_status: 'Status',
+  audit_col_result: 'Result / Response',
 
   // Settings View
   settings_title: 'System Settings & Authority Control (RBAC)',

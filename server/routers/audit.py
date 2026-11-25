@@ -2,13 +2,13 @@
 
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy.orm import Session
 
 from core.database import get_db
 from models.user import User
 from routers.auth import get_current_user
-from services.audit_service import get_audit_metadata, query_audit_entries
+from services.audit_service import get_audit_metadata, query_audit_entries_with_meta
 
 router = APIRouter(tags=["Audit & Logs"])
 
@@ -26,6 +26,7 @@ def api_get_audit_meta(
 
 @router.get("/api/audit")
 def api_get_audit_logs(
+    response: Response,
     q: str = Query("", description="Search keyword"),
     action: str = Query("", description="Action key or cat:* category filter"),
     user: str = Query("", description="Operator username filter"),
@@ -33,7 +34,7 @@ def api_get_audit_logs(
     start_date: str = Query("", description="Custom start date YYYY-MM-DD"),
     end_date: str = Query("", description="Custom end date YYYY-MM-DD"),
     server_id: Optional[int] = Query(None, description="Target Server ID"),
-    status: str = Query("", description="Execution status: SUCCESS, FAILED, PENDING"),
+    status: str = Query("", description="Execution status: SUCCESS, FAILED, EXECUTING, PENDING"),
     limit: int = Query(200, ge=1, le=500, description="Max rows returned"),
     user_actor: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -42,7 +43,7 @@ def api_get_audit_logs(
     if not (user_actor.is_master_admin or user_actor.has_perm("can_audit")):
         raise HTTPException(status_code=403, detail="Access denied: can_audit permission required.")
 
-    return query_audit_entries(
+    rows, total_count, truncated = query_audit_entries_with_meta(
         db=db,
         user_actor=user_actor,
         q=q,
@@ -55,3 +56,6 @@ def api_get_audit_logs(
         status_filter=status,
         limit=limit,
     )
+    response.headers["X-Total-Count"] = str(total_count)
+    response.headers["X-Truncated"] = "true" if truncated else "false"
+    return rows
