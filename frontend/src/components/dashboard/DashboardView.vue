@@ -716,14 +716,6 @@
                   >
                     {{ s.ignored_count }}
                   </span>
-                  <span
-                    v-if="s.all_acknowledged"
-                    class="px-1.5 py-0.2 rounded text-[9.5px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm flex items-center gap-0.5"
-                    :title="t('dash_all_handled')"
-                  >
-                    <span>✓</span>
-                    <span>{{ t('dash_badge_handled') }}</span>
-                  </span>
                 </div>
               </td>
             </tr>
@@ -812,7 +804,6 @@
               <span v-if="s.critical_count > 0" class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-orange-950 text-orange-300 border border-orange-700 radar-critical" :title="s.critical_msgs">{{ s.critical_count }}</span>
               <span v-if="s.warning_count > 0" class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-950 text-amber-300 border border-amber-700 radar-warning" :title="s.warning_msgs">{{ s.warning_count }}</span>
               <span v-if="s.info_count > 0" class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-sky-950 text-sky-300 border border-sky-700" :title="s.info_msgs">{{ s.info_count }}</span>
-              <span v-if="s.all_acknowledged" class="px-1.5 py-0.2 rounded text-[9.5px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40" :title="t('dash_all_handled')">✓ {{ t('dash_badge_handled') }}</span>
             </div>
           </div>
         </div>

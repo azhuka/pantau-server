@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.65
+
+- **Kompakness Kolom Incidents Dasbor (`DashboardView.vue`):** Menghapus lencana teks redundan `HANDLED` dari kolom `Incidents` pada tabel status aset serta footer kartu Grid dasbor agar kolom tetap ramping dan hanya menampilkan indikator hitung keparahan insiden (penandaan status penanganan cukup tersedia pada baris Active Incidents dan pusat triase Incidents).
+
+
 ### Versi v0.1.64
 
 - **Standardisasi Environment Tunggal (`Production` & `Non-Production`)**: Mengeliminasi sepenuhnya istilah ambigu `Tier 1`, `Tier 2`, `Environment Tier`, `3-Tier`, dan `4-Tier` pada kamus `en.js`/`id.js`, `AssetFilterBar.vue`, `AssetTableView.vue`, `EditHostModal.vue`, dan dokumentasi aktif `DEVELOPMENT.md`.

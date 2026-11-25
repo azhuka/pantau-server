@@ -80,7 +80,21 @@ async function run() {
       if (btn) btn.click();
     });
     await new Promise(r => setTimeout(r, 300));
-    console.log('  -> PASS: Dashboard Ungrouped, tag search, Reset & Zero-Pagination verified');
+    const dashIncColCheck = await page.evaluate(() => {
+      const tables = Array.from(document.querySelectorAll('table'));
+      const assetTbl = tables[tables.length - 1];
+      const incCells = assetTbl ? Array.from(assetTbl.querySelectorAll('tbody tr td:last-child')) : [];
+      return {
+        rowCount: incCells.length,
+        hasHandledBadge: incCells.some(td => /HANDLED/i.test(td.textContent || '')),
+      };
+    });
+    console.log('[CHECK] Dashboard Incidents column compact check:', dashIncColCheck);
+    if (dashIncColCheck.hasHandledBadge) {
+      throw new Error(`Dashboard Incidents column must NOT render HANDLED badge: ${JSON.stringify(dashIncColCheck)}`);
+    }
+    await page.screenshot({ path: path.join(ARTIFACT_DIR, 'v0165_dashboard_clean_incidents.png') });
+    console.log('  -> PASS: Dashboard Ungrouped, tag search, Reset, Zero-Pagination & clean Incidents col verified');
 
     // ----------------------------------------------------
     // SUITE 2: Incidents Center (Active Pills Sync + Asset/Group + Resolved 7 Modes + Presets)
