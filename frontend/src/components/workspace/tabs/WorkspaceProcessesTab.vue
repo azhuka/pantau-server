@@ -27,7 +27,7 @@
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-800/40">
-          <tr v-for="(p, idx) in filteredProcesses" :key="idx" class="hover:bg-cyan-950/20">
+          <tr v-for="(p, idx) in paginatedProcesses" :key="idx" class="hover:bg-cyan-950/20">
             <td class="py-2.5 px-3 text-cyan-400 font-bold">{{ p.pid }}</td>
             <td class="py-2.5 px-3 text-gray-300">{{ p.user }}</td>
             <td class="py-2.5 px-3 text-gray-200 font-semibold">{{ p.cpu || p.cpu_percent || 0 }}%</td>
@@ -58,6 +58,15 @@
         </tbody>
       </table>
     </div>
+
+    <!-- Universal Table Pagination Bar (Hidden if <= 10 items) -->
+    <NocTablePagination
+      v-model:page="currentPage"
+      v-model:pageSize="pageSize"
+      :total="filteredProcesses.length"
+      unitLabel="processes"
+      :pageSizeOptions="[10, 25, 50, 100, 'all']"
+    />
 
     <!-- Floating Process Action Dropdown Menu (Teleported to body to eliminate scroll clipping) -->
     <Teleport to="body">
@@ -120,8 +129,9 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useI18n } from '../../../i18n'
+import NocTablePagination from '../../common/NocTablePagination.vue'
 
 const { t } = useI18n()
 
@@ -132,9 +142,15 @@ const props = defineProps({
 const emit = defineEmits(['kill-process'])
 
 const search = ref('')
+const currentPage = ref(1)
+const pageSize = ref(10)
 const openProcId = ref(null)
 const activeProc = ref(null)
 const dropdownStyle = ref({})
+
+watch(search, () => {
+  currentPage.value = 1
+})
 
 function closeDropdowns() {
   openProcId.value = null
@@ -205,5 +221,12 @@ const filteredProcesses = computed(() => {
     (p.user || '').toLowerCase().includes(q) ||
     (p.cmd || p.command || '').toLowerCase().includes(q)
   )
+})
+
+const paginatedProcesses = computed(() => {
+  if (pageSize.value === 'all') return filteredProcesses.value
+  const limit = parseInt(pageSize.value, 10) || 10
+  const start = (currentPage.value - 1) * limit
+  return filteredProcesses.value.slice(start, start + limit)
 })
 </script>

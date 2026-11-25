@@ -469,7 +469,47 @@ Dokumen `DEVELOPMENT.md` adalah **Manifes Rekayasa, Buku Putih Arsitektur, dan R
 
 ---
 
-## 11. Konvensi Rekayasa & Standar Kontribusi Git
+## 11. Arsitektur Mesin Paginasi Terpadu & Penegakan Parity Blueprint
+
+Sistem paginasi pada Pantau Server mengadopsi formulasi baku NOC yang teruji matang (*Blueprint Pagination Parity*), memberikan kendali navigasi data yang presisi, informatif, dan hemat ruang.
+
+### 11.1 Tata Letak Standar 3-Bagian (`.table-pagination-bar`)
+Setiap bilah paginasi tabel sekunder menggunakan kontainer flexbox terpadu dengan 3 zona fungsional:
+1. **Zona Kiri (Informasi Data Terbaca — `.table-pagination-info`):**
+   - Format: `Showing {start}–{end} of {total} {unitLabel}` (contoh: `Showing 1–10 of 42 incidents`, `Showing 1–25 of 100 activities`, `Showing 1–10 of 26 processes`).
+   - Memberikan kepastian posisi kursor pembacaan operator tanpa ambigu.
+2. **Zona Tengah (Navigasi Halaman — `.table-pagination-nav`):**
+   - Terdiri dari tombol `« Previous`, teks indikator `Page {current} of {total}`, dan tombol `Next »`.
+   - Menggunakan tombol mikro ergonomis dengan status non-aktif (`disabled:opacity-35 disabled:cursor-not-allowed`) saat berada di batas awal atau akhir halaman.
+3. **Zona Kanan (Pemilih Limit Baris — `.table-pagination-limit`):**
+   - Format: `Show: <select>` dengan opsi limit berbasis satuan entitas (contoh: `[10 activities]`, `[25 activities]`, `[50 activities]`, `[100 activities]`, `[All activities]`).
+   - Memungkinkan operator memperluas atau mempersempit densitas data seketika tanpa me-reload antarmuka.
+
+### 11.2 Aturan Baku Sembunyi/Tampil Universal (Aturan $\le 10$ Baris)
+- **Logika Otomatis Sembunyi:**
+  - JIKA total baris data pada tabel bernilai kurang dari atau sama dengan batas limit terkecil (default $\le 10$), MAKA bilah kontrol paginasi (`.table-pagination-bar`) **wajib otomatis disembunyikan total (`display: none` / `v-if="shouldShow"`)**.
+  - Bilah paginasi **HANYA boleh tampil JIKA** total baris data melebihi batas limit ($> 10$), atau jika tabel memiliki opsi `alwaysShow: true` yang diatur eksplisit.
+- **Larangan `alwaysShow: true` Liar:** Opsi `alwaysShow: true` dilarang disematkan secara bebas tanpa instruksi tertulis demi mencegah pemborosan ruang layar pada tabel-tabel kecil.
+
+### 11.3 Pengecualian Mutlak Halaman Dasbor (*Absolute Zero-Pagination on Dashboard*)
+- Berkas `DashboardView.vue` adalah area pemantauan makro situasional 24/7/365 yang dilindungi mutlak.
+- Paginasi **MUTLAK DILARANG** pada halaman dasbor, baik dalam mode Tabel maupun Grid.
+- Seluruh aset yang dipantau wajib ditampilkan secara utuh dan seketika tanpa ada yang disembunyikan di balik halaman berikutnya (*Zero-Hidden Situational Awareness*).
+
+### 11.4 Komponen Modular Terpadu `NocTablePagination.vue`
+- Komponen Vue 3 mandiri `<110` baris (`frontend/src/components/common/NocTablePagination.vue`) yang menerapkan seluruh aturan paginasi di atas.
+- Mendukung *two-way binding* penuh via `v-model:page` dan `v-model:pageSize`.
+- Terintegrasi secara menyeluruh pada seluruh tabel sekunder:
+  1. `ActiveIncidentsTable.vue` (`unitLabel="incidents"`)
+  2. `ResolvedIncidentsTable.vue` (`unitLabel="incidents"`)
+  3. `AssetTableView.vue` (`unitLabel="servers"`)
+  4. `AuditView.vue` (`unitLabel="activities"`)
+  5. `SevDetailModal.vue` (`unitLabel="incidents"`)
+  6. `WorkspaceProcessesTab.vue` (`unitLabel="processes"`)
+
+---
+
+## 12. Konvensi Rekayasa & Standar Kontribusi Git
 
 Seluruh commit ke repositori Git wajib menggunakan standar **Conventional Commits**:
 
@@ -497,6 +537,16 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 ---
 
 ## Catatan Perubahan (Changelog)
+
+### Versi v0.1.62
+
+- **Universal NOC Pagination Engine (Blueprint Parity):** Membangun komponen terpadu `NocTablePagination.vue` (103 baris) dengan arsitektur 3-bagian: Zona Kiri (`Showing {start}–{end} of {total} {unitLabel}`), Zona Tengah (`« Previous`, `Page {current} of {total}`, `Next »`), dan Zona Kanan (`Show: <select>` limit [10, 25, 50, 100, 'All']).
+- **Penegakan Aturan Baku Auto-Hide ($\le 10$ Baris):** Seluruh bilah paginasi tabel sekunder otomatis disembunyikan (`display: none` / `v-if`) jika total baris data $\le 10$, dan hanya tampil jika data $> 10$ baris tanpa toleransi opsi liar `alwaysShow: true`.
+- **Proteksi Halaman Dasbor Bebas Paginasi (*Zero-Hidden Situational Awareness*):** Menjaga halaman `DashboardView.vue` murni tanpa paginasi agar seluruh node aset selalu terpantau seketika tanpa ada yang tersembunyi ke halaman berikutnya.
+- **Integrasi Menyeluruh Tabel Sekunder:** Mengintegrasikan paginasi pada `ActiveIncidentsTable.vue`, `ResolvedIncidentsTable.vue`, `AssetTableView.vue`, `AuditView.vue`, `SevDetailModal.vue`, dan `WorkspaceProcessesTab.vue`.
+- **Kepatuhan Batas Komponen Modular:** Seluruh komponen `.vue` yang dimodifikasi terbukti patuh pada batas ketat `<250` baris.
+- **Dokumentasi Otonom di DEVELOPMENT.md:** Merekam Bab 11 khusus Arsitektur Mesin Paginasi Terpadu & Penegakan Parity Blueprint.
+
 
 ### Versi v0.1.61
 

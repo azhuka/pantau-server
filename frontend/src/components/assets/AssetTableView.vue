@@ -445,28 +445,13 @@
       </div>
 
       <!-- Universal Table Pagination Bar (Hidden if <= 10 items) -->
-      <div
-        v-if="totalPages > 1"
-        class="table-pagination-bar px-4 py-3 border-t border-cyan-500/20 bg-[#070c18]/90 flex items-center justify-between text-xs text-gray-400 font-mono select-none"
-      >
-        <span>{{ t('pagination_page_info', { current: currentPage, total: totalPages }) }} ({{ sortedServers.length }} {{ t('nodes_monitored') }})</span>
-        <div class="flex items-center gap-1.5">
-          <button
-            :disabled="currentPage === 1"
-            @click="currentPage--"
-            class="px-2.5 py-1 rounded bg-[#0b1324] border border-cyan-800/40 text-gray-300 hover:text-white hover:border-cyan-500/60 transition disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-          >
-            {{ t('pagination_prev') }}
-          </button>
-          <button
-            :disabled="currentPage === totalPages"
-            @click="currentPage++"
-            class="px-2.5 py-1 rounded bg-[#0b1324] border border-cyan-800/40 text-gray-300 hover:text-white hover:border-cyan-500/60 transition disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-          >
-            {{ t('pagination_next') }}
-          </button>
-        </div>
-      </div>
+      <NocTablePagination
+        v-model:page="currentPage"
+        v-model:pageSize="pageSize"
+        :total="sortedServers.length"
+        unitLabel="servers"
+        :pageSizeOptions="[10, 25, 50, 100, 'all']"
+      />
     </div>
 
     <!-- MODALS: EDIT HOST, EDIT NOTE, INJECT KEY, DELETE HOST -->
@@ -621,6 +606,7 @@ import EditNoteModal from './modals/EditNoteModal.vue'
 import InjectKeyModal from './modals/InjectKeyModal.vue'
 import DeleteHostModal from './modals/DeleteHostModal.vue'
 import ColumnCustomizerDropdown from './ColumnCustomizerDropdown.vue'
+import NocTablePagination from '../common/NocTablePagination.vue'
 
 const props = defineProps({
   servers: {
@@ -994,14 +980,14 @@ const sortedServers = computed(() => {
   })
 })
 
-const pageSize = 10
+const pageSize = ref(10)
 const currentPage = ref(1)
 
-const totalPages = computed(() => Math.ceil(sortedServers.value.length / pageSize) || 1)
-
 const paginatedServers = computed(() => {
-  const start = (currentPage.value - 1) * pageSize
-  return sortedServers.value.slice(start, start + pageSize)
+  if (pageSize.value === 'all') return sortedServers.value
+  const limit = parseInt(pageSize.value, 10) || 10
+  const start = (currentPage.value - 1) * limit
+  return sortedServers.value.slice(start, start + limit)
 })
 
 watch([searchQuery, statusFilter], () => {

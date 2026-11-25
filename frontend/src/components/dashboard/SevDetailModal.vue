@@ -138,34 +138,23 @@
         </table>
       </div>
 
-      <!-- Modal Footer -->
-      <div v-if="totalPages > 1" class="p-3 border-t border-gray-800 flex items-center justify-between text-xs text-gray-400 bg-[#070c18]">
-        <span>{{ t('sdm_page_info', { current: currentPage, total: totalPages }) }}</span>
-        <div class="flex items-center gap-1">
-          <button
-            :disabled="currentPage === 1"
-            @click="currentPage--"
-            class="px-2.5 py-1 rounded bg-gray-900 border border-gray-800 disabled:opacity-30 cursor-pointer"
-          >
-            {{ t('sdm_prev') }}
-          </button>
-          <button
-            :disabled="currentPage === totalPages"
-            @click="currentPage++"
-            class="px-2.5 py-1 rounded bg-gray-900 border border-gray-800 disabled:opacity-30 cursor-pointer"
-          >
-            {{ t('sdm_next') }}
-          </button>
-        </div>
-      </div>
+      <!-- Universal Table Pagination Bar (Hidden if <= 10 items) -->
+      <NocTablePagination
+        v-model:page="currentPage"
+        v-model:pageSize="pageSize"
+        :total="filteredList.length"
+        unitLabel="incidents"
+        :pageSizeOptions="[10, 25, 50, 'all']"
+      />
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useI18n } from '../../i18n'
 import { formatIncidentMessage, formatIncidentDuration } from '../../utils/formatters'
+import NocTablePagination from '../common/NocTablePagination.vue'
 
 const { t, locale } = useI18n()
 
@@ -185,7 +174,11 @@ const isViewer = computed(() => {
 
 const search = ref('')
 const currentPage = ref(1)
-const pageSize = 10
+const pageSize = ref(10)
+
+watch([search, () => props.severity], () => {
+  currentPage.value = 1
+})
 
 const TITLES = { danger: 'sdm_title_danger', critical: 'sdm_title_critical', warning: 'sdm_title_warning', info: 'sdm_title_info', ignored: 'sdm_title_ignored' }
 const modalTitle = computed(() => t(TITLES[props.severity] || 'sdm_title_default'))
@@ -218,11 +211,11 @@ const filteredList = computed(() => {
   )
 })
 
-const totalPages = computed(() => Math.ceil(filteredList.value.length / pageSize) || 1)
-
 const paginatedList = computed(() => {
-  const start = (currentPage.value - 1) * pageSize
-  return filteredList.value.slice(start, start + pageSize)
+  if (pageSize.value === 'all') return filteredList.value
+  const limit = parseInt(pageSize.value, 10) || 10
+  const start = (currentPage.value - 1) * limit
+  return filteredList.value.slice(start, start + limit)
 })
 
 function formatTime(isoStr) {

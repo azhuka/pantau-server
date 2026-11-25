@@ -114,7 +114,7 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-800/40 bg-[#090e1c]/40">
-            <tr v-for="log in auditLogs" :key="log.id" class="hover:bg-cyan-950/20 transition">
+            <tr v-for="log in paginatedLogs" :key="log.id" class="hover:bg-cyan-950/20 transition">
               <td class="py-2.5 px-4 text-gray-400 whitespace-nowrap">{{ log.created_at || '-' }}</td>
               <td class="py-2.5 px-4 font-bold text-gray-100 whitespace-nowrap">{{ log.username }}</td>
               <td class="py-2.5 px-4 text-cyan-400 whitespace-nowrap font-semibold">{{ log.server_name }}</td>
@@ -144,13 +144,23 @@
           </tbody>
         </table>
       </div>
+
+      <!-- Universal Table Pagination Bar (Hidden if <= 10 items) -->
+      <NocTablePagination
+        v-model:page="currentPage"
+        v-model:pageSize="pageSize"
+        :total="auditLogs.length"
+        unitLabel="activities"
+        :pageSizeOptions="[10, 25, 50, 100, 'all']"
+      />
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useI18n } from '../../i18n'
+import NocTablePagination from '../common/NocTablePagination.vue'
 
 const { t } = useI18n()
 
@@ -161,6 +171,19 @@ const filterPeriod = ref('24h')
 const filterStatus = ref('')
 const filterLimit = ref(50)
 const searchKeyword = ref('')
+const currentPage = ref(1)
+const pageSize = ref(10)
+
+const paginatedLogs = computed(() => {
+  if (pageSize.value === 'all') return auditLogs.value
+  const limit = parseInt(pageSize.value, 10) || 10
+  const start = (currentPage.value - 1) * limit
+  return auditLogs.value.slice(start, start + limit)
+})
+
+watch([filterPeriod, filterStatus, filterLimit, searchKeyword], () => {
+  currentPage.value = 1
+})
 
 async function loadAuditLogs() {
   loading.value = true

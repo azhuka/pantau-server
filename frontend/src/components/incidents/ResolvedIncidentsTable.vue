@@ -142,22 +142,23 @@
         </table>
       </div>
 
-      <!-- Pagination bar: strictly hidden if filtered count <= 10 -->
-      <div v-if="filteredProblems.length > 10" class="flex items-center justify-between pt-3 border-t border-gray-800 text-xs text-gray-400 mt-2">
-        <span>Page {{ currentPage }} of {{ totalPages }} ({{ filteredProblems.length }} total)</span>
-        <div class="flex items-center gap-1">
-          <button :disabled="currentPage <= 1" @click="currentPage--" class="px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 disabled:opacity-30 cursor-pointer">Prev</button>
-          <button :disabled="currentPage >= totalPages" @click="currentPage++" class="px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 disabled:opacity-30 cursor-pointer">Next</button>
-        </div>
-      </div>
+      <!-- Universal Table Pagination Bar (Hidden if <= 10 items) -->
+      <NocTablePagination
+        v-model:page="currentPage"
+        v-model:pageSize="pageSize"
+        :total="filteredProblems.length"
+        unitLabel="incidents"
+        :pageSizeOptions="[10, 25, 50, 100, 'all']"
+      />
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useI18n } from '../../i18n'
 import { formatIncidentTime, formatIncidentMessage } from '../../utils/formatters'
+import NocTablePagination from '../common/NocTablePagination.vue'
 
 const { t, locale } = useI18n()
 
@@ -172,7 +173,11 @@ defineEmits(['update:period', 'open-workspace'])
 const typeFilter = ref('all')
 const searchQuery = ref('')
 const currentPage = ref(1)
-const pageSize = 10
+const pageSize = ref(10)
+
+watch([typeFilter, searchQuery], () => {
+  currentPage.value = 1
+})
 
 function isAutoHealed(prob) {
   if (prob.acknowledged_by) return false
@@ -229,11 +234,10 @@ const filteredProblems = computed(() => {
   })
 })
 
-const totalPages = computed(() => Math.max(1, Math.ceil(filteredProblems.value.length / pageSize)))
-
 const paginatedProblems = computed(() => {
-  if (filteredProblems.value.length <= pageSize) return filteredProblems.value
-  const start = (currentPage.value - 1) * pageSize
-  return filteredProblems.value.slice(start, start + pageSize)
+  if (pageSize.value === 'all') return filteredProblems.value
+  const limit = parseInt(pageSize.value, 10) || 10
+  const start = (currentPage.value - 1) * limit
+  return filteredProblems.value.slice(start, start + limit)
 })
 </script>
