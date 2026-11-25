@@ -29,66 +29,22 @@
       </button>
     </div>
 
-    <!-- Filter & Search Toolbar Card -->
-    <div class="p-3.5 px-4 rounded-xl bg-[#080d1a] border border-cyan-900/40 flex items-center justify-between flex-wrap gap-3 font-mono text-xs">
-      <div class="flex items-center gap-3 flex-wrap flex-1">
-        <!-- Period Filter -->
-        <div class="flex items-center gap-1.5">
-          <span class="text-gray-400 text-[11px]">{{ t('audit_period') }}</span>
-          <select
-            v-model="filterPeriod"
-            @change="loadAuditLogs"
-            class="bg-[#111827] border border-gray-800 rounded px-2.5 py-1 text-gray-200 text-xs focus:border-cyan-500 outline-none"
-          >
-            <option value="24h">{{ t('audit_period_24h') }}</option>
-            <option value="today">{{ t('audit_period_today') }}</option>
-            <option value="7d">{{ t('audit_period_7d') }}</option>
-            <option value="30d">{{ t('audit_period_30d') }}</option>
-            <option value="all">{{ t('audit_period_all') }}</option>
-          </select>
-        </div>
-
-        <!-- Status Filter -->
-        <div class="flex items-center gap-1.5">
-          <span class="text-gray-400 text-[11px]">{{ t('audit_filter_status') }}</span>
-          <select
-            v-model="filterStatus"
-            @change="loadAuditLogs"
-            class="bg-[#111827] border border-gray-800 rounded px-2.5 py-1 text-gray-200 text-xs focus:border-cyan-500 outline-none"
-          >
-            <option value="">{{ t('audit_status_all') }}</option>
-            <option value="SUCCESS">{{ t('audit_status_success') }}</option>
-            <option value="FAILED">{{ t('audit_status_failed') }}</option>
-          </select>
-        </div>
-
-        <!-- Limit -->
-        <div class="flex items-center gap-1.5">
-          <span class="text-gray-400 text-[11px]">{{ t('audit_limit') }}</span>
-          <select
-            v-model="filterLimit"
-            @change="loadAuditLogs"
-            class="bg-[#111827] border border-gray-800 rounded px-2.5 py-1 text-gray-200 text-xs focus:border-cyan-500 outline-none"
-          >
-            <option :value="50">50 {{ t('audit_limit_rows', { count: '' }).trim() }}</option>
-            <option :value="100">100 {{ t('audit_limit_rows', { count: '' }).trim() }}</option>
-            <option :value="200">200 {{ t('audit_limit_rows', { count: '' }).trim() }}</option>
-            <option :value="500">500 {{ t('audit_limit_rows', { count: '' }).trim() }}</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- Search Input -->
-      <div class="w-full sm:w-64">
-        <input
-          v-model="searchKeyword"
-          @keyup.enter="loadAuditLogs"
-          type="search"
-          :placeholder="t('audit_search_placeholder')"
-          class="w-full bg-[#111827] border border-gray-800 rounded px-3 py-1 text-xs text-gray-200 focus:border-cyan-500 outline-none"
-        />
-      </div>
-    </div>
+    <!-- Filter & Search Toolbar (Blueprint Multi-Criteria + Quick Presets) -->
+    <AuditFilterBar
+      :users="metaUsers"
+      :servers="metaServers"
+      :categories="metaCategories"
+      v-model:user="filterUser"
+      v-model:serverId="filterServerId"
+      v-model:action="filterAction"
+      v-model:status="filterStatus"
+      v-model:period="filterPeriod"
+      v-model:startDate="filterStartDate"
+      v-model:endDate="filterEndDate"
+      v-model:search="searchKeyword"
+      :total-rows="auditLogs.length"
+      @reset="resetAuditFilters"
+    />
 
     <!-- Audit Table Card -->
     <div class="hud-tactical-card rounded-xl overflow-hidden shadow-2xl mb-8">
@@ -123,19 +79,20 @@
                   class="px-2 py-0.5 rounded text-[11px] font-bold border"
                   :class="getActionBadgeClass(log.action)"
                 >
-                  {{ log.action }}
+                  {{ log.action_label || log.action }}
                 </span>
               </td>
               <td
                 class="py-2.5 px-4 text-gray-300 truncate max-w-xs cursor-help hover:text-cyan-300"
-                :title="log.target"
+                :title="`${log.target}${log.result_detail && log.result_detail !== log.result ? ' — ' + log.result_detail : ''}`"
               >
                 {{ log.target }}
               </td>
               <td class="py-2.5 px-4 text-center whitespace-nowrap">
                 <span
                   class="px-2 py-0.5 rounded text-[11px] font-bold border"
-                  :class="isResultSuccess(log.result) ? 'bg-emerald-950 text-emerald-300 border-emerald-800' : 'bg-rose-950 text-rose-300 border-rose-800'"
+                  :class="statusBadgeClass(log.result)"
+                  :title="log.result_detail || log.result"
                 >
                   {{ log.result || 'SUCCESS' }}
                 </span>
@@ -161,18 +118,28 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useI18n } from '../../i18n'
 import NocTablePagination from '../common/NocTablePagination.vue'
+import AuditFilterBar from './AuditFilterBar.vue'
 
 const { t } = useI18n()
 
 const loading = ref(false)
 const auditLogs = ref([])
+const metaUsers = ref([])
+const metaServers = ref([])
+const metaCategories = ref([])
 
-const filterPeriod = ref('24h')
+const filterUser = ref('')
+const filterServerId = ref('')
+const filterAction = ref('')
 const filterStatus = ref('')
-const filterLimit = ref(50)
+const filterPeriod = ref('24h')
+const filterStartDate = ref('')
+const filterEndDate = ref('')
 const searchKeyword = ref('')
 const currentPage = ref(1)
 const pageSize = ref(10)
+
+let debounceTimer = null
 
 const paginatedLogs = computed(() => {
   if (pageSize.value === 'all') return auditLogs.value
@@ -181,29 +148,57 @@ const paginatedLogs = computed(() => {
   return auditLogs.value.slice(start, start + limit)
 })
 
-watch([filterPeriod, filterStatus, filterLimit, searchKeyword], () => {
+watch([filterUser, filterServerId, filterAction, filterStatus, filterPeriod, filterStartDate, filterEndDate], () => {
   currentPage.value = 1
+  if (filterPeriod.value === 'custom' && !filterStartDate.value && !filterEndDate.value) return
+  loadAuditLogs()
 })
+
+watch(searchKeyword, () => {
+  currentPage.value = 1
+  clearTimeout(debounceTimer)
+  debounceTimer = setTimeout(() => loadAuditLogs(), 250)
+})
+
+function resetAuditFilters() {
+  filterUser.value = ''
+  filterServerId.value = ''
+  filterAction.value = ''
+  filterStatus.value = ''
+  filterStartDate.value = ''
+  filterEndDate.value = ''
+  searchKeyword.value = ''
+  filterPeriod.value = '24h'
+}
+
+async function loadAuditMeta() {
+  try {
+    const token = localStorage.getItem('pantau_token')
+    const res = await fetch('/api/audit/meta', { headers: { Authorization: `Bearer ${token}` } })
+    if (res.ok) {
+      const m = await res.json()
+      metaUsers.value = m.users || []
+      metaServers.value = m.servers || []
+      metaCategories.value = m.categories || []
+    }
+  } catch (e) { console.error('Failed to load audit meta:', e) }
+}
 
 async function loadAuditLogs() {
   loading.value = true
   try {
     const token = localStorage.getItem('pantau_token')
-    const params = new URLSearchParams({
-      limit: String(filterLimit.value),
-      period: filterPeriod.value,
-    })
+    const params = new URLSearchParams({ limit: '300', period: filterPeriod.value })
+    if (filterUser.value) params.set('user', filterUser.value)
+    if (filterServerId.value) params.set('server_id', filterServerId.value)
+    if (filterAction.value) params.set('action', filterAction.value)
     if (filterStatus.value) params.set('status', filterStatus.value)
+    if (filterStartDate.value) params.set('start_date', filterStartDate.value)
+    if (filterEndDate.value) params.set('end_date', filterEndDate.value)
     if (searchKeyword.value.trim()) params.set('q', searchKeyword.value.trim())
 
-    const res = await fetch(`/api/audit?${params.toString()}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-    })
-    if (res.ok) {
-      auditLogs.value = await res.json()
-    }
+    const res = await fetch(`/api/audit?${params.toString()}`, { headers: { Authorization: `Bearer ${token}` } })
+    if (res.ok) auditLogs.value = await res.json()
   } catch (e) {
     console.error('Failed to load audit logs:', e)
   } finally {
@@ -211,27 +206,29 @@ async function loadAuditLogs() {
   }
 }
 
-function isResultSuccess(res) {
-  if (!res) return true
-  const lower = String(res).toLowerCase()
-  return !(lower.includes('fail') || lower.includes('gagal') || lower.includes('error'))
+function statusBadgeClass(res) {
+  const up = String(res || '').toUpperCase()
+  if (up === 'FAILED') return 'bg-rose-950 text-rose-300 border-rose-800'
+  if (up === 'PENDING') return 'bg-amber-950 text-amber-300 border-amber-800'
+  return 'bg-emerald-950 text-emerald-300 border-emerald-800'
 }
 
 function getActionBadgeClass(action) {
   const act = String(action).toLowerCase()
-  if (act.includes('delete') || act.includes('rm') || act.includes('kill') || act.includes('block') || act.includes('lock')) {
+  if (act.includes('delete') || act.includes('rm') || act.includes('kill') || act.includes('block') || act.includes('lock') || act.includes('poweroff') || act.includes('terminate')) {
     return 'bg-rose-950/80 text-rose-300 border-rose-800'
   }
   if (act.includes('add') || act.includes('create') || act.includes('start') || act.includes('unlock') || act.includes('enable')) {
     return 'bg-emerald-950/80 text-emerald-300 border-emerald-800'
   }
-  if (act.includes('update') || act.includes('upgrade') || act.includes('restart') || act.includes('reset')) {
+  if (act.includes('update') || act.includes('upgrade') || act.includes('restart') || act.includes('reset') || act.includes('maintenance')) {
     return 'bg-amber-950/80 text-amber-300 border-amber-800'
   }
   return 'bg-cyan-950 text-cyan-300 border-cyan-800'
 }
 
 onMounted(() => {
+  loadAuditMeta()
   loadAuditLogs()
 })
 </script>

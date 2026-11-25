@@ -1,126 +1,57 @@
 """Router Audit Log & Jejak Aktivitas Operasional Pantau Server."""
 
-from datetime import datetime, timedelta
-import logging
-from typing import Optional, List
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
 from core.database import get_db
-from routers.auth import get_current_user
 from models.user import User
-from models.server import Server
-from models.misc import AuditLog
-
-logger = logging.getLogger("pantau.audit")
+from routers.auth import get_current_user
+from services.audit_service import get_audit_metadata, query_audit_entries
 
 router = APIRouter(tags=["Audit & Logs"])
 
 
-@router.get("/api/audit")
-def api_get_audit_logs(
-    q: str = Query("", description="Kata kunci pencarian"),
-    action: str = Query("", description="Filter aksi"),
-    user: str = Query("", description="Filter username"),
-    period: str = Query("all", description="Filter periode: 24h, today, 7d, 30d, all"),
-    server_id: Optional[int] = Query(None, description="Filter ID Server"),
-    status: str = Query("", description="Filter status: success, failed"),
-    limit: int = Query(50, ge=1, le=500, description="Jumlah baris data"),
+@router.get("/api/audit/meta")
+def api_get_audit_meta(
     user_actor: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Mengambil jejak audit operasional NOC."""
+    """Metadata dropdown filter Audit Trail (Users, Assets, Action Categories)."""
     if not (user_actor.is_master_admin or user_actor.has_perm("can_audit")):
-        raise HTTPException(status_code=403, detail="Akses ditolak: Izin audit trail diperlukan.")
+        raise HTTPException(status_code=403, detail="Access denied: can_audit permission required.")
+    return get_audit_metadata(db, user_actor)
 
-    now_utc = datetime.utcnow()
-    cutoff = None
-    if period == "24h":
-        cutoff = now_utc - timedelta(hours=24)
-    elif period == "today":
-        cutoff = now_utc.replace(hour=0, minute=0, second=0, microsecond=0)
-    elif period == "7d":
-        cutoff = now_utc - timedelta(days=7)
-    elif period == "30d":
-        cutoff = now_utc - timedelta(days=30)
 
-    query = db.query(AuditLog)
-    if cutoff:
-        query = query.filter(AuditLog.created_at >= cutoff)
+@router.get("/api/audit")
+def api_get_audit_logs(
+    q: str = Query("", description="Search keyword"),
+    action: str = Query("", description="Action key or cat:* category filter"),
+    user: str = Query("", description="Operator username filter"),
+    period: str = Query("24h", description="Timeframe preset: 24h, today, 7d, 30d, all, custom"),
+    start_date: str = Query("", description="Custom start date YYYY-MM-DD"),
+    end_date: str = Query("", description="Custom end date YYYY-MM-DD"),
+    server_id: Optional[int] = Query(None, description="Target Server ID"),
+    status: str = Query("", description="Execution status: SUCCESS, FAILED, PENDING"),
+    limit: int = Query(200, ge=1, le=500, description="Max rows returned"),
+    user_actor: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Fetch chronological audit trail with multi-criteria filtering."""
+    if not (user_actor.is_master_admin or user_actor.has_perm("can_audit")):
+        raise HTTPException(status_code=403, detail="Access denied: can_audit permission required.")
 
-    # Scoping server untuk operator terbatas
-    allowed_sids = user_actor.get_allowed_server_ids()
-    if allowed_sids is not None:
-        if server_id is not None:
-            if server_id not in allowed_sids:
-                return []
-            query = query.filter(AuditLog.server_id == server_id)
-        else:
-            query = query.filter(AuditLog.server_id.in_(allowed_sids))
-    elif server_id is not None:
-        query = query.filter(AuditLog.server_id == server_id)
-
-    if user.strip():
-        query = query.filter(AuditLog.username == user.strip())
-
-    if action.strip():
-        query = query.filter(AuditLog.action == action.strip())
-
-    if status.strip().upper() == "SUCCESS":
-        query = query.filter(~AuditLog.result.ilike("%gagal%"), ~AuditLog.result.ilike("%fail%"), ~AuditLog.result.ilike("%error%"))
-    elif status.strip().upper() == "FAILED":
-        query = query.filter(
-            (AuditLog.result.ilike("%gagal%")) | (AuditLog.result.ilike("%fail%")) | (AuditLog.result.ilike("%error%"))
-        )
-
-    if q.strip():
-        search_kw = f"%{q.strip()}%"
-        query = query.filter(
-            (AuditLog.username.ilike(search_kw))
-            | (AuditLog.action.ilike(search_kw))
-            | (AuditLog.target.ilike(search_kw))
-            | (AuditLog.result.ilike(search_kw))
-        )
-
-    records = query.order_by(desc(AuditLog.created_at)).limit(limit).all()
-
-    # Map server hostnames
-    server_map = {s.id: s.hostname for s in db.query(Server).all()}
-
-    results = []
-    for r in records:
-        srv_name = server_map.get(r.server_id) or ("Host Pusat" if not r.server_id else f"#{r.server_id}")
-        results.append({
-            "id": r.id,
-            "created_at": r.created_at.strftime("%Y-%m-%d %H:%M:%S") if r.created_at else "-",
-            "username": r.username,
-            "server_id": r.server_id,
-            "server_name": srv_name,
-            "action": r.action,
-            "target": r.target or "-",
-            "result": r.result or "SUCCESS",
-            "meta": r.meta,
-        })
-
-    # Zero-Knowledge Master Admin Masking for Operator/Non-Master-Admin
-    if not user_actor.is_master_admin:
-        master_admin_names = {
-            u.username for u in db.query(User).filter(User.role.in_(["master_admin", "master-admin"])).all()
-        }
-        if user.strip() in master_admin_names:
-            return []
-
-        for item in results:
-            if item["username"] in master_admin_names:
-                item["username"] = "Sistem"
-            target_str = str(item["target"] or "")
-            for m in master_admin_names:
-                if m in target_str:
-                    target_str = target_str.replace(m, "Sistem")
-            if "master_admin" in target_str or "master-admin" in target_str:
-                target_str = target_str.replace("master_admin", "sistem").replace("master-admin", "sistem")
-            item["target"] = target_str
-
-    return results
+    return query_audit_entries(
+        db=db,
+        user_actor=user_actor,
+        q=q,
+        action=action,
+        user_filter=user,
+        period=period,
+        start_date=start_date,
+        end_date=end_date,
+        server_id=server_id,
+        status_filter=status,
+        limit=limit,
+    )

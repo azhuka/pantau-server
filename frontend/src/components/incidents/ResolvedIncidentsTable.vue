@@ -36,44 +36,16 @@
       </div>
 
       <!-- Filters & Search Toolbar -->
-      <div class="flex flex-wrap items-center justify-between gap-2 py-2 text-xs">
-        <div class="flex flex-wrap items-center gap-2">
-          <!-- Period Selector -->
-          <div class="flex items-center gap-1.5">
-            <span class="text-gray-400 text-[11px]">{{ t('audit_period') }}</span>
-            <select
-              :value="period"
-              @change="$emit('update:period', $event.target.value)"
-              class="bg-[#060a14] border border-gray-800 text-gray-200 rounded px-2 py-1 text-xs focus:border-cyan-500 focus:outline-none cursor-pointer"
-            >
-              <option value="today">{{ t('inc_period_today') }}</option>
-              <option value="24h">{{ t('inc_period_24h') }}</option>
-              <option value="7d">{{ t('inc_period_7d') }}</option>
-              <option value="30d">{{ t('inc_period_30d') }}</option>
-              <option value="all">{{ t('inc_period_all') }}</option>
-            </select>
-          </div>
-
-          <!-- Type Filter -->
-          <div class="flex items-center gap-1.5">
-            <select
-              v-model="typeFilter"
-              class="bg-[#060a14] border border-gray-800 text-gray-200 rounded px-2 py-1 text-xs focus:border-cyan-500 focus:outline-none cursor-pointer"
-            >
-              <option value="all">{{ t('inc_type_all') }}</option>
-              <option value="auto">{{ t('inc_type_auto') }}</option>
-              <option value="manual">{{ t('inc_type_manual') }}</option>
-            </select>
-          </div>
-        </div>
-
-        <input
-          v-model="searchQuery"
-          type="text"
-          :placeholder="t('inc_search_placeholder')"
-          class="bg-[#060a14] border border-gray-800 focus:border-cyan-500 rounded px-2.5 py-1 text-xs text-gray-200 placeholder-gray-500 focus:outline-none w-48"
-        />
-      </div>
+      <ResolvedIncidentsFilterBar
+        :servers="servers"
+        :period="period" :start-date="startDate" :end-date="endDate"
+        @update:period="$emit('update:period', $event)"
+        @update:start-date="$emit('update:startDate', $event)"
+        @update:end-date="$emit('update:endDate', $event)"
+        v-model:serverId="selectedServerId" v-model:severity="severityFilter" v-model:resType="typeFilter" v-model:search="searchQuery"
+        :filtered-count="filteredProblems.length" :total-count="problems.length"
+        @reset="resetFilters"
+      />
 
       <!-- Table Content -->
       <div class="overflow-x-auto">
@@ -120,9 +92,10 @@
               <td class="py-2.5 px-3 whitespace-nowrap">
                 <span
                   class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase border"
-                  :class="isAutoHealed(prob) ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30'"
+                  :class="resBadgeClass(prob)"
+                  :title="prob.resolved_note || ''"
                 >
-                  {{ isAutoHealed(prob) ? t('inc_res_mode_auto') : t('inc_res_mode_manual') }}
+                  {{ resModeLabel(prob) }}
                 </span>
               </td>
               <td class="py-2.5 px-3 text-right whitespace-nowrap">
@@ -142,14 +115,7 @@
         </table>
       </div>
 
-      <!-- Universal Table Pagination Bar (Hidden if <= 10 items) -->
-      <NocTablePagination
-        v-model:page="currentPage"
-        v-model:pageSize="pageSize"
-        :total="filteredProblems.length"
-        unitLabel="incidents"
-        :pageSizeOptions="[10, 25, 50, 100, 'all']"
-      />
+      <NocTablePagination v-model:page="currentPage" v-model:pageSize="pageSize" :total="filteredProblems.length" unitLabel="incidents" :pageSizeOptions="[10, 25, 50, 100, 'all']" />
     </div>
   </div>
 </template>
@@ -158,31 +124,54 @@
 import { ref, computed, watch } from 'vue'
 import { useI18n } from '../../i18n'
 import { formatIncidentTime, formatIncidentMessage } from '../../utils/formatters'
+import { inferResolutionType, RESOLUTION_TYPE_LABELS } from '../../utils/filterHelpers'
 import NocTablePagination from '../common/NocTablePagination.vue'
+import ResolvedIncidentsFilterBar from './ResolvedIncidentsFilterBar.vue'
 
 const { t, locale } = useI18n()
 
 const props = defineProps({
   problems: { type: Array, default: () => [] },
+  servers: { type: Array, default: () => [] },
   stats: { type: Object, default: () => ({}) },
-  period: { type: String, default: '24h' }
+  period: { type: String, default: '24h' },
+  startDate: { type: String, default: '' },
+  endDate: { type: String, default: '' },
 })
 
-defineEmits(['update:period', 'open-workspace'])
+const emit = defineEmits(['update:period', 'update:startDate', 'update:endDate', 'open-workspace'])
 
+const selectedServerId = ref('')
+const severityFilter = ref('')
 const typeFilter = ref('all')
 const searchQuery = ref('')
 const currentPage = ref(1)
 const pageSize = ref(10)
 
-watch([typeFilter, searchQuery], () => {
+watch([selectedServerId, severityFilter, typeFilter, searchQuery], () => {
   currentPage.value = 1
 })
 
-function isAutoHealed(prob) {
-  if (prob.acknowledged_by) return false
-  const note = (prob.resolved_note || '').toLowerCase()
-  return note.includes('auto-healed') || note.includes('automatic') || !note
+function resetFilters() {
+  selectedServerId.value = ''
+  severityFilter.value = ''
+  typeFilter.value = 'all'
+  searchQuery.value = ''
+  emit('update:startDate', '')
+  emit('update:endDate', '')
+  emit('update:period', '24h')
+}
+
+function resModeLabel(prob) {
+  const mode = inferResolutionType(prob)
+  return RESOLUTION_TYPE_LABELS[mode] || mode
+}
+
+function resBadgeClass(prob) {
+  const mode = inferResolutionType(prob)
+  if (mode === 'manual') return 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30'
+  if (mode === 'stale_closed') return 'bg-gray-700/40 text-gray-300 border-gray-600'
+  return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
 }
 
 function formatMttr(prob) {
@@ -221,14 +210,21 @@ function severityBadgeClass(sev) {
 
 const filteredProblems = computed(() => {
   return props.problems.filter(p => {
-    if (typeFilter.value === 'auto' && !isAutoHealed(p)) return false
-    if (typeFilter.value === 'manual' && isAutoHealed(p)) return false
+    if (selectedServerId.value && String(p.server_id) !== selectedServerId.value) return false
+    if (severityFilter.value) {
+      const sev = (p.severity || '').toLowerCase()
+      if (severityFilter.value === 'critical') {
+        if (sev !== 'critical' && sev !== 'average') return false
+      } else if (sev !== severityFilter.value) {
+        return false
+      }
+    }
+    if (typeFilter.value !== 'all' && inferResolutionType(p) !== typeFilter.value) return false
 
     if (searchQuery.value.trim()) {
       const q = searchQuery.value.toLowerCase()
-      const matchHost = (p.hostname || '').toLowerCase().includes(q)
-      const matchMsg = (p.message || '').toLowerCase().includes(q)
-      if (!matchHost && !matchMsg) return false
+      const hay = `${p.hostname || ''} ${p.group_name || ''} ${p.message || ''} ${p.component || ''} ${p.resolved_note || ''} ${p.key || ''}`.toLowerCase()
+      if (!hay.includes(q)) return false
     }
     return true
   })

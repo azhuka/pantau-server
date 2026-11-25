@@ -277,3 +277,222 @@
   text-transform: uppercase;
   border: 1px solid transparent;
 }
+
+/* ---------- Unified NOC Filter Panel Primitive ---------- */
+.noc-filter-panel {
+  background: rgba(8, 13, 26, 0.85);
+  border: 1px solid rgba(56, 189, 248, 0.18);
+  border-radius: 8px;
+  padding: 12px 14px;
+  box-sizing: border-box;
+}
+.noc-filter-panel.is-compact {
+  padding: 10px 12px;
+}
+.noc-filter-row-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 10px 12px;
+}
+@media (max-width: 900px) {
+  .noc-filter-row-main {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .noc-filter-actions {
+    justify-content: flex-start;
+  }
+}
+.noc-filter-fields {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px 12px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.noc-filter-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+.noc-filter-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+  min-width: 0;
+}
+.noc-filter-col-search {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 200px;
+  min-width: 190px;
+  max-width: 380px;
+}
+.noc-filter-label {
+  display: block;
+  margin: 0;
+  font-size: 10px;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  line-height: 12px;
+  white-space: nowrap;
+}
+.noc-filter-select,
+.noc-filter-search-box,
+.noc-date-range {
+  height: 32px;
+  background: #060a14;
+  border: 1px solid rgba(30, 41, 59, 0.95);
+  border-radius: 6px;
+  color: #e2e8f0;
+  font-size: 12px;
+  font-family: 'JetBrains Mono', Menlo, Monaco, monospace;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease;
+}
+.noc-filter-select {
+  padding: 0 10px;
+  cursor: pointer;
+  outline: none;
+}
+.noc-filter-select:hover,
+.noc-filter-search-box:hover,
+.noc-date-range:hover {
+  border-color: rgba(56, 189, 248, 0.45);
+}
+.noc-filter-select:focus,
+.noc-filter-search-box:focus-within,
+.noc-date-range:focus-within {
+  border-color: #38bdf8;
+  outline: none;
+}
+.noc-filter-search-box {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 9px;
+}
+.noc-filter-search-box input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: #f1f5f9;
+  font-size: 12px;
+  outline: none;
+}
+.noc-filter-search-box input::placeholder {
+  color: #64748b;
+}
+.noc-date-range {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+}
+.noc-date-range input[type="date"] {
+  background: transparent;
+  border: none;
+  color: #e2e8f0;
+  font-size: 11.5px;
+  outline: none;
+  color-scheme: dark;
+  cursor: pointer;
+}
+.noc-btn-toolbar {
+  height: 32px;
+  padding: 0 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid rgba(51, 65, 85, 0.9);
+  background: #0b1322;
+  color: #cbd5e1;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+.noc-btn-toolbar:hover {
+  background: #132038;
+  border-color: rgba(56, 189, 248, 0.5);
+  color: #f8fafc;
+}
+.noc-filter-divider {
+  height: 1px;
+  background: rgba(56, 189, 248, 0.12);
+  margin: 10px 0;
+}
+.noc-filter-divider-v {
+  width: 1px;
+  height: 22px;
+  background: rgba(56, 189, 248, 0.2);
+}
+.noc-filter-sub {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+.noc-btn-preset {
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #060a14;
+  border: 1px solid rgba(51, 65, 85, 0.8);
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.noc-btn-preset:hover {
+  color: #e2e8f0;
+  border-color: rgba(56, 189, 248, 0.4);
+}
+.noc-btn-preset.is-on {
+  background: rgba(8, 51, 68, 0.75);
+  border-color: rgba(56, 189, 248, 0.65);
+  color: #67e8f9;
+  font-weight: 700;
+}
+
+/* ---------- Precision Row-by-Row NOC Log Viewport ---------- */
+.noc-log-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 2px 8px;
+  border-bottom: 1px solid rgba(30, 41, 59, 0.35);
+  font-family: 'JetBrains Mono', Menlo, Monaco, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.noc-log-row:hover {
+  background: rgba(8, 51, 68, 0.22);
+}
+.noc-log-num {
+  min-width: 36px;
+  text-align: right;
+  color: #475569;
+  user-select: none;
+  flex-shrink: 0;
+  padding-right: 8px;
+  border-right: 1px solid rgba(51, 65, 85, 0.45);
+}
+.noc-log-line {
+  flex: 1;
+  min-width: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: #cbd5e1;
+}

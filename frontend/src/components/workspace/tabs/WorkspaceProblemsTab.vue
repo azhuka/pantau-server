@@ -1,27 +1,58 @@
 <template>
   <div class="space-y-3 font-mono">
-    <div class="flex items-center justify-between">
+    <div class="flex items-center justify-between flex-wrap gap-2">
       <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider">
         // {{ t('ws_incidents_title') }}
       </h3>
-      <span class="text-xs text-gray-400">{{ (problems || []).length }} {{ t('active_incidents').toLowerCase() }}</span>
+      <span class="text-xs text-gray-400">{{ filteredProblems.length }} of {{ (problems || []).length }} {{ t('active_incidents').toLowerCase() }}</span>
     </div>
+
+    <NocFilterPanel
+      v-if="(problems || []).length > 0"
+      :has-active-filters="Boolean(sevFilter || searchQuery.trim())"
+      :summary-text="`${filteredProblems.length} of ${problems.length} incidents`"
+      compact
+      @reset="sevFilter = ''; searchQuery = ''"
+    >
+      <template #fields>
+        <div class="noc-filter-col">
+          <label class="noc-filter-label" for="ws-prob-sev">{{ t('flt_severity') }}</label>
+          <select id="ws-prob-sev" v-model="sevFilter" class="noc-filter-select">
+            <option value="">{{ t('flt_all_severities') }}</option>
+            <option value="danger">{{ t('inc_filter_danger') }}</option>
+            <option value="critical">{{ t('inc_filter_critical') }}</option>
+            <option value="warning">{{ t('inc_filter_warning') }}</option>
+            <option value="info">{{ t('inc_filter_info') }}</option>
+            <option value="ignored">{{ t('inc_filter_ignored') }}</option>
+          </select>
+        </div>
+        <div class="noc-filter-col-search">
+          <label class="noc-filter-label" for="ws-prob-search">{{ t('flt_search') }}</label>
+          <div class="noc-filter-search-box">
+            <svg class="w-3.5 h-3.5 text-gray-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input id="ws-prob-search" v-model="searchQuery" type="search" :placeholder="t('inc_search_placeholder')" />
+          </div>
+        </div>
+      </template>
+    </NocFilterPanel>
 
     <div v-if="(problems || []).length === 0" class="hud-tactical-card rounded-xl p-8 text-center">
       <span class="hud-corner-tr"></span>
       <span class="hud-corner-bl"></span>
       <div class="mb-2 flex justify-center">
-        <svg class="w-8 h-8 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M20 6 9 17l-5-5"/>
-        </svg>
+        <svg class="w-8 h-8 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
       </div>
       <div class="text-xs font-semibold text-gray-200">{{ t('ws_incidents_empty') }}</div>
       <div class="text-xs text-gray-400 mt-1">{{ t('ws_incidents_normal') }}</div>
     </div>
 
+    <div v-else-if="filteredProblems.length === 0" class="hud-tactical-card rounded-xl p-6 text-center text-xs text-gray-400">
+      {{ t('inc_empty_filtered') }}
+    </div>
+
     <div v-else class="space-y-2">
       <div
-        v-for="prob in problems"
+        v-for="prob in filteredProblems"
         :key="prob.id"
         class="hud-tactical-card rounded-xl p-3.5 flex items-start justify-between gap-3"
         :class="prob.key?.startsWith('ssh_active_session:') ? 'border-amber-500/60 bg-amber-950/20' : 'border-gray-800'"
@@ -33,28 +64,16 @@
           </div>
           <div>
             <div class="flex items-center gap-2 flex-wrap mb-1">
-              <span class="px-1.5 py-0.2 rounded text-[10px] font-extrabold uppercase border" :class="severityBadgeClass(prob.severity)">
-                {{ prob.severity || 'INFO' }}
-              </span>
+              <span class="px-1.5 py-0.2 rounded text-[10px] font-extrabold uppercase border" :class="severityBadgeClass(prob.severity)">{{ prob.severity || 'INFO' }}</span>
               <div class="text-xs font-bold text-gray-100">{{ formatIncidentMessage(prob, locale) }}</div>
             </div>
             <div v-if="formatIncidentTip(prob, locale)" class="text-xs text-gray-400 mt-0.5">{{ formatIncidentTip(prob, locale) }}</div>
-
             <div class="flex items-center gap-2 mt-1.5 flex-wrap">
               <span class="text-xs text-gray-500">{{ t('ws_detected_since') }} {{ formatIncidentTime(prob.started_at) }}</span>
-              <span
-                v-if="prob.acknowledged_by"
-                class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1"
-                :title="t('dash_acked_by', { user: prob.acknowledged_by })"
-              >
+              <span v-if="prob.acknowledged_by" class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1" :title="t('dash_acked_by', { user: prob.acknowledged_by })">
                 ✓ {{ t('dash_badge_handled') }}
               </span>
-              <span
-                v-if="prob.is_ignored"
-                class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-gray-700/50 text-gray-300 border border-gray-600 flex items-center gap-1"
-                :title="prob.ignored_reason || 'Ignored'"
-              >
-                <svg class="w-3 h-3 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
+              <span v-if="prob.is_ignored" class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-gray-700/50 text-gray-300 border border-gray-600 flex items-center gap-1" :title="prob.ignored_reason || 'Ignored'">
                 <span>{{ t('inc_ignored_badge') }}</span>
               </span>
             </div>
@@ -62,30 +81,14 @@
         </div>
 
         <div class="flex items-center gap-2 shrink-0">
-          <button
-            v-if="prob.key?.startsWith('ssh_active_session:') && !isViewer"
-            @click="$emit('terminate-ssh-problem', prob.id)"
-            class="px-3 py-1 rounded bg-rose-950 text-rose-300 border border-rose-700 hover:bg-rose-800 hover:text-white font-bold text-xs transition cursor-pointer"
-          >
+          <button v-if="prob.key?.startsWith('ssh_active_session:') && !isViewer" @click="$emit('terminate-ssh-problem', prob.id)" class="px-3 py-1 rounded bg-rose-950 text-rose-300 border border-rose-700 hover:bg-rose-800 hover:text-white font-bold text-xs transition cursor-pointer">
             {{ t('ws_sever_ssh_btn') }}
           </button>
-
-          <!-- Ack Button / Handled State -->
-          <button
-            v-if="!prob.acknowledged_by && !isViewer"
-            @click="$emit('ack-problem', prob.id)"
-            class="px-2.5 py-1 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-700/80 hover:bg-emerald-800 hover:text-white font-bold text-xs transition cursor-pointer flex items-center gap-1 shadow-sm"
-            :title="t('inc_btn_ack')"
-          >
+          <button v-if="!prob.acknowledged_by && !isViewer" @click="$emit('ack-problem', prob.id)" class="px-2.5 py-1 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-700/80 hover:bg-emerald-800 hover:text-white font-bold text-xs transition cursor-pointer flex items-center gap-1 shadow-sm" :title="t('inc_btn_ack')">
             <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
             <span>{{ t('inc_btn_ack') }}</span>
           </button>
-          <span
-            v-else-if="prob.acknowledged_by"
-            class="px-2.5 py-1 rounded bg-emerald-950/40 text-emerald-300 border border-emerald-700/60 font-bold text-xs flex items-center gap-1 cursor-default select-none"
-            :title="t('dash_acked_by', { user: prob.acknowledged_by })"
-          >
-            <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          <span v-else-if="prob.acknowledged_by" class="px-2.5 py-1 rounded bg-emerald-950/40 text-emerald-300 border border-emerald-700/60 font-bold text-xs flex items-center gap-1 cursor-default select-none" :title="t('dash_acked_by', { user: prob.acknowledged_by })">
             <span>✓ {{ t('dash_badge_handled') }}</span>
           </span>
         </div>
@@ -95,9 +98,10 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { useI18n } from '../../../i18n'
 import { formatIncidentMessage, formatIncidentTip, formatIncidentTime } from '../../../utils/formatters'
+import NocFilterPanel from '../../common/NocFilterPanel.vue'
 
 const { t, locale } = useI18n()
 
@@ -108,9 +112,31 @@ const props = defineProps({
 
 defineEmits(['terminate-ssh-problem', 'ack-problem'])
 
-const isViewer = computed(() => {
-  const r = (props.currentUser?.role || '').toLowerCase()
-  return !props.currentUser || ['viewer', 'guest', 'tamu'].includes(r)
+const sevFilter = ref('')
+const searchQuery = ref('')
+
+const isViewer = computed(() => !props.currentUser || ['viewer', 'guest', 'tamu'].includes((props.currentUser?.role || '').toLowerCase()))
+
+const filteredProblems = computed(() => {
+  return (props.problems || []).filter(p => {
+    if (sevFilter.value === 'ignored') {
+      if (!p.is_ignored) return false
+    } else if (sevFilter.value) {
+      if (p.is_ignored) return false
+      const s = (p.severity || 'info').toLowerCase()
+      if (sevFilter.value === 'critical') {
+        if (s !== 'critical' && s !== 'average') return false
+      } else if (s !== sevFilter.value) {
+        return false
+      }
+    }
+    if (searchQuery.value.trim()) {
+      const q = searchQuery.value.toLowerCase()
+      const hay = `${p.message || ''} ${p.key || ''} ${p.tip || ''}`.toLowerCase()
+      if (!hay.includes(q)) return false
+    }
+    return true
+  })
 })
 
 function severityBadgeClass(sev) {

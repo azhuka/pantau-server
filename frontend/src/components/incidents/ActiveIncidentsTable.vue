@@ -16,29 +16,20 @@
             <p class="text-[11px] text-gray-400 mt-0.5">{{ t('inc_active_subtitle') }}</p>
           </div>
         </div>
-
-        <!-- Filter Pills & Search -->
-        <div class="flex flex-wrap items-center gap-2 text-xs">
-          <div class="flex items-center bg-[#060a14] p-0.5 rounded border border-gray-800">
-            <button
-              v-for="sev in ['all', 'danger', 'critical', 'warning', 'info', 'ignored']"
-              :key="sev"
-              @click="activeFilter = sev"
-              class="px-2.5 py-1 rounded text-[11px] font-bold uppercase transition cursor-pointer"
-              :class="activeFilter === sev ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-gray-400 hover:text-gray-200'"
-            >
-              {{ t(`inc_filter_${sev}`) }}
-            </button>
-          </div>
-
-          <input
-            v-model="searchQuery"
-            type="text"
-            :placeholder="t('inc_search_placeholder')"
-            class="bg-[#060a14] border border-gray-800 focus:border-cyan-500 rounded px-2.5 py-1 text-xs text-gray-200 placeholder-gray-500 focus:outline-none w-48"
-          />
-        </div>
       </div>
+
+      <!-- Unified Blueprint Filter Bar & Triage Pills -->
+      <ActiveIncidentsFilterBar
+        :servers="servers"
+        :pill-counts="pillCounts"
+        v-model:serverId="selectedServerId"
+        v-model:group="selectedGroup"
+        v-model:severity="activeFilter"
+        v-model:search="searchQuery"
+        :filtered-count="filteredProblems.length"
+        :total-count="problems.length"
+        @reset="resetFilters"
+      />
 
       <!-- Table Content (Canonical 7 Columns) -->
       <div class="overflow-x-auto mt-2">
@@ -125,44 +116,23 @@
                     <span class="text-[10px]">▾</span>
                   </summary>
                   <div class="absolute right-0 mt-1 w-44 rounded-md bg-[#0a0f1d] border border-gray-700 shadow-2xl py-1 z-[9999] text-xs font-mono">
-                    <button
-                      @click="$emit('open-workspace', { server_id: prob.server_id, problem: prob })"
-                      class="w-full text-left px-3 py-1.5 hover:bg-cyan-950/50 text-cyan-300 flex items-center gap-2 cursor-pointer"
-                    >
+                    <button @click="$emit('open-workspace', { server_id: prob.server_id, problem: prob })" class="w-full text-left px-3 py-1.5 hover:bg-cyan-950/50 text-cyan-300 flex items-center gap-2 cursor-pointer">
                       <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                       <span>{{ t('inc_btn_workspace') }}</span>
                     </button>
-
-                    <div
-                      v-if="prob.acknowledged_by"
-                      class="w-full text-left px-3 py-1.5 text-emerald-400 font-bold flex items-center gap-2 cursor-default select-none border-t border-gray-800/60"
-                      :title="t('dash_acked_by', { user: prob.acknowledged_by })"
-                    >
+                    <div v-if="prob.acknowledged_by" class="w-full text-left px-3 py-1.5 text-emerald-400 font-bold flex items-center gap-2 cursor-default select-none border-t border-gray-800/60" :title="t('dash_acked_by', { user: prob.acknowledged_by })">
                       <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
                       <span>✓ {{ t('inc_btn_ack_done') }}</span>
                     </div>
-                    <button
-                      v-else
-                      @click="$emit('ack', prob.id)"
-                      class="w-full text-left px-3 py-1.5 hover:bg-emerald-950/50 text-emerald-300 flex items-center gap-2 cursor-pointer border-t border-gray-800/60"
-                    >
+                    <button v-else @click="$emit('ack', prob.id)" class="w-full text-left px-3 py-1.5 hover:bg-emerald-950/50 text-emerald-300 flex items-center gap-2 cursor-pointer border-t border-gray-800/60">
                       <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
                       <span>{{ t('inc_btn_ack') }}</span>
                     </button>
-
-                    <button
-                      v-if="prob.is_ignored"
-                      @click="$emit('unignore', prob.id)"
-                      class="w-full text-left px-3 py-1.5 hover:bg-gray-800 text-gray-300 flex items-center gap-2 cursor-pointer border-t border-gray-800/60"
-                    >
+                    <button v-if="prob.is_ignored" @click="$emit('unignore', prob.id)" class="w-full text-left px-3 py-1.5 hover:bg-gray-800 text-gray-300 flex items-center gap-2 cursor-pointer border-t border-gray-800/60">
                       <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                       <span>{{ t('inc_btn_unignore') }}</span>
                     </button>
-                    <button
-                      v-else
-                      @click="$emit('open-ignore-modal', prob)"
-                      class="w-full text-left px-3 py-1.5 hover:bg-amber-950/50 text-amber-300 flex items-center gap-2 cursor-pointer border-t border-gray-800/60"
-                    >
+                    <button v-else @click="$emit('open-ignore-modal', prob)" class="w-full text-left px-3 py-1.5 hover:bg-amber-950/50 text-amber-300 flex items-center gap-2 cursor-pointer border-t border-gray-800/60">
                       <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
                       <span>{{ t('inc_btn_ignore') }}</span>
                     </button>
@@ -173,15 +143,7 @@
           </tbody>
         </table>
       </div>
-
-      <!-- Universal Table Pagination Bar (Hidden if <= 10 items) -->
-      <NocTablePagination
-        v-model:page="currentPage"
-        v-model:pageSize="pageSize"
-        :total="filteredProblems.length"
-        unitLabel="incidents"
-        :pageSizeOptions="[10, 25, 50, 100, 'all']"
-      />
+      <NocTablePagination v-model:page="currentPage" v-model:pageSize="pageSize" :total="filteredProblems.length" unitLabel="incidents" :pageSizeOptions="[10, 25, 50, 100, 'all']" />
     </div>
   </div>
 </template>
@@ -190,23 +152,35 @@
 import { ref, computed, watch } from 'vue'
 import { useI18n } from '../../i18n'
 import { formatIncidentTime, formatIncidentDuration, formatIncidentMessage, formatIncidentTip } from '../../utils/formatters'
+import { matchesGroupFilter } from '../../utils/filterHelpers'
 import NocTablePagination from '../common/NocTablePagination.vue'
+import ActiveIncidentsFilterBar from './ActiveIncidentsFilterBar.vue'
 
 const { t, locale } = useI18n()
 
 const props = defineProps({
   problems: { type: Array, default: () => [] },
+  servers: { type: Array, default: () => [] },
   currentUser: { type: Object, default: null }
 })
 
 defineEmits(['ack', 'unignore', 'open-ignore-modal', 'open-workspace'])
 
+const selectedServerId = ref('')
+const selectedGroup = ref('')
 const activeFilter = ref('all')
 const searchQuery = ref('')
 const currentPage = ref(1)
 const pageSize = ref(10)
 
-watch([activeFilter, searchQuery], () => { currentPage.value = 1 })
+watch([selectedServerId, selectedGroup, activeFilter, searchQuery], () => { currentPage.value = 1 })
+
+function resetFilters() {
+  selectedServerId.value = ''
+  selectedGroup.value = ''
+  activeFilter.value = 'all'
+  searchQuery.value = ''
+}
 
 const canOperate = computed(() => !['viewer', 'guest', 'tamu'].includes((props.currentUser?.role || '').toLowerCase()))
 
@@ -218,22 +192,40 @@ function severityBadgeClass(sev) {
   return 'bg-blue-500/20 text-blue-400 border-blue-500/30'
 }
 
-const filteredProblems = computed(() => {
+const scopedProblems = computed(() => {
   return props.problems.filter(p => {
-    if (activeFilter.value === 'ignored') {
-      if (!p.is_ignored) return false
-    } else if (activeFilter.value !== 'all') {
-      if ((p.severity || '').toLowerCase() !== activeFilter.value) return false
-    }
-
+    if (selectedServerId.value && String(p.server_id) !== selectedServerId.value) return false
+    if (!matchesGroupFilter(p.group_name, selectedGroup.value)) return false
     if (searchQuery.value.trim()) {
       const q = searchQuery.value.toLowerCase()
-      const matchHost = (p.hostname || '').toLowerCase().includes(q)
-      const matchMsg = (p.message || '').toLowerCase().includes(q)
-      const matchKey = (p.key || '').toLowerCase().includes(q)
-      if (!matchHost && !matchMsg && !matchKey) return false
+      const hay = `${p.hostname || ''} ${p.group_name || ''} ${p.message || ''} ${p.key || ''} ${p.tip || ''}`.toLowerCase()
+      if (!hay.includes(q)) return false
     }
     return true
+  })
+})
+
+const pillCounts = computed(() => {
+  const base = scopedProblems.value
+  const nonIgn = base.filter(p => !p.is_ignored)
+  return {
+    all: base.length,
+    danger: nonIgn.filter(p => (p.severity || '').toLowerCase() === 'danger').length,
+    critical: nonIgn.filter(p => ['critical', 'average'].includes((p.severity || '').toLowerCase())).length,
+    warning: nonIgn.filter(p => (p.severity || '').toLowerCase() === 'warning').length,
+    info: nonIgn.filter(p => !p.severity || p.severity.toLowerCase() === 'info').length,
+    ignored: base.filter(p => p.is_ignored).length,
+  }
+})
+
+const filteredProblems = computed(() => {
+  return scopedProblems.value.filter(p => {
+    if (activeFilter.value === 'ignored') return Boolean(p.is_ignored)
+    if (activeFilter.value === 'all') return true
+    if (p.is_ignored) return false
+    const sev = (p.severity || 'info').toLowerCase()
+    if (activeFilter.value === 'critical') return sev === 'critical' || sev === 'average'
+    return sev === activeFilter.value
   })
 })
 

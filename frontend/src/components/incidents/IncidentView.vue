@@ -42,6 +42,7 @@
     <!-- Table 1: Insiden Aktif (Active Physical Incidents) -->
     <ActiveIncidentsTable
       :problems="activeProblems"
+      :servers="servers"
       :current-user="currentUser"
       @ack="handleAck"
       @unignore="handleUnignore"
@@ -52,8 +53,11 @@
     <!-- Table 2: Riwayat Insiden Teratasi (Resolved Incidents & MTTR Analytics) -->
     <ResolvedIncidentsTable
       :problems="resolvedProblems"
+      :servers="servers"
       :stats="stats.resolved"
       v-model:period="resolvedPeriod"
+      v-model:start-date="resolvedStartDate"
+      v-model:end-date="resolvedEndDate"
       @open-workspace="handleOpenWorkspace"
     />
 
@@ -99,6 +103,8 @@ const resolvedProblems = ref([])
 const stats = ref({ active: {}, resolved: {} })
 const thresholds = ref({})
 const resolvedPeriod = ref('24h')
+const resolvedStartDate = ref('')
+const resolvedEndDate = ref('')
 const loading = ref(false)
 
 const showIgnoreModal = ref(false)
@@ -128,7 +134,14 @@ async function fetchActiveProblems() {
 
 async function fetchResolvedProblems() {
   try {
-    const res = await fetch(`/api/problems?active_only=false&period=${resolvedPeriod.value}&limit=100`, { headers: getAuthHeaders() })
+    const params = new URLSearchParams({
+      active_only: 'false',
+      period: resolvedPeriod.value || '24h',
+      limit: '300',
+    })
+    if (resolvedStartDate.value) params.set('start_date', resolvedStartDate.value)
+    if (resolvedEndDate.value) params.set('end_date', resolvedEndDate.value)
+    const res = await fetch(`/api/problems?${params.toString()}`, { headers: getAuthHeaders() })
     const data = await res.json()
     if (data.ok) resolvedProblems.value = data.problems || []
   } catch (err) { console.error('fetchResolvedProblems error:', err) }
@@ -216,7 +229,8 @@ function handleOpenWorkspace(payload) {
   emit('open-workspace', payload)
 }
 
-watch(resolvedPeriod, () => {
+watch([resolvedPeriod, resolvedStartDate, resolvedEndDate], ([p, s, e]) => {
+  if (p === 'custom' && !s && !e) return
   fetchResolvedProblems()
 })
 

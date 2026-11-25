@@ -274,13 +274,27 @@
             </div>
           </div>
 
-          <div class="w-full sm:w-64">
-            <input
-              v-model="userSearchQuery"
-              type="search"
-              :placeholder="t('settings_search_placeholder')"
-              class="w-full bg-[#111827] border border-gray-800 rounded px-3 py-1 text-xs text-gray-200 focus:border-cyan-500 outline-none"
-            />
+          <div class="flex items-center gap-2 flex-wrap w-full sm:w-auto">
+            <div class="w-full sm:w-56">
+              <input
+                v-model="userSearchQuery"
+                type="search"
+                :placeholder="t('settings_search_placeholder')"
+                class="w-full bg-[#111827] border border-gray-800 rounded px-3 py-1 text-xs text-gray-200 focus:border-cyan-500 outline-none"
+              />
+            </div>
+            <button
+              v-if="userRoleFilter || userStatusFilter || userSearchQuery.trim()"
+              type="button"
+              @click="userRoleFilter = ''; userStatusFilter = ''; userSearchQuery = ''"
+              class="px-2.5 py-1 rounded bg-gray-900 border border-amber-700/50 text-amber-300 hover:border-amber-400 text-xs font-mono font-bold transition cursor-pointer"
+              title="Reset user filters"
+            >
+              {{ t('flt_reset') }}
+            </button>
+            <span class="text-[11px] font-mono text-gray-400 whitespace-nowrap">
+              {{ filteredUsers.length }} of {{ users.length }} users
+            </span>
           </div>
         </div>
 

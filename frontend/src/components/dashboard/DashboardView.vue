@@ -409,24 +409,38 @@
             </button>
           </div>
 
-          <!-- Group Filter Dropdown -->
+          <!-- Group Filter Dropdown (Includes Ungrouped Option) -->
           <select
             v-model="selectedGroup"
             class="bg-[#060a14] border border-cyan-900/50 focus:border-cyan-400 rounded px-2.5 py-1 text-xs text-gray-200 outline-none transition cursor-pointer"
           >
             <option value="">{{ t('dash_all_groups') }}</option>
-            <option v-for="grp in availableGroups" :key="grp" :value="grp">
-              {{ grp }}
+            <option v-for="grp in groupMeta.groups" :key="grp" :value="grp">
+              {{ grp }} ({{ groupMeta.counts[grp] }})
+            </option>
+            <option v-if="groupMeta.ungroupedCount > 0" value="__none__">
+              {{ t('flt_ungrouped') }} ({{ groupMeta.ungroupedCount }})
             </option>
           </select>
 
           <!-- Search Filter -->
           <input
             v-model="assetFilter"
-            type="text"
+            type="search"
             :placeholder="t('dash_search_placeholder')"
             class="bg-[#060a14] border border-cyan-900/50 focus:border-cyan-400 rounded px-2.5 py-1 text-xs text-gray-100 placeholder-gray-500 w-44 outline-none transition"
           />
+
+          <!-- Passive Filter Reset Button -->
+          <button
+            v-if="selectedGroup || assetFilter.trim()"
+            type="button"
+            @click="selectedGroup = ''; assetFilter = ''"
+            class="px-2 py-1 rounded bg-[#060a14] border border-amber-700/50 text-amber-300 hover:border-amber-400 text-[11px] font-mono font-bold transition cursor-pointer"
+            title="Reset dashboard asset filter"
+          >
+            {{ t('flt_reset') }}
+          </button>
         </div>
       </div>
 
@@ -858,6 +872,7 @@ import {
 import SevDetailModal from './SevDetailModal.vue'
 import ProblemDetailModal from './ProblemDetailModal.vue'
 import IgnoreProblemModal from './IgnoreProblemModal.vue'
+import { extractGroupOptions, matchesGroupFilter, buildAssetSearchHaystack } from '../../utils/filterHelpers'
 
 const props = defineProps({
   servers: {
@@ -1019,13 +1034,7 @@ function setSort(col) {
   }
 }
 
-const availableGroups = computed(() => {
-  const set = new Set()
-  props.servers.forEach(s => {
-    if (s.group_name) set.add(s.group_name)
-  })
-  return Array.from(set).sort()
-})
+const groupMeta = computed(() => extractGroupOptions(props.servers))
 
 // Clock state
 const clockDayStr = ref('')
@@ -1140,15 +1149,11 @@ const incidentBadgeClass = computed(() => {
 const filteredServers = computed(() => {
   let list = props.servers || []
   if (selectedGroup.value) {
-    list = list.filter(s => s.group_name === selectedGroup.value)
+    list = list.filter(s => matchesGroupFilter(s.group_name, selectedGroup.value))
   }
-  if (assetFilter.value) {
-    const q = assetFilter.value.toLowerCase()
-    list = list.filter(s =>
-      (s.hostname && s.hostname.toLowerCase().includes(q)) ||
-      (s.ip_address && s.ip_address.toLowerCase().includes(q)) ||
-      (s.group_name && s.group_name.toLowerCase().includes(q))
-    )
+  if (assetFilter.value.trim()) {
+    const q = assetFilter.value.toLowerCase().trim()
+    list = list.filter(s => buildAssetSearchHaystack(s).includes(q))
   }
   return [...list].sort((a, b) => {
     let aVal, bVal

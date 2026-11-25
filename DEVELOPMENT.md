@@ -509,7 +509,35 @@ Setiap bilah paginasi tabel sekunder menggunakan kontainer flexbox terpadu denga
 
 ---
 
-## 12. Konvensi Rekayasa & Standar Kontribusi Git
+## 12. Arsitektur Mesin Filtering Terpadu NOC (`NocFilterPanel`)
+
+Sistem penyaringan data Pantau Server menggunakan primitif modular terstandar **NocFilterPanel** (`frontend/src/components/common/NocFilterPanel.vue`) dan utilitas bersama `frontend/src/utils/filterHelpers.js` guna menjamin konsistensi ergonomi, keterbacaan, dan akurasi penyaringan di seluruh pandangan antarmuka.
+
+### 12.1 Struktur Primitif `.noc-filter-panel`
+1. **Baris Utama Split-Grid (`filter-row-main`):**
+   - Zona Kiri (`noc-filter-fields`): Kumpulan kolom filter berlabel atas (`noc-filter-label` 10px uppercase) dengan tinggi kontrol seragam `32px` (`.noc-filter-select`, `.noc-filter-search-box`, `.noc-date-range`).
+   - Zona Kanan (`noc-filter-actions`): Tombol **Reset** kondisional (otomatis tampil saat filter/pencarian aktif), kontrol pelengkap (Column Customizer), serta ringkasan hitungan hasil (`X of Y ...`).
+2. **Baris Sekunder Opsional (`noc-filter-sub`):**
+   - Dipisahkan oleh divider halus dan memuat tombol **Quick Period Presets** (`All`, `Today`, `Last 24 Hours`, `Last 7 Days`, `Last 30 Days`, dan `Custom` aktif otomatis saat rentang tanggal dipilih) serta ringkasan periode.
+
+### 12.2 Cakupan Multi-Kriteria per Modul
+- **Dashboard (`DashboardView.vue`):** Filter Grup (mencakup opsi eksplisit `Ungrouped` via `__none__`), pencarian komprehensif (`hostname`, `ip_address`, `net_iface`, `group_name`, `tags`, `os_label`, `platform`, `notes`), tombol Reset pasif, serta tetap mematuhi Zero-Pagination.
+- **Incident Center (`ActiveIncidentsTable.vue` & `ResolvedIncidentsTable.vue`):**
+  - *Active Incidents:* Triage Pills dengan live counter real-time tersinkron 2-arah ke dropdown `Severity`, ditambah filter `Asset`, `Group`, `Search`, `Reset`, dan live count.
+  - *Resolved Incidents:* Filter `Asset`, `Severity`, `Resolution Mode` (7 kategori: `Auto-Healed`, `Remediated by Operator`, `Host Reconnected`, `Service Restored`, `Closed (Host Offline)`, `SSH Session Terminated`, `Deduplicated`), `Custom Date Range`, `Quick Presets`, `Search`, dan `Reset`.
+- **Asset Inventory (`AssetTableView.vue` & `AssetFilterBar.vue`):** Filter `Group` dengan hitungan per grup, `Status` (`All`, `Online`, `Offline`, `With Incidents`, `Maintenance`), `Environment` (`Production Tier 1`, `Non-Production Tier 2`), pencarian metadata lengkap, Column Customizer, dan `Reset`.
+- **Audit Trail (`AuditView.vue` & `services/audit_service.py`):** Metadata `/api/audit/meta` + penyaringan multi-kriteria atas gabungan `AuditLog` dan `Command`: `Operator` (Zero-Knowledge Master Admin masking), `Asset`, `Action` kategori `<optgroup>`, `Status` (`SUCCESS`, `FAILED`, `PENDING`), `Date Range`, `Debounced Search` (250ms), `Quick Presets`, dan `Reset`.
+- **Workspace Sub-Tabs (`ServerWorkspaceModal.vue`):**
+  - *Incidents:* Filter `Severity` + `Search` + `Reset`.
+  - *Services & Ports:* Systemd filter `Status`, `Boot Startup` (`enabled`, `disabled`, `static/masked`), klik badge status, serta Ports filter `Protocol` (`TCP`/`UDP`), `Access Scope` (`Public`/`Local` akurat berbasis deteksi loopback `127.*` / `::1`), dan `Search`.
+  - *Tasks (Processes):* Filter `User` + `Search`.
+  - *Packages:* Menggabungkan `installed_packages` & `apt_packages` dengan filter `Package Type` (`User Installed`/`System`), `Status` (`Upgradable`/`Installed`), klik badge upgradable, serta paginasi otomatis.
+  - *Logs:* Mengonsumsi daftar `available_logs` dari agen klien, mendukung on-demand log streaming via `POST /api/logs/request` + `GET /api/logs/request/{rid}`, filter `Log Source`, `Lines`, `Log Level` (`Error/Critical`, `Warning`, `HTTP 4xx/5xx`, `Info/Notice`), pencarian kata kunci, dan render baris-demi-baris presisi `.noc-log-row`.
+  - *Firewall, Cron Jobs, Users & SSH:* Masing-masing dilengkapi filter `NocFilterPanel` terarah dan paginasi otomatis.
+
+---
+
+## 13. Konvensi Rekayasa & Standar Kontribusi Git
 
 Seluruh commit ke repositori Git wajib menggunakan standar **Conventional Commits**:
 
@@ -537,6 +565,13 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 ---
 
 ## Catatan Perubahan (Changelog)
+
+### Versi v0.1.63
+
+- **Unified Filtering Architecture (`NocFilterPanel`)**: Penerapan komponen filter standar seragam dengan reset kontekstual, pencarian multi-field, dan preset rentang waktu (`Today`, `Last 24 Hours`, `Last 7 Days`, `Last 30 Days`) di halaman Incidents, Asset Inventory, Audit Trail, Settings, dan seluruh sub-tab Workspace Modal.
+- **Backend Query & Taxonomy Parity**: Penambahan `audit_service.py` (7 kategori optgroup aksi + Zero-Knowledge `master_admin` masking -> `System`), klasifikasi 7 tipe resolusi MTTR (`problems.py`), akurasi filter host tidak terkelompok (`""`), normalisasi soket loopback `127.0.0.*` pada endpoint Listening Ports, penggabungan daftar paket terpasang & upgradable, serta endpoint streaming log on-demand (`POST/GET /api/logs/request`).
+- **Modular Frontend & Workspace Sub-Tabs**: Pemecahan komponen bersih (<250 baris per berkas Vue) pada filter bar dan tabel port, perbaikan klasifikasi `INTERNAL`/`PUBLIC`, sumber log riil berbasis telemetri agen (`available_logs`), serta dokumentasi arsitektur di Bagian 12 `DEVELOPMENT.md`.
+
 
 ### Versi v0.1.62
 

@@ -1,13 +1,19 @@
 import asyncio
 import json
-from datetime import datetime
+import re
+from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, Body
+from sqlalchemy import desc
 from sqlalchemy.orm import Session
 from core.database import get_db
 from core.utils import hash_api_key
 from models.server import Server
+from models.user import User
 from models.command import Command, LogRequest
+from routers.auth import get_current_user
 from services.telemetry_service import process_telemetry_report
+
+VALID_UNIT_RE = re.compile(r"^[A-Za-z0-9_.:@-]{1,100}$")
 
 router = APIRouter(tags=["Agent API"])
 
@@ -186,4 +192,84 @@ def api_agent_file_result(
 ):
     """Penerimaan hasil eksekusi operasi file agen."""
     return {"ok": True}
+
+
+@router.post("/api/logs/request")
+def api_logs_request_create(
+    body: dict = Body(...),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Create on-demand log retrieval request for target server agent."""
+    try:
+        sid = int(body.get("server_id"))
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400, detail="Invalid server_id")
+
+    unit = str(body.get("unit") or "").strip()[:100]
+    try:
+        lines = max(10, min(int(body.get("lines") or 200), 2000))
+    except (TypeError, ValueError):
+        lines = 200
+
+    if not VALID_UNIT_RE.match(unit):
+        raise HTTPException(status_code=400, detail="Invalid log unit identifier")
+
+    if not user.can_access_server(sid):
+        raise HTTPException(status_code=403, detail="Access denied for this asset")
+    if not (user.is_master_admin or user.has_perm("can_audit") or user.has_perm("can_services")):
+        raise HTTPException(status_code=403, detail="Permission can_audit or can_services is required")
+
+    server = db.query(Server).filter(Server.id == sid, Server.is_active == 1).first()
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+
+    now = datetime.utcnow()
+    if not server.last_seen or (now - server.last_seen).total_seconds() > 60:
+        raise HTTPException(status_code=409, detail="Asset is offline; on-demand log polling is unavailable")
+
+    # Expire stale pending requests older than 2 minutes
+    stale_cutoff = now - timedelta(minutes=2)
+    db.query(LogRequest).filter(
+        LogRequest.server_id == sid,
+        LogRequest.status.in_(["pending", "executing"]),
+        LogRequest.created_at < stale_cutoff,
+    ).update({"status": "failed", "result": "[timeout]"}, synchronize_session=False)
+
+    logreq = LogRequest(server_id=sid, unit=unit, lines=lines, status="pending")
+    db.add(logreq)
+    db.commit()
+    db.refresh(logreq)
+
+    # Cap completed log requests to latest 100 rows per server
+    old_done = (
+        db.query(LogRequest)
+        .filter(LogRequest.server_id == sid, LogRequest.status.in_(["success", "failed"]))
+        .order_by(desc(LogRequest.id))
+        .offset(100)
+        .all()
+    )
+    for row in old_done:
+        db.delete(row)
+    if old_done:
+        db.commit()
+
+    return {"ok": True, "id": logreq.id}
+
+
+@router.get("/api/logs/request/{rid}")
+def api_logs_request_poll(
+    rid: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Poll status and raw log payload of a LogRequest."""
+    logreq = db.query(LogRequest).filter(LogRequest.id == rid).first()
+    if not logreq:
+        raise HTTPException(status_code=404, detail="Log request not found")
+    if not user.can_access_server(logreq.server_id):
+        raise HTTPException(status_code=403, detail="Access denied for this asset")
+    if not (user.is_master_admin or user.has_perm("can_audit") or user.has_perm("can_services")):
+        raise HTTPException(status_code=403, detail="Permission required")
+    return {"ok": True, "id": logreq.id, "status": logreq.status, "result": logreq.result}
 

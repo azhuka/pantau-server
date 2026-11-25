@@ -257,7 +257,8 @@ def list_servers(user: User = Depends(get_current_user), db: Session = Depends(g
             "id": s.id,
             "hostname": s.hostname,
             "ip_address": s.ip_address,
-            "group_name": s.group_name or "Default",
+            "group_name": s.group_name or "",
+            "tags": s.tags or "",
             "tier": s.tier,
             "is_online": is_online,
             "last_seen": s.last_seen.isoformat() if s.last_seen else None,
@@ -419,6 +420,9 @@ def get_server_services(sid: int, user: User = Depends(get_current_user), db: Se
                         "name": name,
                         "active": active,
                         "sub": sub,
+                        "status": s.get("status") or sub,
+                        "boot": s.get("boot") or "unknown",
+                        "memory": s.get("memory"),
                         "description": desc,
                         "port": s.get("port")
                     })
@@ -427,6 +431,9 @@ def get_server_services(sid: int, user: User = Depends(get_current_user), db: Se
                         "name": s,
                         "active": "active",
                         "sub": "running",
+                        "status": "running",
+                        "boot": "unknown",
+                        "memory": None,
                         "description": "System service unit",
                         "port": None
                     })
@@ -473,7 +480,26 @@ def get_server_ports(sid: int, user: User = Depends(get_current_user), db: Sessi
         return {"ok": True, "ports": []}
     try:
         data = json.loads(extras.listening_ports)
-        return {"ok": True, "ports": data}
+        normalized = []
+        if isinstance(data, list):
+            for p in data:
+                if not isinstance(p, dict):
+                    continue
+                ip_val = p.get("ip") or p.get("bind") or p.get("address") or "0.0.0.0"
+                is_loop = bool(p.get("is_loopback")) or ip_val.startswith(("127.", "::1"))
+                is_pub = p.get("is_public") if "is_public" in p else (not is_loop)
+                normalized.append({
+                    "port": p.get("port"),
+                    "proto": (p.get("proto") or "tcp").lower(),
+                    "ip": ip_val,
+                    "bind": ip_val,
+                    "proc": p.get("proc") or p.get("service") or p.get("program") or p.get("process") or "-",
+                    "pid": p.get("pid"),
+                    "pname": p.get("pname") or "",
+                    "is_loopback": is_loop,
+                    "is_public": bool(is_pub),
+                })
+        return {"ok": True, "ports": normalized}
     except Exception:
         return {"ok": True, "ports": []}
 
@@ -818,13 +844,62 @@ def get_server_packages(sid: int, user: User = Depends(get_current_user), db: Se
     if not (user.is_master_admin or user.has_perm("can_apt")):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied: Package Manager permission (can_apt) is required")
     extras = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
-    if not extras or not extras.apt_packages:
-        return {"ok": True, "packages": [], "upgradable_count": extras.apt_upgradable if extras else 0}
-    try:
-        data = json.loads(extras.apt_packages)
-        return {"ok": True, "packages": data, "upgradable_count": extras.apt_upgradable or len(data)}
-    except Exception:
+    if not extras:
         return {"ok": True, "packages": [], "upgradable_count": 0}
+
+    apt_map = {}
+    if extras.apt_packages:
+        try:
+            for item in json.loads(extras.apt_packages):
+                if isinstance(item, dict) and item.get("name"):
+                    apt_map[item["name"]] = item
+        except Exception:
+            pass
+
+    installed_list = []
+    if extras.installed_packages:
+        try:
+            raw_inst = json.loads(extras.installed_packages)
+            if isinstance(raw_inst, list):
+                installed_list = raw_inst
+        except Exception:
+            installed_list = []
+
+    packages = []
+    seen = set()
+    for pkg in installed_list:
+        if not isinstance(pkg, dict) or not pkg.get("name"):
+            continue
+        name = pkg["name"]
+        seen.add(name)
+        upg = apt_map.get(name)
+        packages.append({
+            "name": name,
+            "current_version": pkg.get("version") or "-",
+            "candidate_version": (upg.get("new_version") or upg.get("candidate_version") or upg.get("version")) if upg else None,
+            "arch": pkg.get("arch") or "",
+            "size_kb": pkg.get("size_kb") or 0,
+            "summary": pkg.get("summary") or "",
+            "is_user": bool(pkg.get("is_user")),
+            "status": "upgradable" if upg else (pkg.get("status") or "installed"),
+        })
+
+    for name, upg in apt_map.items():
+        if name not in seen:
+            packages.append({
+                "name": name,
+                "current_version": upg.get("current_version") or "-",
+                "candidate_version": upg.get("candidate_version") or upg.get("new_version") or upg.get("version") or "-",
+                "arch": "",
+                "size_kb": 0,
+                "summary": ", ".join(upg.get("services") or []),
+                "is_user": True,
+                "status": "upgradable",
+            })
+
+    packages.sort(key=lambda x: (0 if x["status"] == "upgradable" else 1, x["name"].lower()))
+    upg_cnt = extras.apt_upgradable if extras.apt_upgradable is not None else len(apt_map)
+    return {"ok": True, "packages": packages, "upgradable_count": upg_cnt}
 
 
 @router.get("/{sid}/ssl")
@@ -848,13 +923,26 @@ def get_server_logs(sid: int, user: User = Depends(get_current_user), db: Sessio
     if not (user.is_master_admin or user.has_perm("can_audit") or user.has_perm("can_services")):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied: Logs audit permission is required")
     extras = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
-    if not extras or not extras.system_logs:
-        return {"ok": True, "logs": []}
-    try:
-        data = json.loads(extras.system_logs)
-        return {"ok": True, "logs": data}
-    except Exception:
-        return {"ok": True, "logs": []}
+    logs_data = []
+    avail_data = []
+    if extras and extras.system_logs:
+        try:
+            logs_data = json.loads(extras.system_logs)
+        except Exception:
+            logs_data = []
+    if extras and getattr(extras, "available_logs", None):
+        try:
+            avail_data = json.loads(extras.available_logs)
+        except Exception:
+            avail_data = []
+    if not avail_data:
+        avail_data = [
+            {"id": "SYSTEM_ERRORS", "group": "System & Security", "name": "System Critical Error Journal", "desc": "journalctl -p 0..3"},
+            {"id": "AUTH", "group": "System & Security", "name": "SSH & Sudo Authentication Log", "desc": "/var/log/auth.log"},
+            {"id": "SYSLOG", "group": "System & Security", "name": "System Syslog", "desc": "/var/log/syslog"},
+            {"id": "DPKG", "group": "System & Security", "name": "Package History (dpkg.log)", "desc": "/var/log/dpkg.log"},
+        ]
+    return {"ok": True, "logs": logs_data, "available_logs": avail_data}
 
 
 @router.get("/{sid}/fim")

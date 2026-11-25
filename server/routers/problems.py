@@ -13,11 +13,52 @@ from services.problem_service import check_all_servers_stale
 
 router = APIRouter(prefix="/api/problems", tags=["Problems & Alerts"])
 
+
+def _classify_resolution_type(prob: ServerProblem) -> str:
+    """Map resolved problem metadata into canonical blueprint resolution mode."""
+    note = (prob.resolved_note or "").strip().lower()
+    if prob.acknowledged_by or note == "manual" or "operator" in note:
+        return "manual"
+    if "server_online" in note:
+        return "online"
+    if "service_up" in note:
+        return "service_up"
+    if "server_offline" in note or "stale" in note:
+        return "stale_closed"
+    if "session_closed" in note or "ssh_closed" in note:
+        return "session_closed"
+    if "duplicate" in note or "dedup" in note:
+        return "dedup"
+    return "auto"
+
+
+def _classify_component(key: str) -> str:
+    """Derive human-readable subsystem component label from incident key."""
+    k = (key or "").lower()
+    if k.startswith("cpu") or "load" in k:
+        return "CPU"
+    if k.startswith(("mem", "ram", "swap")):
+        return "Memory"
+    if k.startswith("disk") or "inode" in k:
+        return "Storage"
+    if k.startswith("service_down"):
+        return "Services"
+    if k.startswith("ssh_") or "firewall" in k or "fim" in k:
+        return "Security"
+    if "offline" in k or "host_down" in k:
+        return "Connectivity"
+    if k.startswith("apt") or "pkg" in k:
+        return "Packages"
+    return "System"
+
+
 @router.get("")
 def list_problems(
     active_only: bool = True,
     server_id: int | None = None,
+    group_name: str | None = None,
     severity: str | None = None,
+    res_type: str | None = None,
     period: str | None = None,
     start_date: str | None = None,
     end_date: str | None = None,
@@ -44,24 +85,36 @@ def list_problems(
             query = query.filter(ServerProblem.resolved_at >= now - timedelta(days=7))
         elif period == "30d":
             query = query.filter(ServerProblem.resolved_at >= now - timedelta(days=30))
-        elif period == "custom" and start_date and end_date:
+        elif (period == "custom" or (start_date or end_date)):
             try:
-                s_dt = datetime.fromisoformat(start_date)
-                e_dt = datetime.fromisoformat(end_date).replace(hour=23, minute=59, second=59)
-                query = query.filter(ServerProblem.resolved_at >= s_dt, ServerProblem.resolved_at <= e_dt)
+                if start_date:
+                    s_dt = datetime.fromisoformat(start_date[:10])
+                    query = query.filter(ServerProblem.resolved_at >= s_dt)
+                if end_date:
+                    e_dt = datetime.fromisoformat(end_date[:10]).replace(hour=23, minute=59, second=59)
+                    query = query.filter(ServerProblem.resolved_at <= e_dt)
             except Exception:
                 pass
 
     if server_id:
         query = query.filter(ServerProblem.server_id == server_id)
+    if group_name:
+        if group_name == "__none__":
+            query = query.filter((Server.group_name == None) | (Server.group_name == ""))
+        else:
+            query = query.filter(Server.group_name == group_name)
     if severity and severity != "all":
         query = query.filter(ServerProblem.severity == severity)
     
     problems = query.order_by(ServerProblem.id.desc()).limit(limit).all()
     result = []
     
-    for prob, hostname, group_name in problems:
+    for prob, hostname, s_group_name in problems:
         if not user.can_access_server(prob.server_id):
+            continue
+
+        derived_res_type = _classify_resolution_type(prob) if prob.resolved_at else None
+        if res_type and res_type != "all" and derived_res_type != res_type:
             continue
 
         # Cek kedaluwarsa pengabaian berbatas waktu
@@ -101,7 +154,8 @@ def list_problems(
             "id": prob.id,
             "server_id": prob.server_id,
             "hostname": hostname,
-            "group_name": group_name or "Default",
+            "group_name": s_group_name or "",
+            "component": _classify_component(prob.key),
             "key": prob.key,
             "severity": prob.severity,
             "message": prob.message,
@@ -109,6 +163,7 @@ def list_problems(
             "started_at": prob.started_at.isoformat() if prob.started_at else None,
             "resolved_at": prob.resolved_at.isoformat() if prob.resolved_at else None,
             "resolved_note": prob.resolved_note,
+            "res_type": derived_res_type,
             "duration_sec": duration_sec,
             "is_active": prob.is_active,
             "acknowledged_by": prob.acknowledged_by,

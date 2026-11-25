@@ -473,7 +473,10 @@
           />
           <WorkspaceLogsTab
             v-else-if="activeSubTab === 'logs'"
+            :server-id="currentServerId"
+            :server-online="Boolean(server?.is_online)"
             :logs-list="logsList"
+            :available-logs="availableLogsList"
           />
         </template>
       </div>
@@ -881,6 +884,7 @@ const cronData = ref({ jobs: [] })
 const packagesList = ref([])
 const sslCertsList = ref([])
 const logsList = ref([])
+const availableLogsList = ref([])
 const fimEventsList = ref([])
 
 const serviceSearch = ref('')
@@ -1065,6 +1069,7 @@ async function loadServerData() {
     packagesList.value = pkgData.packages || []
     sslCertsList.value = sslData.certs || []
     logsList.value = logsData.logs || []
+    availableLogsList.value = logsData.available_logs || []
     fimEventsList.value = fimData.fim || []
   } catch (err) {
     console.error('Error fetching server workspace data:', err)

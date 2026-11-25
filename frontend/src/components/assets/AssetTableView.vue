@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-4">
-    <!-- TOOLBAR ATAS (Search, Filter, Groups) -->
-    <div class="hud-tactical-card relative z-30 p-3.5 px-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
+    <!-- HEADER CARD -->
+    <div class="hud-tactical-card p-3.5 px-4 rounded-xl flex items-center justify-between gap-3 shadow-lg">
       <span class="hud-corner-tr"></span>
       <span class="hud-corner-bl"></span>
 
@@ -15,66 +15,23 @@
           {{ t('assets_subtitle') }}
         </p>
       </div>
-
-      <!-- Search & Filters -->
-      <div class="flex items-center gap-2.5 flex-wrap font-mono">
-        <!-- Quick Status Pills -->
-        <div class="flex items-center bg-[#060a14] border border-cyan-900/40 rounded p-0.5 text-xs">
-          <button
-            @click="statusFilter = 'all'"
-            :class="[
-              'px-2.5 py-1 rounded transition cursor-pointer font-semibold',
-              statusFilter === 'all' ? 'bg-cyan-950 text-cyan-300 font-bold border border-cyan-500/50' : 'text-gray-400 hover:text-gray-200'
-            ]"
-          >
-            {{ t('all_statuses') }}
-          </button>
-          <button
-            @click="statusFilter = 'online'"
-            :class="[
-              'px-2.5 py-1 rounded transition cursor-pointer flex items-center gap-1.5 font-semibold',
-              statusFilter === 'online' ? 'bg-emerald-950 text-emerald-300 font-bold border border-emerald-500/50' : 'text-gray-400 hover:text-gray-200'
-            ]"
-          >
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 beacon-live"></span>
-            {{ t('online') }}
-          </button>
-          <button
-            @click="statusFilter = 'offline'"
-            :class="[
-              'px-2.5 py-1 rounded transition cursor-pointer flex items-center gap-1.5 font-semibold',
-              statusFilter === 'offline' ? 'bg-rose-950 text-rose-300 font-bold border border-rose-500/50' : 'text-gray-400 hover:text-gray-200'
-            ]"
-          >
-            <span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
-            {{ t('offline') }}
-          </button>
-        </div>
-
-        <!-- Column Customizer Dropdown -->
-        <ColumnCustomizerDropdown
-          :columns="columnsConfig"
-          @toggle="toggleColumn"
-          @preset="applyColumnPreset"
-          @reset="resetColumns"
-        />
-
-        <!-- Search Input -->
-        <div class="relative">
-          <input
-            v-model="searchQuery"
-            type="text"
-            :placeholder="t('search_placeholder')"
-            class="bg-[#060a14] border border-cyan-900/50 focus:border-cyan-400 rounded px-3 py-1 text-xs text-gray-100 placeholder-gray-500 w-56 focus:outline-none transition font-mono"
-          />
-          <span class="absolute right-2.5 top-2 text-xs text-gray-500 pointer-events-none">
-            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
-          </span>
-        </div>
-      </div>
     </div>
+
+    <!-- BLUEPRINT UNIFIED FILTER BAR (Group, Status, Tier, Search, Reset, Columns) -->
+    <AssetFilterBar
+      :servers="servers"
+      v-model:group="groupFilter"
+      v-model:status="statusFilter"
+      v-model:tier="tierFilter"
+      v-model:search="searchQuery"
+      :columns="columnsConfig"
+      :filtered-count="filteredServers.length"
+      :total-count="(servers || []).length"
+      @reset="resetAssetFilters"
+      @toggle-col="toggleColumn"
+      @preset-col="applyColumnPreset"
+      @reset-col="resetColumns"
+    />
 
     <!-- HIGH-DENSITY ASSET TELEMETRY MATRIX TABLE -->
     <div class="hud-tactical-card rounded-xl overflow-hidden shadow-2xl mb-8">
@@ -605,8 +562,9 @@ import EditHostModal from './modals/EditHostModal.vue'
 import EditNoteModal from './modals/EditNoteModal.vue'
 import InjectKeyModal from './modals/InjectKeyModal.vue'
 import DeleteHostModal from './modals/DeleteHostModal.vue'
-import ColumnCustomizerDropdown from './ColumnCustomizerDropdown.vue'
+import AssetFilterBar from './AssetFilterBar.vue'
 import NocTablePagination from '../common/NocTablePagination.vue'
+import { matchesGroupFilter, matchesAssetStatus, buildAssetSearchHaystack } from '../../utils/filterHelpers'
 
 const props = defineProps({
   servers: {
@@ -753,8 +711,17 @@ const hasDropdownActions = computed(() => {
   return Boolean(userPerms.value.can_server_control || userPerms.value.can_manage_servers)
 })
 
+const groupFilter = ref('')
+const tierFilter = ref('')
 const searchQuery = ref('')
-const statusFilter = ref('all') // all, online, offline
+const statusFilter = ref('all')
+
+function resetAssetFilters() {
+  groupFilter.value = ''
+  tierFilter.value = ''
+  statusFilter.value = 'all'
+  searchQuery.value = ''
+}
 const activeDropdownId = ref(null)
 const activeDropdownServer = ref(null)
 const dropdownStyle = ref({})
@@ -936,20 +903,18 @@ function setSort(col) {
 
 const filteredServers = computed(() => {
   let list = props.servers || []
-  if (statusFilter.value === 'online') {
-    list = list.filter(s => s.is_online)
-  } else if (statusFilter.value === 'offline') {
-    list = list.filter(s => !s.is_online)
+  if (groupFilter.value) {
+    list = list.filter(s => matchesGroupFilter(s.group_name, groupFilter.value))
   }
-
+  if (statusFilter.value && statusFilter.value !== 'all') {
+    list = list.filter(s => matchesAssetStatus(s, statusFilter.value))
+  }
+  if (tierFilter.value) {
+    list = list.filter(s => String(s.tier || 2) === tierFilter.value)
+  }
   if (!searchQuery.value.trim()) return list
-  const q = searchQuery.value.toLowerCase()
-  return list.filter(s =>
-    (s.hostname || '').toLowerCase().includes(q) ||
-    (s.ip_address || '').includes(q) ||
-    (s.group_name || '').toLowerCase().includes(q) ||
-    (s.os_label || '').toLowerCase().includes(q)
-  )
+  const q = searchQuery.value.toLowerCase().trim()
+  return list.filter(s => buildAssetSearchHaystack(s).includes(q))
 })
 
 const sortedServers = computed(() => {
@@ -990,7 +955,7 @@ const paginatedServers = computed(() => {
   return sortedServers.value.slice(start, start + limit)
 })
 
-watch([searchQuery, statusFilter], () => {
+watch([groupFilter, tierFilter, searchQuery, statusFilter], () => {
   currentPage.value = 1
 })
 

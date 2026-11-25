@@ -5,15 +5,34 @@
     <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
       <div class="flex items-center gap-2">
         <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider">// {{ t('ws_procs_title') }}</h3>
-        <span class="text-xs text-gray-400">({{ (processes || []).length }})</span>
+        <span class="text-xs text-gray-400">({{ filteredProcesses.length }})</span>
       </div>
-      <input
-        v-model="search"
-        type="text"
-        :placeholder="t('ws_procs_search')"
-        class="bg-[#060a14] border border-cyan-900/50 focus:border-cyan-400 text-gray-200 text-xs rounded px-3 py-1.5 w-60 focus:outline-none"
-      />
     </div>
+
+    <NocFilterPanel
+      class="mb-3"
+      :has-active-filters="Boolean(userFilter || search.trim())"
+      :summary-text="`${filteredProcesses.length} of ${(processes || []).length} processes`"
+      compact
+      @reset="userFilter = ''; search = ''"
+    >
+      <template #fields>
+        <div class="noc-filter-col">
+          <label class="noc-filter-label" for="proc-user-filter">{{ t('ws_col_user') }}</label>
+          <select id="proc-user-filter" v-model="userFilter" class="noc-filter-select max-w-[145px]">
+            <option value="">All Users</option>
+            <option v-for="u in uniqueUsers" :key="u" :value="u">{{ u }}</option>
+          </select>
+        </div>
+        <div class="noc-filter-col-search">
+          <label class="noc-filter-label" for="proc-search-input">{{ t('flt_search') }}</label>
+          <div class="noc-filter-search-box">
+            <svg class="w-3.5 h-3.5 text-gray-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input id="proc-search-input" v-model="search" type="search" :placeholder="t('ws_procs_search')" />
+          </div>
+        </div>
+      </template>
+    </NocFilterPanel>
     <div class="overflow-x-auto max-h-[500px]">
       <table class="w-full text-left text-xs border-collapse">
         <thead class="sticky top-0 bg-[#070c18] z-10 border-b border-cyan-500/20">
@@ -77,50 +96,19 @@
         class="rounded-lg bg-[#0b1326] border border-rose-900/80 shadow-2xl z-[100005] py-1 font-mono text-xs divide-y divide-gray-800 transition-all select-none"
       >
         <div class="py-0.5">
-          <!-- SIGTERM: Terminate Gracefully -->
-          <button
-            type="button"
-            @click="sendSignal(activeProc.pid, 'SIGTERM', activeProc.cmd || activeProc.command)"
-            class="w-full px-3 py-1.5 text-left text-amber-300 hover:text-white hover:bg-amber-950/80 flex items-center gap-2 cursor-pointer transition font-bold"
-            title="Request process to close gracefully (SIGTERM 15)"
-          >
-            <svg class="w-3.5 h-3.5 text-amber-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            <span>SIGTERM (Terminasi)</span>
+          <button type="button" @click="sendSignal(activeProc.pid, 'SIGTERM', activeProc.cmd || activeProc.command)" class="w-full px-3 py-1.5 text-left text-amber-300 hover:text-white hover:bg-amber-950/80 flex items-center gap-2 cursor-pointer transition font-bold" title="Request process to close gracefully (SIGTERM 15)">
+            <span>SIGTERM (Terminate)</span>
           </button>
-
-          <!-- SIGKILL: Force Kill -->
-          <button
-            type="button"
-            @click="sendSignal(activeProc.pid, 'SIGKILL', activeProc.cmd || activeProc.command)"
-            class="w-full px-3 py-1.5 text-left text-rose-400 hover:text-white hover:bg-rose-950/80 flex items-center gap-2 cursor-pointer transition font-bold"
-            title="Force immediate termination without catch (SIGKILL 9)"
-          >
-            <svg class="w-3.5 h-3.5 text-rose-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-            <span>SIGKILL (Paksa)</span>
+          <button type="button" @click="sendSignal(activeProc.pid, 'SIGKILL', activeProc.cmd || activeProc.command)" class="w-full px-3 py-1.5 text-left text-rose-400 hover:text-white hover:bg-rose-950/80 flex items-center gap-2 cursor-pointer transition font-bold" title="Force immediate termination without catch (SIGKILL 9)">
+            <span>SIGKILL (Force Kill)</span>
           </button>
         </div>
-
         <div class="py-0.5">
-          <!-- SIGSTOP: Suspend -->
-          <button
-            type="button"
-            @click="sendSignal(activeProc.pid, 'SIGSTOP', activeProc.cmd || activeProc.command)"
-            class="w-full px-3 py-1.5 text-left text-gray-300 hover:text-white hover:bg-cyan-950/80 flex items-center gap-2 cursor-pointer transition"
-            title="Pause execution (SIGSTOP 19)"
-          >
-            <svg class="w-3.5 h-3.5 text-cyan-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
-            <span>SIGSTOP (Bekukan)</span>
+          <button type="button" @click="sendSignal(activeProc.pid, 'SIGSTOP', activeProc.cmd || activeProc.command)" class="w-full px-3 py-1.5 text-left text-gray-300 hover:text-white hover:bg-cyan-950/80 flex items-center gap-2 cursor-pointer transition" title="Pause execution (SIGSTOP 19)">
+            <span>SIGSTOP (Suspend)</span>
           </button>
-
-          <!-- SIGCONT: Resume -->
-          <button
-            type="button"
-            @click="sendSignal(activeProc.pid, 'SIGCONT', activeProc.cmd || activeProc.command)"
-            class="w-full px-3 py-1.5 text-left text-emerald-300 hover:text-white hover:bg-emerald-950/80 flex items-center gap-2 cursor-pointer transition"
-            title="Resume execution (SIGCONT 18)"
-          >
-            <svg class="w-3.5 h-3.5 text-emerald-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-            <span>SIGCONT (Lanjut)</span>
+          <button type="button" @click="sendSignal(activeProc.pid, 'SIGCONT', activeProc.cmd || activeProc.command)" class="w-full px-3 py-1.5 text-left text-emerald-300 hover:text-white hover:bg-emerald-950/80 flex items-center gap-2 cursor-pointer transition" title="Resume execution (SIGCONT 18)">
+            <span>SIGCONT (Resume)</span>
           </button>
         </div>
       </div>
@@ -131,6 +119,7 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useI18n } from '../../../i18n'
+import NocFilterPanel from '../../common/NocFilterPanel.vue'
 import NocTablePagination from '../../common/NocTablePagination.vue'
 
 const { t } = useI18n()
@@ -142,13 +131,16 @@ const props = defineProps({
 const emit = defineEmits(['kill-process'])
 
 const search = ref('')
+const userFilter = ref('')
 const currentPage = ref(1)
 const pageSize = ref(10)
 const openProcId = ref(null)
 const activeProc = ref(null)
 const dropdownStyle = ref({})
 
-watch(search, () => {
+const uniqueUsers = computed(() => Array.from(new Set((props.processes || []).map(p => p.user).filter(Boolean))).sort())
+
+watch([search, userFilter], () => {
   currentPage.value = 1
 })
 
@@ -214,13 +206,14 @@ function sendSignal(pid, signal, cmd) {
 }
 
 const filteredProcesses = computed(() => {
-  if (!search.value) return props.processes
-  const q = search.value.toLowerCase()
-  return props.processes.filter(p =>
-    String(p.pid).includes(q) ||
-    (p.user || '').toLowerCase().includes(q) ||
-    (p.cmd || p.command || '').toLowerCase().includes(q)
-  )
+  return (props.processes || []).filter(p => {
+    if (userFilter.value && p.user !== userFilter.value) return false
+    if (search.value.trim()) {
+      const q = search.value.toLowerCase()
+      return String(p.pid).includes(q) || (p.user || '').toLowerCase().includes(q) || (p.cmd || p.command || '').toLowerCase().includes(q)
+    }
+    return true
+  })
 })
 
 const paginatedProcesses = computed(() => {
