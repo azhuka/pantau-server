@@ -17,12 +17,12 @@
       </div>
     </div>
 
-    <!-- BLUEPRINT UNIFIED FILTER BAR (Group, Status, Tier, Search, Reset, Columns) -->
+    <!-- BLUEPRINT UNIFIED FILTER BAR (Group, Status, Environment, Search, Reset, Columns) -->
     <AssetFilterBar
       :servers="servers"
       v-model:group="groupFilter"
       v-model:status="statusFilter"
-      v-model:tier="tierFilter"
+      v-model:environment="envFilter"
       v-model:search="searchQuery"
       :columns="columnsConfig"
       :filtered-count="filteredServers.length"
@@ -143,7 +143,7 @@
                     <svg class="w-3 h-3 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/>
                     </svg>
-                    <span>{{ s.group_name || 'DEFAULT' }}</span>
+                    <span>{{ s.group_name || t('flt_ungrouped') }}</span>
                   </span>
                   <span
                     v-if="s.danger_count > 0"
@@ -712,13 +712,13 @@ const hasDropdownActions = computed(() => {
 })
 
 const groupFilter = ref('')
-const tierFilter = ref('')
+const envFilter = ref('')
 const searchQuery = ref('')
 const statusFilter = ref('all')
 
 function resetAssetFilters() {
   groupFilter.value = ''
-  tierFilter.value = ''
+  envFilter.value = ''
   statusFilter.value = 'all'
   searchQuery.value = ''
 }
@@ -909,8 +909,8 @@ const filteredServers = computed(() => {
   if (statusFilter.value && statusFilter.value !== 'all') {
     list = list.filter(s => matchesAssetStatus(s, statusFilter.value))
   }
-  if (tierFilter.value) {
-    list = list.filter(s => String(s.tier || 2) === tierFilter.value)
+  if (envFilter.value) {
+    list = list.filter(s => String(s.tier || 2) === envFilter.value)
   }
   if (!searchQuery.value.trim()) return list
   const q = searchQuery.value.toLowerCase().trim()
@@ -955,7 +955,7 @@ const paginatedServers = computed(() => {
   return sortedServers.value.slice(start, start + limit)
 })
 
-watch([groupFilter, tierFilter, searchQuery, statusFilter], () => {
+watch([groupFilter, envFilter, searchQuery, statusFilter], () => {
   currentPage.value = 1
 })
 

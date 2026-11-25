@@ -98,9 +98,9 @@ Sistem dibangun dengan pemisahan lapisan tanggung jawab yang ketat (*Strict Sepa
 
 ---
 
-## 5. Model Kontrol Akses Berbasis Peran 3-Tier (3-Tier RBAC Architecture & Security Policy)
+## 5. Model Kontrol Akses Berbasis Peran (Role-Based Access Control & Security Policy)
 
-Untuk menegakkan tata kelola keamanan operasional *enterprise*, integritas multi-operator, dan prinsip pemisahan tugas (*segregation of duties*), Pantau Server menerapkan sistem otorisasi dan kontrol akses berbasis peran (*Role-Based Access Control* - RBAC) 3-tier yang kokoh.
+Untuk menegakkan tata kelola keamanan operasional *enterprise*, integritas multi-operator, dan prinsip pemisahan tugas (*segregation of duties*), Pantau Server menerapkan sistem otorisasi dan kontrol akses berbasis peran (*Role-Based Access Control* - RBAC) yang kokoh.
 
 ```mermaid
 flowchart TD
@@ -261,7 +261,7 @@ Manajemen insiden pada Pantau Server dirancang berdasarkan prinsip **kewaspadaan
 flowchart TD
     subgraph Detection["1. Deteksi Dinamis & Evaluasi (problem_service.py)"]
         Det_Agent["Telemetri Agen /proc, systemd, /proc/net"] --> Det_Eval["Evaluasi Ambang Batas & State Mesin"]
-        Det_Eval --> Det_Sev["Klasifikasi 4-Tingkat Keparahan (Tier-Aware)"]
+        Det_Eval --> Det_Sev["Klasifikasi 4 Tingkat Keparahan (Environment-Aware)"]
     end
 
     subgraph ActiveState["2. Triase & Penanganan Insiden Aktif (IncidentView.vue)"]
@@ -299,12 +299,12 @@ Sistem menolak taksonomi rancu dan menetapkan 4 tingkatan keparahan semantik bak
 | Tingkat Keparahan | Warna Semantik | Denyut Visual | Kriteria & Kondisi Lapangan Terukur |
 |---|---|---|---|
 | **`info`** | **Biru Muda** (`#38bdf8`) | Statis (Tanpa Kedip) | Pemberitahuan pembaruan non-ancaman, ketersediaan paket pembaruan OS (`apt_updates`), atau pembaruan konfigurasi rutin. |
-| **`warning`** | **Kuning Amber** (`#f59e0b`) | `.radar-warning` (Denyut Lembut) | Potensi gangguan operasional ringan di mana layanan inti tetap berjalan normal: koneksi SSH legal pengguna terdaftar, utilisasi CPU/RAM/Disk tinggi pada server non-produksi (Tier 2), atau disk melewati ambang 85%. |
-| **`critical`** | **Oranye Pekat** (`#ea580c`) | `.radar-critical` (Denyut Cepat) | Layanan krusial terganggu atau mati: Nginx/MariaDB/Docker berstatus *failed*, koneksi SSH mencurigakan (akses langsung root dari IP asing), atau node produksi tidak melapor selama 60–180 detik. |
-| **`danger`** | **Merah Crimson** (`#ef4444`) | `.radar-critical` (Denyut Cepat) | Kelumpuhan sistem total atau ancaman integritas fisik: server produksi offline (> 180 detik), partisi penyimpanan *read-only* (`disk_ro_root`), memori/CPU habis (> 95% pada Tier 1), atau *kernel panic*. |
+| **`warning`** | **Kuning Amber** (`#f59e0b`) | `.radar-warning` (Denyut Lembut) | Potensi gangguan operasional ringan di mana layanan inti tetap berjalan normal: koneksi SSH legal pengguna terdaftar, utilisasi CPU/RAM/Disk tinggi pada server **Non-Production**, atau disk melewati ambang 85%. |
+| **`critical`** | **Oranye Pekat** (`#ea580c`) | `.radar-critical` (Denyut Cepat) | Layanan krusial terganggu atau mati: Nginx/MariaDB/Docker berstatus *failed*, koneksi SSH mencurigakan (akses langsung root dari IP asing), atau node **Production** tidak melapor selama 60–180 detik. |
+| **`danger`** | **Merah Crimson** (`#ef4444`) | `.radar-critical` (Denyut Cepat) | Kelumpuhan sistem total atau ancaman integritas fisik: server **Production** offline (> 180 detik), partisi penyimpanan *read-only* (`disk_ro_root`), memori/CPU habis (> 95% pada node Production), atau *kernel panic*. |
 
 > [!IMPORTANT]
-> **Tier-Aware Triaging:** Node non-produksi (Tier 2: lab, staging, pengujian) dibatasi tingkat keparahan maksimalnya hingga tingkat `warning`. Tingkat `critical` dan `danger` dikhususkan secara eksklusif bagi node produksi vital (Tier 1) untuk membasmi kelelahan alarm (*alert fatigue*).
+> **Environment-Aware Triaging (`Production` vs `Non-Production`):** Node **Non-Production** (lab, staging, pengujian) dibatasi tingkat keparahan maksimalnya hingga tingkat `warning`. Tingkat `critical` dan `danger` dikhususkan secara eksklusif bagi node **Production** vital untuk membasmi kelelahan alarm (*alert fatigue*). Dilarang keras memakai istilah tingkatan numerik spekulatif (*Tier 1*, *Tier 2*, dan sejenisnya) pada antarmuka maupun dokumentasi.
 
 ---
 
@@ -434,7 +434,8 @@ Pantau Server menetapkan kebijakan terminologi yang ketat untuk mencegah ambigui
    - **`Active Incidents`**: Insiden yang sedang berlangsung secara fisik di node target.
    - **`Resolved Incidents`**: Riwayat insiden yang telah pulih secara otomatis (*auto-healed*) atau diselesaikan manual.
    - **`Incident Description`**: Uraian spesifik gangguan (bukan *"anomaly event"* atau istilah karangan lainnya).
-   - **`Severity`**: Tingkat keparahan 4-tier semantik (`Danger`, `Critical`, `Warning`, `Info`).
+   - **`Severity`**: Tingkat keparahan 4 level semantik (`Danger`, `Critical`, `Warning`, `Info`).
+   - **`Environment`**: Klasifikasi lingkungan aset hanya terdiri dari dua nilai baku: **`Production`** dan **`Non-Production`** (dilarang keras menggunakan istilah `Tier 1`, `Tier 2`, dll.).
    - **`Triggered At`**: Stempel waktu insiden pertama kali terpicu.
    - **`Duration`**: Lama waktu gangguan berlangsung sejak terpicu.
    - **`Solution`**: Rekomendasi mitigasi teknis terukur.
@@ -525,15 +526,19 @@ Sistem penyaringan data Pantau Server menggunakan primitif modular terstandar **
 - **Incident Center (`ActiveIncidentsTable.vue` & `ResolvedIncidentsTable.vue`):**
   - *Active Incidents:* Triage Pills dengan live counter real-time tersinkron 2-arah ke dropdown `Severity`, ditambah filter `Asset`, `Group`, `Search`, `Reset`, dan live count.
   - *Resolved Incidents:* Filter `Asset`, `Severity`, `Resolution Mode` (7 kategori: `Auto-Healed`, `Remediated by Operator`, `Host Reconnected`, `Service Restored`, `Closed (Host Offline)`, `SSH Session Terminated`, `Deduplicated`), `Custom Date Range`, `Quick Presets`, `Search`, dan `Reset`.
-- **Asset Inventory (`AssetTableView.vue` & `AssetFilterBar.vue`):** Filter `Group` dengan hitungan per grup, `Status` (`All`, `Online`, `Offline`, `With Incidents`, `Maintenance`), `Environment` (`Production Tier 1`, `Non-Production Tier 2`), pencarian metadata lengkap, Column Customizer, dan `Reset`.
+- **Asset Inventory (`AssetTableView.vue` & `AssetFilterBar.vue`):** Filter `Group` dengan hitungan per grup, `Status` (`All`, `Online`, `Offline`, `With Incidents`, `Maintenance`), `Environment` (`Production`, `Non-Production`), pencarian metadata lengkap, Column Customizer, dan `Reset`.
 - **Audit Trail (`AuditView.vue` & `services/audit_service.py`):** Metadata `/api/audit/meta` + penyaringan multi-kriteria atas gabungan `AuditLog` dan `Command`: `Operator` (Zero-Knowledge Master Admin masking), `Asset`, `Action` kategori `<optgroup>`, `Status` (`SUCCESS`, `FAILED`, `PENDING`), `Date Range`, `Debounced Search` (250ms), `Quick Presets`, dan `Reset`.
 - **Workspace Sub-Tabs (`ServerWorkspaceModal.vue`):**
   - *Incidents:* Filter `Severity` + `Search` + `Reset`.
   - *Services & Ports:* Systemd filter `Status`, `Boot Startup` (`enabled`, `disabled`, `static/masked`), klik badge status, serta Ports filter `Protocol` (`TCP`/`UDP`), `Access Scope` (`Public`/`Local` akurat berbasis deteksi loopback `127.*` / `::1`), dan `Search`.
-  - *Tasks (Processes):* Filter `User` + `Search`.
+  - *Tasks (Processes):* Pencarian proses (`#proc-search-input` PID/user/command) & paginasi otomatis.
   - *Packages:* Menggabungkan `installed_packages` & `apt_packages` dengan filter `Package Type` (`User Installed`/`System`), `Status` (`Upgradable`/`Installed`), klik badge upgradable, serta paginasi otomatis.
-  - *Logs:* Mengonsumsi daftar `available_logs` dari agen klien, mendukung on-demand log streaming via `POST /api/logs/request` + `GET /api/logs/request/{rid}`, filter `Log Source`, `Lines`, `Log Level` (`Error/Critical`, `Warning`, `HTTP 4xx/5xx`, `Info/Notice`), pencarian kata kunci, dan render baris-demi-baris presisi `.noc-log-row`.
-  - *Firewall, Cron Jobs, Users & SSH:* Masing-masing dilengkapi filter `NocFilterPanel` terarah dan paginasi otomatis.
+  - *Logs:* Mengonsumsi daftar `available_logs` dari agen klien (dengan normalisasi label Bahasa Inggris NOC baku), mendukung on-demand log streaming via `POST /api/logs/request` + `GET /api/logs/request/{rid}`, filter `Log Source`, `Lines`, `Log Level` (`Error/Critical`, `Warning`, `HTTP 4xx/5xx`, `Info/Notice`), pencarian kata kunci, dan render baris-demi-baris presisi `.noc-log-row`.
+  - *Firewall, Cron Jobs, Users & SSH:* Pencarian akun lokal (`#acc-search-input`) dan paginasi otomatis.
+
+### 12.3 Prinsip Supremasi Konsep Teruji & Penyempurnaan Best Practice
+- **Standar Terminologi Tunggal Lingkungan:** Hanya mengakui **`Production`** dan **`Non-Production`**. Kolom skema internal `tier` (`1` = Production, `2` = Non-Production) dipertahankan semata demi integritas skema MySQL `pantau_db`, sementara seluruh antarmuka, filter, modal, dan dokumentasi dilarang memuat istilah numerik seperti `Tier 1` / `Tier 2`.
+- **Anti-Spekulasi Konsep:** Pengembangan dilarang menciptakan fitur atau kontrol spekulatif di luar konsep induk yang telah mapan; seluruh iterasi rekayasa berfokus menyempurnakan keandalan telemetri, menghilangkan teks/data jatuh (*default fallback* seperti `'Default'`, `'core, production'`), menjaga modularitas `<250` baris, serta menerapkan *best practice* verifikasi terukur.
 
 ---
 
@@ -565,6 +570,13 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 ---
 
 ## Catatan Perubahan (Changelog)
+
+### Versi v0.1.64
+
+- **Standardisasi Environment Tunggal (`Production` & `Non-Production`)**: Mengeliminasi sepenuhnya istilah ambigu `Tier 1`, `Tier 2`, `Environment Tier`, `3-Tier`, dan `4-Tier` pada kamus `en.js`/`id.js`, `AssetFilterBar.vue`, `AssetTableView.vue`, `EditHostModal.vue`, dan dokumentasi aktif `DEVELOPMENT.md`.
+- **Eliminasi Fallback Data Palsu & Normalisasi Log**: Menghapus fallback statis `Default` / `DEFAULT` pada aset tanpa grup (`DashboardView.vue`, `AssetTableView.vue`, `EditHostModal.vue`, `WorkspaceOverviewTab.vue`, `servers.py`) menjadi `Ungrouped` / kosong, menghapus fallback tags statis pada `WorkspaceOverviewTab.vue`, serta menormalkan grup dan nama `available_logs` agen ke Bahasa Inggris NOC baku via `_normalize_available_logs()`.
+- **Pemurnian Sub-Tab Workspace Sesuai Konsep Induk**: Menghapus kontrol dropdown filter spekulatif di luar konsep induk pada `WorkspaceProcessesTab.vue`, `WorkspaceAccountsTab.vue`, `WorkspaceFirewallTab.vue`, dan `WorkspaceCronTab.vue` sambil mempertahankan pencarian `Tasks` & `Users` serta paginasi tabel.
+
 
 ### Versi v0.1.63
 

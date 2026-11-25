@@ -778,7 +778,7 @@
                 <span class="w-2 h-2 rounded-full shrink-0" :class="!s.is_online ? 'bg-rose-500 radar-critical' : (s.is_maintenance ? 'bg-amber-400 animate-pulse' : (s.danger_count > 0 ? 'bg-rose-400 radar-critical' : (s.critical_count > 0 ? 'bg-orange-400 radar-critical' : (s.warning_count > 0 ? 'bg-amber-400 radar-warning' : 'bg-emerald-400 beacon-live'))))"></span>
                 <span class="font-bold text-gray-100 text-sm truncate group-hover:text-cyan-300 transition font-mono">{{ s.hostname }}</span>
               </div>
-              <span class="text-[10px] font-mono text-gray-500 uppercase">{{ s.group_name || 'DEFAULT' }}</span>
+              <span class="text-[10px] font-mono text-gray-500 uppercase">{{ s.group_name || t('flt_ungrouped') }}</span>
             </div>
             <div class="text-xs text-cyan-400 font-mono mt-1 truncate font-semibold">{{ s.ip_address }}</div>
           </div>

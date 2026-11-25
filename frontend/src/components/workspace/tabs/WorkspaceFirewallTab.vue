@@ -31,32 +31,6 @@
       </form>
     </div>
 
-    <NocFilterPanel
-      v-if="rawRules.length > 0"
-      :has-active-filters="Boolean(actionFilter || search.trim())"
-      :summary-text="`${filteredRules.length} of ${rawRules.length} rules`"
-      compact
-      @reset="actionFilter = ''; search = ''"
-    >
-      <template #fields>
-        <div class="noc-filter-col">
-          <label class="noc-filter-label" for="fw-act-filter">{{ t('ws_col_action') }}</label>
-          <select id="fw-act-filter" v-model="actionFilter" class="noc-filter-select">
-            <option value="">All Actions</option>
-            <option value="ALLOW">ALLOW</option>
-            <option value="DENY">DENY / REJECT</option>
-          </select>
-        </div>
-        <div class="noc-filter-col-search">
-          <label class="noc-filter-label" for="fw-search-input">{{ t('flt_search') }}</label>
-          <div class="noc-filter-search-box">
-            <svg class="w-3.5 h-3.5 text-gray-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input id="fw-search-input" v-model="search" type="search" placeholder="Search port, IP, rule..." />
-          </div>
-        </div>
-      </template>
-    </NocFilterPanel>
-
     <div v-if="rawRules.length === 0" class="text-xs text-gray-400 py-8 text-center">
       {{ t('ws_fw_empty') || 'No active firewall rules configured.' }}
     </div>
@@ -71,7 +45,7 @@
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-800/40">
-          <tr v-for="(r, idx) in filteredRules" :key="idx" class="hover:bg-cyan-950/20">
+          <tr v-for="(r, idx) in rawRules" :key="idx" class="hover:bg-cyan-950/20">
             <td class="py-2.5 px-3 font-semibold text-gray-200">{{ typeof r === 'string' ? r : (r.to || r.target) }}</td>
             <td class="py-2.5 px-3">
               <span class="px-2 py-0.5 rounded text-[10px] font-bold" :class="isDenyRule(r) ? 'bg-rose-950 text-rose-300 border border-rose-700' : 'bg-emerald-950 text-emerald-300 border border-emerald-700'">
@@ -94,7 +68,6 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useI18n } from '../../../i18n'
-import NocFilterPanel from '../../common/NocFilterPanel.vue'
 
 const { t } = useI18n()
 
@@ -105,8 +78,6 @@ const props = defineProps({
 const emit = defineEmits(['firewall-action'])
 const blockIpInput = ref('')
 const blockCommentInput = ref('')
-const actionFilter = ref('')
-const search = ref('')
 
 const rawRules = computed(() => {
   const r = props.firewallData?.rules
@@ -119,19 +90,6 @@ function isDenyRule(r) {
   const act = typeof r === 'string' ? r.toUpperCase() : String(r.action || 'ALLOW').toUpperCase()
   return act.includes('DENY') || act.includes('REJECT') || act.includes('DROP')
 }
-
-const filteredRules = computed(() => {
-  return rawRules.value.filter(r => {
-    if (actionFilter.value === 'ALLOW' && isDenyRule(r)) return false
-    if (actionFilter.value === 'DENY' && !isDenyRule(r)) return false
-    if (search.value.trim()) {
-      const q = search.value.toLowerCase()
-      const hay = typeof r === 'string' ? r.toLowerCase() : `${r.to || r.target || ''} ${r.action || ''} ${r.from || ''}`.toLowerCase()
-      if (!hay.includes(q)) return false
-    }
-    return true
-  })
-})
 
 function toggleUfw() {
   const st = props.firewallData?.status

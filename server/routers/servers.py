@@ -179,7 +179,7 @@ def list_servers(user: User = Depends(get_current_user), db: Session = Depends(g
                 ignored_p.append(p)
                 continue
 
-            # Workflow Severity: Aset Non-Produksi (Tier != 1) dibatasi (cap) maksimal ke level warning
+            # Severity Policy: Non-Production assets are capped at warning severity
             raw_sev = (p.severity or "warning").lower()
             if s_tier != 1 and raw_sev in ("danger", "critical", "average"):
                 eff_sev = "warning"
@@ -364,7 +364,7 @@ def get_server_detail(sid: int, user: User = Depends(get_current_user), db: Sess
             "id": server.id,
             "hostname": server.hostname,
             "ip_address": server.ip_address,
-            "group_name": server.group_name or "Default",
+            "group_name": server.group_name or "",
             "tier": server.tier,
             "is_online": is_online,
             "last_seen": server.last_seen.isoformat() if server.last_seen else None,
@@ -917,6 +917,41 @@ def get_server_ssl(sid: int, user: User = Depends(get_current_user), db: Session
         return {"ok": True, "certs": []}
 
 
+_LOG_GROUP_MAP = {
+    "Keamanan & Sistem": "System & Security",
+    "Aplikasi / Lainnya": "Applications / Other",
+    "Basis Data": "Database",
+    "Web Server": "Web Server",
+}
+
+_LOG_NAME_MAP = {
+    "SYSTEM_ERRORS": "System Critical Errors",
+    "AUTH": "SSH & Sudo Auth Log",
+    "SYSLOG": "System Syslog",
+    "DPKG": "Package History (dpkg.log)",
+}
+
+
+def _normalize_available_logs(avail_data: list) -> list:
+    """Normalize log source groups and display names into standard NOC English labels."""
+    normalized = []
+    for item in avail_data:
+        if not isinstance(item, dict) or not item.get("id"):
+            continue
+        entry = dict(item)
+        grp = str(entry.get("group") or "System").strip()
+        if grp in _LOG_GROUP_MAP:
+            grp = _LOG_GROUP_MAP[grp]
+        elif grp.startswith("Layanan ("):
+            grp = "Service (" + grp[len("Layanan ("):]
+        entry["group"] = grp
+        src_id = str(entry.get("id"))
+        if src_id in _LOG_NAME_MAP:
+            entry["name"] = _LOG_NAME_MAP[src_id]
+        normalized.append(entry)
+    return normalized
+
+
 @router.get("/{sid}/logs")
 def get_server_logs(sid: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     check_server_access(user, sid)
@@ -937,11 +972,13 @@ def get_server_logs(sid: int, user: User = Depends(get_current_user), db: Sessio
             avail_data = []
     if not avail_data:
         avail_data = [
-            {"id": "SYSTEM_ERRORS", "group": "System & Security", "name": "System Critical Error Journal", "desc": "journalctl -p 0..3"},
-            {"id": "AUTH", "group": "System & Security", "name": "SSH & Sudo Authentication Log", "desc": "/var/log/auth.log"},
+            {"id": "SYSTEM_ERRORS", "group": "System & Security", "name": "System Critical Errors", "desc": "journalctl -p 0..3"},
+            {"id": "AUTH", "group": "System & Security", "name": "SSH & Sudo Auth Log", "desc": "/var/log/auth.log"},
             {"id": "SYSLOG", "group": "System & Security", "name": "System Syslog", "desc": "/var/log/syslog"},
             {"id": "DPKG", "group": "System & Security", "name": "Package History (dpkg.log)", "desc": "/var/log/dpkg.log"},
         ]
+    else:
+        avail_data = _normalize_available_logs(avail_data)
     return {"ok": True, "logs": logs_data, "available_logs": avail_data}
 
 

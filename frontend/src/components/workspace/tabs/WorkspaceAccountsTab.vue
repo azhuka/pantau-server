@@ -29,7 +29,7 @@
       </div>
     </div>
 
-    <!-- Local User Accounts + Multi-Filter -->
+    <!-- Local User Accounts + Search -->
     <div class="hud-tactical-card rounded-xl p-4 space-y-3">
       <span class="hud-corner-tr"></span>
       <span class="hud-corner-bl"></span>
@@ -37,20 +37,12 @@
 
       <NocFilterPanel
         v-if="(accountsList || []).length > 0"
-        :has-active-filters="Boolean(shellFilter || search.trim())"
+        :has-active-filters="Boolean(search.trim())"
         :summary-text="`${filteredAccounts.length} of ${accountsList.length} accounts`"
         compact
-        @reset="shellFilter = ''; search = ''"
+        @reset="search = ''"
       >
         <template #fields>
-          <div class="noc-filter-col">
-            <label class="noc-filter-label" for="acc-shell-filter">{{ t('ws_col_shell') }}</label>
-            <select id="acc-shell-filter" v-model="shellFilter" class="noc-filter-select">
-              <option value="">All Shells</option>
-              <option value="login">Interactive Login Shell</option>
-              <option value="nologin">Non-Login (nologin / false)</option>
-            </select>
-          </div>
           <div class="noc-filter-col-search">
             <label class="noc-filter-label" for="acc-search-input">{{ t('flt_search') }}</label>
             <div class="noc-filter-search-box">
@@ -99,18 +91,13 @@ const props = defineProps({
 })
 defineEmits(['terminate-ssh'])
 
-const shellFilter = ref('')
 const search = ref('')
 const currentPage = ref(1)
 const pageSize = ref(10)
 
-watch([shellFilter, search], () => { currentPage.value = 1 })
+watch(search, () => { currentPage.value = 1 })
 
 const filteredAccounts = computed(() => (props.accountsList || []).filter(acc => {
-  const sh = String(acc.shell || '').toLowerCase()
-  const isNoLogin = !sh || sh.includes('nologin') || sh.endsWith('/false') || sh.endsWith('/sync')
-  if (shellFilter.value === 'login' && isNoLogin) return false
-  if (shellFilter.value === 'nologin' && !isNoLogin) return false
   if (search.value.trim()) {
     const q = search.value.toLowerCase()
     return `${acc.user || acc.name || ''} ${acc.uid ?? ''} ${acc.home || ''} ${acc.shell || ''}`.toLowerCase().includes(q)

@@ -105,7 +105,7 @@
           <div class="col-span-2">
             <span class="text-gray-500">{{ t('ws_asset_group') }}</span>
             <div class="flex items-center gap-1.5 mt-0.5">
-              <span class="text-cyan-400 font-bold">{{ server?.group_name || 'Default' }}</span>
+              <span class="text-cyan-400 font-bold">{{ server?.group_name || t('flt_ungrouped') }}</span>
               <span
                 v-if="server?.tier === 1"
                 class="inline-flex items-center justify-center p-0.5 rounded bg-emerald-950/40 text-emerald-400 border border-emerald-700/50"
@@ -151,7 +151,7 @@
           </p>
         </div>
         <div class="mt-3 pt-2 border-t border-cyan-500/10 flex items-center justify-between text-[11px] text-gray-500">
-          <span>TAGS: {{ server?.tags || 'core, production' }}</span>
+          <span>TAGS: {{ server?.tags || '-' }}</span>
           <span class="text-cyan-400 font-semibold">{{ server?.is_isolated_net ? 'Isolated Network' : 'Standard Network' }}</span>
         </div>
       </div>

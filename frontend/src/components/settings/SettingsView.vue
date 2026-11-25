@@ -72,7 +72,7 @@
                 </div>
               </div>
 
-              <!-- Button Edit Profile (Tier 2: Icon + Label) -->
+              <!-- Button Edit Profile (Icon + Label) -->
               <button
                 v-if="profile && profile.role !== 'viewer'"
                 @click="showEditSelfModal = true"

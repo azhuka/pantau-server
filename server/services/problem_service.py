@@ -61,8 +61,8 @@ CRITICAL_SERVICES = {
 def check_server_stale(db: Session, srv: Server, now: datetime = None):
     """
     Evaluasi apakah node server klien mati / tidak melapor (agent_stale).
-    - Tier 1 (Produksi): >= 60s critical (gawat), >= 180s danger (bahaya/lumpuh).
-    - Tier 2 (Non-Produksi): warning (peringatan non-eskalasi).
+    - Production (tier=1): >= 60s critical (gawat), >= 180s danger (bahaya/lumpuh).
+    - Non-Production (tier=2): warning (peringatan non-eskalasi).
     """
     if now is None:
         now = datetime.utcnow()

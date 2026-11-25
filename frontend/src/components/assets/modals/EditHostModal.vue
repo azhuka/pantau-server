@@ -49,7 +49,7 @@
           />
         </div>
 
-        <!-- Group Name & Tier -->
+        <!-- Group Name & Environment -->
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block text-gray-400 font-bold mb-1.5">{{ t('host_field_group') }}</label>
@@ -139,7 +139,7 @@ watch(() => props.server, (s) => {
     form.value = {
       hostname: s.hostname || '',
       ip_address: s.ip_address || '',
-      group_name: s.group_name || 'Default',
+      group_name: s.group_name || '',
       tier: s.tier || 1,
       platform_override: s.platform_override || 'auto'
     }

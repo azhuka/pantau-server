@@ -42,13 +42,13 @@
         </select>
       </div>
 
-      <!-- 3. Environment / Tier Filter -->
-      <div class="noc-filter-col" title="Filter by Environment Classification">
-        <label class="noc-filter-label" for="assets-tier-filter">{{ t('flt_env') }}</label>
+      <!-- 3. Environment Filter -->
+      <div class="noc-filter-col" title="Filter by Operational Environment">
+        <label class="noc-filter-label" for="assets-env-filter">{{ t('flt_env') }}</label>
         <select
-          id="assets-tier-filter"
-          :value="tier"
-          @change="$emit('update:tier', $event.target.value)"
+          id="assets-env-filter"
+          :value="environment"
+          @change="$emit('update:environment', $event.target.value)"
           class="noc-filter-select"
         >
           <option value="">{{ t('flt_all_envs') }}</option>
@@ -97,7 +97,7 @@ const props = defineProps({
   servers: { type: Array, default: () => [] },
   group: { type: String, default: '' },
   status: { type: String, default: 'all' },
-  tier: { type: String, default: '' },
+  environment: { type: String, default: '' },
   search: { type: String, default: '' },
   columns: { type: Array, default: () => [] },
   filteredCount: { type: Number, default: 0 },
@@ -105,13 +105,13 @@ const props = defineProps({
 })
 
 defineEmits([
-  'update:group', 'update:status', 'update:tier', 'update:search',
+  'update:group', 'update:status', 'update:environment', 'update:search',
   'reset', 'toggle-col', 'preset-col', 'reset-col'
 ])
 
 const groupMeta = computed(() => extractGroupOptions(props.servers))
 
 const hasActiveFilters = computed(() => Boolean(
-  props.group || (props.status && props.status !== 'all') || props.tier || props.search.trim()
+  props.group || (props.status && props.status !== 'all') || props.environment || props.search.trim()
 ))
 </script>

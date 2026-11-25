@@ -121,29 +121,34 @@ async function run() {
     console.log('  -> PASS: Incidents Active + Resolved multi-criteria filters & presets verified');
 
     // ----------------------------------------------------
-    // SUITE 3: Asset Inventory Matrix (Group, Status 5-opt, Environment Tier, Tag Search, Reset)
+    // SUITE 3: Asset Inventory Matrix (Group, Status 5-opt, Environment, Tag Search, Reset)
     // ----------------------------------------------------
     console.log('\n--- SUITE 3: Asset Inventory Blueprint Filter Bar ---');
     await navTo(page, 'Asset Inventory');
     await new Promise(r => setTimeout(r, 800));
 
-    await page.select('#assets-tier-filter', '1');
+    await page.select('#assets-env-filter', '1');
     await new Promise(r => setTimeout(r, 400));
-    const assetTierCheck = await page.evaluate(() => {
+    const assetEnvCheck = await page.evaluate(() => {
       const grpSel = document.getElementById('assets-group-filter');
       const stSel = document.getElementById('assets-status-filter');
+      const envSel = document.getElementById('assets-env-filter');
+      const envOpts = envSel ? Array.from(envSel.options).map(o => o.textContent.trim()) : [];
+      const hasForbiddenTierText = envOpts.some(t => /tier/i.test(t));
       const rows = document.querySelectorAll('tbody tr').length;
       const resetVisible = Array.from(document.querySelectorAll('button')).some(b => b.textContent.trim() === 'Reset');
       return {
         hasGroupFilter: Boolean(grpSel),
         statusOpts: stSel ? Array.from(stSel.options).map(o => o.value) : [],
-        tier1Rows: rows,
+        envOpts,
+        hasForbiddenTierText,
+        prodRows: rows,
         resetVisible,
       };
     });
-    console.log('[CHECK] Asset Inventory Tier 1 filter:', assetTierCheck);
-    if (!assetTierCheck.hasGroupFilter || !assetTierCheck.statusOpts.includes('maint') || !assetTierCheck.statusOpts.includes('problem') || assetTierCheck.tier1Rows < 1 || assetTierCheck.tier1Rows >= 10 || !assetTierCheck.resetVisible) {
-      throw new Error(`Asset Inventory multi-filter invalid: ${JSON.stringify(assetTierCheck)}`);
+    console.log('[CHECK] Asset Inventory Production filter:', assetEnvCheck);
+    if (!assetEnvCheck.hasGroupFilter || assetEnvCheck.hasForbiddenTierText || !assetEnvCheck.statusOpts.includes('maint') || !assetEnvCheck.statusOpts.includes('problem') || assetEnvCheck.prodRows < 1 || assetEnvCheck.prodRows >= 10 || !assetEnvCheck.resetVisible) {
+      throw new Error(`Asset Inventory multi-filter invalid: ${JSON.stringify(assetEnvCheck)}`);
     }
     await page.screenshot({ path: path.join(ARTIFACT_DIR, 'v0163_assets_filters.png') });
 
@@ -153,7 +158,7 @@ async function run() {
       if (btn) btn.click();
     });
     await new Promise(r => setTimeout(r, 400));
-    console.log('  -> PASS: Asset Inventory Group, Status, Tier & Reset verified');
+    console.log('  -> PASS: Asset Inventory Group, Status, Environment (Production/Non-Production) & Reset verified');
 
     // ----------------------------------------------------
     // SUITE 4: Audit Trail Multi-Filter Bar (Operator, Asset, Action Optgroup, Date Range, Presets)

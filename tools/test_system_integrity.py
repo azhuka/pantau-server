@@ -80,8 +80,8 @@ def run_tests():
     assert prob_ssh.severity == "warning", f"Severity sesi legal harus 'warning', didapat: {prob_ssh.severity}"
     print(f"    -> [OK] Tiket warning terverifikasi: {prob_ssh.message} (severity={prob_ssh.severity})")
 
-    # 4. Uji Taksonomi Insiden: Critical (Service Down pada Server Produksi Tier 1)
-    print("[4] Menguji taksonomi insiden CRITICAL (service_down:nginx pada Produksi)...")
+    # 4. Uji Taksonomi Insiden: Critical (Service Down pada Server Production)
+    print("[4] Menguji taksonomi insiden CRITICAL (service_down:nginx pada Production)...")
     srv.tier = 1
     db.commit()
     report_svc_down = {
@@ -100,11 +100,11 @@ def run_tests():
         ServerProblem.resolved_at == None
     ).first()
     assert prob_svc is not None, "Tiket service_down:nginx harus aktif"
-    assert prob_svc.severity == "critical", f"Severity service down pada Produksi harus 'critical', didapat: {prob_svc.severity}"
+    assert prob_svc.severity == "critical", f"Severity service down pada Production harus 'critical', didapat: {prob_svc.severity}"
     print(f"    -> [OK] Tiket critical terverifikasi: {prob_svc.message} (severity={prob_svc.severity})")
 
-    # 5. Uji Perbedaan Tier: Service Down pada Server Non-Produksi (Tier 2) -> Capped at Warning
-    print("[5] Menguji proteksi keparahan Non-Produksi (Tier 2)...")
+    # 5. Uji Perbedaan Lingkungan: Service Down pada Server Non-Production -> Capped at Warning
+    print("[5] Menguji proteksi keparahan Non-Production...")
     srv.tier = 2
     db.commit()
     evaluate_server_problems(db, srv, report_svc_down, extras)
@@ -115,8 +115,8 @@ def run_tests():
         ServerProblem.resolved_at == None
     ).first()
     assert prob_svc_t2 is not None
-    assert prob_svc_t2.severity == "warning", f"Severity service down pada Non-Produksi harus diredam ke 'warning', didapat: {prob_svc_t2.severity}"
-    print(f"    -> [OK] Tier 2 capping terverifikasi: severity={prob_svc_t2.severity}")
+    assert prob_svc_t2.severity == "warning", f"Severity service down pada Non-Production harus diredam ke 'warning', didapat: {prob_svc_t2.severity}"
+    print(f"    -> [OK] Non-Production capping terverifikasi: severity={prob_svc_t2.severity}")
 
     # 6. Uji Auto-Resolution saat Layanan Pulih Normal
     print("[6] Menguji auto-resolution saat service kembali up...")

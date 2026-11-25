@@ -11,19 +11,12 @@
 
     <NocFilterPanel
       class="mb-3"
-      :has-active-filters="Boolean(userFilter || search.trim())"
+      :has-active-filters="Boolean(search.trim())"
       :summary-text="`${filteredProcesses.length} of ${(processes || []).length} processes`"
       compact
-      @reset="userFilter = ''; search = ''"
+      @reset="search = ''"
     >
       <template #fields>
-        <div class="noc-filter-col">
-          <label class="noc-filter-label" for="proc-user-filter">{{ t('ws_col_user') }}</label>
-          <select id="proc-user-filter" v-model="userFilter" class="noc-filter-select max-w-[145px]">
-            <option value="">All Users</option>
-            <option v-for="u in uniqueUsers" :key="u" :value="u">{{ u }}</option>
-          </select>
-        </div>
         <div class="noc-filter-col-search">
           <label class="noc-filter-label" for="proc-search-input">{{ t('flt_search') }}</label>
           <div class="noc-filter-search-box">
@@ -131,16 +124,13 @@ const props = defineProps({
 const emit = defineEmits(['kill-process'])
 
 const search = ref('')
-const userFilter = ref('')
 const currentPage = ref(1)
 const pageSize = ref(10)
 const openProcId = ref(null)
 const activeProc = ref(null)
 const dropdownStyle = ref({})
 
-const uniqueUsers = computed(() => Array.from(new Set((props.processes || []).map(p => p.user).filter(Boolean))).sort())
-
-watch([search, userFilter], () => {
+watch(search, () => {
   currentPage.value = 1
 })
 
@@ -207,7 +197,6 @@ function sendSignal(pid, signal, cmd) {
 
 const filteredProcesses = computed(() => {
   return (props.processes || []).filter(p => {
-    if (userFilter.value && p.user !== userFilter.value) return false
     if (search.value.trim()) {
       const q = search.value.toLowerCase()
       return String(p.pid).includes(q) || (p.user || '').toLowerCase().includes(q) || (p.cmd || p.command || '').toLowerCase().includes(q)
