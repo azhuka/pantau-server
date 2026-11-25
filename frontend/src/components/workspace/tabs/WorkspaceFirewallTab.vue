@@ -68,6 +68,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useI18n } from '../../../i18n'
+import { confirmAction } from '../../../utils/useToast'
 
 const { t } = useI18n()
 
@@ -91,10 +92,16 @@ function isDenyRule(r) {
   return act.includes('DENY') || act.includes('REJECT') || act.includes('DROP')
 }
 
-function toggleUfw() {
+async function toggleUfw() {
   const st = props.firewallData?.status
   const next = st === 'active' ? 'ufw_disable' : 'ufw_enable'
-  if (!confirm(st === 'active' ? 'Are you sure you want to DISABLE UFW firewall?' : 'Are you sure you want to ENABLE UFW firewall?')) return
+  const ok = await confirmAction({
+    title: st === 'active' ? 'Disable UFW Firewall' : 'Enable UFW Firewall',
+    message: st === 'active' ? 'Are you sure you want to DISABLE UFW firewall?' : 'Are you sure you want to ENABLE UFW firewall?',
+    confirmText: st === 'active' ? 'Disable UFW' : 'Enable UFW',
+    variant: st === 'active' ? 'danger' : 'primary',
+  })
+  if (!ok) return
   emit('firewall-action', { action: next, params: {} })
 }
 

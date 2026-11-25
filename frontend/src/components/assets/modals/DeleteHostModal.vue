@@ -70,6 +70,9 @@
 <script setup>
 import { ref } from 'vue'
 import { useI18n } from '../../../i18n'
+import { useToast } from '../../../utils/useToast'
+
+const toast = useToast()
 
 const props = defineProps({
   isOpen: Boolean,
@@ -99,10 +102,10 @@ async function confirmDelete() {
       emit('deleted', data.message || 'Host deleted')
       emit('close')
     } else {
-      alert(data.detail || data.error || 'Failed to delete host')
+      toast.error(data.detail || data.error || 'Failed to delete host')
     }
   } catch (err) {
-    alert('Error: ' + err.message)
+    toast.error('Error: ' + err.message)
   } finally {
     submitting.value = false
   }

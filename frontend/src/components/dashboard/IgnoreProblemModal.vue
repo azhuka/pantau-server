@@ -85,8 +85,10 @@
 import { ref } from 'vue'
 import { useI18n } from '../../i18n'
 import { formatIncidentMessage } from '../../utils/formatters'
+import { useToast } from '../../utils/useToast'
 
 const { t, locale } = useI18n()
+const toast = useToast()
 
 const props = defineProps({
   isOpen: Boolean,
@@ -104,7 +106,7 @@ async function submitIgnore() {
   if (!props.problem) return
   const r = (props.currentUser?.role || '').toLowerCase()
   if (['viewer', 'guest', 'tamu'].includes(r)) {
-    alert('Access denied: Viewer accounts cannot ignore incidents.')
+    toast.error('Access denied: Viewer accounts cannot ignore incidents.')
     emit('close')
     return
   }
@@ -131,7 +133,7 @@ async function submitIgnore() {
       })
       emit('close')
     } else {
-      alert(data.detail || 'Failed to ignore incident')
+      toast.error(data.detail || 'Failed to ignore incident')
     }
   } catch (err) {
     console.error('Failed to ignore incident:', err)

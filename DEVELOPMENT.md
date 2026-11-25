@@ -571,6 +571,12 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.66
+
+- **Penguatan Keamanan & Logika Backend (`server/`):** Menutup celah brute-force pada `/api/auth/login-2fa` dengan `trial.fails` & pencatatan `last_login_ip`, memperbaiki bug senyap `TypeError` pada audit `update_user` + menambahkan audit lengkap lifecycle user, menerapkan allowlist `_ACTION_PERMISSION_MAP` di `dispatch_server_action` (normalisasi `terminate_session` agar muat di kolom `varchar(20)`), membaca `get_global_thresholds(db)` di `problem_service.py`, menambahkan `db.rollback()` aman & helper bersama `sync_maintenance_state`, menyatukan validasi threshold via `validate_and_save_thresholds`, mendorong filter `audit_service.py` ke level SQL sebelum `LIMIT`, memfilter `Server.is_active == 1`, serta menormalkan pesan API & izin ke Bahasa Inggris NOC baku.
+- **Eliminasi Dialog Native & Konsolidasi Utilitas (`frontend/`):** Mengganti seluruh 41 pemanggilan `alert()`/`confirm()`/`prompt()` dengan sistem toast non-blocking (`NocToastContainer.vue` + `useToast.js`) dan modal konfirmasi asinkron (`NocConfirmModal.vue`), mengonsolidasikan helper (`formatters.js`, `useFloatingDropdown.js`, `api.js`), memperbaiki nama bulan `May/Aug/Oct/Dec`, mengganti `<details>` terpotong di `ActiveIncidentsTable.vue` menjadi dropdown `Teleport` mengambang, membersihkan sisa teks lokal & simbol mentah, serta memperbaiki aksi `apt_update`/`apt_upgrade` pada `ServerWorkspaceModal.vue`.
+
+
 ### Versi v0.1.65
 
 - **Kompakness Kolom Incidents Dasbor (`DashboardView.vue`):** Menghapus lencana teks redundan `HANDLED` dari kolom `Incidents` pada tabel status aset serta footer kartu Grid dasbor agar kolom tetap ramping dan hanya menampilkan indikator hitung keparahan insiden (penandaan status penanganan cukup tersedia pada baris Active Incidents dan pusat triase Incidents).

@@ -8,7 +8,10 @@ from core.utils import hash_api_key
 
 def process_telemetry_report(db: Session, api_key: str, report_dict: dict) -> dict:
     hashed_key = hash_api_key(api_key)
-    srv = db.query(Server).filter((Server.api_key == hashed_key) | (Server.api_key == api_key)).first()
+    srv = db.query(Server).filter(
+        Server.is_active == 1,
+        (Server.api_key == hashed_key) | (Server.api_key == api_key),
+    ).first()
     if not srv:
         return {"ok": False, "error": "Invalid API Key"}
 

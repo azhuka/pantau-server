@@ -70,8 +70,9 @@
             <div v-if="formatIncidentTip(prob, locale)" class="text-xs text-gray-400 mt-0.5">{{ formatIncidentTip(prob, locale) }}</div>
             <div class="flex items-center gap-2 mt-1.5 flex-wrap">
               <span class="text-xs text-gray-500">{{ t('ws_detected_since') }} {{ formatIncidentTime(prob.started_at) }}</span>
-              <span v-if="prob.acknowledged_by" class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1" :title="t('dash_acked_by', { user: prob.acknowledged_by })">
-                ✓ {{ t('dash_badge_handled') }}
+              <span v-if="prob.acknowledged_by" class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 inline-flex items-center gap-1" :title="t('dash_acked_by', { user: prob.acknowledged_by })">
+                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                <span>{{ t('dash_badge_handled') }}</span>
               </span>
               <span v-if="prob.is_ignored" class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-gray-700/50 text-gray-300 border border-gray-600 flex items-center gap-1" :title="prob.ignored_reason || 'Ignored'">
                 <span>{{ t('inc_ignored_badge') }}</span>
@@ -89,7 +90,8 @@
             <span>{{ t('inc_btn_ack') }}</span>
           </button>
           <span v-else-if="prob.acknowledged_by" class="px-2.5 py-1 rounded bg-emerald-950/40 text-emerald-300 border border-emerald-700/60 font-bold text-xs flex items-center gap-1 cursor-default select-none" :title="t('dash_acked_by', { user: prob.acknowledged_by })">
-            <span>✓ {{ t('dash_badge_handled') }}</span>
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>{{ t('dash_badge_handled') }}</span>
           </span>
         </div>
       </div>

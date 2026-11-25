@@ -23,7 +23,7 @@
     @logged-in="onLoggedIn"
   />
 
-  <!-- SESUDAH LOGIN: PUSAT KENDALI OPERASIONAL NOC RESMI & FLEET MONITORING -->
+  <!-- AUTHENTICATED: NOC CONTROL PLANE & ASSET MONITORING -->
   <div v-else class="min-h-screen bg-[#06090f] text-gray-100 flex flex-col font-sans select-text">
     <!-- TACTICAL NAVBAR -->
     <Navbar
@@ -171,6 +171,9 @@
         </button>
       </div>
     </div>
+
+    <NocToastContainer />
+    <NocConfirmModal />
   </div>
 </template>
 
@@ -178,6 +181,8 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useI18n } from './i18n'
 import Navbar from './components/Navbar.vue'
+import NocToastContainer from './components/common/NocToastContainer.vue'
+import NocConfirmModal from './components/common/NocConfirmModal.vue'
 import DashboardView from './components/dashboard/DashboardView.vue'
 import AssetTableView from './components/assets/AssetTableView.vue'
 import AuditView from './components/audit/AuditView.vue'
@@ -292,6 +297,7 @@ function onWorkspaceSwitchServer(sid) {
 }
 
 const probingNodeId = ref(null)
+let probeClearTimer = null
 
 async function handleProbeNode(sid) {
   probingNodeId.value = sid
@@ -306,8 +312,10 @@ async function handleProbeNode(sid) {
   } catch (err) {
     console.error('Probe node error:', err)
   } finally {
-    setTimeout(() => {
+    if (probeClearTimer) clearTimeout(probeClearTimer)
+    probeClearTimer = setTimeout(() => {
       probingNodeId.value = null
+      probeClearTimer = null
     }, 600)
   }
 }
@@ -455,5 +463,6 @@ onUnmounted(() => {
   window.removeEventListener('hashchange', syncTabFromHash)
   window.removeEventListener('keydown', handleGlobalKeydown)
   if (pollTimer) clearInterval(pollTimer)
+  if (probeClearTimer) clearTimeout(probeClearTimer)
 })
 </script>

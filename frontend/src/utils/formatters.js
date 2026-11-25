@@ -6,28 +6,21 @@ export function formatBytes(bytes) {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
 }
 
-export function formatUptime(secs, locale = 'en') {
+export function formatUptime(secs) {
   if (!secs || secs <= 0) return '-'
-  const isId = (typeof locale === 'string' ? locale : locale?.value) === 'id'
   const d = Math.floor(secs / 86400)
   const h = Math.floor((secs % 86400) / 3600)
   const m = Math.floor((secs % 3600) / 60)
-  if (d > 0) {
-    if (isId) return h > 0 ? `${d}h ${h}j` : `${d} hari`
-    return h > 0 ? `${d}d ${h}h` : `${d} days`
-  }
-  if (h > 0) {
-    if (isId) return `${h}j ${m}m`
-    return `${h}h ${m}m`
-  }
-  return isId ? `${m} mnt` : `${m}m`
+  if (d > 0) return h > 0 ? `${d}d ${h}h` : `${d}d`
+  if (h > 0) return `${h}h ${m}m`
+  return `${m}m`
 }
 
 export function formatIncidentTime(isoStr) {
   if (!isoStr) return '-'
   try {
     const d = new Date(isoStr)
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
     const day = String(d.getDate()).padStart(2, '0')
     const mon = months[d.getMonth()]
     const h = String(d.getHours()).padStart(2, '0')
@@ -38,25 +31,48 @@ export function formatIncidentTime(isoStr) {
   }
 }
 
-export function formatIncidentDuration(startedAt, locale = 'en') {
+export function formatFullTime(isoStr) {
+  if (!isoStr) return '-'
+  try {
+    return new Date(isoStr).toLocaleString('en-GB', { hour12: false })
+  } catch {
+    return String(isoStr)
+  }
+}
+
+export function formatRelativeTime(isoStr) {
+  if (!isoStr) return 'Never'
+  try {
+    const diffSec = Math.max(0, Math.floor((Date.now() - new Date(isoStr).getTime()) / 1000))
+    if (diffSec < 60) return `${diffSec}s ago`
+    if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`
+    if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`
+    return `${Math.floor(diffSec / 86400)}d ago`
+  } catch {
+    return String(isoStr)
+  }
+}
+
+export function severityBadgeClass(sev) {
+  const s = (sev || '').toLowerCase()
+  if (s === 'danger') return 'bg-rose-950/90 text-rose-300 border-rose-600/80'
+  if (s === 'critical' || s === 'average') return 'bg-orange-950/90 text-orange-300 border-orange-600/80'
+  if (s === 'warning') return 'bg-amber-950/90 text-amber-300 border-amber-600/80'
+  return 'bg-sky-950/90 text-sky-300 border-sky-600/80'
+}
+
+export function formatIncidentDuration(startedAt) {
   if (!startedAt) return '-'
-  const isId = (typeof locale === 'string' ? locale : locale?.value) === 'id'
   try {
     const start = new Date(startedAt).getTime()
     const diff = Math.max(0, Math.floor((Date.now() - start) / 1000))
-    if (diff < 60) return isId ? `${diff} dtk` : `${diff}s`
+    if (diff < 60) return `${diff}s`
     const d = Math.floor(diff / 86400)
     const h = Math.floor((diff % 86400) / 3600)
     const m = Math.floor((diff % 3600) / 60)
-    if (d > 0) {
-      if (isId) return h > 0 ? `${d} h ${h} j` : `${d} hari`
-      return h > 0 ? `${d}d ${h}h` : `${d}d`
-    }
-    if (h > 0) {
-      if (isId) return `${h} j ${m} mnt`
-      return `${h}h ${m}m`
-    }
-    return isId ? `${m} mnt` : `${m}m`
+    if (d > 0) return h > 0 ? `${d}d ${h}h` : `${d}d`
+    if (h > 0) return `${h}h ${m}m`
+    return `${m}m`
   } catch {
     return '-'
   }

@@ -88,8 +88,10 @@ import ActiveIncidentsTable from './ActiveIncidentsTable.vue'
 import ResolvedIncidentsTable from './ResolvedIncidentsTable.vue'
 import IgnoreIncidentModal from './modals/IgnoreIncidentModal.vue'
 import IncidentThresholdModal from './modals/IncidentThresholdModal.vue'
+import { useToast } from '../../utils/useToast'
 
 const { t } = useI18n()
+const toast = useToast()
 
 const props = defineProps({
   servers: { type: Array, default: () => [] },
@@ -188,7 +190,7 @@ async function handleAck(probId) {
         activeProblems.value[idx].acknowledged_at = data.acknowledged_at
       }
     } else {
-      alert(data.detail || 'Failed to acknowledge incident')
+      toast.error(data.detail || 'Failed to acknowledge incident')
     }
   } catch (err) {
     console.error('Error acknowledging incident:', err)
@@ -205,7 +207,7 @@ async function handleUnignore(probId) {
     if (data.ok) {
       await refreshAll()
     } else {
-      alert(data.detail || 'Failed to cancel ignore incident')
+      toast.error(data.detail || 'Failed to cancel ignore incident')
     }
   } catch (err) {
     console.error('Error unignoring incident:', err)

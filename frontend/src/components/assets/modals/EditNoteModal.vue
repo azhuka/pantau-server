@@ -81,6 +81,7 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'updated'])
 const { t } = useI18n()
+const toast = useToast()
 
 const submitting = ref(false)
 const notesContent = ref('')
@@ -109,10 +110,10 @@ async function saveNote() {
       emit('updated', data.message || 'Note updated')
       emit('close')
     } else {
-      alert(data.detail || data.error || 'Failed to update note')
+      toast.error(data.detail || data.error || 'Failed to update note')
     }
   } catch (err) {
-    alert('Error: ' + err.message)
+    toast.error('Error: ' + err.message)
   } finally {
     submitting.value = false
   }

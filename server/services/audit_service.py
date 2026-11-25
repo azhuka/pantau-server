@@ -4,7 +4,7 @@ import json
 from datetime import datetime, timedelta
 from typing import Any, Optional
 
-from sqlalchemy import desc
+from sqlalchemy import desc, func
 from sqlalchemy.orm import Session
 
 from models.command import Command
@@ -14,8 +14,11 @@ from models.user import User
 
 AUDIT_ACTION_LABELS = {
     "login": "Login",
+    "user_login": "Login",
     "login_2fa": "2FA Login",
+    "user_login_2fa": "2FA Login",
     "logout": "Logout",
+    "user_logout": "Logout",
     "server_add": "Add Server",
     "server_edit": "Edit Server",
     "update_server": "Edit Server",
@@ -26,6 +29,12 @@ AUDIT_ACTION_LABELS = {
     "user_add": "Add User",
     "user_delete": "Delete User",
     "user_update": "Update User",
+    "user_password_change": "Change Password",
+    "user_password_reset": "Reset User Password",
+    "user_2fa_reset": "Reset User 2FA",
+    "settings_update": "Update Settings",
+    "settings_reset": "Reset Settings",
+    "db_optimize": "Optimize Database",
     "apt_update": "Update OS Packages (apt)",
     "apt_upgrade": "Upgrade OS Packages (apt)",
     "alert_ack": "Mark Incident Handled",
@@ -84,10 +93,12 @@ AUDIT_CATEGORIES = [
         "id": "cat:auth",
         "name": "Auth & User Accounts",
         "keys": [
-            "login", "login_2fa", "logout", "user_add", "user_update", "user_delete",
+            "login", "user_login", "login_2fa", "user_login_2fa", "logout", "user_logout",
+            "user_add", "user_update", "user_delete", "user_password_change",
+            "user_password_reset", "user_2fa_reset",
             "user_create", "cmd:user_create", "user_lock", "cmd:user_lock",
             "user_unlock", "cmd:user_unlock", "terminate_ssh_session", "cmd:terminate_ssh_session",
-            "session_terminate", "cmd:session_terminate",
+            "session_terminate", "cmd:session_terminate", "terminate_session", "cmd:terminate_session",
         ],
         "actions": [
             ("login", "Login"),
@@ -343,6 +354,12 @@ def query_audit_entries(
         log_q = log_q.filter(AuditLog.server_id.in_(allowed_sids))
     if server_id is not None:
         log_q = log_q.filter(AuditLog.server_id == server_id)
+    if user_filter.strip() and user_filter.strip().lower() not in ("system", "sistem"):
+        log_q = log_q.filter(func.lower(AuditLog.username) == user_filter.strip().lower())
+    if action.strip():
+        matched_keys = _resolve_action_keys(action)
+        plain_keys = [k.removeprefix("cmd:") for k in matched_keys]
+        log_q = log_q.filter(AuditLog.action.in_(matched_keys | set(plain_keys)))
 
     fetch_cap = min(max(limit * 3, 300), 1500)
     audit_records = log_q.order_by(desc(AuditLog.created_at)).limit(fetch_cap).all()
@@ -376,6 +393,12 @@ def query_audit_entries(
         cmd_q = cmd_q.filter(Command.server_id.in_(allowed_sids))
     if server_id is not None:
         cmd_q = cmd_q.filter(Command.server_id == server_id)
+    if user_filter.strip() and user_filter.strip().lower() not in ("system", "sistem"):
+        cmd_q = cmd_q.filter(func.lower(Command.issued_by) == user_filter.strip().lower())
+    if action.strip():
+        matched_keys = _resolve_action_keys(action)
+        plain_keys = [k.removeprefix("cmd:") for k in matched_keys]
+        cmd_q = cmd_q.filter(Command.action.in_(matched_keys | set(plain_keys)))
 
     for c in cmd_q.order_by(desc(Command.created_at)).limit(fetch_cap).all():
         key = f"cmd:{c.action}"

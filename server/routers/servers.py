@@ -1,14 +1,9 @@
 import json
 import os
 import re
-import stat
-import pwd
-import grp
-import shutil
 import subprocess
 from datetime import datetime, timedelta
-from fastapi import APIRouter, Depends, HTTPException, Body, Form, File, UploadFile, status
-from fastapi.responses import FileResponse
+from fastapi import APIRouter, Depends, HTTPException, Body, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from core.database import get_db
@@ -18,7 +13,7 @@ from models.server import Server, ServerExtras, SystemSnapshot, Service
 from models.problem import ServerProblem
 from models.command import Command
 from models.misc import AuditLog
-from services.problem_service import check_all_servers_stale
+from services.problem_service import check_all_servers_stale, sync_maintenance_state
 
 router = APIRouter(prefix="/api/servers", tags=["Servers"])
 
@@ -175,7 +170,7 @@ def list_servers(user: User = Depends(get_current_user), db: Session = Depends(g
         ignored_p = []
 
         for p in s_probs:
-            if getattr(p, "is_ignored", 0):
+            if getattr(p, "is_ignored", 0) and (not p.ignored_until or p.ignored_until > now):
                 ignored_p.append(p)
                 continue
 
@@ -313,16 +308,14 @@ def get_server_detail(sid: int, user: User = Depends(get_current_user), db: Sess
     """Rincian profil server, spesifikasi perangkat keras, dan snapshot."""
     check_server_access(user, sid)
 
-    server = db.query(Server).filter(Server.id == sid).first()
+    server = db.query(Server).filter(Server.id == sid, Server.is_active == 1).first()
     if not server:
         raise HTTPException(status_code=404, detail="Server not found")
 
     now = datetime.utcnow()
     is_online = bool(server.last_seen and (now - server.last_seen).total_seconds() <= 60)
-    if server.is_maintenance and server.maintenance_until and server.maintenance_until < now:
-        server.is_maintenance = 0
-        server.maintenance_until = None
-        server.maintenance_reason = None
+    was_maint = bool(server.is_maintenance)
+    if not sync_maintenance_state(server, now) and was_maint:
         db.commit()
 
     extras = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
@@ -579,6 +572,41 @@ def get_server_problems(sid: int, user: User = Depends(get_current_user), db: Se
         })
     return {"ok": True, "problems": result}
 
+_ACTION_PERMISSION_MAP = {
+    "restart_service": "can_services",
+    "stop_service": "can_services",
+    "start_service": "can_services",
+    "reload_service": "can_services",
+    "enable_service": "can_services",
+    "disable_service": "can_services",
+    "kill_process": "can_processes",
+    "suspend_process": "can_processes",
+    "resume_process": "can_processes",
+    "reboot_host": "can_server_control",
+    "poweroff_host": "can_server_control",
+    "shutdown_host": "can_server_control",
+    "terminate_session": "can_users_sys",
+    "terminate_ssh_session": "can_users_sys",
+    "lock_user": "can_users_sys",
+    "unlock_user": "can_users_sys",
+    "delete_user": "can_users_sys",
+    "create_user": "can_users_sys",
+    "block_ip": "can_firewall",
+    "unblock_ip": "can_firewall",
+    "toggle_ufw": "can_firewall",
+    "ufw_enable": "can_firewall",
+    "ufw_disable": "can_firewall",
+    "ufw_reload": "can_firewall",
+    "cron_run": "can_cron",
+    "apt_update": "can_apt",
+    "apt_upgrade": "can_apt",
+    "fim_scan": "can_audit",
+    "fim_rebaseline": "can_audit",
+    "update_agent": "can_ota",
+    "restart_agent": "can_ota",
+}
+
+
 @router.post("/{sid}/actions")
 def dispatch_server_action(
     sid: int,
@@ -586,34 +614,21 @@ def dispatch_server_action(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """
-    Kirim perintah aksi kontrol ke server klien:
-    - restart_service, stop_service, start_service
-    - kill_process
-    - terminate_ssh_session (putus paksa sesi remote)
-    """
+    """Dispatch an RBAC-validated control command to a target monitored host."""
     check_server_access(user, sid)
 
-    action = body.get("action")
+    action = str(body.get("action") or "").strip()
     params = body.get("params") or {}
     now = datetime.utcnow()
 
-    # RBAC Granular Permission Enforcement
-    if action in ("restart_service", "stop_service", "start_service", "reload_service", "enable_service", "disable_service"):
-        if not user.has_perm("can_services"):
-            raise HTTPException(status_code=403, detail="Access denied: Service Control permission (can_services) is required")
-    elif action in ("kill_process", "suspend_process", "resume_process"):
-        if not user.has_perm("can_processes"):
-            raise HTTPException(status_code=403, detail="Access denied: Process Manager permission (can_processes) is required")
-    elif action in ("reboot_host", "poweroff_host", "shutdown_host"):
-        if not user.has_perm("can_server_control"):
-            raise HTTPException(status_code=403, detail="Access denied: Host Control permission (can_server_control) is required")
-    elif action in ("terminate_ssh_session", "lock_user", "unlock_user", "delete_user", "create_user"):
-        if not user.has_perm("can_users_sys"):
-            raise HTTPException(status_code=403, detail="Access denied: System Users permission (can_users_sys) is required")
-    elif action in ("block_ip", "unblock_ip", "toggle_ufw"):
-        if not user.has_perm("can_firewall"):
-            raise HTTPException(status_code=403, detail="Access denied: Firewall Control permission (can_firewall) is required")
+    req_perm = _ACTION_PERMISSION_MAP.get(action)
+    if not req_perm:
+        raise HTTPException(status_code=400, detail=f"Unsupported or unknown action: '{action}'")
+    if not (user.is_master_admin or user.has_perm(req_perm)):
+        raise HTTPException(status_code=403, detail=f"Access denied: Permission '{req_perm}' is required")
+
+    # Normalize to fit varchar(20) commands.action schema & agent_pantau.py handler
+    db_action = "terminate_session" if action == "terminate_ssh_session" else action
 
     # Safety Guardrails: Proteksi Proses Kritis (Anti-Host Crash / Anti-Brick)
     if action in ("kill_process", "suspend_process"):
@@ -651,7 +666,7 @@ def dispatch_server_action(
 
     cmd = Command(
         server_id=sid,
-        action=action,
+        action=db_action,
         params=json.dumps(params, ensure_ascii=False),
         issued_by=user.username,
         status="pending",
@@ -660,20 +675,19 @@ def dispatch_server_action(
     db.add(cmd)
     db.flush()
 
-    # Log ke audit trail
     audit_entry = AuditLog(
         server_id=sid,
         username=user.username,
-        action=action,
+        action=db_action,
         target=str(params),
-        result="antre",
-        meta=f"Perintah {action} didaftarkan oleh {user.username}",
+        result="queued",
+        meta=f"Command {db_action} queued by {user.username}",
         created_at=now
     )
     db.add(audit_entry)
     db.commit()
 
-    return {"ok": True, "command_id": cmd.id, "message": f"Perintah {action} berhasil dijadwalkan"}
+    return {"ok": True, "command_id": cmd.id, "message": f"Command '{db_action}' queued successfully"}
 
 
 def _format_size(size_bytes: int) -> str:
@@ -696,16 +710,14 @@ def execute_terminal_command(
     if not (user.is_master_admin or user.has_perm("can_terminal")):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied: Web Terminal permission (can_terminal) is required")
 
-    server = db.query(Server).filter(Server.id == sid).first()
+    server = db.query(Server).filter(Server.id == sid, Server.is_active == 1).first()
     if not server:
         raise HTTPException(status_code=404, detail="Server not found")
 
     now = datetime.utcnow()
     is_online = bool(server.last_seen and (now - server.last_seen).total_seconds() <= 60)
-    if server.is_maintenance and server.maintenance_until and server.maintenance_until < now:
-        server.is_maintenance = 0
-        server.maintenance_until = None
-        server.maintenance_reason = None
+    was_maint = bool(server.is_maintenance)
+    if not sync_maintenance_state(server, now) and was_maint:
         db.commit()
 
     cmd = (body.get("cmd") or "").strip()
@@ -781,16 +793,14 @@ def toggle_server_maintenance(
     if not (user.is_master_admin or user.has_perm("can_manage_servers") or user.has_perm("can_server_control")):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied: Manage Servers permission is required")
 
-    server = db.query(Server).filter(Server.id == sid).first()
+    server = db.query(Server).filter(Server.id == sid, Server.is_active == 1).first()
     if not server:
         raise HTTPException(status_code=404, detail="Server not found")
 
     now = datetime.utcnow()
     is_online = bool(server.last_seen and (now - server.last_seen).total_seconds() <= 60)
-    if server.is_maintenance and server.maintenance_until and server.maintenance_until < now:
-        server.is_maintenance = 0
-        server.maintenance_until = None
-        server.maintenance_reason = None
+    was_maint = bool(server.is_maintenance)
+    if not sync_maintenance_state(server, now) and was_maint:
         db.commit()
 
     action = body.get("action", "toggle")

@@ -305,7 +305,7 @@
                       class="text-[9px] px-1.5 py-0.2 rounded font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-0.5 shadow-sm"
                       :title="t('dash_acked_by', { user: prob.acknowledged_by })"
                     >
-                      <span>✓</span>
+                      <svg class="w-2.5 h-2.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
                       <span>{{ t('dash_badge_handled') }}</span>
                     </span>
                     <span
@@ -864,6 +864,9 @@ import SevDetailModal from './SevDetailModal.vue'
 import ProblemDetailModal from './ProblemDetailModal.vue'
 import IgnoreProblemModal from './IgnoreProblemModal.vue'
 import { extractGroupOptions, matchesGroupFilter, buildAssetSearchHaystack } from '../../utils/filterHelpers'
+import { useToast, confirmAction } from '../../utils/useToast'
+
+const toast = useToast()
 
 const props = defineProps({
   servers: {
@@ -943,7 +946,7 @@ async function handleProblemAck(pid) {
       }
       emit('refresh-problems')
     } else {
-      alert(data.detail || 'Failed to acknowledge problem')
+      toast.error(data.detail || 'Failed to acknowledge incident')
     }
   } catch (err) {
     console.error('Failed to acknowledge problem:', err)
@@ -963,7 +966,7 @@ async function unignoreProblem(pid) {
     if (data.ok) {
       emit('refresh-problems')
     } else {
-      alert(data.detail || 'Failed to unignore problem')
+      toast.error(data.detail || 'Failed to unignore incident')
     }
   } catch (err) {
     console.error('Failed to unignore problem:', err)
@@ -971,7 +974,13 @@ async function unignoreProblem(pid) {
 }
 
 async function terminateSshSession(prob) {
-  if (!confirm('Putus paksa sesi SSH ini sekarang?')) return
+  const ok = await confirmAction({
+    title: 'Terminate SSH Session',
+    message: 'Force-terminate this active SSH session now?',
+    confirmText: 'Terminate',
+    variant: 'danger',
+  })
+  if (!ok) return
   const token = localStorage.getItem('pantau_token')
   try {
     const res = await fetch(`/api/problems/${prob.id}/terminate-ssh`, {
@@ -980,11 +989,11 @@ async function terminateSshSession(prob) {
     })
     const data = await res.json()
     if (data.ok) {
-      alert(data.message || 'SSH session termination signal sent.')
+      toast.success(data.message || 'SSH session termination signal sent.')
       showProblemDetailModal.value = false
       emit('refresh-problems')
     } else {
-      alert(data.detail || 'Failed to terminate SSH session.')
+      toast.error(data.detail || 'Failed to terminate SSH session.')
     }
   } catch (err) {
     console.error('Failed to terminate SSH session:', err)
@@ -1001,7 +1010,7 @@ function openHostFromModal(sid) {
   if (props.servers && props.servers.length > 0) {
     const exists = props.servers.some(s => s.id === sid)
     if (!exists) {
-      alert(t('access_denied_node') || 'Access denied: You do not have permission for this server.')
+      toast.error(t('access_denied_node') || 'Access denied: You do not have permission for this asset.')
       return
     }
   }

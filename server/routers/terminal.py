@@ -153,7 +153,7 @@ class TerminalBridgeDispatcher:
                                 json.dumps(
                                     {
                                         "type": "stdout",
-                                        "data": "\r\n\x1b[33;1m[TERMINAL DIKUNCI] Operator telah mengunci sesi terminal ini.\x1b[0m\r\n",
+                                        "data": "\r\n\x1b[33;1m[TERMINAL LOCKED] Operator locked this terminal session.\x1b[0m\r\n",
                                     }
                                 )
                             )
@@ -456,7 +456,7 @@ async def websocket_terminal(
                         json.dumps(
                             {
                                 "type": "stdout",
-                                "data": "\r\n\x1b[31;1m[SESI HABIS] Masa berlaku izin akses terminal telah kedaluwarsa. Sesi ditutup demi keamanan.\x1b[0m\r\n",
+                                "data": "\r\n\x1b[31;1m[SESSION EXPIRED] Terminal authorization lease has expired. Session closed for security.\x1b[0m\r\n",
                             }
                         )
                     )

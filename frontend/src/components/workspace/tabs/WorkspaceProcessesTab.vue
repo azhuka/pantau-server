@@ -55,10 +55,10 @@
                 <button
                   type="button"
                   @click.stop="toggleProcDropdown(p, $event)"
-                  class="p-1.5 rounded bg-gray-900 hover:bg-rose-950 border border-gray-700 hover:border-rose-600/50 text-gray-300 hover:text-rose-300 transition cursor-pointer flex items-center justify-center shadow-sm"
+                  class="w-[26px] h-[26px] min-w-[26px] p-0 rounded bg-gray-900 hover:bg-rose-950 border border-gray-700 hover:border-rose-600/50 text-gray-300 hover:text-rose-300 transition cursor-pointer flex items-center justify-center shadow-sm"
                   :title="t('col_actions')"
                 >
-                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="12" cy="12" r="1.5"></circle>
                     <circle cx="12" cy="5" r="1.5"></circle>
                     <circle cx="12" cy="19" r="1.5"></circle>

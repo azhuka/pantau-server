@@ -84,6 +84,7 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'success'])
 const { t } = useI18n()
+const toast = useToast()
 
 const submitting = ref(false)
 const password = ref('')
@@ -112,10 +113,10 @@ async function submitKey() {
       emit('success', data.message || 'Key injected')
       emit('close')
     } else {
-      alert(data.detail || data.error || 'Failed to inject SSH key')
+      toast.error(data.detail || data.error || 'Failed to inject SSH key')
     }
   } catch (err) {
-    alert('Error: ' + err.message)
+    toast.error('Error: ' + err.message)
   } finally {
     submitting.value = false
   }

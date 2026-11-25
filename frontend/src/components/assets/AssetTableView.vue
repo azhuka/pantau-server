@@ -558,6 +558,7 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useI18n } from '../../i18n'
+import { formatBytes, formatUptime, formatRelativeTime } from '../../utils/formatters'
 import EditHostModal from './modals/EditHostModal.vue'
 import EditNoteModal from './modals/EditNoteModal.vue'
 import InjectKeyModal from './modals/InjectKeyModal.vue'
@@ -958,34 +959,4 @@ const paginatedServers = computed(() => {
 watch([groupFilter, envFilter, searchQuery, statusFilter], () => {
   currentPage.value = 1
 })
-
-function formatBytes(bytes) {
-  if (!bytes) return '0 B'
-  const k = 1024
-  const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
-}
-
-function formatUptime(secs) {
-  if (!secs) return '-'
-  const d = Math.floor(secs / 86400)
-  const h = Math.floor((secs % 86400) / 3600)
-  const m = Math.floor((secs % 3600) / 60)
-  if (d > 0) return `${d}d ${h}h`
-  if (h > 0) return `${h}h ${m}m`
-  return `${m}m`
-}
-
-function formatRelativeTime(isoStr) {
-  if (!isoStr) return '-'
-  const d = new Date(isoStr)
-  if (isNaN(d.getTime())) return '-'
-  const diffSec = Math.max(0, Math.floor((Date.now() - d.getTime()) / 1000))
-  if (diffSec < 10) return 'just now'
-  if (diffSec < 60) return `${diffSec}s ago`
-  const min = Math.floor(diffSec / 60)
-  if (min < 60) return `${min}m ago`
-  return `${Math.floor(min / 60)}h ago`
-}
 </script>

@@ -58,25 +58,34 @@ CRITICAL_SERVICES = {
 }
 
 
+def sync_maintenance_state(srv: Server, now: Optional[datetime] = None) -> bool:
+    """Clear expired maintenance window on Server and return True if currently in active maintenance."""
+    if not getattr(srv, "is_maintenance", 0):
+        return False
+    ref_now = now or datetime.utcnow()
+    m_until = getattr(srv, "maintenance_until", None)
+    if m_until and m_until < ref_now:
+        srv.is_maintenance = 0
+        srv.maintenance_until = None
+        srv.maintenance_reason = None
+        return False
+    return True
+
+
 def check_server_stale(db: Session, srv: Server, now: datetime = None):
     """
-    Evaluasi apakah node server klien mati / tidak melapor (agent_stale).
-    - Production (tier=1): >= 60s critical (gawat), >= 180s danger (bahaya/lumpuh).
-    - Non-Production (tier=2): warning (peringatan non-eskalasi).
+    Evaluate whether a monitored client node is silent/offline (agent_stale).
+    - Production (tier=1): >= 60s critical, >= 180s danger.
+    - Non-Production (tier=2): warning (capped, non-escalating).
     """
     if now is None:
         now = datetime.utcnow()
 
-    # Redam jika sedang dalam mode pemeliharaan aktif
-    if getattr(srv, "is_maintenance", 0):
-        m_until = getattr(srv, "maintenance_until", None)
-        if m_until and m_until < now:
-            srv.is_maintenance = 0
-            srv.maintenance_until = None
-            srv.maintenance_reason = None
-            db.commit()
-        else:
-            return
+    was_maint = bool(getattr(srv, "is_maintenance", 0))
+    if sync_maintenance_state(srv, now):
+        return
+    if was_maint:
+        db.commit()
 
     sec_silent = (now - srv.last_seen).total_seconds() if srv.last_seen else 999999.0
     is_prod = (getattr(srv, "tier", 1) == 1)
@@ -157,37 +166,27 @@ def check_server_stale(db: Session, srv: Server, now: datetime = None):
 
 
 def check_all_servers_stale(db: Session):
-    """Memeriksa status online/stale seluruh server armada secara berkala."""
+    """Periodically check online/stale status across all active servers."""
     now = datetime.utcnow()
     servers = db.query(Server).filter(Server.is_active == 1).all()
     for srv in servers:
         try:
             check_server_stale(db, srv, now=now)
         except Exception:
-            pass
+            db.rollback()
 
 
 def evaluate_server_problems(db: Session, srv: Server, report_dict: dict, extras):
     """
-    Evaluasi kesehatan server dan sinkronisasi tiket insiden di server_problems.
-    Tunduk pada Glosarium Baku 4-Tingkat Keparahan:
-      - info (biru): pembaruan sistem / update paket OS (non-ancaman).
-      - warning (kuning): potensi gangguan, layanan utama tetap jalan (remote SSH legal, utilisasi tinggi non-prod).
-      - critical (oranye pekat): layanan utama terganggu / mati (nginx down, mysql down, SSH ilegal).
-      - danger (merah): kelumpuhan sistem utama (server offline, filesystem read-only, RAM/CPU habis pada produksi).
+    Evaluate host health telemetry and synchronize active/resolved rows in server_problems.
     """
     now = datetime.utcnow()
 
-    # 1. Mode Pemeliharaan (Maintenance Mode Auto-Expiry & Alert Suppression)
-    if getattr(srv, "is_maintenance", 0):
-        m_until = getattr(srv, "maintenance_until", None)
-        if m_until and m_until < now:
-            srv.is_maintenance = 0
-            srv.maintenance_until = None
-            srv.maintenance_reason = None
-            db.commit()
-        else:
-            return
+    was_maint = bool(getattr(srv, "is_maintenance", 0))
+    if sync_maintenance_state(srv, now):
+        return
+    if was_maint:
+        db.commit()
 
     # Pastikan tiket agent_stale tertutup karena agen baru saja melapor
     existing_stale = db.query(ServerProblem).filter(
@@ -325,29 +324,37 @@ def evaluate_server_problems(db: Session, srv: Server, report_dict: dict, extras
                     }, ensure_ascii=False)
                 })
 
-    # 5. Evaluasi Metrik Sumber Daya (CPU / RAM / Disk)
+    # 5. Evaluate Resource Metrics against Configured Global Thresholds
+    th = get_global_thresholds(db)
+    cpu_danger = float(th.get("cpu_danger", 95.0))
+    cpu_warn = float(th.get("cpu_warn", 85.0))
+    ram_danger = float(th.get("ram_danger", 95.0))
+    ram_warn = float(th.get("ram_warn", 85.0))
+    disk_danger = float(th.get("disk_danger", 95.0))
+    disk_warn = float(th.get("disk_warn", 85.0))
+
     sysd = report_dict.get("system") if isinstance(report_dict.get("system"), dict) else report_dict
 
     # 5a. CPU
     cpu_val = float(sysd.get("cpu") or report_dict.get("cpu") or 0.0)
-    if cpu_val >= 95.0:
+    if cpu_val >= cpu_danger:
         k = "cpu_critical"
         active_keys.add(k)
         active_instances.append({
             "key": k,
             "severity": "danger" if is_prod else "warning",
-            "message": f"Utilisasi CPU sangat kritis: {cpu_val:.1f}%",
-            "tip": "Beban CPU mendekati batas maksimum 100%. Periksa proses yang mengonsumsi CPU tinggi.",
+            "message": f"Critical CPU utilization: {cpu_val:.1f}%",
+            "tip": f"CPU usage exceeded danger threshold ({cpu_danger:.0f}%). Inspect top CPU-consuming processes.",
             "context": None
         })
-    elif cpu_val >= 85.0:
+    elif cpu_val >= cpu_warn:
         k = "cpu_high"
         active_keys.add(k)
         active_instances.append({
             "key": k,
             "severity": "warning",
-            "message": f"Utilisasi CPU tinggi: {cpu_val:.1f}%",
-            "tip": "Utilisasi CPU melampaui batas ambang normal 85%.",
+            "message": f"High CPU utilization: {cpu_val:.1f}%",
+            "tip": f"CPU utilization exceeded warning threshold ({cpu_warn:.0f}%).",
             "context": None
         })
 
@@ -356,24 +363,24 @@ def evaluate_server_problems(db: Session, srv: Server, report_dict: dict, extras
     mem_used = int(sysd.get("mem_used") or (report_dict.get("mem") or {}).get("used") or 0)
     if mem_total > 0:
         mem_pct = (mem_used / mem_total) * 100.0
-        if mem_pct >= 95.0:
+        if mem_pct >= ram_danger:
             k = "ram_danger"
             active_keys.add(k)
             active_instances.append({
                 "key": k,
                 "severity": "danger" if is_prod else "warning",
-                "message": f"Alokasi RAM kritis: {mem_pct:.1f}%",
-                "tip": "Ketersediaan memori fisik hampir habis. Waspadai pemanggilan kernel OOM Killer.",
+                "message": f"Critical RAM utilization: {mem_pct:.1f}%",
+                "tip": f"Physical memory exceeded danger threshold ({ram_danger:.0f}%). Risk of OOM killer activation.",
                 "context": None
             })
-        elif mem_pct >= 85.0:
+        elif mem_pct >= ram_warn:
             k = "ram_warning"
             active_keys.add(k)
             active_instances.append({
                 "key": k,
                 "severity": "warning",
-                "message": f"Alokasi RAM tinggi: {mem_pct:.1f}%",
-                "tip": "Pemakaian RAM melampaui ambang normal 85%.",
+                "message": f"High RAM utilization: {mem_pct:.1f}%",
+                "tip": f"Memory usage exceeded warning threshold ({ram_warn:.0f}%).",
                 "context": None
             })
 
@@ -393,28 +400,28 @@ def evaluate_server_problems(db: Session, srv: Server, report_dict: dict, extras
                 active_instances.append({
                     "key": k,
                     "severity": "danger",
-                    "message": "Filesystem root (/) beralih ke mode Read-Only",
-                    "tip": "Bahaya integritas sistem! Kernel mengunci penyimpanan ke read-only untuk mencegah korupsi data.",
+                    "message": "Root filesystem (/) mounted Read-Only",
+                    "tip": "Critical storage integrity issue! Kernel remounted root filesystem read-only.",
                     "context": None
                 })
-            elif pct >= 95.0:
+            elif pct >= disk_danger:
                 k = f"disk_danger:{mount}"
                 active_keys.add(k)
                 active_instances.append({
                     "key": k,
                     "severity": "danger" if is_prod else "warning",
-                    "message": f"Kapasitas penyimpanan hampir habis pada {mount}: {pct:.1f}%",
-                    "tip": f"Partisi {mount} tersisa kurang dari 5%. Segera lakukan pembersihan log atau ekspansi disk.",
+                    "message": f"Critical disk usage on {mount}: {pct:.1f}%",
+                    "tip": f"Partition {mount} exceeded danger threshold ({disk_danger:.0f}%). Free disk space immediately.",
                     "context": None
                 })
-            elif pct >= 85.0:
+            elif pct >= disk_warn:
                 k = f"disk_warning:{mount}"
                 active_keys.add(k)
                 active_instances.append({
                     "key": k,
                     "severity": "warning",
-                    "message": f"Kapasitas penyimpanan tinggi pada {mount}: {pct:.1f}%",
-                    "tip": f"Partisi {mount} melampaui 85%.",
+                    "message": f"High disk usage on {mount}: {pct:.1f}%",
+                    "tip": f"Partition {mount} exceeded warning threshold ({disk_warn:.0f}%).",
                     "context": None
                 })
 

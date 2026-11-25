@@ -39,7 +39,7 @@
             @click="handleClose"
             class="px-4 py-2 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold transition cursor-pointer"
           >
-            {{ t('btn_cancel') || 'Batal' }}
+            {{ t('btn_cancel') || 'Cancel' }}
           </button>
           <button
             type="button"

@@ -80,6 +80,7 @@
 
 <script setup>
 import { ref } from 'vue'
+import { confirmAction } from '../../../utils/useToast'
 
 const props = defineProps({
   user: {
@@ -94,7 +95,13 @@ const loading = ref(false)
 const errorMsg = ref('')
 
 async function handleReset2fa() {
-  if (!confirm(`Are you sure you want to reset and disable 2FA for operator ${props.user.username}?`)) return
+  const ok = await confirmAction({
+    title: 'Reset Operator 2FA',
+    message: `Are you sure you want to reset and disable 2FA for operator ${props.user.username}?`,
+    confirmText: 'Reset 2FA',
+    variant: 'danger',
+  })
+  if (!ok) return
   loading.value = true
   errorMsg.value = ''
   try {

@@ -97,7 +97,7 @@
             :title="t('dash_acked_by', { user: problem.acknowledged_by })"
           >
             <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-            <span>✓ {{ t('dash_badge_handled') }}</span>
+            <span>{{ t('dash_badge_handled') }}</span>
           </span>
 
           <button
@@ -168,32 +168,29 @@ const sevBadgeClass = computed(() => {
 })
 
 const rootCauseText = computed(() => {
-  const isId = locale.value === 'id'
   const k = props.problem?.key || ''
-  if (k.startsWith('ssh_active_session:')) return isId ? 'Sesi login terminal remote SSH aktif terdeteksi pada host.' : 'Active remote interactive SSH login session detected on host.'
-  if (k.startsWith('service_down:')) return isId ? `Unit layanan sistem (${k.split(':')[1] || 'service'}) dilaporkan mati atau gagal berjalan.` : `System service unit (${k.split(':')[1] || 'service'}) is inactive or failed.`
-  if (k.includes('pkg_updates') || k.includes('apt_updates')) return isId ? 'Repositori paket Linux mendeteksi pembaruan keamanan atau paket OS tersedia.' : 'Linux package repository indicates new security updates or system packages are pending.'
-  if (k.includes('cpu')) return isId ? 'Beban komputasi CPU melampaui batas ambang operasional yang ditentukan.' : 'CPU computing load exceeded designated operational threshold limit.'
-  if (k.includes('ram')) return isId ? 'Utilisasi memori RAM fisik mendekati batas ambang kapasitas operasional.' : 'Physical RAM memory usage approached designated operational threshold.'
-  if (k.includes('disk')) return isId ? 'Kapasitas penyimpanan volume filesystem melampaui kuota aman operasional.' : 'Filesystem storage volume utilization exceeded safe operating quota.'
-  return isId ? 'Anomali terdeteksi oleh mesin evaluasi telemetri Pantau Server.' : 'Anomaly detected by Pantau Server telemetry evaluation engine.'
+  if (k.startsWith('ssh_active_session:')) return 'Active remote interactive SSH login session detected on host.'
+  if (k.startsWith('service_down:')) return `System service unit (${k.split(':')[1] || 'service'}) is inactive or failed.`
+  if (k.includes('pkg_updates') || k.includes('apt_updates')) return 'Linux package repository indicates new security updates or system packages are pending.'
+  if (k.includes('cpu')) return 'CPU computing load exceeded designated operational threshold limit.'
+  if (k.includes('ram')) return 'Physical RAM memory usage approached designated operational threshold.'
+  if (k.includes('disk')) return 'Filesystem storage volume utilization exceeded safe operating quota.'
+  return 'Anomaly detected by Pantau Server telemetry evaluation engine.'
 })
 
 const impactText = computed(() => {
-  const isId = locale.value === 'id'
   const k = props.problem?.key || ''
-  if (k.startsWith('ssh_active_session:')) return isId ? 'Risiko akses tidak sah apabila IP asal tidak dikenali atau di luar jadwal.' : 'Risk of unauthorized access if origin IP is unrecognized.'
-  if (k.startsWith('service_down:')) return isId ? 'Layanan terkait atau port soket tidak dapat diakses oleh klien.' : 'Associated services or socket ports are unavailable to clients.'
-  if (k.includes('disk')) return isId ? 'Penyimpanan penuh dapat memicu kegagalan tulis data dan crash aplikasi.' : 'Full storage volumes lead to write failures and crash events.'
-  return isId ? 'Dapat memicu penurunan performa dan instabilitas infrastruktur jika tidak segera ditangani.' : 'May cause performance degradation and infrastructure instability if unmitigated.'
+  if (k.startsWith('ssh_active_session:')) return 'Risk of unauthorized access if origin IP is unrecognized.'
+  if (k.startsWith('service_down:')) return 'Associated services or socket ports are unavailable to clients.'
+  if (k.includes('disk')) return 'Full storage volumes lead to write failures and crash events.'
+  return 'May cause performance degradation and infrastructure instability if unmitigated.'
 })
 
 const recommendationText = computed(() => {
-  const isId = locale.value === 'id'
   const k = props.problem?.key || ''
-  if (k.startsWith('ssh_active_session:')) return isId ? 'Verifikasi IP dan akun asal. Jika tidak sah, putus sesi aktif seketika.' : 'Verify origin IP and user. If unapproved, terminate active session immediately.'
-  if (k.startsWith('service_down:')) return isId ? `Mulai ulang unit layanan via: sudo systemctl restart ${k.split(':')[1] || 'service'}` : `Restart unit via: sudo systemctl restart ${k.split(':')[1] || 'service'}`
-  return isId ? 'Inspeksi proses teratas pada tab Tasks Workspace untuk identifikasi proses anomali.' : 'Inspect top processes in Workspace Tasks tab to locate offending processes.'
+  if (k.startsWith('ssh_active_session:')) return 'Verify origin IP and user. If unapproved, terminate active session immediately.'
+  if (k.startsWith('service_down:')) return `Restart unit via: sudo systemctl restart ${k.split(':')[1] || 'service'}`
+  return 'Inspect top processes in Workspace Tasks tab to locate offending processes.'
 })
 
 const cliCommand = computed(() => {

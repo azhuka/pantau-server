@@ -46,6 +46,7 @@
 import { ref, computed } from 'vue'
 import { useI18n } from '../../../i18n'
 import NocTablePagination from '../../common/NocTablePagination.vue'
+import { confirmAction } from '../../../utils/useToast'
 
 const { t } = useI18n()
 const props = defineProps({ cronData: { type: Object, default: () => ({ jobs: [] }) } })
@@ -62,8 +63,14 @@ const paginatedJobs = computed(() => {
   return allJobs.value.slice((currentPage.value - 1) * limit, currentPage.value * limit)
 })
 
-function runCron(job) {
-  if (!confirm(`Run cron command immediately on host:\n\n${job.command}`)) return
+async function runCron(job) {
+  const ok = await confirmAction({
+    title: 'Run Cron Job Now',
+    message: `Run cron command immediately on host:\n\n${job.command}`,
+    confirmText: 'Run Now',
+    variant: 'warning',
+  })
+  if (!ok) return
   emit('cron-action', { action: 'cron_run', params: { user: job.user || 'root', command: job.command } })
 }
 </script>

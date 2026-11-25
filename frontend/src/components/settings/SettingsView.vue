@@ -220,7 +220,7 @@
                 <line x1="12" y1="5" x2="12" y2="19"></line>
                 <line x1="5" y1="12" x2="19" y2="12"></line>
               </svg>
-              <span>{{ t('settings_add_user_btn') || 'Tambah Pengguna' }}</span>
+              <span>{{ t('settings_add_user_btn') || 'Add User' }}</span>
             </button>
           </div>
         </div>
@@ -357,7 +357,7 @@
                       class="text-[10px]"
                       :class="u.totp_enabled ? 'text-emerald-400 font-semibold' : 'text-gray-400'"
                     >
-                      {{ u.totp_enabled ? '2FA ✔' : '2FA -' }}
+                      {{ u.totp_enabled ? '2FA ON' : '2FA OFF' }}
                     </span>
                   </div>
                 </td>
@@ -370,11 +370,11 @@
                     <button
                       type="button"
                       @click.stop="toggleActionDropdown(u, $event)"
-                      class="p-1.5 rounded bg-gray-900 hover:bg-cyan-950 border border-gray-700 hover:border-cyan-600/50 text-gray-300 hover:text-cyan-300 transition cursor-pointer flex items-center justify-center shadow-sm"
+                      class="w-[26px] h-[26px] min-w-[26px] p-0 rounded bg-gray-900 hover:bg-cyan-950 border border-gray-700 hover:border-cyan-600/50 text-gray-300 hover:text-cyan-300 transition cursor-pointer flex items-center justify-center shadow-sm"
                       :title="t('settings_col_actions')"
                       aria-label="Actions"
                     >
-                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="12" r="1.5"></circle>
                         <circle cx="12" cy="5" r="1.5"></circle>
                         <circle cx="12" cy="19" r="1.5"></circle>
@@ -518,6 +518,9 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from '../../i18n'
+import { useToast, confirmAction } from '../../utils/useToast'
+
+const toast = useToast()
 import MasterControlSection from './MasterControlSection.vue'
 import AddUserModal from './modals/AddUserModal.vue'
 import EditSelfModal from './modals/EditSelfModal.vue'
@@ -721,9 +724,13 @@ function onSelf2faEnabled() {
 }
 
 async function handleRegenerateRecoveryCodes() {
-  if (!confirm(t('settings_confirm_regenerate') || 'Generating new recovery codes will immediately invalidate all existing backup codes. Continue?')) {
-    return
-  }
+  const ok = await confirmAction({
+    title: 'Regenerate Recovery Codes',
+    message: t('settings_confirm_regenerate') || 'Generating new recovery codes will immediately invalidate all existing backup codes. Continue?',
+    confirmText: 'Regenerate',
+    variant: 'warning',
+  })
+  if (!ok) return
   try {
     const token = localStorage.getItem('pantau_token')
     const res = await fetch('/api/users/2fa/regenerate-recovery', {
@@ -739,12 +746,19 @@ async function handleRegenerateRecoveryCodes() {
     showRecoveryCodesModal.value = true
     await loadProfile()
   } catch (err) {
-    alert(err.message)
+    toast.error(err.message)
   }
 }
 
 async function handleDisableOwn2fa() {
-  const pwd = prompt(t('settings_enter_pwd_disable_2fa') || 'Enter your account password to disable 2FA:')
+  const pwd = await confirmAction({
+    title: 'Disable Two-Factor Authentication',
+    message: t('settings_enter_pwd_disable_2fa') || 'Enter your account password to disable 2FA:',
+    confirmText: 'Disable 2FA',
+    variant: 'danger',
+    requirePassword: true,
+    passwordLabel: 'Account Password',
+  })
   if (!pwd) return
   try {
     const token = localStorage.getItem('pantau_token')
@@ -763,14 +777,20 @@ async function handleDisableOwn2fa() {
     flashType.value = 'success'
     flashMsg.value = '2FA has been disabled successfully.'
   } catch (err) {
-    alert(err.message)
+    toast.error(err.message)
   }
 }
 
 async function toggleUserStatus(u) {
   const targetState = u.is_active ? 0 : 1
   const actionText = targetState ? 'activate' : 'lock'
-  if (!confirm(`Are you sure you want to ${actionText} user '${u.username}'?`)) return
+  const ok = await confirmAction({
+    title: targetState ? 'Activate User' : 'Lock User',
+    message: `Are you sure you want to ${actionText} user '${u.username}'?`,
+    confirmText: targetState ? 'Activate' : 'Lock',
+    variant: targetState ? 'primary' : 'warning',
+  })
+  if (!ok) return
   try {
     const token = localStorage.getItem('pantau_token')
     const res = await fetch(`/api/users/${u.id}/status`, {
@@ -793,7 +813,13 @@ async function toggleUserStatus(u) {
 }
 
 async function deleteUser(u) {
-  if (!confirm(`Permanently delete user account '${u.username}'? All active sessions will be terminated.`)) return
+  const ok = await confirmAction({
+    title: 'Delete User Account',
+    message: `Permanently delete user account '${u.username}'? All active sessions will be terminated.`,
+    confirmText: 'Delete User',
+    variant: 'danger',
+  })
+  if (!ok) return
   try {
     const token = localStorage.getItem('pantau_token')
     const res = await fetch(`/api/users/${u.id}`, {

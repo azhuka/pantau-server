@@ -712,6 +712,8 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useI18n } from '../i18n'
+import { formatBytes, formatUptime, isServerOnline } from '../utils/formatters'
+import { useToast, confirmAction } from '../utils/useToast'
 import RemoteFileManagerModal from './workspace/RemoteFileManagerModal.vue'
 import WorkspaceOverviewTab from './workspace/tabs/WorkspaceOverviewTab.vue'
 import WorkspaceProblemsTab from './workspace/tabs/WorkspaceProblemsTab.vue'
@@ -738,10 +740,6 @@ const props = defineProps({
     type: Array,
     default: () => []
   },
-  fleetServers: {
-    type: Array,
-    default: () => []
-  },
   currentUser: {
     type: Object,
     default: null
@@ -751,6 +749,7 @@ const props = defineProps({
 const emit = defineEmits(['close', 'minimize', 'switch-server', 'open-terminal', 'server-updated', 'refresh-problems'])
 
 const { t } = useI18n()
+const toast = useToast()
 
 const currentServerId = ref(props.serverId)
 const isMaximized = ref(false)
@@ -789,16 +788,16 @@ async function openTerminalModal() {
     const data = await res.json().catch(() => ({}))
 
     if (!res.ok) {
-      alert(data.detail || 'Gagal memeriksa status terminal')
+      toast.error(data.detail || 'Failed to check terminal status')
       return
     }
 
     if (!data.allow_web_terminal) {
-      alert(t('term_disabled_msg') || 'Web Terminal is disabled for this server.')
+      toast.warning(t('term_disabled_msg') || 'Web Terminal is disabled for this asset.')
       return
     }
     if (!data.can_terminal) {
-      alert(t('term_no_permission_msg') || 'Access denied: You do not have Web Terminal permission.')
+      toast.error(t('term_no_permission_msg') || 'Access denied: Web Terminal permission is required.')
       return
     }
 
@@ -810,7 +809,7 @@ async function openTerminalModal() {
       showTerminalUnlockModal.value = true
     }
   } catch (err) {
-    alert('Gagal menginisialisasi sesi terminal: ' + (err.message || 'Error'))
+    toast.error('Failed to initialize terminal session: ' + (err.message || 'Error'))
   }
 }
 
@@ -1197,22 +1196,28 @@ async function submitMaintenance(action) {
       closeMaintenanceModal()
       emit('server-updated', server.value)
     } else {
-      alert(data.detail || data.message || 'Operation failed')
+      toast.error(data.detail || data.message || 'Operation failed')
     }
   } catch (err) {
-    alert('Failed to update maintenance mode: ' + err.message)
+    toast.error('Failed to update maintenance mode: ' + err.message)
   } finally {
     maintSubmitting.value = false
   }
 }
 
 async function triggerOSUpdate() {
-  await dispatchAction('update_os', {})
+  await dispatchAction('apt_update', {})
 }
 
 async function triggerOSUpgrade() {
-  if (!confirm(`Upgrade ${server.value?.apt_upgradable || 0} operating system packages on ${server.value?.hostname}?`)) return
-  await dispatchAction('upgrade_os', {})
+  const ok = await confirmAction({
+    title: 'Upgrade OS Packages',
+    message: `Upgrade ${server.value?.apt_upgradable || 0} operating system packages on ${server.value?.hostname}?`,
+    confirmText: 'Upgrade Packages',
+    variant: 'warning',
+  })
+  if (!ok) return
+  await dispatchAction('apt_upgrade', {})
 }
 
 function openGuardrailConfirm(action) {
@@ -1230,7 +1235,13 @@ async function executeGuardrailAction() {
 }
 
 async function restartService(unitName) {
-  if (!confirm(t('confirm_restart_service', { unit: unitName }))) return
+  const ok = await confirmAction({
+    title: 'Restart Service',
+    message: t('confirm_restart_service', { unit: unitName }),
+    confirmText: 'Restart',
+    variant: 'warning',
+  })
+  if (!ok) return
   await dispatchAction('restart_service', { name: unitName, unit: unitName })
 }
 
@@ -1239,7 +1250,13 @@ async function handleServiceAction({ action, unit }) {
     return restartService(unit)
   }
   const verb = action === 'start_service' ? 'Start' : (action === 'stop_service' ? 'Stop' : 'Reload')
-  if (!confirm(`${verb} systemd service '${unit}' on target host?`)) return
+  const ok = await confirmAction({
+    title: `${verb} Service`,
+    message: `${verb} systemd service '${unit}' on target host?`,
+    confirmText: verb,
+    variant: action === 'stop_service' ? 'danger' : 'warning',
+  })
+  if (!ok) return
   await dispatchAction(action, { name: unit, unit })
 }
 
@@ -1255,17 +1272,35 @@ async function killProcess(payload) {
   const msg = isKill
     ? `Force terminate (SIGKILL) process PID ${pid} (${pname || 'process'})?`
     : `Send ${signal} to process PID ${pid} (${pname || 'process'})?`
-  if (!confirm(msg)) return
+  const ok = await confirmAction({
+    title: 'Process Signal Confirmation',
+    message: msg,
+    confirmText: `Send ${signal}`,
+    variant: isKill ? 'danger' : 'warning',
+  })
+  if (!ok) return
   await dispatchAction('kill_process', { pid, signal, pname })
 }
 
 async function terminateSSHSession(user, tty) {
-  if (!confirm(t('confirm_sever_ssh', { user, tty }))) return
+  const ok = await confirmAction({
+    title: 'Terminate SSH Session',
+    message: t('confirm_sever_ssh', { user, tty }),
+    confirmText: 'Terminate',
+    variant: 'danger',
+  })
+  if (!ok) return
   await dispatchAction('terminate_session', { user, tty })
 }
 
 async function terminateSSHSessionFromProblem(problemId) {
-  if (!confirm(t('confirm_sever_ssh_incident'))) return
+  const ok = await confirmAction({
+    title: 'Terminate SSH Session',
+    message: t('confirm_sever_ssh_incident'),
+    confirmText: 'Terminate',
+    variant: 'danger',
+  })
+  if (!ok) return
   const token = localStorage.getItem('pantau_token')
   try {
     const res = await fetch(`/api/problems/${problemId}/terminate-ssh`, {
@@ -1274,13 +1309,13 @@ async function terminateSSHSessionFromProblem(problemId) {
     })
     const data = await res.json()
     if (data.ok) {
-      alert(t('msg_ssh_sever_sent'))
+      toast.success(t('msg_ssh_sever_sent'))
       loadServerData()
     } else {
-      alert(t('msg_failed') + (data.detail || 'Error'))
+      toast.error(t('msg_failed') + (data.detail || 'Error'))
     }
   } catch (err) {
-    alert(t('msg_conn_failed') + err.message)
+    toast.error(t('msg_conn_failed') + err.message)
   }
 }
 
@@ -1300,14 +1335,12 @@ async function handleWorkspaceProblemAck(problemId) {
       emit('server-updated')
       emit('refresh-problems')
     } else {
-      alert(data.detail || 'Failed to acknowledge problem')
+      toast.error(data.detail || 'Failed to acknowledge incident')
     }
   } catch (err) {
     console.error('Failed to acknowledge problem in workspace:', err)
   }
 }
-
-
 
 async function dispatchAction(action, params) {
   const token = localStorage.getItem('pantau_token')
@@ -1322,40 +1355,13 @@ async function dispatchAction(action, params) {
     })
     const data = await res.json()
     if (data.ok) {
-      alert(data.message)
+      toast.success(data.message)
       loadServerData()
     } else {
-      alert(t('msg_failed') + (data.detail || 'Error'))
+      toast.error(t('msg_failed') + (data.detail || 'Error'))
     }
   } catch (err) {
-    alert(t('msg_conn_failed') + err.message)
+    toast.error(t('msg_conn_failed') + err.message)
   }
-}
-
-function formatBytes(bytes) {
-  if (!bytes) return '0 B'
-  const k = 1024
-  const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
-}
-
-function formatUptime(secs) {
-  if (!secs) return '-'
-  const d = Math.floor(secs / 86400)
-  const h = Math.floor((secs % 86400) / 3600)
-  const m = Math.floor((secs % 3600) / 60)
-  if (d > 0) return `${d}d ${h}h ${m}m`
-  return `${h}h ${m}m`
-}
-
-function isServerOnline(s) {
-  if (!s) return false
-  if (s.is_online !== undefined) return Boolean(s.is_online)
-  if (s.last_seen) {
-    const diff = (Date.now() - new Date(s.last_seen).getTime()) / 1000
-    return diff <= 60
-  }
-  return false
 }
 </script>

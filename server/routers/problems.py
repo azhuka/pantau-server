@@ -265,45 +265,15 @@ def update_thresholds_endpoint(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Memperbarui ambang batas global insiden (Khusus Master Admin / Operator Utama)."""
+    """Update global incident thresholds via canonical validator."""
     if user.is_viewer:
         raise HTTPException(status_code=403, detail="Access denied: Viewer accounts cannot edit thresholds")
-    if not user.is_master_admin and not user.has_perm("can_manage_servers"):
-        raise HTTPException(status_code=403, detail="Access denied: Permission can_manage_servers is required")
+    if not (user.is_master_admin or (user.allowed_server_ids is None and user.has_perm("can_manage_servers"))):
+        raise HTTPException(status_code=403, detail="Access denied: Global server management permission is required")
 
-    from services.problem_service import DEFAULT_THRESHOLDS
-    from models.misc import SystemSetting
-
-    new_thresholds = dict(DEFAULT_THRESHOLDS)
-    for k in DEFAULT_THRESHOLDS:
-        if k in body and body[k] is not None:
-            try:
-                new_thresholds[k] = int(body[k]) if "fail" in k else float(body[k])
-            except (ValueError, TypeError):
-                pass
-
-    setting = db.query(SystemSetting).filter(SystemSetting.key == "thresholds").first()
-    now = datetime.utcnow()
-    if not setting:
-        setting = SystemSetting(key="thresholds", value=json.dumps(new_thresholds), updated_at=now)
-        db.add(setting)
-    else:
-        setting.value = json.dumps(new_thresholds)
-        setting.updated_at = now
-
-    audit = AuditLog(
-        server_id=None,
-        username=user.username,
-        action="update_thresholds",
-        target="global_thresholds",
-        result="berhasil",
-        meta=f"Ambang batas insiden diperbarui oleh {user.username}",
-        created_at=now
-    )
-    db.add(audit)
-    db.commit()
-
-    return {"ok": True, "thresholds": new_thresholds, "message": "Ambang batas insiden berhasil diperbarui"}
+    from routers.settings import validate_and_save_thresholds
+    merged = validate_and_save_thresholds(db, body, user.username)
+    return {"ok": True, "thresholds": merged, "message": "Global incident thresholds updated successfully"}
 
 
 @router.post("/{pid}/ack")

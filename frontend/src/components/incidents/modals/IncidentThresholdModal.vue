@@ -136,6 +136,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { useI18n } from '../../../i18n'
+import { useToast } from '../../../utils/useToast'
 
 const { t } = useI18n()
 
@@ -163,6 +164,7 @@ const form = ref({
 })
 
 const saving = ref(false)
+const toast = useToast()
 
 const canEdit = computed(() => {
   const r = (props.currentUser?.role || '').toLowerCase()
@@ -193,7 +195,7 @@ async function saveThresholds() {
       emit('saved', data.thresholds)
       emit('close')
     } else {
-      alert(data.detail || 'Failed to save thresholds')
+      toast.error(data.detail || 'Failed to save thresholds')
     }
   } catch (err) {
     console.error('Failed to save thresholds:', err)

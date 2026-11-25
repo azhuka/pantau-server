@@ -109,41 +109,52 @@
                   <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                 </button>
 
-                <!-- Operator / Admin: Standard Dropdown -->
-                <details v-else class="relative inline-block text-left noc-act-dropdown z-50">
-                  <summary class="h-6 min-w-[58px] px-2 py-0.5 rounded bg-[#0b1324] hover:bg-cyan-950/60 text-cyan-300 border border-gray-700 hover:border-cyan-500 font-bold text-[11px] transition cursor-pointer flex items-center justify-between gap-1 list-none select-none">
-                    <span>{{ t('inc_act_dropdown') }}</span>
-                    <span class="text-[10px]">▾</span>
-                  </summary>
-                  <div class="absolute right-0 mt-1 w-44 rounded-md bg-[#0a0f1d] border border-gray-700 shadow-2xl py-1 z-[9999] text-xs font-mono">
-                    <button @click="$emit('open-workspace', { server_id: prob.server_id, problem: prob })" class="w-full text-left px-3 py-1.5 hover:bg-cyan-950/50 text-cyan-300 flex items-center gap-2 cursor-pointer">
-                      <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                      <span>{{ t('inc_btn_workspace') }}</span>
-                    </button>
-                    <div v-if="prob.acknowledged_by" class="w-full text-left px-3 py-1.5 text-emerald-400 font-bold flex items-center gap-2 cursor-default select-none border-t border-gray-800/60" :title="t('dash_acked_by', { user: prob.acknowledged_by })">
-                      <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                      <span>✓ {{ t('inc_btn_ack_done') }}</span>
-                    </div>
-                    <button v-else @click="$emit('ack', prob.id)" class="w-full text-left px-3 py-1.5 hover:bg-emerald-950/50 text-emerald-300 flex items-center gap-2 cursor-pointer border-t border-gray-800/60">
-                      <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                      <span>{{ t('inc_btn_ack') }}</span>
-                    </button>
-                    <button v-if="prob.is_ignored" @click="$emit('unignore', prob.id)" class="w-full text-left px-3 py-1.5 hover:bg-gray-800 text-gray-300 flex items-center gap-2 cursor-pointer border-t border-gray-800/60">
-                      <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                      <span>{{ t('inc_btn_unignore') }}</span>
-                    </button>
-                    <button v-else @click="$emit('open-ignore-modal', prob)" class="w-full text-left px-3 py-1.5 hover:bg-amber-950/50 text-amber-300 flex items-center gap-2 cursor-pointer border-t border-gray-800/60">
-                      <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
-                      <span>{{ t('inc_btn_ignore') }}</span>
-                    </button>
-                  </div>
-                </details>
+                <!-- Operator / Admin: Floating Teleported Action Dropdown -->
+                <button
+                  v-else
+                  type="button"
+                  @click.stop="toggleActDropdown(prob, $event)"
+                  class="h-6 min-w-[58px] px-2 py-0.5 rounded bg-[#0b1324] hover:bg-cyan-950/60 text-cyan-300 border border-gray-700 hover:border-cyan-500 font-bold text-[11px] transition cursor-pointer inline-flex items-center justify-between gap-1 select-none"
+                >
+                  <span>{{ t('inc_act_dropdown') }}</span>
+                  <svg class="w-2.5 h-2.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
       <NocTablePagination v-model:page="currentPage" v-model:pageSize="pageSize" :total="filteredProblems.length" unitLabel="incidents" :pageSizeOptions="[10, 25, 50, 100, 'all']" />
+
+      <Teleport to="body">
+        <div
+          v-if="openActId && activeActProb"
+          @click.stop
+          :style="actDropdownStyle"
+          class="rounded-md bg-[#0a0f1d] border border-gray-700 shadow-2xl py-1 z-[100005] text-xs font-mono"
+        >
+          <button @click="$emit('open-workspace', { server_id: activeActProb.server_id, problem: activeActProb }); closeActDropdown()" class="w-full text-left px-3 py-1.5 hover:bg-cyan-950/50 text-cyan-300 flex items-center gap-2 cursor-pointer">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            <span>{{ t('inc_btn_workspace') }}</span>
+          </button>
+          <div v-if="activeActProb.acknowledged_by" class="w-full text-left px-3 py-1.5 text-emerald-400 font-bold flex items-center gap-2 cursor-default select-none border-t border-gray-800/60" :title="t('dash_acked_by', { user: activeActProb.acknowledged_by })">
+            <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>{{ t('inc_btn_ack_done') }}</span>
+          </div>
+          <button v-else @click="$emit('ack', activeActProb.id); closeActDropdown()" class="w-full text-left px-3 py-1.5 hover:bg-emerald-950/50 text-emerald-300 flex items-center gap-2 cursor-pointer border-t border-gray-800/60">
+            <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>{{ t('inc_btn_ack') }}</span>
+          </button>
+          <button v-if="activeActProb.is_ignored" @click="$emit('unignore', activeActProb.id); closeActDropdown()" class="w-full text-left px-3 py-1.5 hover:bg-gray-800 text-gray-300 flex items-center gap-2 cursor-pointer border-t border-gray-800/60">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            <span>{{ t('inc_btn_unignore') }}</span>
+          </button>
+          <button v-else @click="$emit('open-ignore-modal', activeActProb); closeActDropdown()" class="w-full text-left px-3 py-1.5 hover:bg-amber-950/50 text-amber-300 flex items-center gap-2 cursor-pointer border-t border-gray-800/60">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
+            <span>{{ t('inc_btn_ignore') }}</span>
+          </button>
+        </div>
+      </Teleport>
     </div>
   </div>
 </template>
@@ -151,12 +162,14 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { useI18n } from '../../i18n'
-import { formatIncidentTime, formatIncidentDuration, formatIncidentMessage, formatIncidentTip } from '../../utils/formatters'
+import { formatIncidentTime, formatIncidentDuration, formatIncidentMessage, formatIncidentTip, severityBadgeClass } from '../../utils/formatters'
 import { matchesGroupFilter } from '../../utils/filterHelpers'
+import { useFloatingDropdown } from '../../utils/useFloatingDropdown'
 import NocTablePagination from '../common/NocTablePagination.vue'
 import ActiveIncidentsFilterBar from './ActiveIncidentsFilterBar.vue'
 
 const { t, locale } = useI18n()
+const { openId: openActId, activeItem: activeActProb, dropdownStyle: actDropdownStyle, toggle: toggleActDropdown, close: closeActDropdown } = useFloatingDropdown(160, 176)
 
 const props = defineProps({
   problems: { type: Array, default: () => [] },
@@ -183,14 +196,6 @@ function resetFilters() {
 }
 
 const canOperate = computed(() => !['viewer', 'guest', 'tamu'].includes((props.currentUser?.role || '').toLowerCase()))
-
-function severityBadgeClass(sev) {
-  const s = (sev || '').toLowerCase()
-  if (s === 'danger') return 'bg-red-500/20 text-red-400 border-red-500/30'
-  if (s === 'critical') return 'bg-orange-500/20 text-orange-400 border-orange-500/30'
-  if (s === 'warning') return 'bg-amber-500/20 text-amber-400 border-amber-500/30'
-  return 'bg-blue-500/20 text-blue-400 border-blue-500/30'
-}
 
 const scopedProblems = computed(() => {
   return props.problems.filter(p => {

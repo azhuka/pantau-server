@@ -66,6 +66,31 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         raise HTTPException(status_code=401, detail="User not found or inactive")
     return user
 
+def _serialize_auth_user(user: User) -> dict:
+    """Serialize authenticated user profile and RBAC matrix."""
+    return {
+        "id": user.id,
+        "username": user.username,
+        "role": user.role,
+        "is_master_admin": user.is_master_admin,
+        "is_operator": user.is_operator,
+        "is_viewer": user.is_viewer,
+        "totp_enabled": bool(user.totp_enabled),
+        "permissions": user.get_permissions(),
+        "allowed_server_ids": user.get_allowed_server_ids(),
+    }
+
+
+def _record_login_failure(db: Session, trial: LoginAttempt) -> None:
+    """Increment failed login/2FA attempt counter and apply exponential lockout."""
+    trial.fails = (trial.fails or 0) + 1
+    trial.updated_at = datetime.utcnow()
+    if trial.fails >= LOGIN_MAX_FAILS:
+        lock_secs = LOGIN_LOCK_DURATIONS[min(trial.fails - LOGIN_MAX_FAILS, len(LOGIN_LOCK_DURATIONS) - 1)]
+        trial.lock_until = datetime.utcnow() + timedelta(seconds=lock_secs)
+    db.commit()
+
+
 @router.post("/login", response_model=TokenResponse)
 def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
     ip = _client_ip(request)
@@ -74,18 +99,13 @@ def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
     if remaining > 0:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=f"Terlalu banyak percobaan login gagal. Silakan tunggu {remaining} detik."
+            detail=f"Too many failed login attempts. Please wait {remaining} seconds."
         )
 
     clean_username = req.username.strip()
     user = db.query(User).filter(User.username == clean_username).first()
     if not user or not verify_password(req.password, user.password_hash):
-        trial.fails = (trial.fails or 0) + 1
-        trial.updated_at = datetime.utcnow()
-        if trial.fails >= LOGIN_MAX_FAILS:
-            lock_secs = LOGIN_LOCK_DURATIONS[min(trial.fails - LOGIN_MAX_FAILS, len(LOGIN_LOCK_DURATIONS) - 1)]
-            trial.lock_until = datetime.utcnow() + timedelta(seconds=lock_secs)
-        db.commit()
+        _record_login_failure(db, trial)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid username or password"
@@ -107,11 +127,11 @@ def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
     trial.lock_until = None
     trial.updated_at = datetime.utcnow()
     user.last_login_at = datetime.utcnow()
+    user.last_login_ip = ip
 
-    # Catat log audit login berhasil
     audit = AuditLog(
         username=user.username,
-        action="user_login",
+        action="login",
         target=user.username,
         result="success",
         meta=json.dumps({"ip": ip}),
@@ -125,22 +145,20 @@ def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
         "access_token": token,
         "token_type": "bearer",
         "requires_2fa": False,
-        "user": {
-            "id": user.id,
-            "username": user.username,
-            "role": user.role,
-            "is_master_admin": user.is_master_admin,
-            "is_operator": user.is_operator,
-            "is_viewer": user.is_viewer,
-            "totp_enabled": bool(user.totp_enabled),
-            "permissions": user.get_permissions(),
-            "allowed_server_ids": user.get_allowed_server_ids()
-        }
+        "user": _serialize_auth_user(user),
     }
 
 @router.post("/login-2fa", response_model=TokenResponse)
 def login_2fa(req: Login2faRequest, request: Request, db: Session = Depends(get_db)):
     ip = _client_ip(request)
+    trial = _login_trial(db, ip)
+    remaining = _lock_remaining(trial)
+    if remaining > 0:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Too many failed 2FA attempts. Please wait {remaining} seconds."
+        )
+
     uid = security_auth.verify_preauth_token(req.preauth_token, settings.SECRET_KEY)
     if not uid:
         raise HTTPException(
@@ -172,20 +190,21 @@ def login_2fa(req: Login2faRequest, request: Request, db: Session = Depends(get_
             user.recovery_codes = next_hashes_json
 
     if not is_valid:
+        _record_login_failure(db, trial)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid 2FA authenticator code or emergency recovery code."
         )
 
-    trial = _login_trial(db, ip)
     trial.fails = 0
     trial.lock_until = None
     trial.updated_at = datetime.utcnow()
     user.last_login_at = datetime.utcnow()
+    user.last_login_ip = ip
 
     audit = AuditLog(
         username=user.username,
-        action="user_login_2fa",
+        action="login_2fa",
         target=user.username,
         result="success",
         meta=json.dumps({"ip": ip}),
@@ -199,24 +218,14 @@ def login_2fa(req: Login2faRequest, request: Request, db: Session = Depends(get_
         "access_token": token,
         "token_type": "bearer",
         "requires_2fa": False,
-        "user": {
-            "id": user.id,
-            "username": user.username,
-            "role": user.role,
-            "is_master_admin": user.is_master_admin,
-            "is_operator": user.is_operator,
-            "is_viewer": user.is_viewer,
-            "totp_enabled": bool(user.totp_enabled),
-            "permissions": user.get_permissions(),
-            "allowed_server_ids": user.get_allowed_server_ids()
-        }
+        "user": _serialize_auth_user(user),
     }
 
 @router.post("/logout")
 def logout(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     audit = AuditLog(
         username=user.username,
-        action="user_logout",
+        action="logout",
         target=user.username,
         result="success",
         created_at=datetime.utcnow()
@@ -227,14 +236,4 @@ def logout(user: User = Depends(get_current_user), db: Session = Depends(get_db)
 
 @router.get("/me")
 def get_me(user: User = Depends(get_current_user)):
-    return {
-        "id": user.id,
-        "username": user.username,
-        "role": user.role,
-        "is_master_admin": user.is_master_admin,
-        "is_operator": user.is_operator,
-        "is_viewer": user.is_viewer,
-        "totp_enabled": bool(user.totp_enabled),
-        "permissions": user.get_permissions(),
-        "allowed_server_ids": user.get_allowed_server_ids()
-    }
+    return _serialize_auth_user(user)

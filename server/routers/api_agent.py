@@ -21,7 +21,10 @@ def get_server_by_agent_key(x_api_key: str = Header(alias="X-Api-Key"), db: Sess
     if not x_api_key:
         raise HTTPException(status_code=401, detail="Header X-Api-Key is missing")
     hashed = hash_api_key(x_api_key)
-    server = db.query(Server).filter((Server.api_key == hashed) | (Server.api_key == x_api_key)).first()
+    server = db.query(Server).filter(
+        Server.is_active == 1,
+        (Server.api_key == hashed) | (Server.api_key == x_api_key),
+    ).first()
     if not server:
         raise HTTPException(status_code=401, detail="Invalid API Key")
     return server
@@ -147,13 +150,20 @@ def api_log_status(
     return {"ok": True}
 
 @router.post("/api/logs/{req_id}/progress")
-def api_log_progress(req_id: int, body: dict = Body(default={})):
-    """Penerimaan stream progres log."""
+def api_log_progress(
+    req_id: int,
+    body: dict = Body(default={}),
+    server: Server = Depends(get_server_by_agent_key),
+):
+    """Receive log stream progress updates from agent."""
     return {"ok": True}
 
 @router.get("/api/logs/{req_id}/input")
-def api_log_input(req_id: int):
-    """Polling input interaktif untuk eksekusi log."""
+def api_log_input(
+    req_id: int,
+    server: Server = Depends(get_server_by_agent_key),
+):
+    """Poll interactive input for log execution."""
     return {"ok": True, "input": None}
 
 @router.post("/api/logs/{req_id}/result")

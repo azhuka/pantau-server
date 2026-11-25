@@ -85,9 +85,11 @@
 <script setup>
 import { ref } from 'vue'
 import { useI18n } from '../../../i18n'
-import { formatIncidentMessage } from '../../../utils/formatters'
+import { formatIncidentMessage, severityBadgeClass } from '../../../utils/formatters'
+import { useToast } from '../../../utils/useToast'
 
 const { t, locale } = useI18n()
+const toast = useToast()
 
 const props = defineProps({
   isOpen: Boolean,
@@ -101,24 +103,18 @@ const duration = ref('24h')
 const reason = ref('')
 const submitting = ref(false)
 
-function severityClass(sev) {
-  const s = (sev || '').toLowerCase()
-  if (s === 'danger') return 'bg-red-500/20 text-red-400 border border-red-500/30'
-  if (s === 'critical') return 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
-  if (s === 'warning') return 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-  return 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-}
+const severityClass = severityBadgeClass
 
 async function submitIgnore() {
   if (!props.problem) return
   const r = (props.currentUser?.role || '').toLowerCase()
   if (['viewer', 'guest', 'tamu'].includes(r)) {
-    alert('Access denied: Viewer accounts cannot ignore incidents.')
+    toast.error('Access denied: Viewer accounts cannot ignore incidents.')
     emit('close')
     return
   }
   if (!reason.value.trim()) {
-    alert('Please provide a mandatory operational reason.')
+    toast.warning('Please provide a mandatory operational reason.')
     return
   }
 
@@ -145,7 +141,7 @@ async function submitIgnore() {
       })
       emit('close')
     } else {
-      alert(data.detail || 'Failed to ignore incident')
+      toast.error(data.detail || 'Failed to ignore incident')
     }
   } catch (err) {
     console.error('Failed to ignore incident:', err)

@@ -30,97 +30,97 @@ COMMON_PASSWORDS_BLACKLIST = {
     "server123", "linux123", "indonesia123"
 }
 
-# Definisi 16 Izin Granular Operator (RBAC Matrix)
+# Granular 16 Operator Permissions (RBAC Matrix)
 OPERATOR_PERMISSIONS: Dict[str, Dict[str, str]] = {
     "can_terminal": {
-        "label": "Terminal Shell Web",
-        "desc": "Akses terminal shell PTY (/bin/bash) interaktif ke server klien.",
+        "label": "Web Shell Terminal",
+        "desc": "Interactive PTY (/bin/bash) shell access to client servers.",
     },
     "can_file_manager": {
-        "label": "File Manager Web",
-        "desc": "Jelajahi, sunting berkas teks, unduh, dan unggah berkas pada server klien.",
+        "label": "Web File Manager",
+        "desc": "Browse, edit text files, download, and upload files on client servers.",
     },
     "can_services": {
-        "label": "Kontrol Services Systemd",
-        "desc": "Mulai (start), hentikan (stop), restart, dan reload services sistem.",
+        "label": "Systemd Service Control",
+        "desc": "Start, stop, restart, and reload systemd service units.",
     },
     "can_processes": {
-        "label": "Manajer Proses (Processes)",
-        "desc": "Hentikan proses (kill), tangguhkan (SIGSTOP), atau lanjutkan proses (SIGCONT).",
+        "label": "Process Manager",
+        "desc": "Terminate (kill), suspend (SIGSTOP), or resume (SIGCONT) OS processes.",
     },
     "can_firewall": {
-        "label": "Kontrol Firewall (UFW)",
-        "desc": "Aktifkan atau nonaktifkan UFW serta kelola blokir alamat IP.",
+        "label": "Firewall Control (UFW)",
+        "desc": "Enable or disable UFW and manage IP blocklist rules.",
     },
     "can_users_sys": {
-        "label": "Manajemen User Sistem Host",
-        "desc": "Buat akun Linux baru, kunci (lock), buka kunci (unlock), atau hapus akun Linux.",
+        "label": "Host System User Management",
+        "desc": "Create, lock, unlock, or delete Linux system accounts.",
     },
     "can_cron": {
-        "label": "Cron Jobs (Tugas Terjadwal)",
-        "desc": "Tambah jadwal cron baru, aktifkan/nonaktifkan, jalankan instan, atau hapus cron.",
+        "label": "Cron Jobs (Scheduled Tasks)",
+        "desc": "Add, enable/disable, run on-demand, or delete cron tasks.",
     },
     "can_ssl": {
-        "label": "Manajemen Sertifikat SSL",
-        "desc": "Tambah atau hapus pemantauan berkas sertifikat SSL lokal.",
+        "label": "SSL/TLS Certificate Monitoring",
+        "desc": "Add or remove local SSL/TLS certificate path monitoring.",
     },
     "can_server_control": {
-        "label": "Kontrol Host (Reboot / Shutdown)",
-        "desc": "Jalankan restart atau matikan mesin server target.",
+        "label": "Host Power Control (Reboot / Shutdown)",
+        "desc": "Reboot or power off target server hosts.",
     },
     "can_apt": {
-        "label": "Pembaruan Packages OS (APT)",
-        "desc": "Jalankan pembaruan repositori (apt-get update) dan peningkatan packages (apt upgrade).",
+        "label": "OS Package Management (APT)",
+        "desc": "Run package index updates (apt-get update) and package upgrades (apt upgrade).",
     },
     "can_ota": {
-        "label": "Dorong Pembaruan Agen (OTA)",
-        "desc": "Kirim instruksi Push Update biner agen terbaru via verifikasi SHA-256.",
+        "label": "Agent OTA Update",
+        "desc": "Dispatch verified SHA-256 agent binary updates to client hosts.",
     },
     "can_manage_servers": {
-        "label": "Kelola Server Pantau",
-        "desc": "Tambah server baru, ubah hostname/IP, dan atur mode pemeliharaan.",
+        "label": "Asset Management",
+        "desc": "Register assets, edit hostname/IP/group/environment, and toggle maintenance mode.",
     },
     "can_audit": {
-        "label": "Akses Riwayat Tindakan (/audit)",
-        "desc": "Lihat seluruh catatan riwayat tindakan pengguna, kepatuhan, dan log aktivitas sistem.",
+        "label": "Audit Trail Access",
+        "desc": "View operator action audit logs, compliance records, and system logs.",
     },
     "can_manage_users": {
-        "label": "Manajemen Pengguna Sistem",
-        "desc": "Kelola akun pengguna (Operator & Viewer), atur hak akses/izin, dan setel ulang kata sandi.",
+        "label": "User & RBAC Administration",
+        "desc": "Manage Operator and Viewer accounts, permissions, and password resets.",
     },
     "can_manage_viewers": {
-        "label": "Kelola Akun Viewer",
-        "desc": "Tambah dan hapus akun pengguna berkategori Viewer (tamu pemantau).",
+        "label": "Viewer Account Management",
+        "desc": "Create and delete read-only Viewer accounts.",
     },
     "can_probing": {
-        "label": "Kelola Synthetic Probing",
-        "desc": "Tambah, ubah, jeda, dan uji probe HTTP/ICMP/TCP endpoint.",
+        "label": "Endpoint & Network Probing",
+        "desc": "Create, update, pause, and trigger HTTP/ICMP/TCP endpoint probes.",
     },
 }
 
 
 def validate_password_strength(password: str) -> Tuple[bool, str]:
-    """Validasi kekuatan kata sandi standar NIST SP 800-63B."""
+    """Validate password strength per NIST SP 800-63B policy."""
     if not password:
-        return False, "Password tidak boleh kosong."
+        return False, "Password cannot be empty."
     if len(password) < 12:
-        return False, "Password minimal 12 karakter."
+        return False, "Password must be at least 12 characters long."
     if len(password) > 128:
-        return False, "Password maksimal 128 karakter."
+        return False, "Password must be at most 128 characters long."
     if not re.search(r"[A-Z]", password):
-        return False, "Password harus memuat minimal 1 huruf kapital (A-Z)."
+        return False, "Password must include at least one uppercase letter (A-Z)."
     if not re.search(r"[a-z]", password):
-        return False, "Password harus memuat minimal 1 huruf kecil (a-z)."
+        return False, "Password must include at least one lowercase letter (a-z)."
     if not re.search(r"[0-9]", password):
-        return False, "Password harus memuat minimal 1 angka (0-9)."
+        return False, "Password must include at least one digit (0-9)."
     if not re.search(r"[!@#$%^&*()_+\-=\[\]{}|;:,.<>?/~`]", password):
-        return False, "Password harus memuat minimal 1 simbol khusus (!@#$%^&*...)."
-    
+        return False, "Password must include at least one special character (!@#$%^&*...)."
+
     low = password.lower()
     for bad in COMMON_PASSWORDS_BLACKLIST:
         if bad in low:
-            return False, f"Password terlalu mudah ditebak (mengandung kata umum '{bad}')."
-            
+            return False, f"Password is too predictable (contains common term '{bad}')."
+
     return True, ""
 
 

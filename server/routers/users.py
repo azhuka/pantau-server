@@ -96,27 +96,49 @@ class UserProfileResponse(BaseModel):
     allowed_server_ids: Optional[list] = None
 
 
-def validate_password_strength(password: str) -> None:
-    if len(password) < 8:
+def _enforce_password_strength(password: str) -> None:
+    """Enforce NIST SP 800-63B password complexity via canonical security_auth."""
+    ok, err_msg = security_auth.validate_password_strength(password)
+    if not ok:
+        raise HTTPException(status_code=400, detail=err_msg)
+
+
+def _serialize_user(u: User) -> dict:
+    """Serialize User ORM object to UserResponse dict."""
+    return {
+        "id": u.id,
+        "username": u.username,
+        "role": u.role,
+        "is_active": u.is_active,
+        "totp_enabled": int(u.totp_enabled or 0),
+        "created_at": u.created_at,
+        "last_login_at": u.last_login_at,
+        "last_login_ip": getattr(u, "last_login_ip", None),
+        "password_changed_at": getattr(u, "password_changed_at", None),
+        "created_by": u.created_by,
+        "permissions": u.get_permissions(),
+        "allowed_server_ids": u.get_allowed_server_ids(),
+    }
+
+
+def _get_authorized_target_user(db: Session, actor: User, user_id: int) -> User:
+    """Fetch target user enforcing RBAC permissions and Zero-Knowledge 404 masking."""
+    can_manage_users = actor.is_master_admin or actor.has_perm("can_manage_users")
+    can_manage_viewers = can_manage_users or actor.has_perm("can_manage_viewers")
+    if not can_manage_viewers:
         raise HTTPException(
-            status_code=400,
-            detail="Password must be at least 8 characters long."
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied: You do not have user management permissions."
         )
-    if not re.search(r"[A-Z]", password):
-        raise HTTPException(
-            status_code=400,
-            detail="Password must contain at least one uppercase letter (A-Z)."
-        )
-    if not re.search(r"[a-z]", password):
-        raise HTTPException(
-            status_code=400,
-            detail="Password must contain at least one lowercase letter (a-z)."
-        )
-    if not re.search(r"[0-9]", password):
-        raise HTTPException(
-            status_code=400,
-            detail="Password must contain at least one number (0-9)."
-        )
+
+    target = db.query(User).filter(User.id == user_id).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found.")
+    if target.is_master_admin and not actor.is_master_admin:
+        raise HTTPException(status_code=404, detail="User not found.")
+    if not can_manage_users and target.role != "viewer":
+        raise HTTPException(status_code=404, detail="User not found.")
+    return target
 
 
 # ---------------------------------------------------------------------------
@@ -198,7 +220,7 @@ def change_own_password(
             detail="Current password is incorrect."
         )
 
-    validate_password_strength(req.new_password)
+    _enforce_password_strength(req.new_password)
 
     if req.current_password == req.new_password:
         raise HTTPException(
@@ -206,8 +228,16 @@ def change_own_password(
             detail="New password cannot be the same as the current password."
         )
 
+    now = datetime.utcnow()
     user.password_hash = get_password_hash(req.new_password)
-    user.password_changed_at = datetime.utcnow()
+    user.password_changed_at = now
+    db.add(AuditLog(
+        username=user.username,
+        action="user_password_change",
+        target=user.username,
+        result="success",
+        created_at=now,
+    ))
     db.commit()
 
     return {"ok": True, "message": "Password updated successfully."}
@@ -243,23 +273,7 @@ def list_users(
         )
 
     users = query.order_by(User.id.asc()).all()
-    out = []
-    for u in users:
-        out.append({
-            "id": u.id,
-            "username": u.username,
-            "role": u.role,
-            "is_active": u.is_active,
-            "totp_enabled": int(u.totp_enabled or 0),
-            "created_at": u.created_at,
-            "last_login_at": u.last_login_at,
-            "last_login_ip": getattr(u, "last_login_ip", None),
-            "password_changed_at": getattr(u, "password_changed_at", None),
-            "created_by": u.created_by,
-            "permissions": u.get_permissions(),
-            "allowed_server_ids": u.get_allowed_server_ids(),
-        })
-    return out
+    return [_serialize_user(u) for u in users]
 
 
 @router.post("", response_model=UserResponse)
@@ -292,7 +306,7 @@ def create_user(
             detail=f"Username '{clean_username}' already exists."
         )
 
-    validate_password_strength(req.password)
+    _enforce_password_strength(req.password)
 
     # Larangan membuat akun master-admin
     if not user.is_master_admin and req.role in ("master_admin", "master-admin"):
@@ -312,34 +326,29 @@ def create_user(
         if req.allowed_server_ids is not None:
             allowed_servers_json = json.dumps(sorted(req.allowed_server_ids)) if req.allowed_server_ids else None
 
+    now = datetime.utcnow()
     new_user = User(
         username=clean_username,
         password_hash=get_password_hash(req.password),
         role=assigned_role,
         is_active=1,
         created_by=user.username,
-        password_changed_at=datetime.utcnow(),
+        password_changed_at=now,
         permissions=perms_json,
         allowed_server_ids=allowed_servers_json,
     )
     db.add(new_user)
+    db.add(AuditLog(
+        username=user.username,
+        action="user_add",
+        target=f"{clean_username} ({assigned_role})",
+        result="success",
+        created_at=now,
+    ))
     db.commit()
     db.refresh(new_user)
 
-    return {
-        "id": new_user.id,
-        "username": new_user.username,
-        "role": new_user.role,
-        "is_active": new_user.is_active,
-        "totp_enabled": int(new_user.totp_enabled or 0),
-        "created_at": new_user.created_at,
-        "last_login_at": new_user.last_login_at,
-        "last_login_ip": getattr(new_user, "last_login_ip", None),
-        "password_changed_at": getattr(new_user, "password_changed_at", None),
-        "created_by": new_user.created_by,
-        "permissions": new_user.get_permissions(),
-        "allowed_server_ids": new_user.get_allowed_server_ids(),
-    }
+    return _serialize_user(new_user)
 
 
 @router.put("/{user_id}", response_model=UserResponse)
@@ -418,7 +427,7 @@ def update_user(
                 status_code=400,
                 detail="New password and confirmation do not match."
             )
-        validate_password_strength(pwd_clean)
+        _enforce_password_strength(pwd_clean)
         target.password_hash = get_password_hash(pwd_clean)
         target.password_changed_at = datetime.utcnow()
 
@@ -468,37 +477,19 @@ def update_user(
             target.allowed_server_ids = None
 
     # Record Audit Log
-    try:
-        audit = AuditLog(
-            user_id=user.id,
-            username=user.username,
-            action="user_edit",
-            target=f"{target.username} ({target.role})",
-            result="SUCCESS",
-            server_name="system",
-            created_at=datetime.utcnow(),
-        )
-        db.add(audit)
-    except Exception:
-        pass
+    db.add(AuditLog(
+        username=user.username,
+        action="user_update",
+        target=f"{target.username} ({target.role})",
+        result="success",
+        meta=json.dumps({"target_id": target.id}),
+        created_at=datetime.utcnow(),
+    ))
 
     db.commit()
     db.refresh(target)
 
-    return {
-        "id": target.id,
-        "username": target.username,
-        "role": target.role,
-        "is_active": target.is_active,
-        "totp_enabled": int(target.totp_enabled or 0),
-        "created_at": target.created_at,
-        "last_login_at": target.last_login_at,
-        "last_login_ip": getattr(target, "last_login_ip", None),
-        "password_changed_at": getattr(target, "password_changed_at", None),
-        "created_by": target.created_by,
-        "permissions": target.get_permissions(),
-        "allowed_server_ids": target.get_allowed_server_ids(),
-    }
+    return _serialize_user(target)
 
 
 @router.put("/{user_id}/status")
@@ -508,26 +499,8 @@ def toggle_user_status(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Mengaktifkan atau menonaktifkan akun pengguna."""
-    can_manage_users = user.is_master_admin or user.has_perm("can_manage_users")
-    can_manage_viewers = can_manage_users or user.has_perm("can_manage_viewers")
-    if not can_manage_viewers:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied: You do not have permission to manage user status."
-        )
-
-    target = db.query(User).filter(User.id == user_id).first()
-    if not target:
-        raise HTTPException(status_code=404, detail="User not found.")
-
-    # Zero-Knowledge Stealth: Non-Master-Admins cannot touch Master Admin (Must be 404!)
-    if target.is_master_admin and not user.is_master_admin:
-        raise HTTPException(status_code=404, detail="User not found.")
-
-    # Operator terbatas hanya berwenang mengelola viewer
-    if not can_manage_users and target.role != "viewer":
-        raise HTTPException(status_code=404, detail="User not found.")
+    """Enable or disable a user account."""
+    target = _get_authorized_target_user(db, user, user_id)
 
     if target.id == user.id:
         raise HTTPException(
@@ -542,9 +515,17 @@ def toggle_user_status(
         )
 
     target.is_active = req.is_active
+    status_label = "activated" if req.is_active else "disabled"
+    db.add(AuditLog(
+        username=user.username,
+        action="user_update",
+        target=target.username,
+        result="success",
+        meta=f"Account {status_label}",
+        created_at=datetime.utcnow(),
+    ))
     db.commit()
 
-    status_label = "activated" if req.is_active else "disabled"
     return {"ok": True, "message": f"User '{target.username}' has been {status_label}."}
 
 
@@ -555,31 +536,20 @@ def reset_user_password(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Reset kata sandi pengguna lain oleh administrator."""
-    can_manage_users = user.is_master_admin or user.has_perm("can_manage_users")
-    can_manage_viewers = can_manage_users or user.has_perm("can_manage_viewers")
-    if not can_manage_viewers:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied: You do not have permission to reset user passwords."
-        )
+    """Reset another user's password by administrator."""
+    target = _get_authorized_target_user(db, user, user_id)
+    _enforce_password_strength(req.new_password)
 
-    target = db.query(User).filter(User.id == user_id).first()
-    if not target:
-        raise HTTPException(status_code=404, detail="User not found.")
-
-    # Zero-Knowledge Stealth: Non-Master-Admins cannot touch Master Admin (Must be 404!)
-    if target.is_master_admin and not user.is_master_admin:
-        raise HTTPException(status_code=404, detail="User not found.")
-
-    # Operator terbatas hanya berwenang mengelola viewer
-    if not can_manage_users and target.role != "viewer":
-        raise HTTPException(status_code=404, detail="User not found.")
-
-    validate_password_strength(req.new_password)
-
+    now = datetime.utcnow()
     target.password_hash = get_password_hash(req.new_password)
-    target.password_changed_at = datetime.utcnow()
+    target.password_changed_at = now
+    db.add(AuditLog(
+        username=user.username,
+        action="user_password_reset",
+        target=target.username,
+        result="success",
+        created_at=now,
+    ))
     db.commit()
 
     return {"ok": True, "message": f"Password for user '{target.username}' has been reset successfully."}
@@ -591,26 +561,8 @@ def delete_user(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Menghapus akun pengguna."""
-    can_manage_users = user.is_master_admin or user.has_perm("can_manage_users")
-    can_manage_viewers = can_manage_users or user.has_perm("can_manage_viewers")
-    if not can_manage_viewers:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied: You do not have permission to delete users."
-        )
-
-    target = db.query(User).filter(User.id == user_id).first()
-    if not target:
-        raise HTTPException(status_code=404, detail="User not found.")
-
-    # Zero-Knowledge Stealth: Non-Master-Admins cannot touch Master Admin (Must be 404!)
-    if target.is_master_admin and not user.is_master_admin:
-        raise HTTPException(status_code=404, detail="User not found.")
-
-    # Operator terbatas hanya berwenang mengelola viewer
-    if not can_manage_users and target.role != "viewer":
-        raise HTTPException(status_code=404, detail="User not found.")
+    """Delete a user account."""
+    target = _get_authorized_target_user(db, user, user_id)
 
     if target.id == user.id:
         raise HTTPException(
@@ -626,6 +578,13 @@ def delete_user(
 
     username_deleted = target.username
     db.delete(target)
+    db.add(AuditLog(
+        username=user.username,
+        action="user_delete",
+        target=username_deleted,
+        result="success",
+        created_at=datetime.utcnow(),
+    ))
     db.commit()
 
     return {"ok": True, "message": f"User '{username_deleted}' has been deleted."}
@@ -670,7 +629,7 @@ def api_user_2fa_confirm(
         )
 
     if not security_auth.verify_totp(req.secret, req.code):
-        raise HTTPException(status_code=400, detail="Kode autentikasi 2FA tidak valid atau sudah kedaluwarsa.")
+        raise HTTPException(status_code=400, detail="Invalid or expired 2FA authentication code.")
 
     plain_codes, hashed_codes = security_auth.generate_recovery_codes(8)
     user.totp_secret = req.secret
@@ -679,7 +638,7 @@ def api_user_2fa_confirm(
     db.commit()
     return {
         "ok": True,
-        "message": "Autentikasi dua langkah (2FA) berhasil diaktifkan.",
+        "message": "Two-factor authentication (2FA) enabled successfully.",
         "recovery_codes": plain_codes,
     }
 
@@ -690,7 +649,7 @@ def api_user_2fa_disable(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Nonaktifkan 2FA untuk akun sendiri."""
+    """Disable 2FA for current user."""
     if user.is_viewer:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -698,13 +657,13 @@ def api_user_2fa_disable(
         )
 
     if not verify_password(req.password, user.password_hash):
-        raise HTTPException(status_code=400, detail="Kata sandi akun salah.")
+        raise HTTPException(status_code=400, detail="Incorrect account password.")
 
     user.totp_secret = None
     user.totp_enabled = 0
     user.recovery_codes = None
     db.commit()
-    return {"ok": True, "message": "2FA telah berhasil dinonaktifkan."}
+    return {"ok": True, "message": "2FA has been disabled successfully."}
 
 
 @router.post("/2fa/regenerate-recovery")
@@ -712,7 +671,7 @@ def api_user_2fa_regenerate_recovery(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Generate ulang kode pemulihan (recovery codes) 2FA."""
+    """Regenerate 2FA recovery codes."""
     if user.is_viewer:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -720,7 +679,7 @@ def api_user_2fa_regenerate_recovery(
         )
 
     if not user.totp_enabled:
-        raise HTTPException(status_code=400, detail="2FA belum aktif untuk akun ini.")
+        raise HTTPException(status_code=400, detail="2FA is not active for this account.")
     plain_codes, hashed_codes = security_auth.generate_recovery_codes(8)
     user.recovery_codes = json.dumps(hashed_codes)
     db.commit()
@@ -733,14 +692,21 @@ def api_admin_reset_user_2fa(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Reset darurat 2FA operator oleh Master Admin."""
+    """Emergency 2FA reset for an operator by Master Admin."""
     if not user.is_master_admin:
-        raise HTTPException(status_code=403, detail="Hanya Master Admin yang berhak mereset 2FA pengguna.")
+        raise HTTPException(status_code=403, detail="Only master-admin can reset user 2FA.")
     target = db.query(User).filter(User.id == user_id).first()
     if not target:
-        raise HTTPException(status_code=404, detail="Pengguna tidak ditemukan.")
+        raise HTTPException(status_code=404, detail="User not found.")
     target.totp_secret = None
     target.totp_enabled = 0
     target.recovery_codes = None
+    db.add(AuditLog(
+        username=user.username,
+        action="user_2fa_reset",
+        target=target.username,
+        result="success",
+        created_at=datetime.utcnow(),
+    ))
     db.commit()
-    return {"ok": True, "message": f"2FA untuk pengguna '{target.username}' telah dinonaktifkan."}
+    return {"ok": True, "message": f"2FA for user '{target.username}' has been disabled."}

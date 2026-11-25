@@ -74,34 +74,14 @@ def api_get_thresholds(
     }
 
 
-@router.post("/api/settings/thresholds")
-def api_update_thresholds(
-    request: Request,
-    body: dict = Body(default={}),
-    user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    """Perbarui threshold insiden global."""
-    if not (user.is_master_admin or (user.allowed_server_ids is None and user.has_perm("can_manage_servers"))):
-        raise HTTPException(
-            status_code=403,
-            detail="Akses ditolak: Hanya Master Admin atau Operator Utama Global yang dapat mengubah ambang batas insiden global.",
-        )
-
+def validate_and_save_thresholds(db: Session, body: dict, actor_username: str) -> dict:
+    """Validate threshold ordering/bounds and persist atomically to SystemSetting."""
     new_th = {}
     float_keys = [
-        "cpu_warn",
-        "cpu_average",
-        "cpu_danger",
-        "ram_warn",
-        "ram_average",
-        "ram_danger",
-        "disk_warn",
-        "disk_average",
-        "disk_danger",
-        "swap_warn",
-        "swap_average",
-        "swap_danger",
+        "cpu_warn", "cpu_average", "cpu_danger",
+        "ram_warn", "ram_average", "ram_danger",
+        "disk_warn", "disk_average", "disk_danger",
+        "swap_warn", "swap_average", "swap_danger",
     ]
     int_keys = ["ssh_fail_warn", "ssh_fail_danger"]
 
@@ -109,63 +89,79 @@ def api_update_thresholds(
         if k in body and body[k] is not None:
             try:
                 val = float(body[k])
-                if 1.0 <= val <= 100.0:
-                    new_th[k] = val
+                if not (1.0 <= val <= 100.0):
+                    raise HTTPException(status_code=400, detail=f"Threshold {k} must be between 1 and 100.")
+                new_th[k] = val
             except (ValueError, TypeError):
-                pass
+                raise HTTPException(status_code=400, detail=f"Invalid numeric value for threshold {k}.")
 
     for k in int_keys:
         if k in body and body[k] is not None:
             try:
                 val = int(body[k])
-                if val >= 1:
-                    new_th[k] = val
+                if val < 1:
+                    raise HTTPException(status_code=400, detail=f"Threshold {k} must be at least 1.")
+                new_th[k] = val
             except (ValueError, TypeError):
-                pass
+                raise HTTPException(status_code=400, detail=f"Invalid integer value for threshold {k}.")
+
+    current_th = get_global_thresholds(db)
+    merged = dict(current_th)
+    merged.update(new_th)
 
     trios = [
-        ("cpu_warn", "cpu_average", "cpu_danger", "Beban Prosesor CPU"),
-        ("ram_warn", "ram_average", "ram_danger", "Penggunaan Memori RAM"),
-        ("disk_warn", "disk_average", "disk_danger", "Kapasitas Partisi Disk"),
-        ("swap_warn", "swap_average", "swap_danger", "Kapasitas Swap Memory"),
+        ("cpu_warn", "cpu_average", "cpu_danger", "CPU Load"),
+        ("ram_warn", "ram_average", "ram_danger", "Memory / RAM Usage"),
+        ("disk_warn", "disk_average", "disk_danger", "Disk Usage"),
+        ("swap_warn", "swap_average", "swap_danger", "Swap Usage"),
     ]
     for w_k, a_k, d_k, lbl in trios:
-        w_val = new_th.get(w_k, DEFAULT_THRESHOLDS[w_k])
-        a_val = new_th.get(a_k, DEFAULT_THRESHOLDS[a_k])
-        d_val = new_th.get(d_k, DEFAULT_THRESHOLDS[d_k])
+        w_val, a_val, d_val = merged[w_k], merged[a_k], merged[d_k]
         if not (w_val <= a_val <= d_val):
             raise HTTPException(
                 status_code=400,
-                detail=f"Urutan threshold {lbl} tidak valid: Peringatan ({w_val:.0f}%) ≤ Gawat ({a_val:.0f}%) ≤ Kritis ({d_val:.0f}%)",
+                detail=f"Invalid threshold ordering for {lbl}: Warning ({w_val:.0f}%) <= Critical ({a_val:.0f}%) <= Danger ({d_val:.0f}%).",
             )
-    ssh_w = new_th.get("ssh_fail_warn", DEFAULT_THRESHOLDS["ssh_fail_warn"])
-    ssh_d = new_th.get("ssh_fail_danger", DEFAULT_THRESHOLDS["ssh_fail_danger"])
-    if ssh_w > ssh_d:
+    if merged["ssh_fail_warn"] > merged["ssh_fail_danger"]:
         raise HTTPException(
             status_code=400,
-            detail=f"Urutan threshold Login SSH tidak valid: Peringatan ({ssh_w}) ≤ Kritis ({ssh_d})",
+            detail=f"Invalid SSH failure threshold ordering: Warning ({merged['ssh_fail_warn']}) <= Danger ({merged['ssh_fail_danger']}).",
         )
-
-    current_th = get_global_thresholds(db)
-    current_th.update(new_th)
 
     row = db.query(SystemSetting).filter(SystemSetting.key == "thresholds").first()
     if not row:
-        row = SystemSetting(key="thresholds", value=json.dumps(current_th), updated_at=datetime.utcnow())
+        row = SystemSetting(key="thresholds", value=json.dumps(merged), updated_at=datetime.utcnow())
         db.add(row)
     else:
-        row.value = json.dumps(current_th)
+        row.value = json.dumps(merged)
         row.updated_at = datetime.utcnow()
 
     record_audit(
         db,
-        user.username,
+        actor_username,
         "settings_update",
-        target="Threshold Insiden Global",
-        result="disimpan",
+        target="Global Incident Thresholds",
+        result="success",
     )
     db.commit()
-    return {"ok": True, "thresholds": current_th}
+    return merged
+
+
+@router.post("/api/settings/thresholds")
+def api_update_thresholds(
+    request: Request,
+    body: dict = Body(default={}),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Update global incident alert thresholds."""
+    if not (user.is_master_admin or (user.allowed_server_ids is None and user.has_perm("can_manage_servers"))):
+        raise HTTPException(
+            status_code=403,
+            detail="Access denied: Master Admin or Global Operator permission is required to modify global thresholds.",
+        )
+    merged = validate_and_save_thresholds(db, body, user.username)
+    return {"ok": True, "thresholds": merged}
 
 
 @router.post("/api/settings/thresholds/reset")
@@ -174,11 +170,11 @@ def api_reset_thresholds(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Reset threshold insiden global ke default."""
+    """Reset global incident thresholds to factory defaults."""
     if not (user.is_master_admin or (user.allowed_server_ids is None and user.has_perm("can_manage_servers"))):
         raise HTTPException(
             status_code=403,
-            detail="Akses ditolak: Hanya Master Admin atau Operator Utama Global yang dapat mengubah ambang batas insiden global.",
+            detail="Access denied: Master Admin or Global Operator permission is required to reset global thresholds.",
         )
 
     row = db.query(SystemSetting).filter(SystemSetting.key == "thresholds").first()
@@ -188,8 +184,8 @@ def api_reset_thresholds(
             db,
             user.username,
             "settings_reset",
-            target="Threshold Insiden Global",
-            result="direset ke bawaan pabrik",
+            target="Global Incident Thresholds",
+            result="success",
         )
         db.commit()
 
@@ -204,9 +200,9 @@ def api_master_control_status(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Telemetri real-time status database dan server pusat untuk Master Control."""
+    """Real-time database and control host telemetry for Master Control."""
     if not user.is_master_admin:
-        raise HTTPException(status_code=403, detail="Akses ditolak: Hanya Master Admin.")
+        raise HTTPException(status_code=403, detail="Access denied: Master Admin only.")
     db_status = get_database_status(db)
     servers_count = db.query(Server).count()
     users_count = db.query(User).count()
@@ -233,7 +229,7 @@ def api_master_control_optimize_db(
 ):
     """Jalankan perintah SQL OPTIMIZE TABLE untuk defragmentasi dan reklamasi ruang disk."""
     if not user.is_master_admin:
-        raise HTTPException(status_code=403, detail="Akses ditolak: Hanya Master Admin.")
+        raise HTTPException(status_code=403, detail="Access denied: Master Admin only.")
     tables_to_optimize = [
         "metrics",
         "system_snapshots",
@@ -257,11 +253,12 @@ def api_master_control_optimize_db(
             db,
             user.username,
             "db_optimize",
-            target="Database MySQL (pantau_db)",
-            result=f"Optimasi {len(tables_to_optimize)} tabel selesai",
+            target="MySQL Database (pantau_db)",
+            result="success",
         )
         db.commit()
-        return {"ok": True, "message": "Optimasi tabel database berhasil dijalankan", "details": results}
+        return {"ok": True, "message": "Database table optimization completed successfully", "details": results}
     except Exception as exc:
-        logger.error("[Master Control] Optimasi database gagal: %s", exc)
-        raise HTTPException(status_code=500, detail=f"Gagal mengoptimasi database: {exc}")
+        db.rollback()
+        logger.error("[Master Control] Database optimization failed: %s", exc)
+        raise HTTPException(status_code=500, detail=f"Database optimization failed: {exc}")

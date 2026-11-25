@@ -1018,6 +1018,7 @@
 <script setup>
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useI18n } from '../../i18n'
+import { confirmAction } from '../../utils/useToast'
 
 const { t } = useI18n()
 
@@ -1663,7 +1664,13 @@ async function executeDeleteItem() {
 // Bulk Delete
 async function confirmBulkDelete() {
   if (selectedPaths.value.length === 0) return
-  if (!confirm(`Are you sure you want to delete ${selectedPaths.value.length} selected items?`)) return
+  const ok = await confirmAction({
+    title: 'Delete Selected Items',
+    message: `Are you sure you want to delete ${selectedPaths.value.length} selected items?`,
+    confirmText: 'Delete',
+    variant: 'danger',
+  })
+  if (!ok) return
 
   const token = localStorage.getItem('pantau_token')
   let deletedCount = 0

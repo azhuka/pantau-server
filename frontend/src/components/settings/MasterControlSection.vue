@@ -232,6 +232,8 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { useI18n } from '../../i18n'
+import { formatBytes, formatUptime } from '../../utils/formatters'
+import { confirmAction } from '../../utils/useToast'
 
 const { t } = useI18n()
 
@@ -320,7 +322,13 @@ async function handleSaveThresholds() {
 }
 
 async function handleResetThresholds() {
-  if (!confirm('Reset all incident thresholds to system defaults?')) return
+  const ok = await confirmAction({
+    title: 'Reset Incident Thresholds',
+    message: 'Reset all incident thresholds to system defaults?',
+    confirmText: 'Reset Defaults',
+    variant: 'warning',
+  })
+  if (!ok) return
   savingThresholds.value = true
   flashMsg.value = ''
   try {
@@ -343,7 +351,13 @@ async function handleResetThresholds() {
 }
 
 async function handleOptimizeDb() {
-  if (!confirm('Execute SQL OPTIMIZE TABLE commands to defragment and reclaim storage space?')) return
+  const ok = await confirmAction({
+    title: 'Optimize Database Tables',
+    message: 'Execute SQL OPTIMIZE TABLE commands to defragment and reclaim storage space?',
+    confirmText: 'Optimize Now',
+    variant: 'warning',
+  })
+  if (!ok) return
   optimizingDb.value = true
   flashMsg.value = ''
   try {
@@ -369,24 +383,6 @@ function getTablePercentage(sizeMb) {
   const total = mcStatus.value?.database?.total_size_mb || 0
   if (!total) return 0
   return ((sizeMb / total) * 100).toFixed(1)
-}
-
-function formatBytes(bytes) {
-  if (!bytes) return '0 B'
-  const gb = bytes / (1024 * 1024 * 1024)
-  if (gb >= 1) return gb.toFixed(1) + ' GB'
-  const mb = bytes / (1024 * 1024)
-  return mb.toFixed(1) + ' MB'
-}
-
-function formatUptime(seconds) {
-  if (!seconds) return '-'
-  const d = Math.floor(seconds / 86400)
-  const h = Math.floor((seconds % 86400) / 3600)
-  const m = Math.floor((seconds % 3600) / 60)
-  if (d > 0) return `${d}d ${h}h ${m}m`
-  if (h > 0) return `${h}h ${m}m`
-  return `${m}m`
 }
 </script>
 
