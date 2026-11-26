@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.85
+
+- **Editable Host Description & Notes:** Added Edit button and EditNoteModal inside WorkspaceOverviewTab.vue with live workspace refresh and z-[20000] stacking order.
+
+
 ### Versi v0.1.84
 
 - **Performance History Charts & Storage Analysis:** Added GET /api/servers/{sid}/perf in server/routers/servers.py, created WorkspacePerfCharts.vue (2x2 symmetrical grid + standalone Network Throughput card with range selector and interactive hover crosshair), wired StorageTriageModal to Disk Partitions in WorkspaceOverviewTab.vue, and removed // prefixes.

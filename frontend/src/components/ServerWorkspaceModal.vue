@@ -449,6 +449,8 @@
             v-if="activeSubTab === 'overview'"
             :server="server"
             :processes-count="processesList.length"
+            :can-edit-notes="Boolean(currentUser?.is_master_admin || userPerms.can_manage_servers || userPerms.can_server_control)"
+            @note-updated="loadServerData()"
           />
           <WorkspaceProblemsTab
             v-else-if="activeSubTab === 'problems'"

@@ -144,10 +144,25 @@
             <h3 class="text-xs font-bold text-purple-400 uppercase tracking-wider">
               HOST DESCRIPTION &amp; NOTES
             </h3>
-            <span class="text-[10px] text-gray-500">OPERATOR MEMO</span>
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] text-gray-500">OPERATOR MEMO</span>
+              <button
+                v-if="canEditNotes"
+                type="button"
+                @click="noteModalOpen = true"
+                class="inline-flex items-center justify-center rounded border border-purple-700/60 bg-purple-950/50 text-purple-300 hover:bg-purple-900/70 hover:text-white transition cursor-pointer"
+                style="width: 26px; height: 26px; min-width: 26px; border-radius: 4px;"
+                title="Edit Host Description & Notes"
+              >
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+              </button>
+            </div>
           </div>
-          <p class="text-xs text-gray-300 leading-relaxed">
-            {{ server?.notes || 'No operational notes attached to this host yet. Notes can be configured in Host Settings.' }}
+          <p class="text-xs text-gray-300 leading-relaxed whitespace-pre-wrap">
+            {{ server?.notes || 'No operational notes attached to this host yet.' }}
           </p>
         </div>
         <div class="mt-3 pt-2 border-t border-cyan-500/10 flex items-center justify-between text-[11px] text-gray-500">
@@ -225,6 +240,13 @@
       :mount-path="storageTriageMount"
       @close="storageTriageOpen = false"
     />
+
+    <EditNoteModal
+      :is-open="noteModalOpen"
+      :server="server"
+      @close="noteModalOpen = false"
+      @updated="onNoteUpdated"
+    />
   </div>
 </template>
 
@@ -232,21 +254,33 @@
 import { ref } from 'vue'
 import { useI18n } from '../../../i18n'
 import { formatBytes, formatUptime } from '../../../utils/formatters'
+import { useToast } from '../../../utils/useToast'
 import WorkspacePerfCharts from './WorkspacePerfCharts.vue'
 import StorageTriageModal from '../StorageTriageModal.vue'
+import EditNoteModal from '../../assets/modals/EditNoteModal.vue'
 
 const { t } = useI18n()
+const toast = useToast()
 
 defineProps({
   server: { type: Object, default: () => ({}) },
-  processesCount: { type: Number, default: 0 }
+  processesCount: { type: Number, default: 0 },
+  canEditNotes: { type: Boolean, default: false },
 })
+
+const emit = defineEmits(['note-updated'])
 
 const storageTriageOpen = ref(false)
 const storageTriageMount = ref('/')
+const noteModalOpen = ref(false)
 
 function openStorageAnalysis(mount) {
   storageTriageMount.value = mount || '/'
   storageTriageOpen.value = true
+}
+
+function onNoteUpdated(msg) {
+  toast.success(msg || 'Host notes saved')
+  emit('note-updated')
 }
 </script>
