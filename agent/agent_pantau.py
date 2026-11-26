@@ -491,7 +491,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.11.28"
+AGENT_VERSION = "4.11.29"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -3830,7 +3830,7 @@ if [ "$PKG_MGR" = "apt" ]; then
             export DEBIAN_FRONTEND=noninteractive
             export NEEDRESTART_MODE=l
             export APT_LISTCHANGES_FRONTEND=none
-            exec /usr/bin/script -qfec "/usr/bin/apt-get update -o Dpkg::Lock::Timeout=600" /dev/null
+            exec /usr/bin/script -qfec "/usr/bin/apt-get update --allow-releaseinfo-change -o Dpkg::Lock::Timeout=600" /dev/null
             ;;
         upgrade)
             export DEBIAN_FRONTEND=noninteractive
