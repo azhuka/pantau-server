@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.73
+
+- **Streamlined Main Navigation Tabs:** Removed Probing, Maintenance, and Status Page tabs from  and , deleted their unused frontend components, and updated keyboard hotkeys (–) to map directly to Dashboard, Incidents, Asset Inventory, Audit Trail, and Settings.
+
+
 ### Versi v0.1.72
 
 Memastikan respons ls dari agen remote selalu menyertakan field path dan items agar UI Remote File Manager menampilkan direktori dan riwayat navigasi dengan benar.

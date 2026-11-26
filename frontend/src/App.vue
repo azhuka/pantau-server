@@ -98,33 +98,14 @@
         @server-updated="fetchServers"
       />
 
-      <!-- HALAMAN 4: SYNTHETIC PROBING -->
-      <ProbingView
-        v-else-if="activeTab === 'probing'"
-        :servers="servers"
-        :current-user="currentUser"
-      />
-
-      <!-- HALAMAN 5: SCHEDULED MAINTENANCE WINDOWS -->
-      <MaintenanceView
-        v-else-if="activeTab === 'maintenance'"
-        :servers="servers"
-        :current-user="currentUser"
-      />
-
-      <!-- HALAMAN 6: AUDIT TRAIL (Log Akuntabilitas Aksi Operator) -->
+      <!-- HALAMAN 4: AUDIT TRAIL (Log Akuntabilitas Aksi Operator) -->
       <AuditView
         v-else-if="activeTab === 'audit' && canAccessTab('audit')"
       />
 
-      <!-- HALAMAN 7: SETTINGS & RBAC (Otoritas & Ambang Batas) -->
+      <!-- HALAMAN 5: SETTINGS & RBAC (Otoritas & Ambang Batas) -->
       <SettingsView
         v-else-if="activeTab === 'settings' && canAccessTab('settings')"
-      />
-
-      <!-- HALAMAN 8: PUBLIC STATUS PAGE -->
-      <StatusPageView
-        v-else-if="activeTab === 'status'"
       />
 
       <!-- FALLBACK AMAN: Jika tab tidak diizinkan / hash salah, selalu tampilkan Dasbor (Cegah Blank Screen) -->
@@ -247,9 +228,6 @@ import AssetTableView from './components/assets/AssetTableView.vue'
 import AuditView from './components/audit/AuditView.vue'
 import SettingsView from './components/settings/SettingsView.vue'
 import IncidentView from './components/incidents/IncidentView.vue'
-import ProbingView from './components/probing/ProbingView.vue'
-import MaintenanceView from './components/maintenance/MaintenanceView.vue'
-import StatusPageView from './components/StatusPageView.vue'
 import ServerWorkspaceModal from './components/ServerWorkspaceModal.vue'
 import LoginModal from './components/LoginModal.vue'
 
@@ -302,7 +280,7 @@ const workspaceHost = computed(() => {
 })
 
 function canAccessTab(tab) {
-  if (['dashboard', 'incidents', 'assets', 'probing', 'maintenance', 'status'].includes(tab)) return true
+  if (['dashboard', 'incidents', 'assets'].includes(tab)) return true
   if (tab === 'audit') return Boolean(currentUser.value?.is_master_admin || currentUser.value?.permissions?.can_audit)
   if (tab === 'settings') return Boolean(currentUser.value?.is_master_admin || currentUser.value?.permissions?.can_manage_users || currentUser.value?.permissions?.can_manage_viewers)
   return false
@@ -320,7 +298,7 @@ function handleNav(tab) {
 
 function syncTabFromHash() {
   const hash = window.location.hash.replace(/^#/, '')
-  if (['dashboard', 'incidents', 'assets', 'probing', 'maintenance', 'status', 'audit', 'settings'].includes(hash)) {
+  if (['dashboard', 'incidents', 'assets', 'audit', 'settings'].includes(hash)) {
     if (canAccessTab(hash)) {
       activeTab.value = hash
     } else {
@@ -522,15 +500,9 @@ function handleGlobalKeydown(e) {
   } else if (e.key === '3') {
     handleNav('assets')
   } else if (e.key === '4') {
-    handleNav('probing')
-  } else if (e.key === '5') {
-    handleNav('maintenance')
-  } else if (e.key === '6') {
     handleNav('audit')
-  } else if (e.key === '7') {
+  } else if (e.key === '5') {
     handleNav('settings')
-  } else if (e.key === '8') {
-    handleNav('status')
   }
 }
 

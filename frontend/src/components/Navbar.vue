@@ -28,7 +28,7 @@
           <div class="font-bold text-sm tracking-wider text-gray-100 flex items-center gap-2 font-mono whitespace-nowrap">
             <span class="text-cyan-400 font-extrabold">{{ t('app_name') }}</span>
             <span class="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-800/60 tracking-normal">
-              v0.1.72
+              v0.1.73
             </span>
           </div>
           <div class="text-[10px] text-gray-400 tracking-wider font-mono uppercase whitespace-nowrap">
@@ -98,33 +98,7 @@
           </span>
         </button>
 
-        <!-- 4: SYNTHETIC PROBING -->
-        <button
-          @click="$emit('nav', 'probing')"
-          :class="[
-            'px-2.5 py-1.5 rounded transition-all cursor-pointer flex items-center gap-1.5 font-semibold tracking-wide border whitespace-nowrap shrink-0',
-            activeTab === 'probing'
-              ? 'bg-cyan-950/50 text-cyan-300 border-cyan-500/60 font-bold shadow-[0_0_10px_rgba(56,189,248,0.2)]'
-              : 'text-gray-400 hover:text-gray-100 hover:bg-gray-800/40 border-transparent'
-          ]"
-        >
-          <span>{{ t('nav_probing') }}</span>
-        </button>
-
-        <!-- 5: MAINTENANCE -->
-        <button
-          @click="$emit('nav', 'maintenance')"
-          :class="[
-            'px-2.5 py-1.5 rounded transition-all cursor-pointer flex items-center gap-1.5 font-semibold tracking-wide border whitespace-nowrap shrink-0',
-            activeTab === 'maintenance'
-              ? 'bg-cyan-950/50 text-cyan-300 border-cyan-500/60 font-bold shadow-[0_0_10px_rgba(56,189,248,0.2)]'
-              : 'text-gray-400 hover:text-gray-100 hover:bg-gray-800/40 border-transparent'
-          ]"
-        >
-          <span>{{ t('nav_maintenance') }}</span>
-        </button>
-
-        <!-- 6: AUDIT TRAIL -->
+        <!-- 4: AUDIT TRAIL -->
         <button
           v-if="user?.is_master_admin || user?.permissions?.can_audit"
           @click="$emit('nav', 'audit')"
@@ -138,7 +112,7 @@
           <span>{{ t('nav_audit') }}</span>
         </button>
 
-        <!-- 7: SETTINGS & RBAC -->
+        <!-- 5: SETTINGS & RBAC -->
         <button
           v-if="user?.is_master_admin || user?.permissions?.can_manage_users || user?.permissions?.can_manage_viewers"
           @click="$emit('nav', 'settings')"
@@ -150,19 +124,6 @@
           ]"
         >
           <span>{{ t('nav_settings') }}</span>
-        </button>
-
-        <!-- 8: STATUS PAGE -->
-        <button
-          @click="$emit('nav', 'status')"
-          :class="[
-            'px-2.5 py-1.5 rounded transition-all cursor-pointer flex items-center gap-1.5 font-semibold tracking-wide border whitespace-nowrap shrink-0',
-            activeTab === 'status'
-              ? 'bg-cyan-950/50 text-cyan-300 border-cyan-500/60 font-bold shadow-[0_0_10px_rgba(56,189,248,0.2)]'
-              : 'text-gray-400 hover:text-gray-100 hover:bg-gray-800/40 border-transparent'
-          ]"
-        >
-          <span>{{ t('nav_status_page') }}</span>
         </button>
       </nav>
     </div>
@@ -310,8 +271,6 @@ const mobileNavItems = computed(() => {
     { id: 'dashboard', label: t('nav_dashboard') },
     { id: 'incidents', label: t('nav_incidents') },
     { id: 'assets', label: t('nav_assets') },
-    { id: 'probing', label: t('nav_probing') },
-    { id: 'maintenance', label: t('nav_maintenance') },
   ]
   if (props.user?.is_master_admin || props.user?.permissions?.can_audit) {
     items.push({ id: 'audit', label: t('nav_audit') })
@@ -319,7 +278,6 @@ const mobileNavItems = computed(() => {
   if (props.user?.is_master_admin || props.user?.permissions?.can_manage_users || props.user?.permissions?.can_manage_viewers) {
     items.push({ id: 'settings', label: t('nav_settings') })
   }
-  items.push({ id: 'status', label: t('nav_status_page') })
   return items
 })
 </script>

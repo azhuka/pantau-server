@@ -5,9 +5,6 @@ export default {
   nav_incidents: 'Incidents',
   nav_assets: 'Asset Inventory',
   nav_fleet: 'Asset Inventory',
-  nav_probing: 'Probing',
-  nav_maintenance: 'Maintenance',
-  nav_status_page: 'Status Page',
   nav_audit: 'Audit Trail',
   nav_settings: 'Settings',
   nav_status_live: 'LIVE TELEMETRY',
@@ -252,7 +249,7 @@ export default {
   shelf_title: 'Workspace on Shelf',
   shelf_restore: 'Restore',
   shelf_close: 'Close',
-  footer_hotkeys: 'Hotkeys: 1 Dashboard / 2 Incidents / 3 Assets / 4 Probing / 5 Maintenance / 6 Audit / 7 Settings / 8 Status',
+  footer_hotkeys: 'Hotkeys: 1 Dashboard / 2 Incidents / 3 Assets / 4 Audit / 5 Settings',
   footer_live_synced: 'Live Polling Synced',
 
   // Audit View
