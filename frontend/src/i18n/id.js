@@ -254,6 +254,8 @@ export default {
   ssl_col_issuer: 'Penerbit CA',
   ssl_col_expires: 'Kadaluarsa Pada',
   ssl_col_days_left: 'Sisa Hari',
+  ssl_col_status: 'Status',
+  ssl_col_file_path: 'Lokasi Berkas',
   term_dock_title: 'DOK TERMINAL',
   term_keep_alive: 'Sesi Tetap Aktif',
   term_restore: 'Pulihkan',

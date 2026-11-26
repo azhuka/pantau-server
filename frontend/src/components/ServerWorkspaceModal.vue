@@ -545,6 +545,9 @@
           <WorkspaceSslTab
             v-else-if="activeSubTab === 'ssl'"
             :ssl-certs-list="sslCertsList"
+            :is-online="Boolean(server?.is_online)"
+            :is-viewer="currentUser?.role === 'viewer'"
+            @ssl-action="handleGenericAction"
           />
           <WorkspaceLogsTab
             v-else-if="activeSubTab === 'logs'"
@@ -1087,9 +1090,9 @@ const canAccessTab = (tabId) => {
   if (tabId === 'firewall') return Boolean(userPerms.value.can_firewall)
   if (tabId === 'accounts') return Boolean(userPerms.value.can_users_sys || props.currentUser?.role === 'viewer')
   if (tabId === 'cron') return Boolean(userPerms.value.can_cron || props.currentUser?.role === 'viewer')
-  if (tabId === 'packages') return Boolean(userPerms.value.can_apt)
-  if (tabId === 'ssl') return Boolean(userPerms.value.can_ssl)
-  if (tabId === 'logs') return Boolean(userPerms.value.can_audit || userPerms.value.can_services)
+  if (tabId === 'packages') return Boolean(userPerms.value.can_apt || props.currentUser?.role === 'viewer')
+  if (tabId === 'ssl') return Boolean(userPerms.value.can_ssl || props.currentUser?.role === 'viewer')
+  if (tabId === 'logs') return Boolean(userPerms.value.can_audit || userPerms.value.can_services || props.currentUser?.role === 'viewer')
   if (tabId === 'fim') return Boolean(userPerms.value.can_audit || props.currentUser?.role === 'viewer')
   return true
 }

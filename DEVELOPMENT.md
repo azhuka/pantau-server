@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.104
+
+Audit menyeluruh sisa tab Workspace: perbaikan pemetaan field SSL/TLS (domains/subject, not_after, path, status EXPIRED/CRITICAL/WARNING/VALID), penambahan + Add Cert Path & Remove (ssl_path_add/ssl_path_remove), paginasi tabel SSL, penghapusan prefiks //, serta penyelarasan akses read-only viewer pada Packages, SSL/TLS, dan Logs.
+
+
 ### Versi v0.1.105
 
 - Memperbaiki `ensure_pantau_apt_updated()` di `agent/agent_pantau.py` (v4.11.30) agar membandingkan isi penuh `PANTAU_APT_SCRIPT_BODY` sehingga wrapper `/usr/local/sbin/pantau-apt` di seluruh node ikut diperbarui dengan flag `--allow-releaseinfo-change`.

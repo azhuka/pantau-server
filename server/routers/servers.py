@@ -1027,6 +1027,8 @@ _ACTION_PERMISSION_MAP = {
     "fim_rebaseline": "can_audit",
     "fim_path_add": "can_audit",
     "fim_path_remove": "can_audit",
+    "ssl_path_add": "can_ssl",
+    "ssl_path_remove": "can_ssl",
     "update_agent": "can_ota",
     "restart_agent": "can_ota",
 }
@@ -1334,7 +1336,7 @@ def toggle_server_maintenance(
 @router.get("/{sid}/packages")
 def get_server_packages(sid: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     check_server_access(user, sid)
-    if not (user.is_master_admin or user.has_perm("can_apt")):
+    if not (user.is_master_admin or user.is_viewer() or user.has_perm("can_apt")):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied: Package Manager permission (can_apt) is required")
     extras = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
     if not extras:
@@ -1398,7 +1400,7 @@ def get_server_packages(sid: int, user: User = Depends(get_current_user), db: Se
 @router.get("/{sid}/ssl")
 def get_server_ssl(sid: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     check_server_access(user, sid)
-    if not (user.is_master_admin or user.has_perm("can_ssl")):
+    if not (user.is_master_admin or user.is_viewer() or user.has_perm("can_ssl")):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied: SSL Certificates permission (can_ssl) is required")
     extras = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
     if not extras or not extras.ssl_certs:

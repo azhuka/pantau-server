@@ -254,6 +254,8 @@ export default {
   ssl_col_issuer: 'Issuer CA',
   ssl_col_expires: 'Expires At',
   ssl_col_days_left: 'Days Left',
+  ssl_col_status: 'Status',
+  ssl_col_file_path: 'Certificate Path',
   term_dock_title: 'TERMINAL DOCK',
   term_keep_alive: 'Keep-Alive Session',
   term_restore: 'Restore',
