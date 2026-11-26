@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.77
+
+- **Clickable Operator Profile Menu:** Consolidated UI Settings and Sign Out into a floating dropdown menu triggered by clicking the operator profile badge in Navbar.vue.
+
+
 ### Versi v0.1.76
 
 - **Remove Activity Console Toggle & Drawer:** Removed the Activity Console button from Navbar.vue, deleted ActivityConsoleDrawer.vue, and cleaned up its state and keyboard shortcut in App.vue.

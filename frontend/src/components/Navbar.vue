@@ -28,7 +28,7 @@
           <div class="font-bold text-sm tracking-wider text-gray-100 flex items-center gap-2 font-mono whitespace-nowrap">
             <span class="text-cyan-400 font-extrabold">{{ t('app_name') }}</span>
             <span class="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-800/60 tracking-normal">
-              v0.1.76
+              v0.1.77
             </span>
           </div>
           <div class="text-[10px] text-gray-400 tracking-wider font-mono uppercase whitespace-nowrap">
@@ -116,60 +116,88 @@
         <span class="tracking-wider text-[11px]">LIVE</span>
       </div>
 
-      <!-- Theme Customizer Toggle -->
-      <button
-        type="button"
-        @click="$emit('open-theme')"
-        class="p-1.5 rounded border border-gray-800 bg-gray-900/60 text-gray-400 hover:text-cyan-300 hover:border-cyan-700/50 transition cursor-pointer"
-        title="UI Theme & Density"
-      >
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>
-        </svg>
-      </button>
-
-      <!-- Operator User Badge -->
-      <div v-if="user" class="flex items-center gap-2.5 border-l border-gray-800 pl-3 shrink-0">
-        <div class="text-right">
-          <div class="text-xs font-bold text-gray-100 font-mono leading-none mb-1 whitespace-nowrap">{{ user.username }}</div>
-          <div class="flex items-center justify-end">
-            <span
-              v-if="user.is_master_admin || user.role === 'master_admin'"
-              class="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-cyan-950/90 text-cyan-300 border border-cyan-500/50 tracking-wider"
-            >
-              MASTER ADMIN
-            </span>
-            <span
-              v-else-if="user.is_operator || user.role === 'operator'"
-              class="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-emerald-950/90 text-emerald-300 border border-emerald-500/50 tracking-wider"
-            >
-              OPERATOR
-            </span>
-            <span
-              v-else-if="user.is_viewer || user.role === 'viewer'"
-              class="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-slate-800/90 text-slate-300 border border-slate-600/50 tracking-wider"
-            >
-              VIEWER
-            </span>
-            <span
-              v-else
-              class="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-gray-800 text-gray-300 border border-gray-700 tracking-wider uppercase"
-            >
-              {{ user.role }}
-            </span>
-          </div>
-        </div>
+      <!-- Operator Profile Dropdown -->
+      <div v-if="user" ref="userMenuRef" class="relative border-l border-gray-800 pl-3 shrink-0">
         <button
-          @click="$emit('logout')"
-          class="text-xs p-1.5 rounded border border-gray-800 bg-gray-900/60 text-gray-400 hover:bg-rose-950/40 hover:text-rose-300 hover:border-rose-800/50 transition cursor-pointer"
-          :title="t('nav_logout')"
+          type="button"
+          @click="userMenuOpen = !userMenuOpen"
+          class="flex items-center gap-2 px-2 py-1 rounded border border-transparent hover:border-gray-700/80 hover:bg-gray-900/60 transition cursor-pointer"
+          :aria-expanded="userMenuOpen"
+          aria-haspopup="menu"
         >
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-            <polyline points="16 17 21 12 16 7" />
-            <line x1="21" y1="12" x2="9" y2="12" />
+          <div class="text-right">
+            <div class="text-xs font-bold text-gray-100 font-mono leading-none mb-1 whitespace-nowrap">{{ user.username }}</div>
+            <div class="flex items-center justify-end">
+              <span
+                v-if="user.is_master_admin || user.role === 'master_admin'"
+                class="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-cyan-950/90 text-cyan-300 border border-cyan-500/50 tracking-wider"
+              >
+                MASTER ADMIN
+              </span>
+              <span
+                v-else-if="user.is_operator || user.role === 'operator'"
+                class="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-emerald-950/90 text-emerald-300 border border-emerald-500/50 tracking-wider"
+              >
+                OPERATOR
+              </span>
+              <span
+                v-else-if="user.is_viewer || user.role === 'viewer'"
+                class="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-slate-800/90 text-slate-300 border border-slate-600/50 tracking-wider"
+              >
+                VIEWER
+              </span>
+              <span
+                v-else
+                class="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-gray-800 text-gray-300 border border-gray-700 tracking-wider uppercase"
+              >
+                {{ user.role }}
+              </span>
+            </div>
+          </div>
+          <svg
+            class="w-3.5 h-3.5 text-gray-400 transition-transform"
+            :class="userMenuOpen ? 'rotate-180 text-cyan-300' : ''"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <polyline points="6 9 12 15 18 9"/>
           </svg>
         </button>
+
+        <!-- Floating Operator Menu -->
+        <div
+          v-if="userMenuOpen"
+          role="menu"
+          class="absolute right-0 mt-2 w-48 rounded-lg border border-cyan-500/30 bg-[#0b1220] shadow-2xl py-1.5 font-mono text-xs z-50"
+        >
+          <button
+            type="button"
+            role="menuitem"
+            @click="userMenuOpen = false; $emit('open-theme')"
+            class="w-full px-3 py-2 text-left text-gray-200 hover:bg-cyan-950/50 hover:text-cyan-300 flex items-center gap-2.5 transition cursor-pointer"
+          >
+            <svg class="w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>
+            </svg>
+            <span>UI Settings</span>
+          </button>
+          <div class="my-1 border-t border-gray-800/80"></div>
+          <button
+            type="button"
+            role="menuitem"
+            @click="userMenuOpen = false; $emit('logout')"
+            class="w-full px-3 py-2 text-left text-rose-300 hover:bg-rose-950/40 hover:text-rose-200 flex items-center gap-2.5 transition cursor-pointer"
+          >
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+            <span>{{ t('nav_logout') }}</span>
+          </button>
+        </div>
       </div>
 
       <div v-else>
@@ -217,7 +245,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from '../i18n'
 
 const props = defineProps({
@@ -232,6 +260,30 @@ defineEmits(['nav', 'logout', 'login-click', 'open-theme'])
 
 const { t } = useI18n()
 const mobileMenuOpen = ref(false)
+const userMenuOpen = ref(false)
+const userMenuRef = ref(null)
+
+function handleDocClick(e) {
+  if (userMenuOpen.value && userMenuRef.value && !userMenuRef.value.contains(e.target)) {
+    userMenuOpen.value = false
+  }
+}
+
+function handleDocKeydown(e) {
+  if (userMenuOpen.value && e.key === 'Escape') {
+    userMenuOpen.value = false
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleDocClick)
+  document.addEventListener('keydown', handleDocKeydown)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleDocClick)
+  document.removeEventListener('keydown', handleDocKeydown)
+})
 
 const mobileNavItems = computed(() => {
   const items = [
