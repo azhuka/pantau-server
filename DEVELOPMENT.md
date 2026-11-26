@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.106
+
+Sinkronisasi rilis v0.1.106 untuk perbaikan SSL/TLS, custom cert path, dan paritas akses read-only viewer.
+
+
 ### Versi v0.1.104
 
 Audit menyeluruh sisa tab Workspace: perbaikan pemetaan field SSL/TLS (domains/subject, not_after, path, status EXPIRED/CRITICAL/WARNING/VALID), penambahan + Add Cert Path & Remove (ssl_path_add/ssl_path_remove), paginasi tabel SSL, penghapusan prefiks //, serta penyelarasan akses read-only viewer pada Packages, SSL/TLS, dan Logs.
