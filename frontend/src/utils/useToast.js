@@ -2,17 +2,83 @@ import { ref } from 'vue'
 
 const toasts = ref([])
 let nextToastId = 1
+const timers = new Map()
 
-function pushToast(message, type = 'info', duration = 3500) {
+function startTimer(id, ms) {
+  clearTimer(id)
+  if (!ms || ms <= 0) return
+  const item = toasts.value.find(t => t.id === id)
+  if (!item) return
+  item.startedAt = Date.now()
+  item.remainingMs = ms
+  item.paused = false
+  timers.set(id, setTimeout(() => dismissToast(id), ms))
+}
+
+function clearTimer(id) {
+  const t = timers.get(id)
+  if (t) {
+    clearTimeout(t)
+    timers.delete(id)
+  }
+}
+
+export function pauseToast(id) {
+  const item = toasts.value.find(t => t.id === id)
+  if (!item || item.paused) return
+  clearTimer(id)
+  const elapsed = Date.now() - (item.startedAt || Date.now())
+  item.remainingMs = Math.max(600, (item.remainingMs || 5000) - elapsed)
+  item.paused = true
+}
+
+export function resumeToast(id) {
+  const item = toasts.value.find(t => t.id === id)
+  if (!item || !item.paused) return
+  startTimer(id, item.remainingMs || 3000)
+}
+
+function defaultTitle(type) {
+  if (type === 'success') return 'Success'
+  if (type === 'error') return 'Error'
+  if (type === 'warning') return 'Warning'
+  return 'Notification'
+}
+
+function pushToast(optsOrMsg, type = 'info', duration = 5000) {
+  const isObj = typeof optsOrMsg === 'object' && optsOrMsg !== null
+  const tType = isObj ? (optsOrMsg.type || 'info') : type
+  const dur = isObj ? (optsOrMsg.duration ?? 5500) : duration
   const id = nextToastId++
-  toasts.value.push({ id, message: String(message || ''), type })
-  if (duration > 0) {
-    setTimeout(() => dismissToast(id), duration)
+  const entry = {
+    id,
+    type: tType,
+    title: isObj ? (optsOrMsg.title || defaultTitle(tType)) : defaultTitle(tType),
+    message: isObj ? String(optsOrMsg.message || '') : String(optsOrMsg || ''),
+    serverName: isObj ? (optsOrMsg.serverName || '') : '',
+    durationSecs: isObj ? (optsOrMsg.durationSecs || 0) : 0,
+    onClick: isObj && typeof optsOrMsg.onClick === 'function' ? optsOrMsg.onClick : null,
+    duration: dur,
+    remainingMs: dur,
+    startedAt: Date.now(),
+    paused: false,
+  }
+  toasts.value.push(entry)
+  if (dur > 0) startTimer(id, dur)
+
+  if (isObj && optsOrMsg.desktop && typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+    try {
+      const body = (entry.serverName ? `[${entry.serverName}] ` : '') + entry.message + (entry.durationSecs ? ` (${entry.durationSecs}s)` : '')
+      const n = new Notification(entry.title, { body, tag: `pantau-notif-${id}` })
+      n.onclick = () => { window.focus(); if (entry.onClick) entry.onClick(); n.close() }
+      setTimeout(() => { try { n.close() } catch (_) {} }, 5000)
+    } catch (_) {}
   }
   return id
 }
 
 function dismissToast(id) {
+  clearTimer(id)
   toasts.value = toasts.value.filter(t => t.id !== id)
 }
 
@@ -20,10 +86,13 @@ export function useToast() {
   return {
     toasts,
     dismiss: dismissToast,
-    info: (msg, dur) => pushToast(msg, 'info', dur),
-    success: (msg, dur) => pushToast(msg, 'success', dur),
-    warning: (msg, dur) => pushToast(msg, 'warning', dur),
-    error: (msg, dur) => pushToast(msg, 'error', dur ?? 4500),
+    pause: pauseToast,
+    resume: resumeToast,
+    notify: (opts) => pushToast(opts),
+    info: (msg, dur) => pushToast(msg, 'info', dur ?? 4500),
+    success: (msg, dur) => pushToast(msg, 'success', dur ?? 4500),
+    warning: (msg, dur) => pushToast(msg, 'warning', dur ?? 5000),
+    error: (msg, dur) => pushToast(msg, 'error', dur ?? 5500),
   }
 }
 

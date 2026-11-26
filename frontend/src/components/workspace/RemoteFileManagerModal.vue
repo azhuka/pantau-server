@@ -3,7 +3,6 @@
     v-if="open"
     class="fixed inset-0 z-[10000] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 transition-all"
     :class="{ '!p-0': isFullscreen || isFullWindow }"
-    @click.self="emit('close')"
     @keydown.esc="handleEsc"
   >
     <div
@@ -701,7 +700,6 @@
       <div
         v-if="showNewFileDialog"
         class="absolute inset-0 bg-black/75 z-30 flex items-center justify-center p-4"
-        @click.self="showNewFileDialog = false"
       >
         <div class="bg-[#0b1226] border border-cyan-500/60 rounded-lg p-5 w-full max-w-sm flex flex-col space-y-3 shadow-2xl">
           <div class="text-xs font-bold text-cyan-300 flex items-center gap-2">
@@ -745,7 +743,6 @@
       <div
         v-if="showNewDirDialog"
         class="absolute inset-0 bg-black/75 z-30 flex items-center justify-center p-4"
-        @click.self="showNewDirDialog = false"
       >
         <div class="bg-[#0b1226] border border-cyan-500/60 rounded-lg p-5 w-full max-w-sm flex flex-col space-y-3 shadow-2xl">
           <div class="text-xs font-bold text-cyan-300 flex items-center gap-2">
@@ -790,7 +787,6 @@
       <div
         v-if="itemToRename"
         class="absolute inset-0 bg-black/75 z-30 flex items-center justify-center p-4"
-        @click.self="itemToRename = null"
       >
         <div class="bg-[#0b1226] border border-cyan-500/60 rounded-lg p-5 w-full max-w-sm flex flex-col space-y-3 shadow-2xl">
           <div class="text-xs font-bold text-cyan-300 flex items-center gap-2">
@@ -833,7 +829,6 @@
       <div
         v-if="itemToChmod"
         class="absolute inset-0 bg-black/75 z-30 flex items-center justify-center p-4"
-        @click.self="itemToChmod = null"
       >
         <div class="bg-[#0b1226] border border-cyan-500/60 rounded-lg p-5 w-full max-w-sm flex flex-col space-y-3 shadow-2xl">
           <div class="text-xs font-bold text-cyan-300 flex items-center gap-2">
@@ -881,7 +876,6 @@
       <div
         v-if="itemToChown"
         class="absolute inset-0 bg-black/70 z-30 flex items-center justify-center p-4"
-        @click.self="itemToChown = null"
       >
         <div class="bg-[#0b1325] border border-cyan-500/50 rounded-lg p-5 w-full max-w-sm flex flex-col space-y-3 shadow-2xl">
           <div class="text-xs font-bold text-cyan-300">Change Owner (chown)</div>
@@ -932,7 +926,6 @@
       <div
         v-if="itemToDelete"
         class="absolute inset-0 bg-black/75 z-30 flex items-center justify-center p-4"
-        @click.self="itemToDelete = null"
       >
         <div class="bg-[#130d14] border border-rose-500/60 rounded-lg p-5 w-full max-w-sm flex flex-col space-y-3 shadow-2xl">
           <div class="text-xs font-bold text-rose-400 flex items-center gap-2">
@@ -972,7 +965,6 @@
       <div
         v-if="itemToDuplicate"
         class="absolute inset-0 bg-black/75 z-30 flex items-center justify-center p-4"
-        @click.self="itemToDuplicate = null"
       >
         <div class="bg-[#0b1226] border border-cyan-500/60 rounded-lg p-5 w-full max-w-sm flex flex-col space-y-3 shadow-2xl">
           <div class="text-xs font-bold text-cyan-300 flex items-center gap-2">
@@ -1015,7 +1007,6 @@
       <div
         v-if="showUploadDialog"
         class="absolute inset-0 bg-black/75 z-30 flex items-center justify-center p-4"
-        @click.self="showUploadDialog = false"
       >
         <div class="bg-[#0b1226] border border-cyan-500/60 rounded-lg p-5 w-full max-w-sm flex flex-col space-y-3 shadow-2xl">
           <div class="text-xs font-bold text-cyan-300 flex items-center gap-2">

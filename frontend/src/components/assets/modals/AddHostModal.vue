@@ -1,5 +1,5 @@
 <template>
-  <div v-if="isOpen" class="fixed inset-0 z-[100000] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4" @click.self="closeModal">
+  <div v-if="isOpen" class="fixed inset-0 z-[100000] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="hud-tactical-card rounded-xl max-w-lg w-full p-5 space-y-4 shadow-2xl border border-cyan-500/40 bg-[#0a0f1d] text-gray-200 font-mono">
       <div class="flex items-center justify-between border-b border-gray-800 pb-3">
         <h3 class="text-sm font-bold text-cyan-300 uppercase tracking-wider">

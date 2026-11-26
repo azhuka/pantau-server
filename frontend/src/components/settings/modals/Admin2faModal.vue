@@ -1,5 +1,5 @@
 <template>
-  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in font-mono" @click.self="$emit('close')">
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in font-mono">
     <div class="w-full max-w-md bg-[#080d1a] border border-amber-500/40 rounded-xl shadow-2xl overflow-hidden flex flex-col">
       <!-- Header -->
       <div class="p-4 bg-[#0a1122] border-b border-amber-900/40 flex items-center justify-between">

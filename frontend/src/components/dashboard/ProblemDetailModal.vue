@@ -3,7 +3,6 @@
     v-if="isOpen && problem"
     id="problem-detail-modal"
     class="fixed inset-0 z-[20000] bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 font-mono select-none"
-    @click.self="$emit('close')"
   >
     <div class="hud-tactical-card rounded-xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-cyan-500/40">
       <span class="hud-corner-tr"></span>

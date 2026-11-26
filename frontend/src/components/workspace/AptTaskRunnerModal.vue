@@ -2,7 +2,6 @@
   <div
     v-if="isOpen"
     class="fixed inset-0 z-[36000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm select-none"
-    @click.self="$emit('close')"
   >
     <div class="w-full max-w-4xl bg-[#070b16] border border-cyan-500/50 rounded-xl shadow-[0_24px_60px_rgba(0,0,0,0.92)] flex flex-col overflow-hidden font-mono text-xs">
       <!-- Header -->

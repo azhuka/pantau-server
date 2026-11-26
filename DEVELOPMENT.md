@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.109
+
+Penegakan aturan global modal: seluruh 28 komponen modal tidak lagi tertutup saat klik backdrop luar (hanya via Close/Esc dan proses latar belakang tetap berjalan), pembukuan aturan di GEMINI.md, serta penyatuan sistem notifikasi terpadu pada useToast.js & NocToastContainer.vue (kartu notifikasi kaya dengan badge host, durasi, jeda saat hover, klik untuk buka konsol tugas, dan notifikasi desktop).
+
+
 ### Versi v0.1.108
 
 Penyempurnaan workflow background task Update/Upgrade OS Packages: banner di ServerWorkspaceModal kini menampilkan nama tugas yang jelas serta timer MM:SS live, dan membuka ulang AptTaskRunnerModal tidak lagi me-reset timer ke 00:00.

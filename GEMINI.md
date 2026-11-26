@@ -17,6 +17,7 @@ Aturan teknis baku (*always-on project rules*) untuk **Pantau Server** (`/home/b
 - **Header & Kolom Tindakan:** Header kolom wajib Title Case (`Actions`, `Triggered At`, `Incident Description`, `Severity`, `Duration`, `Solution`). Tabel dengan $>2$ jenis aksi wajib memakai dropdown `Actions ▾` (`z-index: 9999`); tabel dengan $1$–$2$ aksi memakai tombol inline `26x26px`; peran Viewer hanya ikon lihat `26x26px`.
 - **Disabled States & Zero-Emoji:** Tombol non-aktif wajib `opacity: 0.38`, `cursor: not-allowed`, klik diblokir, dan `title="..."` alasan jelas. Dilarang memakai emoji bergambar/simbol non-SVG di UI; gunakan ikon SVG vektor tipis.
 - **Zero-Floating Overlays & Kontras Multi-Tema:** Dilarang menempatkan tombol melayang menutupi teks log/tabel; warna wajib memakai CSS variabel semantik agar tajam di Dark/Light mode.
+- **Proteksi Penutupan Modal (No Backdrop Click-to-Close):** Seluruh modal tidak boleh tertutup saat operator mengklik area luar (*backdrop*); modal hanya boleh ditutup melalui tombol *Close* atau tombol `Esc`, dan proses latar belakang yang sedang berjalan tidak boleh terhenti saat modal ditutup.
 
 ## 3. Proteksi Proxmox HA & RBAC Parity
 - **Proxmox HA:** Host dengan `is_proxmox_ha = 1` dilarang dimatikan dari dalam via `Power OFF` (tombol non-aktif + ditolak backend).

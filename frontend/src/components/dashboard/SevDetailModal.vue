@@ -2,7 +2,6 @@
   <div
     v-if="isOpen"
     class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 font-mono select-none"
-    @click.self="$emit('close')"
   >
     <div class="hud-tactical-card rounded-xl max-w-4xl w-full max-h-[85vh] flex flex-col shadow-2xl border" :class="cardBorderClass">
       <span class="hud-corner-tr"></span>

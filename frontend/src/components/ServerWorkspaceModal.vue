@@ -4,7 +4,6 @@
     v-if="isOpen"
     v-show="!isMinimized"
     class="fixed inset-0 z-50 bg-black/75 backdrop-blur-[4px] flex items-center justify-center p-2 sm:p-4 transition-all duration-200"
-    @click.self="handleBackdropClick"
   >
     <!-- Modal Window Card (Tactical Cyber Command Deck) -->
     <div
@@ -584,7 +583,6 @@
     <div
       v-if="showGuardrailModal"
       class="fixed inset-0 z-60 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 font-mono select-none"
-      @click.self="showGuardrailModal = false"
     >
       <div class="hud-tactical-card rounded-xl max-w-md w-full p-5 space-y-4 shadow-2xl border border-rose-500/50">
         <span class="hud-corner-tr"></span>
@@ -678,7 +676,6 @@
     <div
       v-if="showMaintenanceModal"
       class="fixed inset-0 z-[15000] flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 font-mono select-none"
-      @click.self="closeMaintenanceModal"
       @keydown.esc="closeMaintenanceModal"
     >
       <div class="bg-[#080d19] border border-cyan-500/50 shadow-[0_20px_50px_rgba(0,0,0,0.9)] rounded-xl w-full max-w-[500px] overflow-hidden">
@@ -1463,9 +1460,17 @@ function startAptBgPoll() {
       if (res.ok && (data.status === 'success' || data.status === 'failed')) {
         stopAptBgPoll()
         aptTaskRunning.value = false
-        if (data.status === 'success') toast.success(`${aptTaskUnit.value} completed on ${server.value?.hostname || 'host'}`)
-        else toast.error(`${aptTaskUnit.value} failed on ${server.value?.hostname || 'host'}`)
-        await onAptTaskCompleted({ ok: data.status === 'success' })
+        const ok = data.status === 'success'
+        toast.notify({
+          type: ok ? 'success' : 'error',
+          title: ok ? `${aptTaskLabel.value} Completed` : `${aptTaskLabel.value} Failed`,
+          message: ok ? 'OS package operation finished. Click to view output.' : 'OS package operation failed. Click to inspect output.',
+          serverName: server.value?.hostname || 'Host',
+          durationSecs: aptElapsedSec.value,
+          desktop: true,
+          onClick: () => { aptRunnerOpen.value = true },
+        })
+        await onAptTaskCompleted({ ok })
       }
     } catch (_) {}
   }, 2500)

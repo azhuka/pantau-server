@@ -3,7 +3,6 @@
     <div
       v-if="state.isOpen"
       class="fixed inset-0 z-[100015] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm select-none"
-      @click.self="cancel"
     >
       <div class="w-full max-w-md bg-[#0b1325] border rounded-xl shadow-2xl overflow-hidden font-mono text-xs" :class="borderClass">
         <div class="flex items-center justify-between px-4 py-3 bg-[#0e1930] border-b border-gray-800">

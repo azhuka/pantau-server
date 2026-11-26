@@ -2,7 +2,6 @@
   <div
     v-if="isOpen"
     class="fixed inset-0 z-[35000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm select-none"
-    @click.self="handleClose"
   >
     <div class="relative w-full max-w-md bg-[#0b1325] border border-cyan-500/50 rounded-xl shadow-[0_20px_60px_rgba(0,0,0,0.9)] overflow-hidden font-mono text-xs">
       <!-- Modal Header -->

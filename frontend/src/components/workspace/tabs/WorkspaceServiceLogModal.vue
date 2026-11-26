@@ -1,6 +1,6 @@
 <template>
   <Teleport to="body">
-    <div v-if="target" @click.self="$emit('close')" class="fixed inset-0 z-[100020] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 font-mono">
+    <div v-if="target" class="fixed inset-0 z-[100020] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 font-mono">
       <div class="w-full max-w-5xl max-h-[85vh] flex flex-col rounded-xl bg-[#070c18] border border-cyan-500/40 shadow-2xl overflow-hidden">
         <!-- 1. Header: Identity + Live Tail, Refresh, Copy, Download, Open in Logs Tab, Close -->
         <div class="flex items-center justify-between px-4 py-3 border-b border-cyan-500/20 bg-[#050811] flex-wrap gap-2">
