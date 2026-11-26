@@ -745,20 +745,28 @@ def get_server_processes(sid: int, user: User = Depends(get_current_user), db: S
     try:
         data = json.loads(extras.top_procs)
         if isinstance(data, dict):
-            merged = []
-            seen_pids = set()
+            proc_map = {}
             for p in (data.get("cpu") or []) + (data.get("mem") or []):
                 pid = p.get("pid")
-                if pid and pid not in seen_pids:
-                    seen_pids.add(pid)
-                    merged.append({
+                if not pid:
+                    continue
+                if pid not in proc_map:
+                    proc_map[pid] = {
                         "pid": pid,
                         "user": p.get("user") or "unknown",
-                        "cpu": p.get("cpu", 0.0),
-                        "mem": p.get("mem", 0.0),
+                        "cpu": float(p.get("cpu") or 0.0),
+                        "mem": float(p.get("mem") or 0.0),
+                        "state": p.get("state") or "S",
                         "cmd": p.get("comm") or p.get("cmd") or "-",
-                    })
-            return {"ok": True, "processes": merged}
+                    }
+                else:
+                    if p.get("mem") is not None:
+                        proc_map[pid]["mem"] = max(proc_map[pid]["mem"], float(p.get("mem") or 0.0))
+                    if p.get("cpu") is not None:
+                        proc_map[pid]["cpu"] = max(proc_map[pid]["cpu"], float(p.get("cpu") or 0.0))
+                    if p.get("state"):
+                        proc_map[pid]["state"] = p.get("state")
+            return {"ok": True, "processes": list(proc_map.values())}
         elif isinstance(data, list):
             return {"ok": True, "processes": data}
         return {"ok": True, "processes": []}

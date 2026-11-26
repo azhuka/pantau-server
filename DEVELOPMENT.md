@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.94
+
+Perbaikan bug kritis pada agent_pantau.py yang sebelumnya menurunkan SIGKILL/SIGSTOP/SIGCONT menjadi TERM, pelestarian field state proses serta penggabungan CPU/MEM pada GET /processes, dan penyempurnaan WorkspaceProcessesTab.vue (kolom Status R/S/T/Z, sortir kolom interaktif, tombol Refresh, proteksi proses kritis, serta penyesuaian status tombol SIGSTOP/SIGCONT).
+
+
 ### Versi v0.1.93
 
 Penyempurnaan tab Ports (WorkspacePortsTab.vue): penambahan badge klik cepat jumlah port publik, sortir kolom Proto/Port/Access, serta deteksi status Already Monitored pada menu Actions.

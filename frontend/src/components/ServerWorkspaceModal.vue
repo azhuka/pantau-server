@@ -493,7 +493,10 @@
           <WorkspaceProcessesTab
             v-else-if="activeSubTab === 'processes'"
             :processes="processesList"
+            :is-online="Boolean(server?.is_online)"
+            :is-viewer="currentUser?.role === 'viewer'"
             @kill-process="killProcess"
+            @refresh="loadServerData()"
           />
           <WorkspaceFirewallTab
             v-else-if="activeSubTab === 'firewall'"
