@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.81
+
+- **Complete OS Package Upgrade Workflow:** Added active background task banner with View Output re-attach, background completion polling/toast, toolbar busy guards, and one-click APT_FIX repair button in AptTaskRunnerModal.vue and ServerWorkspaceModal.vue.
+
+
 ### Versi v0.1.80
 
 - **Fix APT Result Sync:** Fixed ServerProblem column references (resolved_at, started_at, updated_at, last_active_at) in _sync_apt_state_from_result so APT_UPDATE and APT_UPGRADE tasks complete and sync cleanly.

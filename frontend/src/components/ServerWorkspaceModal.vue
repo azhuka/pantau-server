@@ -270,10 +270,10 @@
             <button
               v-if="userPerms.can_apt"
               @click="triggerOSUpdate"
-              :disabled="!isServerOnline(server)"
+              :disabled="!isServerOnline(server) || aptTaskRunning"
               class="px-2.5 py-1 text-xs rounded transition flex items-center gap-1.5 font-bold"
-              :class="!isServerOnline(server) ? 'text-gray-500 opacity-40 cursor-not-allowed' : 'text-emerald-400 hover:bg-emerald-950/60 cursor-pointer'"
-              :title="!isServerOnline(server) ? 'Asset is offline' : t('tooltip_update_btn')"
+              :class="(!isServerOnline(server) || aptTaskRunning) ? 'text-gray-500 opacity-40 cursor-not-allowed' : 'text-emerald-400 hover:bg-emerald-950/60 cursor-pointer'"
+              :title="!isServerOnline(server) ? 'Asset is offline' : (aptTaskRunning ? 'An OS package operation is currently running' : t('tooltip_update_btn'))"
             >
               <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
@@ -287,10 +287,10 @@
             <button
               v-if="userPerms.can_apt"
               @click="triggerOSUpgrade"
-              :disabled="!isServerOnline(server) || (server?.apt_upgradable || 0) <= 0"
+              :disabled="!isServerOnline(server) || aptTaskRunning || (server?.apt_upgradable || 0) <= 0"
               class="px-2.5 py-1 text-xs rounded transition flex items-center gap-1.5 font-bold"
-              :class="(!isServerOnline(server) || (server?.apt_upgradable || 0) <= 0) ? 'text-gray-500 opacity-40 cursor-not-allowed' : 'text-amber-300 bg-amber-950/70 border border-amber-700/60 hover:bg-amber-900/70 cursor-pointer'"
-              :title="!isServerOnline(server) ? 'Asset is offline' : ((server?.apt_upgradable || 0) <= 0 ? 'All OS packages are up-to-date' : t('tooltip_upgrade_btn'))"
+              :class="(!isServerOnline(server) || aptTaskRunning || (server?.apt_upgradable || 0) <= 0) ? 'text-gray-500 opacity-40 cursor-not-allowed' : 'text-amber-300 bg-amber-950/70 border border-amber-700/60 hover:bg-amber-900/70 cursor-pointer'"
+              :title="!isServerOnline(server) ? 'Asset is offline' : (aptTaskRunning ? 'An OS package operation is currently running' : ((server?.apt_upgradable || 0) <= 0 ? 'All OS packages are up-to-date' : t('tooltip_upgrade_btn')))"
             >
               <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -354,6 +354,26 @@
           @request-close="showTerminalCloseModal = true"
           @request-lock="showTerminalLockModal = true"
         />
+      </div>
+
+      <!-- Active Background OS Package Task Banner -->
+      <div
+        v-if="aptTaskRunning && !aptRunnerOpen"
+        class="bg-cyan-950/60 border-b border-cyan-500/40 px-4 py-2 flex items-center justify-between gap-3 text-xs font-mono shrink-0"
+      >
+        <div class="flex items-center gap-2 text-cyan-200 min-w-0">
+          <svg class="w-3.5 h-3.5 text-cyan-400 animate-spin shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>
+          </svg>
+          <span class="truncate">OS package task ({{ aptTaskUnit }}) is running in the background...</span>
+        </div>
+        <button
+          type="button"
+          @click="aptRunnerOpen = true"
+          class="px-2.5 py-1 rounded bg-cyan-800/80 hover:bg-cyan-700 text-white font-bold text-[11px] cursor-pointer shrink-0"
+        >
+          View Output
+        </button>
       </div>
 
       <!-- 3. SUB-TABS NAVIGATION BAR (Tab Taktis Ramping) -->
@@ -737,6 +757,7 @@
       @close="aptRunnerOpen = false"
       @completed="onAptTaskCompleted"
       @trigger-upgrade="triggerOSUpgrade"
+      @trigger-fix="startAptTask('APT_FIX')"
     />
   </div>
 </template>
@@ -1135,6 +1156,7 @@ async function loadServerData() {
     logsList.value = logsData.logs || []
     availableLogsList.value = logsData.available_logs || []
     fimEventsList.value = fimData.fim || []
+    checkActiveAptTask()
   } catch (err) {
     console.error('Error fetching server workspace data:', err)
   } finally {
@@ -1228,6 +1250,7 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyDown)
   stopLeaseCountdown()
+  stopAptBgPoll()
 })
 
 // Mode Pemeliharaan (Maintenance Mode)
@@ -1291,9 +1314,57 @@ async function submitMaintenance(action) {
 }
 
 const aptRunnerOpen = ref(false)
+const aptTaskRunning = ref(false)
 const aptTaskId = ref(null)
 const aptTaskUnit = ref('APT_UPDATE')
 const aptTaskDetail = ref('')
+let aptBgPollTimer = null
+
+function stopAptBgPoll() {
+  if (aptBgPollTimer) { clearInterval(aptBgPollTimer); aptBgPollTimer = null }
+}
+
+function startAptBgPoll() {
+  stopAptBgPoll()
+  aptBgPollTimer = setInterval(async () => {
+    if (!aptTaskRunning.value || aptRunnerOpen.value || !aptTaskId.value) return
+    const token = localStorage.getItem('pantau_token') || ''
+    try {
+      const res = await fetch(`/api/logs/request/${aptTaskId.value}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok && (data.status === 'success' || data.status === 'failed')) {
+        stopAptBgPoll()
+        aptTaskRunning.value = false
+        if (data.status === 'success') toast.success(`${aptTaskUnit.value} completed on ${server.value?.hostname || 'host'}`)
+        else toast.error(`${aptTaskUnit.value} failed on ${server.value?.hostname || 'host'}`)
+        await onAptTaskCompleted({ ok: data.status === 'success' })
+      }
+    } catch (_) {}
+  }, 2500)
+}
+
+async function checkActiveAptTask() {
+  if (!currentServerId.value || !userPerms.value.can_apt) return
+  const token = localStorage.getItem('pantau_token') || ''
+  try {
+    const res = await fetch(`/api/servers/${currentServerId.value}/apt/active`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+    const data = await res.json().catch(() => ({}))
+    if (res.ok && data?.active?.id) {
+      aptTaskId.value = data.active.id
+      aptTaskUnit.value = data.active.unit
+      aptTaskDetail.value = data.active.detail || ''
+      aptTaskRunning.value = true
+      startAptBgPoll()
+    } else {
+      aptTaskRunning.value = false
+      stopAptBgPoll()
+    }
+  } catch (_) {}
+}
 
 async function startAptTask(unit, detail = '') {
   if (!currentServerId.value || !isServerOnline(server.value)) return
@@ -1322,7 +1393,9 @@ async function startAptTask(unit, detail = '') {
           aptTaskId.value = activeData.active.id
           aptTaskUnit.value = activeData.active.unit
           aptTaskDetail.value = activeData.active.detail || ''
+          aptTaskRunning.value = true
           aptRunnerOpen.value = true
+          startAptBgPoll()
           return
         }
       }
@@ -1332,19 +1405,21 @@ async function startAptTask(unit, detail = '') {
     aptTaskId.value = data.id
     aptTaskUnit.value = unit
     aptTaskDetail.value = detail || ''
+    aptTaskRunning.value = true
     aptRunnerOpen.value = true
+    startAptBgPoll()
   } catch (err) {
     toast.error('Failed to start OS package operation: ' + (err.message || 'Error'))
   }
 }
 
 async function triggerOSUpdate() {
-  if (!isServerOnline(server.value)) return
+  if (!isServerOnline(server.value) || aptTaskRunning.value) return
   await startAptTask('APT_UPDATE')
 }
 
 async function triggerOSUpgrade() {
-  if (!isServerOnline(server.value) || (server.value?.apt_upgradable || 0) <= 0) return
+  if (!isServerOnline(server.value) || aptTaskRunning.value || (server.value?.apt_upgradable || 0) <= 0) return
   const ok = await confirmAction({
     title: 'Upgrade OS Packages',
     message: `Upgrade ${server.value?.apt_upgradable || 0} operating system packages on ${server.value?.hostname}?`,
@@ -1356,7 +1431,7 @@ async function triggerOSUpgrade() {
 }
 
 async function triggerPackageUpgrade(pkgName) {
-  if (!pkgName || !isServerOnline(server.value)) return
+  if (!pkgName || !isServerOnline(server.value) || aptTaskRunning.value) return
   const ok = await confirmAction({
     title: 'Upgrade Package',
     message: `Upgrade package '${pkgName}' on ${server.value?.hostname}?`,
@@ -1368,7 +1443,9 @@ async function triggerPackageUpgrade(pkgName) {
 }
 
 async function onAptTaskCompleted() {
-  await loadServerDetail()
+  aptTaskRunning.value = false
+  stopAptBgPoll()
+  await loadServerData()
   emit('refresh-problems')
   if (server.value) emit('server-updated', server.value)
 }

@@ -45,6 +45,14 @@
         <span class="text-[11px] text-gray-400 truncate">{{ footerNote }}</span>
         <div class="flex items-center gap-2 shrink-0">
           <button
+            v-if="status === 'failed' && canSuggestFix"
+            type="button"
+            @click="$emit('trigger-fix')"
+            class="px-3 py-1.5 rounded bg-rose-700 hover:bg-rose-600 text-white font-bold text-xs cursor-pointer transition"
+          >
+            Repair Packages (APT Fix)
+          </button>
+          <button
             v-if="status === 'success' && taskUnit === 'APT_UPDATE' && upgradableCount > 0"
             type="button"
             @click="$emit('trigger-upgrade')"
@@ -80,12 +88,13 @@ const props = defineProps({
   taskDetail: { type: String, default: '' },
 })
 
-const emit = defineEmits(['close', 'completed', 'trigger-upgrade'])
+const emit = defineEmits(['close', 'completed', 'trigger-upgrade', 'trigger-fix'])
 
 const termContainerRef = ref(null)
 const status = ref('running') // running | success | warning | failed
 const footerNote = ref('Dispatching command to remote agent...')
 const upgradableCount = ref(0)
+const canSuggestFix = ref(false)
 const elapsedSec = ref(0)
 
 let term = null
@@ -96,7 +105,8 @@ let lastRendered = ''
 
 const modalTitle = computed(() => {
   if (props.taskUnit === 'APT_UPDATE') return 'Update OS Package Index'
-  if (props.taskUnit === 'APT_UPGRADE') return 'Upgrade OS Packages'
+  if (props.taskUnit === 'APT_UPGRADE' || props.taskUnit === 'APT_UPGRADE_INTERACT') return 'Upgrade OS Packages'
+  if (props.taskUnit === 'APT_FIX') return 'Repair OS Packages (dpkg / apt fix)'
   if (props.taskUnit === 'PKG_UPGRADE') return `Upgrade Package: ${props.taskDetail || ''}`
   if (props.taskUnit === 'PKG_CLEAN') return 'Clean Package Cache'
   return 'OS Package Task'
@@ -199,7 +209,10 @@ async function pollTask() {
       emit('completed', { ok: true, unit: props.taskUnit, apt: parsed?.apt || null })
     } else {
       status.value = 'failed'
-      footerNote.value = parsed?.error || 'OS package operation failed.'
+      const low = (finalOut || '').toLowerCase()
+      canSuggestFix.value = props.taskUnit !== 'APT_FIX' && (low.includes('dpkg --configure -a') || low.includes('fix-broken') || low.includes('unmet dependencies'))
+      const errLine = (finalOut || '').split('\n').map(l => l.trim()).reverse().find(l => /^e:\s+/i.test(l) || /^error:\s+/i.test(l))
+      footerNote.value = parsed?.error || (errLine ? errLine.replace(/^e:\s+/i, '') : 'OS package operation failed.')
       emit('completed', { ok: false, unit: props.taskUnit, apt: parsed?.apt || null })
     }
   } catch (_) {}
@@ -212,6 +225,7 @@ watch(
     if (open && rid) {
       status.value = 'running'
       upgradableCount.value = 0
+      canSuggestFix.value = false
       elapsedSec.value = 0
       lastRendered = ''
       footerNote.value = 'Dispatching command to remote agent...'
