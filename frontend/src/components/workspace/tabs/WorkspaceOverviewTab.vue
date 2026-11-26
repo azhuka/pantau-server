@@ -198,10 +198,10 @@
           <tbody class="divide-y divide-gray-800/40">
             <tr v-for="(d, idx) in server?.metrics?.disks || []" :key="idx" class="hover:bg-cyan-950/20">
               <td class="py-2.5 text-cyan-300 font-semibold">{{ d.mount || d.mounted_on || '/' }}</td>
-              <td class="py-2.5 text-gray-400">{{ d.filesystem || d.device || '-' }}</td>
+              <td class="py-2.5 text-gray-400">{{ d.type || d.filesystem || d.device || '-' }}</td>
               <td class="py-2.5 text-gray-300">{{ formatBytes(d.total_bytes || d.total) }}</td>
               <td class="py-2.5 text-gray-300">{{ formatBytes(d.used_bytes || d.used) }}</td>
-              <td class="py-2.5 text-gray-300">{{ formatBytes(d.free_bytes || d.free || d.avail) }}</td>
+              <td class="py-2.5 text-gray-300">{{ formatBytes(d.free_bytes ?? d.free ?? d.avail ?? Math.max((d.total_bytes || d.total || 0) - (d.used_bytes || d.used || 0), 0)) }}</td>
               <td class="py-2.5">
                 <div class="flex items-center gap-2">
                   <span :class="(d.used_percent || d.percent || d.pct || 0) > 85 ? 'text-rose-400 font-bold' : 'text-emerald-400 font-bold'">
@@ -235,7 +235,7 @@
     </div>
 
     <StorageTriageModal
-      :open="storageTriageOpen"
+      :is-open="storageTriageOpen"
       :server-id="server?.id"
       :mount-path="storageTriageMount"
       @close="storageTriageOpen = false"

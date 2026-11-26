@@ -4,7 +4,15 @@
     <span class="hud-corner-bl"></span>
 
     <div class="flex items-center justify-between flex-wrap gap-2 border-b border-cyan-500/20 pb-2">
-      <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider">Performance Metric History</h3>
+      <div class="flex items-center gap-2.5">
+        <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider">Performance Metric History</h3>
+        <span v-if="loading" class="inline-flex items-center gap-1.5 text-[11px] text-cyan-300">
+          <svg class="w-3 h-3 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+          </svg>
+          <span>Loading...</span>
+        </span>
+      </div>
       <div class="flex items-center gap-1">
         <button
           v-for="r in RANGES"
@@ -45,6 +53,7 @@
           </div>
           <svg
             viewBox="0 0 360 88"
+            preserveAspectRatio="none"
             class="w-full h-[88px] overflow-visible cursor-crosshair"
             @mousemove="onHover($event)"
             @mouseleave="hoveredIdx = null"
@@ -55,11 +64,11 @@
                 <stop offset="100%" :stop-color="cfg.color" stop-opacity="0.02" />
               </linearGradient>
             </defs>
-            <line x1="0" y1="22" x2="360" y2="22" stroke="rgba(148,163,184,0.1)" stroke-dasharray="3 3" />
-            <line x1="0" y1="44" x2="360" y2="44" stroke="rgba(148,163,184,0.1)" stroke-dasharray="3 3" />
-            <line x1="0" y1="66" x2="360" y2="66" stroke="rgba(148,163,184,0.1)" stroke-dasharray="3 3" />
+            <line x1="0" y1="22" x2="360" y2="22" stroke="rgba(148,163,184,0.1)" stroke-dasharray="3 3" vector-effect="non-scaling-stroke" />
+            <line x1="0" y1="44" x2="360" y2="44" stroke="rgba(148,163,184,0.1)" stroke-dasharray="3 3" vector-effect="non-scaling-stroke" />
+            <line x1="0" y1="66" x2="360" y2="66" stroke="rgba(148,163,184,0.1)" stroke-dasharray="3 3" vector-effect="non-scaling-stroke" />
             <path :d="buildAreaPath(cfg.key, cfg.fixedMax)" :fill="`url(#grad-${cfg.key})`" />
-            <path :d="buildLinePath(cfg.key, cfg.fixedMax)" fill="none" :stroke="cfg.color" stroke-width="1.8" />
+            <path :d="buildLinePath(cfg.key, cfg.fixedMax)" fill="none" :stroke="cfg.color" stroke-width="1.8" vector-effect="non-scaling-stroke" />
             <line
               v-if="hoveredIdx !== null"
               :x1="xAt(hoveredIdx)"
@@ -68,6 +77,7 @@
               y2="84"
               stroke="rgba(226,232,240,0.45)"
               stroke-dasharray="2 2"
+              vector-effect="non-scaling-stroke"
             />
             <circle
               v-if="hoveredIdx !== null && points[hoveredIdx]?.[cfg.key] != null"
@@ -102,13 +112,14 @@
         </div>
         <svg
           viewBox="0 0 720 76"
+          preserveAspectRatio="none"
           class="w-full h-[76px] overflow-visible cursor-crosshair"
           @mousemove="onHover($event, 720)"
           @mouseleave="hoveredIdx = null"
         >
-          <line x1="0" y1="38" x2="720" y2="38" stroke="rgba(148,163,184,0.1)" stroke-dasharray="3 3" />
-          <path :d="buildLinePath('net_rx', null, 720, 72)" fill="none" stroke="#38bdf8" stroke-width="1.6" />
-          <path :d="buildLinePath('net_tx', null, 720, 72)" fill="none" stroke="#10b981" stroke-width="1.6" />
+          <line x1="0" y1="38" x2="720" y2="38" stroke="rgba(148,163,184,0.1)" stroke-dasharray="3 3" vector-effect="non-scaling-stroke" />
+          <path :d="buildLinePath('net_rx', null, 720, 72)" fill="none" stroke="#38bdf8" stroke-width="1.6" vector-effect="non-scaling-stroke" />
+          <path :d="buildLinePath('net_tx', null, 720, 72)" fill="none" stroke="#10b981" stroke-width="1.6" vector-effect="non-scaling-stroke" />
           <line
             v-if="hoveredIdx !== null"
             :x1="xAt(hoveredIdx, 720)"
@@ -117,6 +128,7 @@
             y2="72"
             stroke="rgba(226,232,240,0.45)"
             stroke-dasharray="2 2"
+            vector-effect="non-scaling-stroke"
           />
         </svg>
       </div>
