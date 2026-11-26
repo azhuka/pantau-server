@@ -71,11 +71,21 @@
           </div>
         </div>
 
-        <div class="flex justify-end gap-2 pt-3 border-t border-gray-800">
-          <button type="button" @click="$emit('close')" class="px-3 py-1.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 cursor-pointer">Cancel</button>
-          <button type="submit" :disabled="saving" class="px-4 py-1.5 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold cursor-pointer disabled:opacity-50">
-            {{ saving ? 'Saving...' : 'Save Probe' }}
+        <div class="flex items-center justify-between gap-2 pt-3 border-t border-gray-800">
+          <button
+            type="button"
+            @click="testAdhoc"
+            :disabled="testing || !form.target"
+            class="px-3 py-1.5 rounded bg-gray-900 hover:bg-cyan-950 text-cyan-300 border border-cyan-800 cursor-pointer disabled:opacity-40"
+          >
+            {{ testing ? 'Testing...' : 'Test Connection' }}
           </button>
+          <div class="flex gap-2">
+            <button type="button" @click="$emit('close')" class="px-3 py-1.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 cursor-pointer">Cancel</button>
+            <button type="submit" :disabled="saving" class="px-4 py-1.5 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold cursor-pointer disabled:opacity-50">
+              {{ saving ? 'Saving...' : 'Save Probe' }}
+            </button>
+          </div>
         </div>
       </form>
     </div>
@@ -95,6 +105,26 @@ const props = defineProps({
 const emit = defineEmits(['close', 'saved'])
 const toast = useToast()
 const saving = ref(false)
+const testing = ref(false)
+
+async function testAdhoc() {
+  if (!form.value.target) return
+  testing.value = true
+  try {
+    const res = await apiFetch('/api/probes/test-adhoc', { method: 'POST', body: JSON.stringify(form.value) })
+    const data = await res.json()
+    const r = data.result || {}
+    if (r.status === 'up' || r.status === 'degraded') {
+      toast.success(`Reachable (${r.status.toUpperCase()}) · ${Math.round(r.latency_ms || 0)} ms`)
+    } else {
+      toast.error(r.error_message || data.detail || 'Target unreachable')
+    }
+  } catch (err) {
+    toast.error(err.message || 'Connection test failed')
+  } finally {
+    testing.value = false
+  }
+}
 
 const defaultForm = () => ({
   name: '',

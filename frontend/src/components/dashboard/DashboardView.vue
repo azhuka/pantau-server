@@ -409,6 +409,20 @@
             </button>
           </div>
 
+          <!-- Wallboard Kiosk Mode Toggle -->
+          <button
+            type="button"
+            @click="toggleKioskMode"
+            class="px-2.5 py-1 rounded border border-cyan-900/50 bg-[#060a14] text-gray-300 hover:text-cyan-300 hover:border-cyan-500/50 text-xs transition cursor-pointer inline-flex items-center gap-1.5"
+            title="Toggle NOC Wallboard Fullscreen"
+          >
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+              <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+            </svg>
+            <span class="hidden sm:inline">Wallboard</span>
+          </button>
+
           <!-- Group Filter Dropdown (Includes Ungrouped Option) -->
           <select
             v-model="selectedGroup"
@@ -1050,6 +1064,14 @@ const clockDateStr = ref('')
 const clockHours = ref('00')
 const clockMinutes = ref('00')
 const clockSeconds = ref('00')
+
+function toggleKioskMode() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen?.().catch(() => {})
+  } else {
+    document.exitFullscreen?.().catch(() => {})
+  }
+}
 const currentTime = ref('')
 const currentUtcTime = ref('')
 let clockTimer = null

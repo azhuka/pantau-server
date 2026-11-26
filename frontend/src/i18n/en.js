@@ -916,4 +916,6 @@ export default {
   th_tty: 'TTY',
   th_source_ip: 'Source IP',
   th_command_details: 'Command / Details',
+  th_status_code: 'Code',
+  th_details: 'Details',
 }

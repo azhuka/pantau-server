@@ -297,6 +297,18 @@
             </svg>
             <span>Storage Analysis</span>
           </button>
+          <!-- Open Terminal Here -->
+          <button
+            type="button"
+            @click="$emit('open-terminal', currentPath)"
+            class="px-2.5 py-1 rounded bg-gray-900 hover:bg-cyan-950 text-emerald-300 border border-emerald-800/70 hover:border-emerald-500 transition flex items-center gap-1 cursor-pointer font-bold"
+            title="Open Web Terminal at current path"
+          >
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>
+            </svg>
+            <span>Terminal</span>
+          </button>
           <!-- Paste (visible when clipboard has items) -->
           <button
             v-if="clipboard && clipboard.items && clipboard.items.length > 0"

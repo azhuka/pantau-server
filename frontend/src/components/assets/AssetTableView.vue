@@ -422,6 +422,7 @@
     <EditHostModal
       :is-open="isEditHostOpen"
       :server="selectedServer"
+      :current-user="currentUser"
       @close="isEditHostOpen = false"
       @updated="onHostUpdated"
     />

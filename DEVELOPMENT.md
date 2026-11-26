@@ -571,6 +571,16 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.71
+
+Menambahkan riwayat & grafik latensi Probe, tes koneksi ad-hoc sebelum simpan, mode Wallboard fullscreen di Dasbor, pintasan buka Terminal dari File Manager, serta rotasi API Key agen di Edit Asset.
+
+
+### Versi v0.1.71
+
+Menambahkan riwayat & grafik latensi Probe, tes koneksi ad-hoc sebelum simpan, mode Wallboard fullscreen di Dasbor, pintasan buka Terminal dari File Manager, serta rotasi API Key agen di Edit Asset.
+
+
 ### Versi v0.1.70
 
 Perbaikan keamanan remote File Manager RPC, penonaktifan terminal/exec lokal, pengetatan RBAC & SSRF, perbaikan navigasi & modal UI, Activity Console, Theme Customizer, Storage Analysis, dan User Activity.

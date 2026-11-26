@@ -851,4 +851,6 @@ export default {
   th_tty: 'TTY',
   th_source_ip: 'IP Sumber',
   th_command_details: 'Perintah / Detail',
+  th_status_code: 'Kode',
+  th_details: 'Detail',
 }

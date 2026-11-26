@@ -89,6 +89,7 @@
     <Teleport to="body">
       <div v-if="activeProbe" class="fixed inset-0 z-[9998]" @click="activeProbe = null">
         <div :style="dropdownStyle" class="fixed z-[9999] w-40 bg-[#080d19] border border-cyan-500/50 rounded-lg shadow-2xl py-1 text-xs font-mono" @click.stop>
+          <button @click="historyProbe = activeProbe; activeProbe = null" class="w-full text-left px-3 py-1.5 hover:bg-cyan-950/60 text-gray-200 cursor-pointer">History &amp; Latency</button>
           <button @click="testNow(activeProbe); activeProbe = null" class="w-full text-left px-3 py-1.5 hover:bg-cyan-950/60 text-cyan-300 cursor-pointer">Test Now</button>
           <button @click="toggleProbe(activeProbe); activeProbe = null" class="w-full text-left px-3 py-1.5 hover:bg-cyan-950/60 text-amber-300 cursor-pointer">{{ activeProbe.is_active ? 'Pause' : 'Resume' }}</button>
           <button @click="openEditModal(activeProbe); activeProbe = null" class="w-full text-left px-3 py-1.5 hover:bg-cyan-950/60 text-gray-200 cursor-pointer">Edit</button>
@@ -98,6 +99,7 @@
     </Teleport>
 
     <ProbeModal :is-open="showModal" :editing-probe="editingProbe" :servers="servers" @close="showModal = false" @saved="fetchProbes" />
+    <ProbeHistoryModal :is-open="Boolean(historyProbe)" :probe="historyProbe" @close="historyProbe = null" />
   </div>
 </template>
 
@@ -109,6 +111,7 @@ import { formatRelativeTime } from '../../utils/formatters'
 import { useToast } from '../../utils/useToast'
 import NocTablePagination from '../common/NocTablePagination.vue'
 import ProbeModal from './ProbeModal.vue'
+import ProbeHistoryModal from './ProbeHistoryModal.vue'
 
 const { t } = useI18n()
 
@@ -126,6 +129,7 @@ const currentPage = ref(1)
 const pageSize = ref(10)
 const showModal = ref(false)
 const editingProbe = ref(null)
+const historyProbe = ref(null)
 const activeProbe = ref(null)
 const dropdownStyle = ref({})
 

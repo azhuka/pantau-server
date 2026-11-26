@@ -85,6 +85,31 @@
           </select>
         </div>
 
+        <!-- Master Admin: Regenerate Agent API Key -->
+        <div v-if="currentUser?.is_master_admin" class="pt-3 border-t border-cyan-900/40 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-bold text-amber-300 uppercase">Agent API Key</span>
+            <button
+              type="button"
+              @click="regenerateKey"
+              :disabled="regenerating"
+              class="px-3 py-1 rounded bg-amber-950/70 hover:bg-amber-900 text-amber-300 border border-amber-700/60 text-[11px] font-bold transition cursor-pointer disabled:opacity-40"
+            >
+              {{ regenerating ? 'Rotating...' : 'Regenerate API Key' }}
+            </button>
+          </div>
+          <div v-if="newApiKey" class="p-2.5 rounded bg-emerald-950/50 border border-emerald-700/60 flex items-center justify-between gap-2">
+            <code class="text-[11px] text-emerald-300 break-all select-all">{{ newApiKey }}</code>
+            <button
+              type="button"
+              @click="copyNewKey"
+              class="px-2 py-1 rounded bg-emerald-800 hover:bg-emerald-700 text-white text-[10px] font-bold shrink-0 cursor-pointer"
+            >
+              Copy
+            </button>
+          </div>
+        </div>
+
         <!-- Action Buttons -->
         <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-cyan-900/60">
           <button
@@ -113,13 +138,17 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { useI18n } from '../../../i18n'
-import { useToast } from '../../../utils/useToast'
+import { confirmAction, useToast } from '../../../utils/useToast'
 
 const toast = useToast()
 
 const props = defineProps({
   isOpen: Boolean,
   server: {
+    type: Object,
+    default: null
+  },
+  currentUser: {
     type: Object,
     default: null
   }
@@ -129,6 +158,8 @@ const emit = defineEmits(['close', 'updated'])
 const { t } = useI18n()
 
 const submitting = ref(false)
+const regenerating = ref(false)
+const newApiKey = ref('')
 const form = ref({
   hostname: '',
   ip_address: '',
@@ -138,6 +169,7 @@ const form = ref({
 })
 
 watch(() => props.server, (s) => {
+  newApiKey.value = ''
   if (s) {
     form.value = {
       hostname: s.hostname || '',
@@ -174,5 +206,36 @@ async function saveHost() {
   } finally {
     submitting.value = false
   }
+}
+
+async function regenerateKey() {
+  if (!props.server?.id) return
+  const ok = await confirmAction({
+    title: 'Regenerate Agent API Key',
+    message: `Rotate the API key for ${props.server.hostname}? The current agent key will stop working until updated.`,
+    variant: 'danger',
+  })
+  if (!ok) return
+  regenerating.value = true
+  try {
+    const token = localStorage.getItem('pantau_token')
+    const res = await fetch(`/api/servers/${props.server.id}/regenerate-key`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.detail || 'Failed to regenerate API key')
+    newApiKey.value = data.api_key
+    toast.success('New API key generated. Copy it now — it is shown only once.')
+  } catch (err) {
+    toast.error(err.message)
+  } finally {
+    regenerating.value = false
+  }
+}
+
+function copyNewKey() {
+  if (!newApiKey.value) return
+  navigator.clipboard.writeText(newApiKey.value).then(() => toast.success('API key copied to clipboard'))
 }
 </script>
