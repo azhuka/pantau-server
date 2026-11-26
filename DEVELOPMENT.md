@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.74
+
+- **Clean Main Navigation Tabs:** Removed all counter and status indicator badges from the main navigation tabs in Navbar.vue so every primary tab displays clean text only.
+
+
 ### Versi v0.1.73
 
 - **Streamlined Main Navigation Tabs:** Removed Probing, Maintenance, and Status Page tabs from  and , deleted their unused frontend components, and updated keyboard hotkeys (–) to map directly to Dashboard, Incidents, Asset Inventory, Audit Trail, and Settings.
