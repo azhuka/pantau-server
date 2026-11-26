@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.99
+
+Perbaikan bug Bad Unicode escape in JSON at position 60000 pada agent_pantau.py: memangkas daftar entri logins sebelum json.dumps() alih-alih memotong string JSON mentah [:60000] agar payload USER_ACTIVITY selalu valid.
+
+
 ### Versi v0.1.98
 
 Penyempurnaan penuh tab Users & SSH: penyimpanan system_groups di telemetry_service.py, penyelarasan aksi user_create/lock/unlock/delete di servers.py & agent_pantau.py, penyamaran password pada AuditLog, serta pembaruan WorkspaceAccountsTab.vue + WorkspaceGroupsTable.vue dengan sub-nav Users/Groups, filter kategori, form Add User, badge Sudoer/Locked, dan menu Actions.

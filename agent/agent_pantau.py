@@ -9622,8 +9622,13 @@ def poll_log_requests(cfg: dict):
                     if e.get("user") == username
                     or e.get("user", "").endswith(" " + username)
                 ]
-                text = json.dumps({"logins": logins})
-                result = {"status": "success", "result": text[:60000]}
+                text = json.dumps({"logins": logins}, ensure_ascii=False)
+                while len(text) > 60000 and logins:
+                    # Trim oldest entries safely so JSON remains 100% valid
+                    step = max(1, len(logins) // 5)
+                    logins = logins[:-step]
+                    text = json.dumps({"logins": logins}, ensure_ascii=False)
+                result = {"status": "success", "result": text}
                 print(f"[LOG] Aktivitas user '{username}' -> {result['status']} "
                       f"({len(logins)} entri login/sudo)")
             except Exception as e:
