@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.103
+
+Penyempurnaan penuh File Integrity Monitoring (FIM): penyerapan payload fim ke tabel fim_paths & fim_events di telemetry_service.py, perbaikan GET /{sid}/fim + endpoint ack/ack-all serta izin fim_path_add/fim_path_remove di servers.py, dan pembaruan WorkspaceFimTab.vue dengan kartu Monitored Paths (+ Add Path, Scan, Copy SHA-256, Rebaseline, Remove) serta Integrity Change History (filter New/Ack, Ack, Acknowledge All).
+
+
 ### Versi v0.1.102
 
 Penyempurnaan penuh tab Cron Jobs: perbaikan pemetaan cron_run -> cron_run_now serta penambahan izin cron_add/cron_toggle/cron_delete di servers.py, serta pembaruan WorkspaceCronTab.vue dengan form Add Cron Job (preset jadwal), kolom Status & badge Managed, menu Actions (Run Now, Pause/Enable, Delete), dan tabel Systemd Timers.

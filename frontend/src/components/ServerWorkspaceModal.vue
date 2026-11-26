@@ -526,8 +526,13 @@
           />
           <WorkspaceFimTab
             v-else-if="activeSubTab === 'fim'"
+            :fim-paths="fimPathsList"
             :fim-events="fimEventsList"
+            :is-online="Boolean(server?.is_online)"
+            :is-viewer="currentUser?.role === 'viewer'"
             @fim-action="handleGenericAction"
+            @fim-ack="handleFimAck"
+            @fim-ack-all="handleFimAckAll"
           />
           <WorkspacePackagesTab
             v-else-if="activeSubTab === 'packages'"
@@ -1044,6 +1049,7 @@ const packagesList = ref([])
 const sslCertsList = ref([])
 const logsList = ref([])
 const availableLogsList = ref([])
+const fimPathsList = ref([])
 const fimEventsList = ref([])
 
 const serviceSearch = ref('')
@@ -1084,7 +1090,7 @@ const canAccessTab = (tabId) => {
   if (tabId === 'packages') return Boolean(userPerms.value.can_apt)
   if (tabId === 'ssl') return Boolean(userPerms.value.can_ssl)
   if (tabId === 'logs') return Boolean(userPerms.value.can_audit || userPerms.value.can_services)
-  if (tabId === 'fim') return Boolean(userPerms.value.can_audit)
+  if (tabId === 'fim') return Boolean(userPerms.value.can_audit || props.currentUser?.role === 'viewer')
   return true
 }
 
@@ -1236,7 +1242,8 @@ async function loadServerData() {
     sslCertsList.value = sslData.certs || []
     logsList.value = logsData.logs || []
     availableLogsList.value = logsData.available_logs || []
-    fimEventsList.value = fimData.fim || []
+    fimPathsList.value = fimData.paths || []
+    fimEventsList.value = fimData.events || fimData.fim || []
     checkActiveAptTask()
   } catch (err) {
     console.error('Error fetching server workspace data:', err)
@@ -1658,6 +1665,32 @@ async function handleFirewallPort({ port, rule }) {
 
 async function handleGenericAction({ action, params }) {
   await dispatchAction(action, params)
+}
+
+async function handleFimAck(eventId) {
+  const token = localStorage.getItem('pantau_token')
+  try {
+    const res = await fetch(`/api/servers/${currentServerId.value}/fim/${eventId}/ack`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    const data = await res.json()
+    if (res.ok && data.ok) { toast.success(data.message); loadServerData() }
+    else { toast.error(data.detail || 'Failed to acknowledge FIM event') }
+  } catch (err) { toast.error(t('msg_conn_failed') + err.message) }
+}
+
+async function handleFimAckAll() {
+  const token = localStorage.getItem('pantau_token')
+  try {
+    const res = await fetch(`/api/servers/${currentServerId.value}/fim/ack-all`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    const data = await res.json()
+    if (res.ok && data.ok) { toast.success(data.message); loadServerData() }
+    else { toast.error(data.detail || 'Failed to acknowledge FIM events') }
+  } catch (err) { toast.error(t('msg_conn_failed') + err.message) }
 }
 
 async function handleUserAction({ action, params }) {

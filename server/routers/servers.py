@@ -13,6 +13,7 @@ from routers.auth import get_current_user
 from models.user import User
 from models.server import Server, ServerExtras, SystemSnapshot, SysSnapshotHour, Service, Metric
 from models.problem import ServerProblem
+from models.fim import FIMPath, FIMEvent
 from models.command import Command
 from models.misc import AuditLog
 from services.problem_service import check_all_servers_stale, sync_maintenance_state
@@ -1024,6 +1025,8 @@ _ACTION_PERMISSION_MAP = {
     "apt_upgrade": "can_apt",
     "fim_scan": "can_audit",
     "fim_rebaseline": "can_audit",
+    "fim_path_add": "can_audit",
+    "fim_path_remove": "can_audit",
     "update_agent": "can_ota",
     "restart_agent": "can_ota",
 }
@@ -1474,17 +1477,100 @@ def get_server_logs(sid: int, user: User = Depends(get_current_user), db: Sessio
 
 @router.get("/{sid}/fim")
 def get_server_fim(sid: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Return File Integrity Monitoring (FIM) monitored paths and change events."""
     check_server_access(user, sid)
-    if not (user.is_master_admin or user.has_perm("can_audit")):
+    if not (user.is_master_admin or user.is_viewer() or user.has_perm("can_audit")):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied: Security/FIM audit permission is required")
-    extras = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
-    if not extras or not extras.security:
-        return {"ok": True, "fim": []}
-    try:
-        data = json.loads(extras.security)
-        return {"ok": True, "fim": data}
-    except Exception:
-        return {"ok": True, "fim": []}
+
+    paths = (
+        db.query(FIMPath)
+        .filter(FIMPath.server_id == sid, FIMPath.is_active == 1)
+        .order_by(FIMPath.category.asc(), FIMPath.path.asc())
+        .all()
+    )
+    events = (
+        db.query(FIMEvent)
+        .filter(FIMEvent.server_id == sid)
+        .order_by(desc(FIMEvent.detected_at))
+        .limit(200)
+        .all()
+    )
+    return {
+        "ok": True,
+        "paths": [
+            {
+                "id": fp.id,
+                "path": fp.path,
+                "category": fp.category,
+                "status": fp.status,
+                "size_bytes": fp.size_bytes,
+                "size_human": fp.size_human,
+                "size_detail": fp.size_detail,
+                "sha256_hash": fp.sha256_hash,
+                "permissions": fp.permissions,
+                "owner_group": fp.owner_group,
+                "last_checked_at": fp.last_checked_at.isoformat() if fp.last_checked_at else None,
+            }
+            for fp in paths
+        ],
+        "events": [
+            {
+                "id": ev.id,
+                "path": ev.path,
+                "event_type": ev.event_type,
+                "severity": ev.severity,
+                "details": ev.details,
+                "detected_at": ev.detected_at.isoformat() if ev.detected_at else None,
+                "acknowledged": bool(ev.acknowledged),
+                "acknowledged_by": ev.acknowledged_by,
+            }
+            for ev in events
+        ],
+    }
+
+
+@router.post("/{sid}/fim/{event_id}/ack")
+def acknowledge_fim_event(
+    sid: int,
+    event_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Acknowledge a single FIM change event."""
+    check_server_access(user, sid)
+    if user.is_viewer() or not (user.is_master_admin or user.has_perm("can_audit")):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied: Security/FIM audit permission is required")
+    ev = db.query(FIMEvent).filter(FIMEvent.id == event_id, FIMEvent.server_id == sid).first()
+    if not ev:
+        raise HTTPException(status_code=404, detail="FIM event not found")
+    ev.acknowledged = 1
+    ev.acknowledged_at = datetime.utcnow()
+    ev.acknowledged_by = user.username
+    db.commit()
+    return {"ok": True, "message": "FIM event acknowledged."}
+
+
+@router.post("/{sid}/fim/ack-all")
+def acknowledge_all_fim_events(
+    sid: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Acknowledge all unacknowledged FIM events for this server."""
+    check_server_access(user, sid)
+    if user.is_viewer() or not (user.is_master_admin or user.has_perm("can_audit")):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied: Security/FIM audit permission is required")
+    now = datetime.utcnow()
+    updated = (
+        db.query(FIMEvent)
+        .filter(FIMEvent.server_id == sid, FIMEvent.acknowledged == 0)
+        .update(
+            {FIMEvent.acknowledged: 1, FIMEvent.acknowledged_at: now, FIMEvent.acknowledged_by: user.username},
+            synchronize_session=False,
+        )
+    )
+    db.commit()
+    return {"ok": True, "acknowledged_count": updated, "message": f"Acknowledged {updated} FIM events."}
 
 
 @router.post("")

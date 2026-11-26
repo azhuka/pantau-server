@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from models.command import Command
 from models.misc import AuditLog
 from models.server import Server, ServerExtras, Service, SystemSnapshot, Metric
+from models.fim import FIMPath, FIMEvent
 from services.problem_service import evaluate_server_problems
 
 from core.utils import hash_api_key
@@ -183,6 +184,60 @@ def process_telemetry_report(db: Session, api_key: str, report_dict: dict) -> di
         extras.listening_ports = _to_json(report_dict["listening_ports"])
     if "ssl_certs" in report_dict:
         extras.ssl_certs = _to_json(report_dict["ssl_certs"])
+
+    # Ingest File Integrity Monitoring (FIM) paths & events
+    fim_payload = report_dict.get("fim")
+    if isinstance(fim_payload, dict):
+        raw_paths = fim_payload.get("paths") or []
+        if isinstance(raw_paths, list) and raw_paths:
+            existing_paths = {
+                fp.path: fp
+                for fp in db.query(FIMPath).filter(FIMPath.server_id == srv.id).all()
+            }
+            seen_p = set()
+            for item in raw_paths[:200]:
+                if not isinstance(item, dict):
+                    continue
+                p_str = str(item.get("path") or "").strip()[:500]
+                if not p_str:
+                    continue
+                seen_p.add(p_str)
+                fp = existing_paths.get(p_str)
+                if not fp:
+                    fp = FIMPath(server_id=srv.id, path=p_str)
+                    db.add(fp)
+                fp.category = str(item.get("category") or "system")[:20]
+                fp.status = str(item.get("status") or "VALID")[:20]
+                fp.size_bytes = int(item.get("size_bytes") or item.get("size") or 0)
+                fp.size_human = str(item.get("size_human") or "")[:50] or None
+                fp.size_detail = str(item.get("size_detail") or "")[:100] or None
+                fp.sha256_hash = str(item.get("sha256") or item.get("sha256_hash") or "")[:64] or None
+                fp.permissions = str(item.get("permissions") or "")[:30] or None
+                fp.owner_group = str(item.get("owner_group") or "")[:60] or None
+                fp.last_checked_at = now
+                fp.is_active = 1
+            for old_p, old_fp in existing_paths.items():
+                if old_p not in seen_p:
+                    old_fp.is_active = 0
+
+        raw_events = fim_payload.get("events") or []
+        if isinstance(raw_events, list):
+            for ev in raw_events[:100]:
+                if not isinstance(ev, dict):
+                    continue
+                epath = str(ev.get("path") or "").strip()[:500]
+                etype = str(ev.get("event_type") or "MODIFIED").strip()[:50]
+                if not epath:
+                    continue
+                db.add(FIMEvent(
+                    server_id=srv.id,
+                    path=epath,
+                    event_type=etype,
+                    severity=str(ev.get("severity") or "warning")[:20],
+                    details=str(ev.get("details") or "")[:1000] or None,
+                    detected_at=now,
+                    acknowledged=0,
+                ))
 
     hw_specs = report_dict.get("hardware_specs") or report_dict.get("hardware")
     if hw_specs is not None:
