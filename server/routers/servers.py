@@ -11,7 +11,7 @@ from core.database import get_db
 from core.security import verify_password
 from routers.auth import get_current_user
 from models.user import User
-from models.server import Server, ServerExtras, SystemSnapshot, Service
+from models.server import Server, ServerExtras, SystemSnapshot, SysSnapshotHour, Service
 from models.problem import ServerProblem
 from models.command import Command
 from models.misc import AuditLog
@@ -1503,3 +1503,135 @@ def ack_all_fim_events(
     ))
     db.commit()
     return {"ok": True, "acknowledged_count": updated}
+
+
+def _extract_max_disk_pct(disks_raw) -> float | None:
+    if not disks_raw:
+        return None
+    try:
+        items = json.loads(disks_raw) if isinstance(disks_raw, str) else disks_raw
+        if not isinstance(items, list) or not items:
+            return None
+        pcts = []
+        for d in items:
+            if isinstance(d, dict):
+                val = d.get("used_percent") or d.get("percent") or d.get("pct")
+                if val is not None:
+                    pcts.append(float(val))
+        return round(max(pcts), 1) if pcts else None
+    except Exception:
+        return None
+
+
+def _extract_net_bps(net_raw) -> tuple[float, float]:
+    if not net_raw:
+        return 0.0, 0.0
+    try:
+        items = json.loads(net_raw) if isinstance(net_raw, str) else net_raw
+        if not isinstance(items, list):
+            return 0.0, 0.0
+        rx, tx = 0.0, 0.0
+        for iface in items:
+            if isinstance(iface, dict):
+                name = str(iface.get("name") or "")
+                if name == "lo" or name.startswith(("veth", "br-", "docker")):
+                    continue
+                rx += float(iface.get("rx_bps") or iface.get("rx_bytes_sec") or 0.0)
+                tx += float(iface.get("tx_bps") or iface.get("tx_bytes_sec") or 0.0)
+        return round(rx, 1), round(tx, 1)
+    except Exception:
+        return 0.0, 0.0
+
+
+@router.get("/{sid}/perf")
+def get_server_perf_history(
+    sid: int,
+    range: str = "24h",
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Return downsampled performance telemetry history (hourly rollups + raw snapshots)."""
+    check_server_access(user, sid)
+    server = db.query(Server).filter(Server.id == sid, Server.is_active == 1).first()
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+
+    now = datetime.utcnow()
+    if range == "today":
+        start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        span = max(now - start, timedelta(minutes=5))
+    else:
+        span = {
+            "1h": timedelta(hours=1),
+            "6h": timedelta(hours=6),
+            "24h": timedelta(hours=24),
+            "7d": timedelta(days=7),
+            "30d": timedelta(days=30),
+        }.get(range)
+        if not span:
+            raise HTTPException(status_code=400, detail="Unsupported range parameter")
+        start = now - span
+
+    points: list[dict] = []
+    if span <= timedelta(hours=24):
+        raw_from = start
+    else:
+        cutoff_raw = now - timedelta(hours=24)
+        hour_rows = (
+            db.query(SysSnapshotHour)
+            .filter(
+                SysSnapshotHour.server_id == sid,
+                SysSnapshotHour.bucket >= start,
+                SysSnapshotHour.bucket < cutoff_raw,
+            )
+            .order_by(SysSnapshotHour.bucket.asc())
+            .all()
+        )
+        for h in hour_rows:
+            mem_pct = round((h.mem_used_avg / h.mem_total) * 100.0, 1) if h.mem_total and h.mem_used_avg is not None else None
+            points.append({
+                "t": int(h.bucket.timestamp()),
+                "cpu": round(h.cpu_avg, 1) if h.cpu_avg is not None else None,
+                "mem_pct": mem_pct,
+                "disk": round(h.disk_max_pct, 1) if h.disk_max_pct is not None else None,
+                "load1": round(h.load1_avg, 2) if h.load1_avg is not None else None,
+                "net_rx": 0.0,
+                "net_tx": 0.0,
+            })
+        raw_from = cutoff_raw
+
+    step_secs = max(int(span.total_seconds() / 120), 30)
+    raw_rows = (
+        db.query(
+            (func.floor(func.unix_timestamp(SystemSnapshot.timestamp) / step_secs) * step_secs).label("tb"),
+            func.avg(SystemSnapshot.cpu),
+            func.avg(SystemSnapshot.load1),
+            func.max(SystemSnapshot.mem_total),
+            func.avg(SystemSnapshot.mem_used),
+            func.max(SystemSnapshot.disks),
+            func.max(SystemSnapshot.net),
+        )
+        .filter(
+            SystemSnapshot.server_id == sid,
+            SystemSnapshot.timestamp >= raw_from,
+            SystemSnapshot.timestamp <= now,
+        )
+        .group_by("tb")
+        .order_by("tb")
+        .all()
+    )
+
+    for tb_stamp, cpu_avg, load1_avg, mem_total, mem_used, disks_raw, net_raw in raw_rows:
+        mem_pct = round((float(mem_used) / float(mem_total)) * 100.0, 1) if mem_total and mem_used is not None else None
+        rx_bps, tx_bps = _extract_net_bps(net_raw)
+        points.append({
+            "t": int(tb_stamp),
+            "cpu": round(float(cpu_avg), 1) if cpu_avg is not None else None,
+            "mem_pct": mem_pct,
+            "disk": _extract_max_disk_pct(disks_raw),
+            "load1": round(float(load1_avg), 2) if load1_avg is not None else None,
+            "net_rx": rx_bps,
+            "net_tx": tx_bps,
+        })
+
+    return {"ok": True, "range": range, "points": points}

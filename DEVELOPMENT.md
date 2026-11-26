@@ -571,6 +571,16 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.84
+
+- **Performance History Charts & Storage Analysis:** Added GET /api/servers/{sid}/perf in server/routers/servers.py, created WorkspacePerfCharts.vue (2x2 symmetrical grid + standalone Network Throughput card with range selector and interactive hover crosshair), wired StorageTriageModal to Disk Partitions in WorkspaceOverviewTab.vue, and removed // prefixes.
+
+
+### Versi v0.1.84
+
+- **Performance History Charts & Storage Analysis:** Added GET /api/servers/{sid}/perf in server/routers/servers.py, created WorkspacePerfCharts.vue (2x2 symmetrical grid + standalone Network Throughput card with range selector and interactive hover crosshair), wired StorageTriageModal to Disk Partitions in WorkspaceOverviewTab.vue, and removed // prefixes.
+
+
 ### Versi v0.1.83
 
 - **Power Off & Proxmox HA Auto-Detection:** Implemented Proxmox HA auto-revive detection in telemetry_service.py (auto-enables is_proxmox_ha=1 when a host revives within 5 minutes of poweroff_host with uptime <180s) and kept operator-initiated poweroff_host incidents visible as active warning (is_ignored=0) per blueprint.

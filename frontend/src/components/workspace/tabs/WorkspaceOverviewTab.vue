@@ -79,7 +79,7 @@
         <span class="hud-corner-tr"></span>
         <span class="hud-corner-bl"></span>
         <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider mb-2.5">
-          // {{ t('ws_hw_specs') }}
+          {{ t('ws_hw_specs') }}
         </h3>
         <div class="grid grid-cols-2 gap-3 text-xs">
           <div>
@@ -142,7 +142,7 @@
         <div>
           <div class="flex items-center justify-between mb-2">
             <h3 class="text-xs font-bold text-purple-400 uppercase tracking-wider">
-              // HOST DESCRIPTION &amp; NOTES
+              HOST DESCRIPTION &amp; NOTES
             </h3>
             <span class="text-[10px] text-gray-500">OPERATOR MEMO</span>
           </div>
@@ -157,12 +157,15 @@
       </div>
     </div>
 
+    <!-- Performance Metric History (2x2 Grid + Network Throughput) -->
+    <WorkspacePerfCharts :server-id="server?.id" />
+
     <!-- Partisi Penyimpanan (Disks Table) -->
     <div class="hud-tactical-card rounded-xl p-4">
       <span class="hud-corner-tr"></span>
       <span class="hud-corner-bl"></span>
       <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider mb-3">
-        // {{ t('ws_disk_partitions') }}
+        {{ t('ws_disk_partitions') }}
       </h3>
       <div class="overflow-x-auto">
         <table class="w-full text-left text-xs border-collapse">
@@ -174,6 +177,7 @@
               <th class="pb-2">{{ t('ws_col_used') || 'Used' }}</th>
               <th class="pb-2">{{ t('ws_col_avail') || 'Avail' }}</th>
               <th class="pb-2 min-w-[140px]">{{ t('col_util_pct') || 'Util (%)' }}</th>
+              <th class="pb-2 text-center w-20">{{ t('col_actions') || 'Actions' }}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-800/40">
@@ -196,17 +200,40 @@
                   </div>
                 </div>
               </td>
+              <td class="py-2.5 text-center">
+                <button
+                  type="button"
+                  @click="openStorageAnalysis(d.mount || d.mounted_on || '/')"
+                  class="inline-flex items-center justify-center rounded border border-cyan-800/60 bg-cyan-950/50 text-cyan-300 hover:bg-cyan-900/70 hover:text-white transition cursor-pointer"
+                  style="width: 26px; height: 26px; min-width: 26px; border-radius: 4px;"
+                  :title="`Analyze Storage on ${d.mount || d.mounted_on || '/'}`"
+                >
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                  </svg>
+                </button>
+              </td>
             </tr>
           </tbody>
         </table>
       </div>
     </div>
+
+    <StorageTriageModal
+      :open="storageTriageOpen"
+      :server-id="server?.id"
+      :mount-path="storageTriageMount"
+      @close="storageTriageOpen = false"
+    />
   </div>
 </template>
 
 <script setup>
+import { ref } from 'vue'
 import { useI18n } from '../../../i18n'
 import { formatBytes, formatUptime } from '../../../utils/formatters'
+import WorkspacePerfCharts from './WorkspacePerfCharts.vue'
+import StorageTriageModal from '../StorageTriageModal.vue'
 
 const { t } = useI18n()
 
@@ -214,4 +241,12 @@ defineProps({
   server: { type: Object, default: () => ({}) },
   processesCount: { type: Number, default: 0 }
 })
+
+const storageTriageOpen = ref(false)
+const storageTriageMount = ref('/')
+
+function openStorageAnalysis(mount) {
+  storageTriageMount.value = mount || '/'
+  storageTriageOpen.value = true
+}
 </script>
