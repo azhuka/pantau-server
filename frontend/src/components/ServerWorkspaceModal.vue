@@ -306,8 +306,10 @@
             <button
               v-if="userPerms.can_server_control"
               @click="openGuardrailConfirm('reboot')"
-              class="px-2.5 py-1 text-xs text-amber-400 hover:bg-amber-950/60 rounded transition cursor-pointer flex items-center gap-1.5 font-bold"
-              :title="t('tooltip_reboot_btn')"
+              :disabled="!isServerOnline(server)"
+              class="px-2.5 py-1 text-xs rounded transition flex items-center gap-1.5 font-bold"
+              :class="!isServerOnline(server) ? 'text-gray-500 opacity-40 cursor-not-allowed' : 'text-amber-400 hover:bg-amber-950/60 cursor-pointer'"
+              :title="!isServerOnline(server) ? 'Asset is offline' : t('tooltip_reboot_btn')"
             >
               <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
@@ -332,8 +334,10 @@
             <button
               v-else-if="userPerms.can_server_control"
               @click="openGuardrailConfirm('poweroff')"
-              class="px-2.5 py-1 text-xs text-rose-400 hover:bg-rose-950/60 rounded transition cursor-pointer flex items-center gap-1.5 font-bold"
-              :title="t('tooltip_poweroff_btn')"
+              :disabled="!isServerOnline(server)"
+              class="px-2.5 py-1 text-xs rounded transition flex items-center gap-1.5 font-bold"
+              :class="!isServerOnline(server) ? 'text-gray-500 opacity-40 cursor-not-allowed' : 'text-rose-400 hover:bg-rose-950/60 cursor-pointer'"
+              :title="!isServerOnline(server) ? 'Asset is offline' : t('tooltip_poweroff_btn')"
             >
               <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
@@ -548,34 +552,67 @@
           </span>
         </div>
 
-        <div class="text-xs text-gray-200 space-y-2">
-          <div class="text-gray-400">Target Host:</div>
-          <div class="text-cyan-300 font-bold text-sm bg-cyan-950/40 p-2 rounded border border-cyan-800/40">
-            {{ server?.hostname }} ({{ server?.ip_address }})
+        <form @submit.prevent="executeGuardrailAction" class="space-y-3">
+          <div class="text-xs text-gray-200 space-y-2">
+            <div class="text-gray-400">Target Host:</div>
+            <div class="text-cyan-300 font-bold text-sm bg-cyan-950/40 p-2 rounded border border-cyan-800/40">
+              {{ server?.hostname }} ({{ server?.ip_address }})
+            </div>
+            <div class="text-gray-300 leading-relaxed pt-1">
+              {{ guardrailAction === 'reboot'
+                ? 'Restart host operating system. All running services and active network connections will be interrupted temporarily until reboot completes.'
+                : 'Power off server (Shutdown). Host cannot be powered back on remotely via this dashboard (requires IPMI or hypervisor console access).'
+              }}
+            </div>
           </div>
-          <div class="text-gray-300 leading-relaxed pt-1">
-            {{ guardrailAction === 'reboot'
-              ? 'Restart host operating system. All running services and active network connections will be interrupted temporarily until reboot completes.'
-              : 'Power off server (Shutdown). Host cannot be powered back on remotely via this dashboard (requires IPMI or hypervisor console access).'
-            }}
-          </div>
-        </div>
 
-        <div class="flex items-center justify-end gap-2 pt-2 border-t border-gray-800">
-          <button
-            @click="showGuardrailModal = false"
-            class="px-3 py-1.5 rounded bg-gray-800 text-gray-300 hover:text-white text-xs font-bold transition cursor-pointer"
-          >
-            CANCEL
-          </button>
-          <button
-            @click="executeGuardrailAction"
-            class="px-4 py-1.5 rounded text-white text-xs font-bold transition cursor-pointer shadow-lg"
-            :class="guardrailAction === 'reboot' ? 'bg-amber-600 hover:bg-amber-500' : 'bg-rose-600 hover:bg-rose-500'"
-          >
-            {{ guardrailAction === 'reboot' ? 'EXECUTE REBOOT' : 'EXECUTE POWER OFF' }}
-          </button>
-        </div>
+          <div v-if="guardrailError" class="p-2 rounded bg-rose-950/60 border border-rose-500/50 text-rose-300 text-[11px]">
+            {{ guardrailError }}
+          </div>
+
+          <div>
+            <label class="block text-[11px] text-gray-300 font-bold mb-1">Operator Password</label>
+            <input
+              v-model="guardrailPassword"
+              type="password"
+              required
+              autocomplete="current-password"
+              placeholder="Enter your password to authorize"
+              class="w-full px-3 py-2 bg-[#060a12] border border-cyan-900/70 rounded text-xs text-gray-100 focus:outline-none focus:border-cyan-400"
+            />
+          </div>
+
+          <div v-if="currentUser?.totp_enabled || userHasTotp">
+            <label class="block text-[11px] text-gray-300 font-bold mb-1">2FA / TOTP Code</label>
+            <input
+              v-model="guardrailTotp"
+              type="text"
+              maxlength="6"
+              inputmode="numeric"
+              pattern="[0-9]*"
+              placeholder="6-digit code"
+              class="w-full px-3 py-2 bg-[#060a12] border border-cyan-900/70 rounded text-xs text-gray-100 tracking-widest focus:outline-none focus:border-cyan-400"
+            />
+          </div>
+
+          <div class="flex items-center justify-end gap-2 pt-2 border-t border-gray-800">
+            <button
+              type="button"
+              @click="showGuardrailModal = false"
+              class="px-3 py-1.5 rounded bg-gray-800 text-gray-300 hover:text-white text-xs font-bold transition cursor-pointer"
+            >
+              CANCEL
+            </button>
+            <button
+              type="submit"
+              :disabled="guardrailSubmitting || !guardrailPassword"
+              class="px-4 py-1.5 rounded text-white text-xs font-bold transition cursor-pointer shadow-lg disabled:opacity-40 disabled:cursor-not-allowed"
+              :class="guardrailAction === 'reboot' ? 'bg-amber-600 hover:bg-amber-500' : 'bg-rose-600 hover:bg-rose-500'"
+            >
+              {{ guardrailSubmitting ? 'EXECUTING...' : (guardrailAction === 'reboot' ? 'EXECUTE REBOOT' : 'EXECUTE POWER OFF') }}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
 
@@ -1450,17 +1487,54 @@ async function onAptTaskCompleted() {
   if (server.value) emit('server-updated', server.value)
 }
 
+const guardrailPassword = ref('')
+const guardrailTotp = ref('')
+const guardrailError = ref('')
+const guardrailSubmitting = ref(false)
+
 function openGuardrailConfirm(action) {
+  if (!isServerOnline(server.value)) return
   guardrailAction.value = action
+  guardrailPassword.value = ''
+  guardrailTotp.value = ''
+  guardrailError.value = ''
+  guardrailSubmitting.value = false
   showGuardrailModal.value = true
 }
 
 async function executeGuardrailAction() {
-  showGuardrailModal.value = false
-  if (guardrailAction.value === 'reboot') {
-    await dispatchAction('reboot_host', {})
-  } else {
-    await dispatchAction('poweroff_host', {})
+  if (guardrailSubmitting.value || !guardrailPassword.value) return
+  guardrailSubmitting.value = true
+  guardrailError.value = ''
+  const actionName = guardrailAction.value === 'reboot' ? 'reboot_host' : 'poweroff_host'
+  try {
+    const token = localStorage.getItem('pantau_token') || ''
+    const res = await fetch(`/api/servers/${currentServerId.value}/actions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({
+        action: actionName,
+        params: {
+          password: guardrailPassword.value,
+          totp: guardrailTotp.value || undefined,
+        },
+      }),
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      guardrailError.value = data.detail || `Failed (${res.status})`
+      return
+    }
+    showGuardrailModal.value = false
+    toast.success(data.message || `Command '${actionName}' queued`)
+    loadServerData()
+  } catch (err) {
+    guardrailError.value = err.message || 'Network error'
+  } finally {
+    guardrailSubmitting.value = false
   }
 }
 

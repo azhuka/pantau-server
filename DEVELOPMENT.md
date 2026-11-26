@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.82
+
+- **Reboot & Power Control Guardrail Hardening:** Enforced operator password and 2FA/TOTP verification on reboot_host and poweroff_host in server/routers/servers.py and ServerWorkspaceModal.vue, fixed Proxmox HA policy to allow reboot_host (blocking only poweroff_host), added offline and duplicate-pending guards, and added disabled states on offline hosts.
+
+
 ### Versi v0.1.81
 
 - **Complete OS Package Upgrade Workflow:** Added active background task banner with View Output re-attach, background completion polling/toast, toolbar busy guards, and one-click APT_FIX repair button in AptTaskRunnerModal.vue and ServerWorkspaceModal.vue.

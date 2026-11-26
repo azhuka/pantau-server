@@ -6,7 +6,9 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Body, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session
+import security_auth
 from core.database import get_db
+from core.security import verify_password
 from routers.auth import get_current_user
 from models.user import User
 from models.server import Server, ServerExtras, SystemSnapshot, Service
@@ -803,14 +805,71 @@ def dispatch_server_action(
                 detail=f"Critical service '{params.get('name')}' is protected and cannot be stopped!"
             )
 
-    # Proteksi Proxmox HA pada aksi Power OFF / Reboot
+    # Host Power Control (Reboot / Power Off): Step-up Auth + Online + Proxmox HA + Anti-Duplicate
     if action in ("poweroff_host", "reboot_host"):
-        target_srv = db.query(Server).filter(Server.id == sid).first()
-        if target_srv and getattr(target_srv, "is_proxmox_ha", 0) == 1:
+        target_srv = db.query(Server).filter(Server.id == sid, Server.is_active == 1).first()
+        if not target_srv:
+            raise HTTPException(status_code=404, detail="Server not found")
+        if not target_srv.last_seen or (now - target_srv.last_seen).total_seconds() > 60:
+            raise HTTPException(status_code=409, detail="Asset is offline. Power control commands are disabled.")
+
+        if action == "poweroff_host" and getattr(target_srv, "is_proxmox_ha", 0) == 1:
+            db.add(AuditLog(
+                server_id=sid, username=user.username, action="poweroff_host",
+                target=f"{target_srv.hostname} ({target_srv.ip_address})",
+                result="rejected", meta="Blocked: Host is protected by Proxmox HA", created_at=now,
+            ))
+            db.commit()
             raise HTTPException(
                 status_code=400,
-                detail="Host is protected by Proxmox HA. Perform power actions via Proxmox VE Web UI / Cluster Manager."
+                detail="Host is protected by Proxmox HA. Perform power off via Proxmox VE Web UI / Cluster Manager."
             )
+
+        op_password = str(params.get("password") or "").strip()
+        op_totp = str(params.get("totp") or "").strip()
+        if not op_password:
+            raise HTTPException(status_code=400, detail="Operator account password is required for power control.")
+        if not verify_password(op_password, user.password_hash):
+            db.add(AuditLog(
+                server_id=sid, username=user.username, action=db_action,
+                target=f"{target_srv.hostname} ({target_srv.ip_address})",
+                result="failed", meta="Invalid operator password during power control guardrail", created_at=now,
+            ))
+            db.commit()
+            raise HTTPException(status_code=401, detail="Invalid account password. Power command rejected.")
+        if user.totp_enabled and user.totp_secret:
+            if not op_totp or not security_auth.verify_totp(user.totp_secret, op_totp):
+                db.add(AuditLog(
+                    server_id=sid, username=user.username, action=db_action,
+                    target=f"{target_srv.hostname} ({target_srv.ip_address})",
+                    result="failed", meta="Invalid 2FA/TOTP code during power control guardrail", created_at=now,
+                ))
+                db.commit()
+                raise HTTPException(status_code=401, detail="Invalid or expired 2FA / TOTP code.")
+
+        pending_power = db.query(Command).filter(
+            Command.server_id == sid,
+            Command.action.in_(["poweroff_host", "reboot_host"]),
+            Command.status == "pending",
+        ).first()
+        if pending_power:
+            raise HTTPException(status_code=409, detail="A power control command is already queued for this host.")
+
+        # Never persist credentials in commands.params or audit_logs.target
+        params = {}
+        if action == "poweroff_host":
+            prob = db.query(ServerProblem).filter(
+                ServerProblem.server_id == sid,
+                ServerProblem.key == "agent_stale",
+                ServerProblem.resolved_at.is_(None),
+            ).first()
+            if prob:
+                prob.is_ignored = 1
+                prob.ignored_until = None
+                prob.ignored_by = user.username
+                prob.ignored_reason = f"SERVER POWERED OFF BY OPERATOR ({user.username.upper()})"
+                prob.ignore_mode = "permanent"
+                prob.updated_at = now
 
     cmd = Command(
         server_id=sid,
