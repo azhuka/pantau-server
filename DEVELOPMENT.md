@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.80
+
+- **Fix APT Result Sync:** Fixed ServerProblem column references (resolved_at, started_at, updated_at, last_active_at) in _sync_apt_state_from_result so APT_UPDATE and APT_UPGRADE tasks complete and sync cleanly.
+
+
 ### Versi v0.1.79
 
 - **Isolated OS Package Task Runner & Sync:** Wired Update OS, Upgrade OS, and per-package Upgrade to /api/logs/request with can_apt authorization, 409 busy guard, active task resume (/api/servers/{sid}/apt/active), automatic ServerExtras and pkg_updates incident sync on completion, xterm.js live streaming via AptTaskRunnerModal.vue, and disabled state guards.

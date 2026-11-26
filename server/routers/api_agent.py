@@ -351,29 +351,30 @@ def _sync_apt_state_from_result(db: Session, server: Server, raw_result: str) ->
         .filter(
             ServerProblem.server_id == server.id,
             ServerProblem.key.in_(["pkg_updates", "apt_updates"]),
-            ServerProblem.is_active == 1,
+            ServerProblem.resolved_at.is_(None),
         )
         .all()
     )
     if upg_cnt <= 0:
         for p in active_probs:
-            p.is_active = 0
             p.resolved_at = now
+            p.updated_at = now
     elif getattr(server, "is_isolated_net", 0) != 1:
         msg = f"{upg_cnt} OS package(s) available for upgrade"
         if active_probs:
             for p in active_probs:
                 p.message = msg
-                p.last_seen = now
+                p.updated_at = now
+                p.last_active_at = now
         else:
             db.add(ServerProblem(
                 server_id=server.id,
                 key="pkg_updates",
                 severity="info",
                 message=msg,
-                is_active=1,
-                first_seen=now,
-                last_seen=now,
+                started_at=now,
+                updated_at=now,
+                last_active_at=now,
             ))
 
 
