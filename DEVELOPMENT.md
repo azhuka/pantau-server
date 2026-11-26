@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.72
+
+Memastikan respons ls dari agen remote selalu menyertakan field path dan items agar UI Remote File Manager menampilkan direktori dan riwayat navigasi dengan benar.
+
+
 ### Versi v0.1.71
 
 Menambahkan riwayat & grafik latensi Probe, tes koneksi ad-hoc sebelum simpan, mode Wallboard fullscreen di Dasbor, pintasan buka Terminal dari File Manager, serta rotasi API Key agen di Edit Asset.

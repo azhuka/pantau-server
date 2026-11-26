@@ -151,6 +151,10 @@ async def list_server_files(
     res = await file_dispatcher.dispatch(sid, "ls", {"path": path})
     if not res.get("ok"):
         raise HTTPException(status_code=400, detail=res.get("error", "Failed to read remote directory"))
+    if not res.get("path"):
+        res["path"] = res.get("cwd") or path
+    if "items" not in res and "entries" in res:
+        res["items"] = res["entries"]
     if "bookmarks" not in res:
         res["bookmarks"] = DEFAULT_BOOKMARKS
     return res
