@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.91
+
+Penambahan konsol log kontekstual per-service (WorkspaceServiceLogModal.vue) dengan deteksi otomatis sumber journald unit, proses, dan berkas log terkait saat operator memilih View Logs di tab Services.
+
+
 ### Versi v0.1.90
 
 Pemisahan tab Services dan Ports secara mandiri, penambahan Monitored Services + Service History Panel, perbaikan pemetaan *_service di agent_pantau.py & telemetry_service.py, serta penambahan Actions dropdown pada tab Ports dengan guardrail port manajemen 22/8400.

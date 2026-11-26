@@ -1,5 +1,14 @@
 <template>
   <div class="space-y-4 font-mono">
+    <!-- Contextual Service Log Modal -->
+    <WorkspaceServiceLogModal
+      :server-id="serverId"
+      :server-online="isOnline"
+      :target="logTarget"
+      :available-logs="availableLogs"
+      @close="logTarget = null"
+    />
+
     <!-- Contextual Service History Panel -->
     <WorkspaceServiceHistoryPanel
       v-if="historyTarget"
@@ -198,7 +207,7 @@
                 <button
                   v-if="isViewer || !canManage"
                   type="button"
-                  @click="$emit('view-logs', svc.name || svc.unit)"
+                  @click="openLogs({ unit: svc.name || svc.unit, status: svc.sub || svc.status || svc.active, port: svc.port })"
                   class="w-[26px] h-[26px] min-w-[26px] rounded bg-gray-900 hover:bg-cyan-950 border border-gray-700 text-gray-300 inline-flex items-center justify-center cursor-pointer"
                   :title="`View logs for ${svc.name || svc.unit}`"
                 >
@@ -236,7 +245,7 @@
           <div class="py-0.5">
             <button v-if="menuTarget.boot !== 'enabled'" type="button" :disabled="!isOnline || menuTarget.boot === 'static' || menuTarget.boot === 'masked'" @click="execSvc('enable_service', menuTarget.name)" class="w-full px-3 py-1.5 text-left text-gray-200 hover:bg-gray-800/80 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">Enable Autostart</button>
             <button v-else type="button" :disabled="!isOnline || isProtected(menuTarget.name)" @click="execSvc('disable_service', menuTarget.name)" class="w-full px-3 py-1.5 text-left text-gray-300 hover:bg-gray-800/80 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">Disable Autostart</button>
-            <button type="button" @click="viewLogs(menuTarget.name)" class="w-full px-3 py-1.5 text-left text-gray-200 hover:bg-gray-800/80 cursor-pointer">View Logs</button>
+            <button type="button" @click="openLogs({ unit: menuTarget.name, status: menuTarget.sub || menuTarget.status || menuTarget.active, port: menuTarget.port })" class="w-full px-3 py-1.5 text-left text-gray-200 hover:bg-gray-800/80 cursor-pointer">View Logs</button>
           </div>
         </template>
 
@@ -248,7 +257,7 @@
           </div>
           <div class="py-0.5">
             <button type="button" @click="historyTarget = menuTarget; menuTarget = null" class="w-full px-3 py-1.5 text-left text-gray-200 hover:bg-gray-800/80 cursor-pointer">View History</button>
-            <button type="button" @click="viewLogs(menuTarget.process_name || menuTarget.service_name)" class="w-full px-3 py-1.5 text-left text-gray-200 hover:bg-gray-800/80 cursor-pointer">View Logs</button>
+            <button type="button" @click="openLogs({ unit: menuTarget.service_name, processName: menuTarget.process_name, status: menuTarget.status, port: menuTarget.port })" class="w-full px-3 py-1.5 text-left text-gray-200 hover:bg-gray-800/80 cursor-pointer">View Logs</button>
             <button v-if="menuTarget.is_ignored" type="button" @click="toggleIgnore(menuTarget, false)" class="w-full px-3 py-1.5 text-left text-emerald-300 hover:bg-emerald-950/60 cursor-pointer">Resume Monitoring</button>
             <button v-else type="button" :disabled="menuTarget.status === 'up'" @click="toggleIgnore(menuTarget, true)" class="w-full px-3 py-1.5 text-left text-amber-300 hover:bg-amber-950/60 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">Ignore Alert</button>
             <button type="button" @click="removeMonitored(menuTarget)" class="w-full px-3 py-1.5 text-left text-rose-400 hover:bg-rose-950/60 cursor-pointer">Remove</button>
@@ -265,6 +274,7 @@ import { useI18n } from '../../../i18n'
 import NocFilterPanel from '../../common/NocFilterPanel.vue'
 import NocTablePagination from '../../common/NocTablePagination.vue'
 import WorkspaceServiceHistoryPanel from './WorkspaceServiceHistoryPanel.vue'
+import WorkspaceServiceLogModal from './WorkspaceServiceLogModal.vue'
 
 const { t } = useI18n()
 
@@ -275,9 +285,10 @@ const props = defineProps({
   canManage: { type: Boolean, default: true },
   services: { type: Array, default: () => [] },
   monitoredServices: { type: Array, default: () => [] },
+  availableLogs: { type: Array, default: () => [] },
 })
 
-const emit = defineEmits(['service-action', 'view-logs', 'refresh', 'monitored-updated'])
+const emit = defineEmits(['service-action', 'refresh', 'monitored-updated'])
 
 const search = ref('')
 const statusFilter = ref('all')
@@ -291,6 +302,7 @@ const showAddForm = ref(false)
 const adding = ref(false)
 const addForm = ref({ service_name: '', port: '', process_name: '' })
 const historyTarget = ref(null)
+const logTarget = ref(null)
 
 const menuTarget = ref(null)
 const menuKind = ref('systemd')
@@ -374,9 +386,9 @@ function execSvc(action, unit) {
   emit('service-action', { action, unit })
 }
 
-function viewLogs(unit) {
+function openLogs(targetObj) {
   menuTarget.value = null
-  emit('view-logs', unit)
+  logTarget.value = targetObj
 }
 
 async function submitAddService() {

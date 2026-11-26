@@ -471,8 +471,8 @@
             :can-manage="Boolean(currentUser?.is_master_admin || currentUser?.role === 'operator_utama' || userPerms.can_services)"
             :services="servicesList"
             :monitored-services="monitoredServicesList"
+            :available-logs="availableLogsList"
             @service-action="handleServiceAction"
-            @view-logs="activeSubTab = 'logs'"
             @refresh="loadServerData()"
             @monitored-updated="handleMonitoredUpdated"
           />
