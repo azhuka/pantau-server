@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.100
+
+Perbaikan bug kosongnya tabel UserActivityModal.vue: membaca key parsed.logins dari payload USER_ACTIVITY agen serta memetakan field ts, from, cmd, dan method.
+
+
 ### Versi v0.1.99
 
 Perbaikan bug Bad Unicode escape in JSON at position 60000 pada agent_pantau.py: memangkas daftar entri logins sebelum json.dumps() alih-alih memotong string JSON mentah [:60000] agar payload USER_ACTIVITY selalu valid.

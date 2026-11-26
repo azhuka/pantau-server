@@ -63,11 +63,11 @@
               <td colspan="5" class="px-4 py-10 text-center text-gray-500">No user activity records found.</td>
             </tr>
             <tr v-for="(r, idx) in filteredRows" :key="idx" class="hover:bg-cyan-950/15">
-              <td class="px-3 py-1.5 text-gray-400 whitespace-nowrap">{{ r.time || r.timestamp || '-' }}</td>
-              <td class="px-3 py-1.5 text-cyan-300 font-semibold whitespace-nowrap">{{ r.type || r.category || '-' }}</td>
+              <td class="px-3 py-1.5 text-gray-400 whitespace-nowrap">{{ r.ts || r.time || r.timestamp || '-' }}</td>
+              <td class="px-3 py-1.5 text-cyan-300 font-semibold whitespace-nowrap uppercase">{{ r.type || r.category || '-' }}</td>
               <td class="px-3 py-1.5 text-gray-300 whitespace-nowrap">{{ r.tty || r.terminal || '-' }}</td>
-              <td class="px-3 py-1.5 text-gray-300 whitespace-nowrap">{{ r.ip || r.source || '-' }}</td>
-              <td class="px-3 py-1.5 text-gray-200 break-all">{{ r.command || r.detail || r.message || '-' }}</td>
+              <td class="px-3 py-1.5 text-gray-300 whitespace-nowrap">{{ r.from || r.ip || r.source || '-' }}</td>
+              <td class="px-3 py-1.5 text-gray-200 break-all">{{ r.command || r.cmd || r.method || r.detail || r.message || '-' }}</td>
             </tr>
           </tbody>
         </table>
@@ -98,7 +98,7 @@ const filteredRows = computed(() => {
   const q = search.value.trim().toLowerCase()
   if (!q) return rows.value
   return rows.value.filter((r) =>
-    `${r.time || ''} ${r.type || ''} ${r.tty || ''} ${r.ip || ''} ${r.command || r.detail || ''}`.toLowerCase().includes(q)
+    `${r.ts || r.time || ''} ${r.type || ''} ${r.tty || ''} ${r.from || r.ip || ''} ${r.command || r.cmd || r.method || r.detail || ''}`.toLowerCase().includes(q)
   )
 })
 
@@ -124,7 +124,7 @@ async function fetchActivity() {
       const pdata = await poll.json()
       if (pdata.status === 'success') {
         const parsed = typeof pdata.result === 'string' ? JSON.parse(pdata.result || '{}') : (pdata.result || {})
-        rows.value = Array.isArray(parsed) ? parsed : (parsed.events || parsed.entries || parsed.logs || [])
+        rows.value = Array.isArray(parsed) ? parsed : (parsed.logins || parsed.events || parsed.entries || parsed.logs || [])
         return
       }
       if (pdata.status === 'failed') {
@@ -143,7 +143,7 @@ function exportCsv() {
   const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`
   const lines = ['Time,Type,TTY,Source IP,Command']
   for (const r of filteredRows.value) {
-    lines.push([r.time || r.timestamp, r.type || r.category, r.tty || r.terminal, r.ip || r.source, r.command || r.detail].map(esc).join(','))
+    lines.push([r.ts || r.time || r.timestamp, r.type || r.category, r.tty || r.terminal, r.from || r.ip || r.source, r.command || r.cmd || r.method || r.detail].map(esc).join(','))
   }
   const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8' })
   const url = URL.createObjectURL(blob)
