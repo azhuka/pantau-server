@@ -491,7 +491,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.11.29"
+AGENT_VERSION = "4.11.30"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -4029,7 +4029,7 @@ def ensure_pantau_apt_updated() -> bool:
                     cur_content = f.read()
             except Exception:
                 pass
-        if "PKG_MGR" in cur_content and "Always-Include-Phased-Updates" in cur_content and "upgrade-pkg" in cur_content and "clean" in cur_content and "-qfec" in cur_content and "99pantau-override" in cur_content:
+        if cur_content.strip() == PANTAU_APT_SCRIPT_BODY.strip():
             return True
 
         if IS_ROOT:

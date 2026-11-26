@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.105
+
+- Memperbaiki `ensure_pantau_apt_updated()` di `agent/agent_pantau.py` (v4.11.30) agar membandingkan isi penuh `PANTAU_APT_SCRIPT_BODY` sehingga wrapper `/usr/local/sbin/pantau-apt` di seluruh node ikut diperbarui dengan flag `--allow-releaseinfo-change`.
+
+
 ### Versi v0.1.104
 
 - Menambahkan flag `--allow-releaseinfo-change` pada perintah `apt-get update` non-interaktif di `agent/agent_pantau.py` agar pembaruan indeks paket tidak gagal saat repositori hulu mengubah metadata Label/Suite.
