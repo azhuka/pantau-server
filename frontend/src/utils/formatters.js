@@ -179,6 +179,24 @@ export function formatIncidentMessage(prob) {
   return rawMsg
 }
 
+export function formatIncidentRootCause(prob) {
+  const k = prob?.key || ''
+  if (k.startsWith('ssh_active_session:')) return 'Active remote interactive SSH login session detected on host.'
+  if (k.startsWith('service_down:')) return `System service unit (${k.split(':')[1] || 'service'}) is inactive or failed.`
+  if (k === 'failed_logins') return 'Repeated SSH authentication failures detected from external IP(s).'
+  if (k.includes('pkg_updates') || k.includes('apt_updates')) return 'Linux package repository indicates pending OS or security updates.'
+  if (k === 'agent_stale') return 'Host telemetry heartbeat stopped for more than 60 seconds.'
+  if (k === 'agent_outdated') return 'Remote pantau-agent version is behind the control-plane version.'
+  if (k.startsWith('fim_anomaly:')) return 'File integrity baseline mismatch detected on monitored system path.'
+  if (k.startsWith('oom_kill:')) return 'Linux kernel Out-Of-Memory killer terminated a process due to memory exhaustion.'
+  if (k.startsWith('disk_io_error')) return 'Kernel reported physical or virtual block device I/O errors.'
+  if (k.includes('kernel_panic')) return 'Critical kernel panic or fatal hardware/driver fault detected.'
+  if (k.includes('cpu')) return 'CPU computing load exceeded designated operational threshold limit.'
+  if (k.includes('ram') || k.includes('swap')) return 'Physical RAM or swap memory usage exceeded safe operational threshold.'
+  if (k.includes('disk') || k.includes('mount_')) return 'Filesystem storage volume utilization exceeded safe operating quota.'
+  return 'Telemetry anomaly detected by Pantau Server evaluation engine.'
+}
+
 export function formatIncidentTip(prob) {
   if (!prob) return ''
   const key = prob.key || ''

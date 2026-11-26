@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.88
+
+- **Root Cause Column in Host Incidents Table:** Added formatIncidentRootCause() in formatters.js, replaced Solution column with Root Cause in WorkspaceProblemsTab.vue while keeping full recommendations and CLI commands in ProblemDetailModal.vue (z-[20000], read-only footer for closed incidents).
+
+
 ### Versi v0.1.87
 
 - **Host Incidents Tab Fixes:** Fixed frozen duration on closed incidents (formatters.js), separated active vs ignored counts, added Inspect Storage action in Actions dropdown, enabled View Details on closed rows, standardized Triggered At header, and removed // prefix in WorkspaceProblemsTab.vue.

@@ -61,7 +61,7 @@
               <th class="py-2.5 px-3 text-center whitespace-nowrap">Severity</th>
               <th class="py-2.5 px-3">Incident Description</th>
               <th class="py-2.5 px-3 whitespace-nowrap">Duration</th>
-              <th class="py-2.5 px-3">Solution</th>
+              <th class="py-2.5 px-3">Root Cause</th>
               <th class="py-2.5 px-3 text-right whitespace-nowrap">Actions</th>
             </tr>
           </thead>
@@ -108,8 +108,8 @@
                 {{ formatIncidentDuration(prob.started_at, locale, prob.resolved_at) }}
               </td>
               <td class="py-2.5 px-3 text-gray-400 max-w-xs">
-                <span class="block truncate cursor-help text-[11px]" :title="formatIncidentTip(prob, locale) || '—'">
-                  {{ formatIncidentTip(prob, locale) || '—' }}
+                <span class="block truncate cursor-help text-[11px]" :title="formatIncidentRootCause(prob)">
+                  {{ formatIncidentRootCause(prob) }}
                 </span>
               </td>
               <td class="py-2.5 px-3 text-right whitespace-nowrap">
@@ -304,7 +304,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { useI18n } from '../../../i18n'
-import { formatIncidentMessage, formatIncidentTip, formatIncidentTime, formatIncidentDuration, severityBadgeClass } from '../../../utils/formatters'
+import { formatIncidentMessage, formatIncidentRootCause, formatIncidentTime, formatIncidentDuration, severityBadgeClass } from '../../../utils/formatters'
 import { useFloatingDropdown } from '../../../utils/useFloatingDropdown'
 import { useToast, confirmAction } from '../../../utils/useToast'
 import NocFilterPanel from '../../common/NocFilterPanel.vue'

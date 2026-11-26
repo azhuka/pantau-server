@@ -2,7 +2,7 @@
   <div
     v-if="isOpen && problem"
     id="problem-detail-modal"
-    class="fixed inset-0 z-60 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 font-mono select-none"
+    class="fixed inset-0 z-[20000] bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 font-mono select-none"
     @click.self="$emit('close')"
   >
     <div class="hud-tactical-card rounded-xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-cyan-500/40">
@@ -96,7 +96,7 @@
         <div class="flex items-center gap-2">
           <!-- Button: Tandai Ditangani / Status Ditangani -->
           <button
-            v-if="!problem.acknowledged_by && !isViewer"
+            v-if="!problem.resolved_at && !problem.acknowledged_by && !isViewer"
             @click="$emit('ack-problem', problem.id)"
             class="px-3 py-1.5 rounded bg-gray-800/80 text-gray-300 border border-gray-700 hover:bg-gray-700 hover:text-white text-xs font-bold transition cursor-pointer flex items-center gap-1.5 shadow-sm"
             :title="t('pdm_btn_ack')"
@@ -114,7 +114,7 @@
           </span>
 
           <button
-            v-if="!problem.is_ignored && !isViewer"
+            v-if="!problem.resolved_at && !problem.is_ignored && !isViewer"
             @click="$emit('ignore-problem', problem)"
             class="px-3 py-1.5 rounded bg-amber-950/80 text-amber-300 border border-amber-800 hover:bg-amber-800 hover:text-white text-xs font-bold transition cursor-pointer"
             :title="t('pdm_btn_ignore_tooltip')"
@@ -155,7 +155,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useI18n } from '../../i18n'
-import { formatIncidentMessage, formatIncidentTip } from '../../utils/formatters'
+import { formatIncidentMessage, formatIncidentRootCause, formatIncidentTip } from '../../utils/formatters'
 
 const { t, locale } = useI18n()
 
@@ -188,16 +188,7 @@ const sevBadgeClass = computed(() => {
   return 'bg-cyan-950 text-cyan-300 border border-cyan-800'
 })
 
-const rootCauseText = computed(() => {
-  const k = props.problem?.key || ''
-  if (k.startsWith('ssh_active_session:')) return 'Active remote interactive SSH login session detected on host.'
-  if (k.startsWith('service_down:')) return `System service unit (${k.split(':')[1] || 'service'}) is inactive or failed.`
-  if (k.includes('pkg_updates') || k.includes('apt_updates')) return 'Linux package repository indicates new security updates or system packages are pending.'
-  if (k.includes('cpu')) return 'CPU computing load exceeded designated operational threshold limit.'
-  if (k.includes('ram')) return 'Physical RAM memory usage approached designated operational threshold.'
-  if (k.includes('disk')) return 'Filesystem storage volume utilization exceeded safe operating quota.'
-  return 'Anomaly detected by Pantau Server telemetry evaluation engine.'
-})
+const rootCauseText = computed(() => formatIncidentRootCause(props.problem))
 
 const impactText = computed(() => {
   const k = props.problem?.key || ''
