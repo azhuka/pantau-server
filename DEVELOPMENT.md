@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.79
+
+- **Isolated OS Package Task Runner & Sync:** Wired Update OS, Upgrade OS, and per-package Upgrade to /api/logs/request with can_apt authorization, 409 busy guard, active task resume (/api/servers/{sid}/apt/active), automatic ServerExtras and pkg_updates incident sync on completion, xterm.js live streaming via AptTaskRunnerModal.vue, and disabled state guards.
+
+
 ### Versi v0.1.78
 
 - **File Manager Step-Up Auth & Batch Operations:** Enforced Terminal-parity password/TOTP lease unlock (status/unlock/lock) in server/routers/files.py and ServerWorkspaceModal.vue, fixed FileManagerDispatcher stale pending queue cleanup on timeout, and added chown, atomic batch-rm (with PROTECTED_SYSTEM_PATHS validation), and batch-chmod in backend and RemoteFileManagerModal.vue.

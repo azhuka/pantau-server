@@ -10,6 +10,8 @@ from sqlalchemy import desc, text
 from sqlalchemy.orm import Session
 from core.database import get_db
 from core.utils import hash_api_key
+from models.misc import AuditLog
+from models.problem import ServerProblem
 from models.server import Server, ServerExtras
 from models.user import User
 from models.command import Command, LogRequest
@@ -321,6 +323,60 @@ def api_log_input(
     db.commit()
     return {"data": data}
 
+def _sync_apt_state_from_result(db: Session, server: Server, raw_result: str) -> None:
+    """Sync ServerExtras package metadata and pkg_updates incident immediately after an APT task."""
+    if not raw_result or not isinstance(raw_result, str) or not raw_result.lstrip().startswith("{"):
+        return
+    try:
+        parsed = json.loads(raw_result)
+    except Exception:
+        return
+    apt_data = parsed.get("apt")
+    if not isinstance(apt_data, dict):
+        return
+
+    now = datetime.utcnow()
+    extras = db.query(ServerExtras).filter(ServerExtras.server_id == server.id).first()
+    if not extras:
+        extras = ServerExtras(server_id=server.id)
+        db.add(extras)
+    upg_cnt = int(apt_data.get("upgradable") or 0)
+    extras.apt_upgradable = upg_cnt
+    if "packages" in apt_data:
+        extras.apt_packages = json.dumps(apt_data["packages"])
+    extras.apt_last_update = now
+
+    active_probs = (
+        db.query(ServerProblem)
+        .filter(
+            ServerProblem.server_id == server.id,
+            ServerProblem.key.in_(["pkg_updates", "apt_updates"]),
+            ServerProblem.is_active == 1,
+        )
+        .all()
+    )
+    if upg_cnt <= 0:
+        for p in active_probs:
+            p.is_active = 0
+            p.resolved_at = now
+    elif getattr(server, "is_isolated_net", 0) != 1:
+        msg = f"{upg_cnt} OS package(s) available for upgrade"
+        if active_probs:
+            for p in active_probs:
+                p.message = msg
+                p.last_seen = now
+        else:
+            db.add(ServerProblem(
+                server_id=server.id,
+                key="pkg_updates",
+                severity="info",
+                message=msg,
+                is_active=1,
+                first_seen=now,
+                last_seen=now,
+            ))
+
+
 @router.post("/api/logs/{req_id}/result")
 def api_log_result(
     req_id: int,
@@ -328,7 +384,7 @@ def api_log_result(
     server: Server = Depends(get_server_by_agent_key),
     db: Session = Depends(get_db),
 ):
-    """Agent mengirim hasil log (misal journalctl atau auth log)."""
+    """Receive final execution result for an on-demand log or APT task request."""
     req = db.query(LogRequest).filter(LogRequest.id == req_id, LogRequest.server_id == server.id).first()
     if not req:
         raise HTTPException(status_code=404, detail="Log request not found")
@@ -336,6 +392,8 @@ def api_log_result(
     req.status = "success" if body.get("status") == "success" else "failed"
     req.result = body.get("result", "")
     req.updated_at = datetime.utcnow()
+    if req.unit in _APT_UNITS and req.status == "success":
+        _sync_apt_state_from_result(db, server, req.result)
     db.commit()
     return {"ok": True}
 
@@ -386,6 +444,7 @@ def api_logs_request_create(
         raise HTTPException(status_code=400, detail="Invalid server_id")
 
     unit = str(body.get("unit") or "").strip()[:100]
+    detail = str(body.get("detail") or "").strip()[:128] or None
     try:
         lines = max(10, min(int(body.get("lines") or 200), 2000))
     except (TypeError, ValueError):
@@ -393,10 +452,16 @@ def api_logs_request_create(
 
     if not VALID_UNIT_RE.match(unit):
         raise HTTPException(status_code=400, detail="Invalid log unit identifier")
+    if detail and not VALID_UNIT_RE.match(detail):
+        raise HTTPException(status_code=400, detail="Invalid task detail identifier")
 
     if not user.can_access_server(sid):
         raise HTTPException(status_code=403, detail="Access denied for this asset")
-    if not (user.is_master_admin or user.has_perm("can_audit") or user.has_perm("can_services")):
+    is_apt = unit in _APT_UNITS
+    if is_apt:
+        if not (user.is_master_admin or user.has_perm("can_apt")):
+            raise HTTPException(status_code=403, detail="Permission can_apt is required for OS package operations")
+    elif not (user.is_master_admin or user.has_perm("can_audit") or user.has_perm("can_services")):
         raise HTTPException(status_code=403, detail="Permission can_audit or can_services is required")
 
     server = db.query(Server).filter(Server.id == sid, Server.is_active == 1).first()
@@ -405,18 +470,63 @@ def api_logs_request_create(
 
     now = datetime.utcnow()
     if not server.last_seen or (now - server.last_seen).total_seconds() > 60:
-        raise HTTPException(status_code=409, detail="Asset is offline; on-demand log polling is unavailable")
+        raise HTTPException(status_code=409, detail="Asset is offline; on-demand task polling is unavailable")
 
-    # Expire stale pending requests older than 2 minutes
-    stale_cutoff = now - timedelta(minutes=2)
+    # Expire stale pending/executing requests (APT tasks get 25m executing window)
     db.query(LogRequest).filter(
         LogRequest.server_id == sid,
-        LogRequest.status.in_(["pending", "executing"]),
-        LogRequest.created_at < stale_cutoff,
+        LogRequest.status == "pending",
+        LogRequest.created_at < now - timedelta(minutes=2),
+    ).update({"status": "failed", "result": "[timeout]"}, synchronize_session=False)
+    db.query(LogRequest).filter(
+        LogRequest.server_id == sid,
+        LogRequest.status == "executing",
+        ~LogRequest.unit.in_(list(_APT_UNITS)),
+        LogRequest.created_at < now - timedelta(minutes=2),
+    ).update({"status": "failed", "result": "[timeout]"}, synchronize_session=False)
+    db.query(LogRequest).filter(
+        LogRequest.server_id == sid,
+        LogRequest.status == "executing",
+        LogRequest.unit.in_(list(_APT_UNITS)),
+        LogRequest.created_at < now - timedelta(minutes=25),
     ).update({"status": "failed", "result": "[timeout]"}, synchronize_session=False)
 
-    logreq = LogRequest(server_id=sid, unit=unit, lines=lines, status="pending")
+    if is_apt:
+        busy = (
+            db.query(LogRequest)
+            .filter(
+                LogRequest.server_id == sid,
+                LogRequest.unit.in_(list(_APT_UNITS)),
+                LogRequest.status.in_(["pending", "executing"]),
+            )
+            .first()
+        )
+        if busy:
+            raise HTTPException(status_code=409, detail="Another OS package operation is already running on this asset")
+
+    logreq = LogRequest(server_id=sid, unit=unit, lines=lines, detail=detail, status="pending")
     db.add(logreq)
+
+    if is_apt:
+        action_map = {
+            "APT_UPDATE": "apt_update",
+            "APT_UPGRADE": "apt_upgrade",
+            "APT_UPGRADE_INTERACT": "apt_upgrade_interact",
+            "APT_DIST_UPGRADE": "apt_upgrade",
+            "PKG_UPGRADE": "apt_pkg_upgrade",
+            "APT_FIX": "apt_upgrade",
+            "PKG_CLEAN": "apt_update",
+        }
+        db.add(AuditLog(
+            server_id=sid,
+            username=user.username,
+            action=action_map.get(unit, "apt_update"),
+            target=detail or server.hostname,
+            result="success",
+            meta=f"Triggered {unit}" + (f" ({detail})" if detail else ""),
+            created_at=now,
+        ))
+
     db.commit()
     db.refresh(logreq)
 
@@ -433,7 +543,41 @@ def api_logs_request_create(
     if old_done:
         db.commit()
 
-    return {"ok": True, "id": logreq.id}
+    return {"ok": True, "id": logreq.id, "unit": logreq.unit, "detail": logreq.detail}
+
+
+@router.get("/api/servers/{sid}/apt/active")
+def api_server_apt_active(
+    sid: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Return any currently pending or executing APT task for this asset."""
+    if not user.can_access_server(sid):
+        raise HTTPException(status_code=403, detail="Access denied for this asset")
+    if not (user.is_master_admin or user.has_perm("can_apt")):
+        raise HTTPException(status_code=403, detail="Permission can_apt is required")
+    active = (
+        db.query(LogRequest)
+        .filter(
+            LogRequest.server_id == sid,
+            LogRequest.unit.in_(list(_APT_UNITS)),
+            LogRequest.status.in_(["pending", "executing"]),
+        )
+        .order_by(desc(LogRequest.id))
+        .first()
+    )
+    if not active:
+        return {"active": None}
+    return {
+        "active": {
+            "id": active.id,
+            "unit": active.unit,
+            "detail": active.detail,
+            "status": active.status,
+            "created_at": active.created_at.isoformat() if active.created_at else None,
+        }
+    }
 
 
 @router.get("/api/logs/request/{rid}")
@@ -442,13 +586,28 @@ def api_logs_request_poll(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Poll status and raw log payload of a LogRequest."""
+    """Poll status and raw log/APT payload of a LogRequest."""
     logreq = db.query(LogRequest).filter(LogRequest.id == rid).first()
     if not logreq:
         raise HTTPException(status_code=404, detail="Log request not found")
     if not user.can_access_server(logreq.server_id):
         raise HTTPException(status_code=403, detail="Access denied for this asset")
-    if not (user.is_master_admin or user.has_perm("can_audit") or user.has_perm("can_services")):
+    has_perm = (
+        user.is_master_admin
+        or (logreq.unit in _APT_UNITS and user.has_perm("can_apt"))
+        or user.has_perm("can_audit")
+        or user.has_perm("can_services")
+    )
+    if not has_perm:
         raise HTTPException(status_code=403, detail="Permission required")
-    return {"ok": True, "id": logreq.id, "status": logreq.status, "result": logreq.result}
+    return {
+        "ok": True,
+        "id": logreq.id,
+        "unit": logreq.unit,
+        "detail": logreq.detail,
+        "status": logreq.status,
+        "result": logreq.result,
+        "created_at": logreq.created_at.isoformat() if logreq.created_at else None,
+        "updated_at": logreq.updated_at.isoformat() if logreq.updated_at else None,
+    }
 

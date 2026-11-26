@@ -270,8 +270,10 @@
             <button
               v-if="userPerms.can_apt"
               @click="triggerOSUpdate"
-              class="px-2.5 py-1 text-xs text-emerald-400 hover:bg-emerald-950/60 rounded transition cursor-pointer flex items-center gap-1.5 font-bold"
-              :title="t('tooltip_update_btn')"
+              :disabled="!isServerOnline(server)"
+              class="px-2.5 py-1 text-xs rounded transition flex items-center gap-1.5 font-bold"
+              :class="!isServerOnline(server) ? 'text-gray-500 opacity-40 cursor-not-allowed' : 'text-emerald-400 hover:bg-emerald-950/60 cursor-pointer'"
+              :title="!isServerOnline(server) ? 'Asset is offline' : t('tooltip_update_btn')"
             >
               <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
@@ -285,9 +287,10 @@
             <button
               v-if="userPerms.can_apt"
               @click="triggerOSUpgrade"
-              class="px-2.5 py-1 text-xs rounded transition cursor-pointer flex items-center gap-1.5 font-bold"
-              :class="(server?.apt_upgradable || 0) > 0 ? 'text-amber-300 bg-amber-950/70 border border-amber-700/60' : 'text-gray-400 hover:text-white'"
-              :title="t('tooltip_upgrade_btn')"
+              :disabled="!isServerOnline(server) || (server?.apt_upgradable || 0) <= 0"
+              class="px-2.5 py-1 text-xs rounded transition flex items-center gap-1.5 font-bold"
+              :class="(!isServerOnline(server) || (server?.apt_upgradable || 0) <= 0) ? 'text-gray-500 opacity-40 cursor-not-allowed' : 'text-amber-300 bg-amber-950/70 border border-amber-700/60 hover:bg-amber-900/70 cursor-pointer'"
+              :title="!isServerOnline(server) ? 'Asset is offline' : ((server?.apt_upgradable || 0) <= 0 ? 'All OS packages are up-to-date' : t('tooltip_upgrade_btn'))"
             >
               <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -471,6 +474,9 @@
             v-else-if="activeSubTab === 'packages'"
             :server="server"
             :packages-list="packagesList"
+            :can-apt="userPerms.can_apt"
+            :is-online="isServerOnline(server)"
+            @upgrade-package="triggerPackageUpgrade"
           />
           <WorkspaceSslTab
             v-else-if="activeSubTab === 'ssl'"
@@ -719,6 +725,19 @@
       @close="showTerminalLockModal = false"
       @confirm="confirmLockTerminal"
     />
+
+    <!-- Isolated OS Package Task Runner Modal -->
+    <AptTaskRunnerModal
+      :is-open="aptRunnerOpen"
+      :server-id="currentServerId"
+      :hostname="server?.hostname"
+      :task-id="aptTaskId"
+      :task-unit="aptTaskUnit"
+      :task-detail="aptTaskDetail"
+      @close="aptRunnerOpen = false"
+      @completed="onAptTaskCompleted"
+      @trigger-upgrade="triggerOSUpgrade"
+    />
   </div>
 </template>
 
@@ -728,6 +747,7 @@ import { useI18n } from '../i18n'
 import { formatBytes, formatUptime, isServerOnline } from '../utils/formatters'
 import { useToast, confirmAction } from '../utils/useToast'
 import RemoteFileManagerModal from './workspace/RemoteFileManagerModal.vue'
+import AptTaskRunnerModal from './workspace/AptTaskRunnerModal.vue'
 import WorkspaceOverviewTab from './workspace/tabs/WorkspaceOverviewTab.vue'
 import WorkspaceProblemsTab from './workspace/tabs/WorkspaceProblemsTab.vue'
 import WorkspaceServicesPortsTab from './workspace/tabs/WorkspaceServicesPortsTab.vue'
@@ -1270,11 +1290,61 @@ async function submitMaintenance(action) {
   }
 }
 
+const aptRunnerOpen = ref(false)
+const aptTaskId = ref(null)
+const aptTaskUnit = ref('APT_UPDATE')
+const aptTaskDetail = ref('')
+
+async function startAptTask(unit, detail = '') {
+  if (!currentServerId.value || !isServerOnline(server.value)) return
+  try {
+    const token = localStorage.getItem('pantau_token') || ''
+    const res = await fetch('/api/logs/request', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({
+        server_id: currentServerId.value,
+        unit,
+        detail: detail || undefined,
+      }),
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      if (res.status === 409) {
+        const activeRes = await fetch(`/api/servers/${currentServerId.value}/apt/active`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        })
+        const activeData = await activeRes.json().catch(() => ({}))
+        if (activeData?.active?.id) {
+          aptTaskId.value = activeData.active.id
+          aptTaskUnit.value = activeData.active.unit
+          aptTaskDetail.value = activeData.active.detail || ''
+          aptRunnerOpen.value = true
+          return
+        }
+      }
+      toast.error(data.detail || 'Failed to start OS package operation')
+      return
+    }
+    aptTaskId.value = data.id
+    aptTaskUnit.value = unit
+    aptTaskDetail.value = detail || ''
+    aptRunnerOpen.value = true
+  } catch (err) {
+    toast.error('Failed to start OS package operation: ' + (err.message || 'Error'))
+  }
+}
+
 async function triggerOSUpdate() {
-  await dispatchAction('apt_update', {})
+  if (!isServerOnline(server.value)) return
+  await startAptTask('APT_UPDATE')
 }
 
 async function triggerOSUpgrade() {
+  if (!isServerOnline(server.value) || (server.value?.apt_upgradable || 0) <= 0) return
   const ok = await confirmAction({
     title: 'Upgrade OS Packages',
     message: `Upgrade ${server.value?.apt_upgradable || 0} operating system packages on ${server.value?.hostname}?`,
@@ -1282,7 +1352,25 @@ async function triggerOSUpgrade() {
     variant: 'warning',
   })
   if (!ok) return
-  await dispatchAction('apt_upgrade', {})
+  await startAptTask('APT_UPGRADE')
+}
+
+async function triggerPackageUpgrade(pkgName) {
+  if (!pkgName || !isServerOnline(server.value)) return
+  const ok = await confirmAction({
+    title: 'Upgrade Package',
+    message: `Upgrade package '${pkgName}' on ${server.value?.hostname}?`,
+    confirmText: 'Upgrade Package',
+    variant: 'warning',
+  })
+  if (!ok) return
+  await startAptTask('PKG_UPGRADE', pkgName)
+}
+
+async function onAptTaskCompleted() {
+  await loadServerDetail()
+  emit('refresh-problems')
+  if (server.value) emit('server-updated', server.value)
 }
 
 function openGuardrailConfirm(action) {

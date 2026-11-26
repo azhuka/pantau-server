@@ -70,6 +70,7 @@
             <th class="py-2 px-3">{{ t('col_pkg_current') }}</th>
             <th class="py-2 px-3">{{ t('col_pkg_new') }}</th>
             <th class="py-2 px-3">{{ t('ws_col_description') }}</th>
+            <th v-if="canApt" class="py-2 px-3 text-center w-20">Actions</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-800/40">
@@ -83,6 +84,25 @@
               {{ pkg.candidate_version || pkg.new_version || (pkg.status === 'upgradable' ? 'update ready' : 'up-to-date') }}
             </td>
             <td class="py-2 px-3 text-gray-400 truncate max-w-sm" :title="pkg.summary || ''">{{ pkg.summary || '-' }}</td>
+            <td v-if="canApt" class="py-2 px-3 text-center">
+              <button
+                type="button"
+                :disabled="!isOnline || (pkg.status !== 'upgradable' && !pkg.candidate_version)"
+                @click="$emit('upgrade-package', pkg.name)"
+                class="inline-flex items-center justify-center rounded border transition"
+                style="width: 26px; height: 26px; min-width: 26px; border-radius: 4px;"
+                :class="(!isOnline || (pkg.status !== 'upgradable' && !pkg.candidate_version))
+                  ? 'border-gray-800 bg-gray-900/40 text-gray-500 opacity-40 cursor-not-allowed'
+                  : 'border-amber-700/60 bg-amber-950/50 text-amber-300 hover:bg-amber-900/70 hover:text-white cursor-pointer'"
+                :title="!isOnline ? 'Asset is offline' : ((pkg.status !== 'upgradable' && !pkg.candidate_version) ? 'Package is already up-to-date' : `Upgrade ${pkg.name}`)"
+              >
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+              </button>
+            </td>
           </tr>
         </tbody>
       </table>
@@ -108,8 +128,12 @@ const { t } = useI18n()
 
 const props = defineProps({
   server: { type: Object, default: () => ({}) },
-  packagesList: { type: Array, default: () => [] }
+  packagesList: { type: Array, default: () => [] },
+  canApt: { type: Boolean, default: false },
+  isOnline: { type: Boolean, default: true },
 })
+
+defineEmits(['upgrade-package'])
 
 const search = ref('')
 const typeFilter = ref('all')
