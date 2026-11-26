@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.75
+
+- **Clear Activity Console Icon:** Replaced the terminal prompt SVG icon on the Activity Console toggle in Navbar.vue with an Activity waveform icon to eliminate ambiguity with SSH terminal controls.
+
+
 ### Versi v0.1.74
 
 - **Clean Main Navigation Tabs:** Removed all counter and status indicator badges from the main navigation tabs in Navbar.vue so every primary tab displays clean text only.

@@ -28,7 +28,7 @@
           <div class="font-bold text-sm tracking-wider text-gray-100 flex items-center gap-2 font-mono whitespace-nowrap">
             <span class="text-cyan-400 font-extrabold">{{ t('app_name') }}</span>
             <span class="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-800/60 tracking-normal">
-              v0.1.74
+              v0.1.75
             </span>
           </div>
           <div class="text-[10px] text-gray-400 tracking-wider font-mono uppercase whitespace-nowrap">
@@ -124,8 +124,8 @@
         class="p-1.5 rounded border border-gray-800 bg-gray-900/60 text-gray-400 hover:text-cyan-300 hover:border-cyan-700/50 transition cursor-pointer"
         title="Activity Console (Ctrl+`)"
       >
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
         </svg>
       </button>
 
