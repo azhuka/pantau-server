@@ -475,6 +475,7 @@
             @service-action="handleServiceAction"
             @refresh="loadServerData()"
             @monitored-updated="handleMonitoredUpdated"
+            @open-logs-tab="src => { initialLogSource = src; activeSubTab = 'logs' }"
           />
           <WorkspacePortsTab
             v-else-if="activeSubTab === 'ports'"
@@ -533,6 +534,7 @@
             :server-online="Boolean(server?.is_online)"
             :logs-list="logsList"
             :available-logs="availableLogsList"
+            :initial-source="initialLogSource"
           />
         </template>
       </div>
@@ -872,6 +874,7 @@ const hostSearchQuery = ref('')
 const loading = ref(false)
 const server = ref(null)
 const activeSubTab = ref('overview')
+const initialLogSource = ref('')
 
 const showGuardrailModal = ref(false)
 const guardrailAction = ref('reboot') // 'reboot' or 'poweroff'

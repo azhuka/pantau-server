@@ -95,9 +95,10 @@ const props = defineProps({
   serverOnline: { type: Boolean, default: false },
   logsList: { type: Array, default: () => [] },
   availableLogs: { type: Array, default: () => [] },
+  initialSource: { type: String, default: '' },
 })
 
-const selectedSource = ref('SYSTEM_ERRORS')
+const selectedSource = ref(props.initialSource || 'SYSTEM_ERRORS')
 const lineLimit = ref(200)
 const levelFilter = ref('all')
 const search = ref('')
@@ -119,7 +120,15 @@ const groupedSources = computed(() => {
   return groups
 })
 
+watch(() => props.initialSource, (src) => {
+  if (src) {
+    selectedSource.value = src
+    fetchOnDemandLogs()
+  }
+})
+
 watch(() => props.availableLogs, (list) => {
+  if (props.initialSource) return
   if (Array.isArray(list) && list.length && !list.some(s => s.id === selectedSource.value)) {
     selectedSource.value = list[0].id
   }

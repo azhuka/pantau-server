@@ -2,10 +2,10 @@
   <Teleport to="body">
     <div v-if="target" @click.self="$emit('close')" class="fixed inset-0 z-[100020] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 font-mono">
       <div class="w-full max-w-5xl max-h-[85vh] flex flex-col rounded-xl bg-[#070c18] border border-cyan-500/40 shadow-2xl overflow-hidden">
-        <!-- Header -->
+        <!-- 1. Header: Identity + Live Tail, Refresh, Copy, Download, Open in Logs Tab, Close -->
         <div class="flex items-center justify-between px-4 py-3 border-b border-cyan-500/20 bg-[#050811] flex-wrap gap-2">
           <div class="flex items-center gap-2 flex-wrap">
-            <span class="w-2 h-2 rounded-full bg-cyan-400 beacon-live"></span>
+            <span class="w-2 h-2 rounded-full" :class="liveTail && serverOnline ? 'bg-emerald-400 beacon-live' : 'bg-gray-500'"></span>
             <h3 class="text-xs font-bold text-gray-100 uppercase tracking-wider">
               Service Logs: <span class="text-cyan-300">{{ displayTitle }}</span>
             </h3>
@@ -15,19 +15,45 @@
             <span v-if="target.port" class="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-950 text-cyan-300 border border-cyan-800/60">
               Port {{ target.port }}
             </span>
-            <span v-if="pollStatus" class="text-[11px] text-amber-300">{{ pollStatus }}</span>
           </div>
 
-          <div class="flex items-center gap-1.5">
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <!-- Live Tail Toggle -->
             <button
               type="button"
-              @click="fetchLogs"
+              @click="toggleLiveTail"
+              class="px-2.5 h-[26px] rounded border text-[11px] font-bold inline-flex items-center gap-1.5 cursor-pointer transition"
+              :class="liveTail ? 'bg-emerald-950/70 border-emerald-600/60 text-emerald-300' : 'bg-gray-900 border-gray-700 text-gray-400 hover:text-white'"
+              title="Toggle automatic Live Tail (4s interval)"
+            >
+              <span class="w-1.5 h-1.5 rounded-full" :class="liveTail ? 'bg-emerald-400' : 'bg-gray-500'"></span>
+              <span>Live Tail: {{ liveTail ? 'ON' : 'PAUSED' }}</span>
+            </button>
+
+            <!-- Refresh -->
+            <button
+              type="button"
+              @click="fetchLogs(false)"
               :disabled="fetching || !serverOnline"
               class="w-[26px] h-[26px] rounded bg-gray-900 hover:bg-cyan-950 border border-gray-700 text-gray-300 hover:text-cyan-300 inline-flex items-center justify-center cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-              :title="serverOnline ? 'Refresh log output' : 'Host is offline'"
+              :title="serverOnline ? 'Refresh log output now' : 'Host is offline'"
             >
               <svg class="w-3.5 h-3.5" :class="{ 'animate-spin': fetching }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
             </button>
+
+            <!-- Copy Raw Logs -->
+            <button
+              type="button"
+              @click="copyLogs"
+              :disabled="filteredLines.length === 0"
+              class="w-[26px] h-[26px] rounded bg-gray-900 hover:bg-cyan-950 border border-gray-700 text-gray-300 hover:text-cyan-300 inline-flex items-center justify-center cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              :title="copied ? 'Copied to clipboard!' : 'Copy visible logs to clipboard'"
+            >
+              <svg v-if="!copied" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              <svg v-else class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            </button>
+
+            <!-- Download -->
             <button
               type="button"
               @click="downloadLogs"
@@ -37,6 +63,18 @@
             >
               <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             </button>
+
+            <!-- Open in Full Logs Tab -->
+            <button
+              type="button"
+              @click="openInFullTab"
+              class="w-[26px] h-[26px] rounded bg-gray-900 hover:bg-cyan-950 border border-gray-700 text-gray-300 hover:text-cyan-300 inline-flex items-center justify-center cursor-pointer"
+              title="Open in full Logs tab"
+            >
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            </button>
+
+            <!-- Close -->
             <button
               type="button"
               @click="$emit('close')"
@@ -48,8 +86,8 @@
           </div>
         </div>
 
-        <!-- Contextual Log Sources Bar -->
-        <div class="px-4 py-2.5 border-b border-gray-800/80 bg-[#060a14] flex items-center gap-2 flex-wrap">
+        <!-- 2. Contextual Log Sources Bar -->
+        <div v-if="contextualSources.length > 1" class="px-4 py-2 border-b border-gray-800/80 bg-[#060a14] flex items-center gap-2 flex-wrap">
           <span class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Sources:</span>
           <button
             v-for="src in contextualSources"
@@ -64,10 +102,10 @@
           </button>
         </div>
 
-        <!-- Filter Controls -->
+        <!-- 3. Filter Controls -->
         <div class="px-4 py-2 border-b border-gray-800/80 flex items-center justify-between flex-wrap gap-2 text-xs">
           <div class="flex items-center gap-2 flex-wrap">
-            <select v-model.number="lineLimit" @change="fetchLogs" class="noc-filter-select">
+            <select v-model.number="lineLimit" @change="fetchLogs(false)" class="noc-filter-select">
               <option :value="50">50 Lines</option>
               <option :value="100">100 Lines</option>
               <option :value="200">200 Lines</option>
@@ -86,11 +124,11 @@
               <input v-model="search" type="search" placeholder="Filter log lines..." />
             </div>
           </div>
-          <span class="text-[11px] text-gray-400">{{ filteredLines.length }} / {{ rawLines.length }} lines</span>
+          <span class="text-[11px] text-cyan-300">{{ filteredLines.length }} / {{ rawLines.length }} lines</span>
         </div>
 
-        <!-- Log Viewport -->
-        <div class="flex-1 overflow-y-auto bg-[#050811] p-2">
+        <!-- 4. Log Viewport -->
+        <div ref="viewportRef" @scroll="handleScroll" class="flex-1 overflow-y-auto bg-[#050811] p-2 min-h-[280px]">
           <div v-if="filteredLines.length === 0" class="py-12 text-center text-xs text-gray-400">
             {{ fetching ? 'Streaming contextual logs from Pantau Agent...' : (rawLines.length === 0 ? 'No log entries returned for this source.' : 'No log lines match the active filter.') }}
           </div>
@@ -99,13 +137,36 @@
             <div class="noc-log-line" :class="lineColorClass(entry.text)">{{ entry.text }}</div>
           </div>
         </div>
+
+        <!-- 5. Statusbar Footer -->
+        <div class="px-4 py-2 border-t border-cyan-500/20 bg-[#050811] flex items-center justify-between flex-wrap gap-2 text-[11px] text-gray-400">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="w-2 h-2 rounded-full" :class="fetching ? 'bg-amber-400' : 'bg-emerald-400'"></span>
+            <span class="font-semibold text-gray-200">{{ pollStatus || (liveTail ? 'Ready' : 'Paused') }}</span>
+            <span>·</span>
+            <span>{{ filteredLines.length }} lines</span>
+            <span>·</span>
+            <span>Target: <strong class="text-cyan-300">{{ activeSourceDesc }}</strong></span>
+          </div>
+          <div class="flex items-center gap-2.5">
+            <button
+              v-if="userScrolledUp"
+              type="button"
+              @click="jumpToLatest"
+              class="px-2 py-0.5 rounded bg-cyan-950/70 border border-cyan-500/40 text-cyan-300 hover:text-white text-[10px] font-bold cursor-pointer"
+            >
+              ↓ Jump to Latest
+            </button>
+            <span class="text-gray-500">Auto Tail 4s</span>
+          </div>
+        </div>
       </div>
     </div>
   </Teleport>
 </template>
 
 <script setup>
-import { ref, computed, watch, onUnmounted } from 'vue'
+import { ref, computed, watch, nextTick, onUnmounted } from 'vue'
 
 const props = defineProps({
   serverId: { type: [Number, String], default: null },
@@ -114,8 +175,9 @@ const props = defineProps({
   availableLogs: { type: Array, default: () => [] },
 })
 
-defineEmits(['close'])
+const emit = defineEmits(['close', 'open-full-tab'])
 
+const viewportRef = ref(null)
 const selectedSource = ref('')
 const lineLimit = ref(200)
 const levelFilter = ref('all')
@@ -123,7 +185,12 @@ const search = ref('')
 const rawLogText = ref('')
 const fetching = ref(false)
 const pollStatus = ref('')
+const liveTail = ref(true)
+const userScrolledUp = ref(false)
+const copied = ref(false)
+
 let pollCancelled = false
+let tailTimer = null
 
 const cleanUnit = computed(() => String(props.target?.unit || '').replace(/\.service$/, '').trim())
 const cleanProc = computed(() => String(props.target?.processName || '').replace(/\.service$/, '').trim())
@@ -146,50 +213,105 @@ const contextualSources = computed(() => {
   const sources = []
   const seen = new Set()
 
-  sources.push({
-    id: cleanUnit.value,
-    label: `Systemd Journal (${cleanUnit.value})`,
-    desc: `journalctl -u ${cleanUnit.value}`,
-  })
+  sources.push({ id: cleanUnit.value, label: `Systemd Journal (${cleanUnit.value})`, desc: `journalctl -u ${cleanUnit.value}` })
   seen.add(cleanUnit.value.toUpperCase())
 
   if (cleanProc.value && cleanProc.value !== cleanUnit.value && !seen.has(cleanProc.value.toUpperCase())) {
-    sources.push({
-      id: cleanProc.value,
-      label: `Process Journal (${cleanProc.value})`,
-      desc: `journalctl _COMM=${cleanProc.value}`,
-    })
+    sources.push({ id: cleanProc.value, label: `Process Journal (${cleanProc.value})`, desc: `journalctl _COMM=${cleanProc.value}` })
     seen.add(cleanProc.value.toUpperCase())
   }
 
-  const tokens = [cleanUnit.value.toLowerCase(), cleanProc.value.toLowerCase()].filter(Boolean)
+  // Smart alias & token matching matching mature NOC blueprint
+  const tokens = new Set()
+  for (const raw of [cleanUnit.value.toLowerCase(), cleanProc.value.toLowerCase()]) {
+    if (!raw) continue
+    tokens.add(raw)
+    if (raw.endsWith('d') && raw.length > 3) tokens.add(raw.slice(0, -1))
+    raw.split(/[-_]/).forEach(p => { if (p.length > 2) tokens.add(p) })
+  }
+  if (tokens.has('mysql') || tokens.has('mariadb')) { tokens.add('mysql'); tokens.add('mariadb') }
+  if (tokens.has('apache') || tokens.has('apache2') || tokens.has('httpd')) { tokens.add('apache'); tokens.add('apache2'); tokens.add('httpd') }
+  if (tokens.has('ssh') || tokens.has('sshd')) { tokens.add('auth'); tokens.add('ssh'); tokens.add('sshd') }
+
   for (const src of props.availableLogs || []) {
     const sid = String(src.id || '')
     if (!sid || seen.has(sid.toUpperCase())) continue
-    const hay = `${sid} ${src.name || ''} ${src.desc || ''}`.toLowerCase()
-    if (tokens.some(tk => hay.includes(tk))) {
-      sources.push({ id: sid, label: src.name || sid, desc: src.desc || sid })
+    const hay = `${sid} ${src.name || ''} ${src.desc || src.path || ''} ${src.group || ''}`.toLowerCase()
+    if ([...tokens].some(tk => hay.includes(tk))) {
+      sources.push({ id: sid, label: src.name || sid, desc: src.desc || src.path || sid })
       seen.add(sid.toUpperCase())
     }
   }
   return sources
 })
 
+const activeSourceDesc = computed(() => {
+  const found = contextualSources.value.find(s => s.id === selectedSource.value)
+  return found?.desc || selectedSource.value || '-'
+})
+
+function stopTailTimer() {
+  if (tailTimer) { clearTimeout(tailTimer); tailTimer = null }
+}
+
+function scheduleNextTail() {
+  stopTailTimer()
+  if (!props.target || !liveTail.value || !props.serverOnline) return
+  tailTimer = setTimeout(() => {
+    if (props.target && liveTail.value && !document.hidden) fetchLogs(true)
+  }, 4000)
+}
+
 watch(() => props.target, (val) => {
   pollCancelled = true
+  stopTailTimer()
   rawLogText.value = ''
   pollStatus.value = ''
   levelFilter.value = 'all'
   search.value = ''
+  userScrolledUp.value = false
+  liveTail.value = true
   if (val && cleanUnit.value) {
     selectedSource.value = cleanUnit.value
-    fetchLogs()
+    fetchLogs(false)
   }
 })
 
 function selectSource(srcId) {
   selectedSource.value = srcId
-  fetchLogs()
+  rawLogText.value = ''
+  fetchLogs(false)
+}
+
+function toggleLiveTail() {
+  liveTail.value = !liveTail.value
+  if (liveTail.value) {
+    userScrolledUp.value = false
+    fetchLogs(true)
+  } else {
+    stopTailTimer()
+  }
+}
+
+function handleScroll() {
+  const el = viewportRef.value
+  if (!el) return
+  const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 28
+  if (!atBottom && liveTail.value) {
+    userScrolledUp.value = true
+    liveTail.value = false
+    stopTailTimer()
+  } else if (atBottom) {
+    userScrolledUp.value = false
+  }
+}
+
+async function jumpToLatest() {
+  userScrolledUp.value = false
+  liveTail.value = true
+  await nextTick()
+  if (viewportRef.value) viewportRef.value.scrollTop = viewportRef.value.scrollHeight
+  scheduleNextTail()
 }
 
 const rawLines = computed(() => {
@@ -220,13 +342,15 @@ function lineColorClass(line) {
   return 'text-gray-300'
 }
 
-async function fetchLogs() {
+async function fetchLogs(isTail) {
   if (!props.serverId || !props.serverOnline || !selectedSource.value) return
+  if (fetching.value && isTail) return
   pollCancelled = true
+  stopTailTimer()
   await new Promise(r => setTimeout(r, 20))
   pollCancelled = false
   fetching.value = true
-  pollStatus.value = 'Requesting logs...'
+  pollStatus.value = isTail ? 'Tail polling...' : 'Requesting logs...'
   const token = localStorage.getItem('pantau_token')
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
   try {
@@ -243,7 +367,15 @@ async function fetchLogs() {
       if (pollCancelled) break
       const pRes = await fetch(`/api/logs/request/${data.id}`, { headers: { Authorization: `Bearer ${token}` } })
       const pData = await pRes.json()
-      if (pData.status === 'success') { rawLogText.value = pData.result || ''; pollStatus.value = ''; break }
+      if (pData.status === 'success') {
+        rawLogText.value = pData.result || ''
+        pollStatus.value = ''
+        if (!userScrolledUp.value) {
+          await nextTick()
+          if (viewportRef.value) viewportRef.value.scrollTop = viewportRef.value.scrollHeight
+        }
+        break
+      }
       if (pData.status === 'failed') { pollStatus.value = pData.result || 'Agent failed to read logs'; break }
       pollStatus.value = pData.status === 'executing' ? 'Reading journal...' : 'Queued...'
     }
@@ -251,6 +383,19 @@ async function fetchLogs() {
     pollStatus.value = 'Network error'
   } finally {
     fetching.value = false
+    scheduleNextTail()
+  }
+}
+
+async function copyLogs() {
+  const txt = filteredLines.value.map(x => x.text).join('\n')
+  if (!txt) return
+  try {
+    await navigator.clipboard.writeText(txt)
+    copied.value = true
+    setTimeout(() => { copied.value = false }, 2000)
+  } catch (e) {
+    console.error('Clipboard copy failed:', e)
   }
 }
 
@@ -264,5 +409,15 @@ function downloadLogs() {
   URL.revokeObjectURL(url)
 }
 
-onUnmounted(() => { pollCancelled = true })
+function openInFullTab() {
+  const src = selectedSource.value || cleanUnit.value
+  stopTailTimer()
+  pollCancelled = true
+  emit('open-full-tab', src)
+}
+
+onUnmounted(() => {
+  pollCancelled = true
+  stopTailTimer()
+})
 </script>

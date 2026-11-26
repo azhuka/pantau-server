@@ -7,6 +7,7 @@
       :target="logTarget"
       :available-logs="availableLogs"
       @close="logTarget = null"
+      @open-full-tab="src => { logTarget = null; $emit('open-logs-tab', src) }"
     />
 
     <!-- Contextual Service History Panel -->
@@ -288,7 +289,7 @@ const props = defineProps({
   availableLogs: { type: Array, default: () => [] },
 })
 
-const emit = defineEmits(['service-action', 'refresh', 'monitored-updated'])
+const emit = defineEmits(['service-action', 'refresh', 'monitored-updated', 'open-logs-tab'])
 
 const search = ref('')
 const statusFilter = ref('all')

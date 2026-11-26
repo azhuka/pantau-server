@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.92
+
+Penyempurnaan penuh workflow modal log per-service pada WorkspaceServiceLogModal.vue: Live Tail 4 detik otomatis dengan pause saat scroll, tombol Jump to Latest di statusbar footer, Copy ke clipboard, pencocokan alias log dinamis, serta tombol Open in Full Logs Tab yang meneruskan sumber log ke WorkspaceLogsTab.vue.
+
+
 ### Versi v0.1.91
 
 Penambahan konsol log kontekstual per-service (WorkspaceServiceLogModal.vue) dengan deteksi otomatis sumber journald unit, proses, dan berkas log terkait saat operator memilih View Logs di tab Services.
