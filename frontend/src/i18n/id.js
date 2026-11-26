@@ -863,6 +863,7 @@ export default {
   th_message_activity: 'Pesan & Aktivitas',
   th_tty: 'TTY',
   th_source_ip: 'IP Sumber',
+  th_pwd: 'Direktori (PWD)',
   th_command_details: 'Perintah / Detail',
   th_status_code: 'Kode',
   th_details: 'Detail',

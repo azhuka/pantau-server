@@ -925,6 +925,7 @@ export default {
   th_message_activity: 'Message & Activity',
   th_tty: 'TTY',
   th_source_ip: 'Source IP',
+  th_pwd: 'Directory (PWD)',
   th_command_details: 'Command / Details',
   th_status_code: 'Code',
   th_details: 'Details',

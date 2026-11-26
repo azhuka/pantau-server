@@ -194,7 +194,16 @@
       </div>
     </Teleport>
 
-    <UserActivityModal :is-open="activityModalOpen" :server-id="serverId" :username="activityUsername" @close="activityModalOpen = false" />
+    <UserActivityModal
+      :is-open="activityModalOpen"
+      :server-id="serverId"
+      :username="activityUsername"
+      :account="selectedActivityAccount"
+      :is-online="isOnline"
+      :is-viewer="isViewer"
+      @close="activityModalOpen = false"
+      @terminate-ssh="(u, tty) => $emit('terminate-ssh', u, tty)"
+    />
   </div>
 </template>
 
@@ -229,6 +238,9 @@ const showCreateForm = ref(false)
 const createForm = ref({ username: '', password: '', shell: '/bin/bash', is_sudo: false })
 const activityModalOpen = ref(false)
 const activityUsername = ref('')
+const selectedActivityAccount = computed(() =>
+  (props.accountsList || []).find(a => (a.user || a.name) === activityUsername.value) || null
+)
 const search = ref('')
 const currentPage = ref(1)
 const pageSize = ref(10)

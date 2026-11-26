@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.101
+
+Peningkatan informatif & interaktif pada UserActivityModal.vue: 4 kartu ringkasan akun (UID/GID, Groups, Home/Shell, Sesi Aktif), chip filter kategori interaktif dengan jumlah live, dropdown jenis event, kolom Directory (PWD), paginasi otomatis, serta tombol Terminate Session langsung di header modal.
+
+
 ### Versi v0.1.100
 
 Perbaikan bug kosongnya tabel UserActivityModal.vue: membaca key parsed.logins dari payload USER_ACTIVITY agen serta memetakan field ts, from, cmd, dan method.
