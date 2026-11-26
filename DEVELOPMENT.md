@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.83
+
+- **Power Off & Proxmox HA Auto-Detection:** Implemented Proxmox HA auto-revive detection in telemetry_service.py (auto-enables is_proxmox_ha=1 when a host revives within 5 minutes of poweroff_host with uptime <180s) and kept operator-initiated poweroff_host incidents visible as active warning (is_ignored=0) per blueprint.
+
+
 ### Versi v0.1.82
 
 - **Reboot & Power Control Guardrail Hardening:** Enforced operator password and 2FA/TOTP verification on reboot_host and poweroff_host in server/routers/servers.py and ServerWorkspaceModal.vue, fixed Proxmox HA policy to allow reboot_host (blocking only poweroff_host), added offline and duplicate-pending guards, and added disabled states on offline hosts.

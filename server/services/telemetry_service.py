@@ -1,6 +1,9 @@
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
+from sqlalchemy import desc
 from sqlalchemy.orm import Session
+from models.command import Command
+from models.misc import AuditLog
 from models.server import Server, ServerExtras, SystemSnapshot
 from services.problem_service import evaluate_server_problems
 
@@ -148,7 +151,37 @@ def process_telemetry_report(db: Session, api_key: str, report_dict: dict) -> di
             extras.apt_packages = _to_json(apt_data["packages"])
         extras.apt_last_update = now
 
-    # 3. Evaluasi insiden (termasuk Sesi Remote SSH Aktif)
+    # 3. Proxmox HA Auto-Revive Heuristic (if host revives <5m after poweroff_host with uptime <180s)
+    uptime_raw = report_dict.get("uptime")
+    try:
+        uptime_val = int(uptime_raw) if uptime_raw is not None else None
+    except (TypeError, ValueError):
+        uptime_val = None
+    if uptime_val is not None and uptime_val < 180 and getattr(srv, "is_proxmox_ha", 0) == 0:
+        recent_cutoff = now - timedelta(seconds=300)
+        recent_poweroff = (
+            db.query(Command)
+            .filter(
+                Command.server_id == srv.id,
+                Command.action == "poweroff_host",
+                Command.created_at >= recent_cutoff,
+            )
+            .order_by(desc(Command.created_at))
+            .first()
+        )
+        if recent_poweroff:
+            srv.is_proxmox_ha = 1
+            db.add(AuditLog(
+                server_id=srv.id,
+                username="System",
+                action="proxmox_ha_detected",
+                target=f"{srv.hostname} ({srv.ip_address})",
+                result="success",
+                meta=f"Auto-revive detected after poweroff (uptime={uptime_val}s); enabled Proxmox HA protection",
+                created_at=now,
+            ))
+
+    # 4. Evaluasi insiden (termasuk Sesi Remote SSH Aktif)
     evaluate_server_problems(db, srv, report_dict, extras)
 
     db.commit()

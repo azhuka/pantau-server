@@ -857,19 +857,6 @@ def dispatch_server_action(
 
         # Never persist credentials in commands.params or audit_logs.target
         params = {}
-        if action == "poweroff_host":
-            prob = db.query(ServerProblem).filter(
-                ServerProblem.server_id == sid,
-                ServerProblem.key == "agent_stale",
-                ServerProblem.resolved_at.is_(None),
-            ).first()
-            if prob:
-                prob.is_ignored = 1
-                prob.ignored_until = None
-                prob.ignored_by = user.username
-                prob.ignored_reason = f"SERVER POWERED OFF BY OPERATOR ({user.username.upper()})"
-                prob.ignore_mode = "permanent"
-                prob.updated_at = now
 
     cmd = Command(
         server_id=sid,
