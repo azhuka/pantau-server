@@ -684,7 +684,11 @@ export default {
   ipm_btn_saving: 'Menyimpan...',
 
   // Packages Tab
+  col_pkg_status: 'Status',
   col_pkg_name: 'Paket',
+  col_pkg_type: 'Tipe',
+  col_pkg_version: 'Versi',
+  col_pkg_size: 'Ukuran',
   col_pkg_current: 'Versi Saat Ini',
   col_pkg_new: 'Versi Pembaruan',
   ws_packages_desc: 'Daftar paket APT terpasang dan paket yang membutuhkan pembaruan sistem operasi pada host ini.',

@@ -544,8 +544,15 @@
             :server="server"
             :packages-list="packagesList"
             :can-apt="userPerms.can_apt"
+            :is-viewer="currentUser?.role === 'viewer'"
             :is-online="isServerOnline(server)"
+            :apt-task-running="aptTaskRunning"
+            :refreshing="refreshingPackages"
             @upgrade-package="triggerPackageUpgrade"
+            @upgrade-all="triggerOSUpgrade"
+            @refresh-packages="refreshPackagesOnDemand"
+            @clear-cache="triggerClearPackageCache"
+            @view-logs="openPackageLogs"
           />
           <WorkspaceSslTab
             v-else-if="activeSubTab === 'ssl'"
@@ -844,6 +851,14 @@
       @trigger-upgrade="triggerOSUpgrade"
       @trigger-fix="startAptTask('APT_FIX')"
     />
+
+    <!-- Package History Logs Modal -->
+    <PackageLogsModal
+      :server-id="currentServerId"
+      :pkg-name="pkgLogTarget"
+      :is-online="isServerOnline(server)"
+      @close="pkgLogTarget = ''"
+    />
   </div>
 </template>
 
@@ -854,6 +869,7 @@ import { formatBytes, formatUptime, isServerOnline } from '../utils/formatters'
 import { useToast, confirmAction } from '../utils/useToast'
 import RemoteFileManagerModal from './workspace/RemoteFileManagerModal.vue'
 import AptTaskRunnerModal from './workspace/AptTaskRunnerModal.vue'
+import PackageLogsModal from './workspace/tabs/PackageLogsModal.vue'
 import WorkspaceOverviewTab from './workspace/tabs/WorkspaceOverviewTab.vue'
 import WorkspaceProblemsTab from './workspace/tabs/WorkspaceProblemsTab.vue'
 import WorkspaceServicesTab from './workspace/tabs/WorkspaceServicesTab.vue'
@@ -1562,6 +1578,93 @@ async function triggerOSUpgrade() {
   })
   if (!ok) return
   await startAptTask('APT_UPGRADE')
+}
+
+const refreshingPackages = ref(false)
+const pkgLogTarget = ref('')
+
+function openPackageLogs(pkgName) {
+  if (!pkgName) return
+  pkgLogTarget.value = pkgName
+}
+
+async function refreshPackagesOnDemand() {
+  if (!currentServerId.value || !isServerOnline(server.value) || refreshingPackages.value) return
+  refreshingPackages.value = true
+  try {
+    const token = localStorage.getItem('token')
+    const headers = { 'Content-Type': 'application/json' }
+    if (token) headers.Authorization = `Bearer ${token}`
+    const res = await fetch('/api/logs/request', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ server_id: currentServerId.value, unit: 'PKG_LIST' }),
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`)
+
+    for (let i = 0; i < 60; i++) {
+      await new Promise(r => setTimeout(r, 600))
+      const poll = await fetch(`/api/logs/request/${data.id}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+      const pData = await poll.json().catch(() => ({}))
+      if (pData.status === 'success') {
+        const pkgRes = await fetch(`/api/servers/${currentServerId.value}/packages`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        })
+        const pkgJson = await pkgRes.json().catch(() => ({}))
+        if (pkgJson.packages) packagesList.value = pkgJson.packages
+        toast.success(`Package inventory refreshed (${(packagesList.value || []).length} packages)`)
+        return
+      }
+      if (pData.status === 'failed') {
+        throw new Error(pData.result || 'Failed to scan packages on host')
+      }
+    }
+    throw new Error('Timed out waiting for package inventory scan')
+  } catch (err) {
+    toast.error('Failed to refresh packages: ' + (err.message || 'Error'))
+  } finally {
+    refreshingPackages.value = false
+  }
+}
+
+async function triggerClearPackageCache(pkgName) {
+  if (!pkgName || !currentServerId.value || !isServerOnline(server.value)) return
+  const ok = await confirmAction({
+    title: 'Clear Package Cache',
+    message: `Clear cached .deb archive files for '${pkgName}' on ${server.value?.hostname}?`,
+    confirmText: 'Clear Cache',
+    variant: 'warning',
+  })
+  if (!ok) return
+  try {
+    const token = localStorage.getItem('token')
+    const headers = { 'Content-Type': 'application/json' }
+    if (token) headers.Authorization = `Bearer ${token}`
+    const res = await fetch('/api/logs/request', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ server_id: currentServerId.value, unit: 'PKG_CLEAR_CACHE', detail: pkgName }),
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`)
+
+    for (let i = 0; i < 20; i++) {
+      await new Promise(r => setTimeout(r, 500))
+      const poll = await fetch(`/api/logs/request/${data.id}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+      const pData = await poll.json().catch(() => ({}))
+      if (pData.status === 'success') {
+        toast.success(pData.result || `Package cache cleared for ${pkgName}`)
+        return
+      }
+      if (pData.status === 'failed') {
+        throw new Error(pData.result || 'Failed to clear package cache')
+      }
+    }
+    throw new Error('Timed out waiting for cache cleanup')
+  } catch (err) {
+    toast.error('Failed to clear package cache: ' + (err.message || 'Error'))
+  }
 }
 
 async function triggerPackageUpgrade(pkgName) {

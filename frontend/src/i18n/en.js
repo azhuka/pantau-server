@@ -687,7 +687,11 @@ export default {
   ipm_btn_saving: 'Saving...',
 
   // Packages Tab
+  col_pkg_status: 'Status',
   col_pkg_name: 'Package',
+  col_pkg_type: 'Type',
+  col_pkg_version: 'Version',
+  col_pkg_size: 'Size',
   col_pkg_current: 'Current Version',
   col_pkg_new: 'New Version',
   ws_packages_desc: 'List of installed APT packages and pending operating system upgrades on this host.',

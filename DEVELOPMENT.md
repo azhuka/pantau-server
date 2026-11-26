@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.110
+
+Audit dan penyelarasan penuh fitur Packages: perbaikan penyimpanan hasil PKG_LIST dan antrean otomatis pasca-upgrade di api_agent.py, pelestarian status runtime systemd pada get_server_packages di servers.py, penambahan tombol Refresh (PKG_LIST), Upgrade All, sorting kolom, filter status runtime, dropdown Actions (Upgrade/View Logs/Clear Cache), serta modal PackageLogsModal (PKG_LOGS).
+
+
 ### Versi v0.1.109
 
 Penegakan aturan global modal: seluruh 28 komponen modal tidak lagi tertutup saat klik backdrop luar (hanya via Close/Esc dan proses latar belakang tetap berjalan), pembukuan aturan di GEMINI.md, serta penyatuan sistem notifikasi terpadu pada useToast.js & NocToastContainer.vue (kartu notifikasi kaya dengan badge host, durasi, jeda saat hover, klik untuk buka konsol tugas, dan notifikasi desktop).

@@ -1376,7 +1376,8 @@ def get_server_packages(sid: int, user: User = Depends(get_current_user), db: Se
             "size_kb": pkg.get("size_kb") or 0,
             "summary": pkg.get("summary") or "",
             "is_user": bool(pkg.get("is_user")),
-            "status": "upgradable" if upg else (pkg.get("status") or "installed"),
+            "is_upgradable": bool(upg),
+            "status": pkg.get("status") or "installed",
         })
 
     for name, upg in apt_map.items():
@@ -1389,10 +1390,11 @@ def get_server_packages(sid: int, user: User = Depends(get_current_user), db: Se
                 "size_kb": 0,
                 "summary": ", ".join(upg.get("services") or []),
                 "is_user": True,
-                "status": "upgradable",
+                "is_upgradable": True,
+                "status": "installed",
             })
 
-    packages.sort(key=lambda x: (0 if x["status"] == "upgradable" else 1, x["name"].lower()))
+    packages.sort(key=lambda x: (0 if x["is_upgradable"] else 1, x["name"].lower()))
     upg_cnt = extras.apt_upgradable if extras.apt_upgradable is not None else len(apt_map)
     return {"ok": True, "packages": packages, "upgradable_count": upg_cnt}
 

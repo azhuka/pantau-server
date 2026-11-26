@@ -400,6 +400,26 @@ def api_log_result(
     req.updated_at = datetime.utcnow()
     if req.unit in _APT_UNITS and req.status == "success":
         _sync_apt_state_from_result(db, server, req.result)
+        if req.unit in ("APT_UPGRADE", "APT_UPGRADE_INTERACT", "APT_DIST_UPGRADE", "PKG_UPGRADE"):
+            recent_pkg_req = (
+                db.query(LogRequest)
+                .filter(
+                    LogRequest.server_id == server.id,
+                    LogRequest.unit == "PKG_LIST",
+                    LogRequest.status == "pending",
+                )
+                .first()
+            )
+            if not recent_pkg_req:
+                db.add(LogRequest(server_id=server.id, unit="PKG_LIST", status="pending"))
+    elif req.unit == "PKG_LIST" and req.status == "success":
+        raw_res = (req.result or "").strip()
+        if raw_res.startswith("[") and raw_res.endswith("]"):
+            extras = db.query(ServerExtras).filter(ServerExtras.server_id == server.id).first()
+            if not extras:
+                extras = ServerExtras(server_id=server.id)
+                db.add(extras)
+            extras.installed_packages = raw_res
     db.commit()
     return {"ok": True}
 
@@ -464,9 +484,12 @@ def api_logs_request_create(
     if not user.can_access_server(sid):
         raise HTTPException(status_code=403, detail="Access denied for this asset")
     is_apt = unit in _APT_UNITS
-    if is_apt:
+    if is_apt or unit == "PKG_CLEAR_CACHE":
         if not (user.is_master_admin or user.has_perm("can_apt")):
             raise HTTPException(status_code=403, detail="Permission can_apt is required for OS package operations")
+    elif unit in ("PKG_LIST", "PKG_LOGS"):
+        if not (user.is_master_admin or user.is_viewer() or user.has_perm("can_apt") or user.has_perm("can_audit") or user.has_perm("can_services")):
+            raise HTTPException(status_code=403, detail="Permission can_apt, can_audit, or can_services is required")
     elif not (user.is_master_admin or user.has_perm("can_audit") or user.has_perm("can_services")):
         raise HTTPException(status_code=403, detail="Permission can_audit or can_services is required")
 
@@ -513,7 +536,7 @@ def api_logs_request_create(
     logreq = LogRequest(server_id=sid, unit=unit, lines=lines, detail=detail, status="pending")
     db.add(logreq)
 
-    if is_apt:
+    if is_apt or unit == "PKG_CLEAR_CACHE":
         action_map = {
             "APT_UPDATE": "apt_update",
             "APT_UPGRADE": "apt_upgrade",
@@ -522,6 +545,7 @@ def api_logs_request_create(
             "PKG_UPGRADE": "apt_pkg_upgrade",
             "APT_FIX": "apt_upgrade",
             "PKG_CLEAN": "apt_update",
+            "PKG_CLEAR_CACHE": "apt_clean",
         }
         db.add(AuditLog(
             server_id=sid,
