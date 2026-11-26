@@ -689,14 +689,19 @@ def execute_command(cfg: dict, command: dict) -> dict:
         result = _exec_update_agent(cfg, command)
     elif action in ("reboot_host", "poweroff_host"):
         result = _exec_host_control(action)
-    elif action not in ("restart", "start", "stop"):
+    elif action in (
+        "restart", "start", "stop", "reload", "enable", "disable",
+        "restart_service", "start_service", "stop_service",
+        "reload_service", "enable_service", "disable_service",
+    ):
+        mapped_action = action.removesuffix("_service")
+        result = _exec_service_action(mapped_action, command)
+    else:
         result = {
             "ok": False,
             "output": f"Aksi tidak dikenal oleh agen ini ('{action}') "
                       "— indikasi agen versi lama. Update agen: jalankan ulang install.sh.",
         }
-    else:
-        result = _exec_service_action(action, command)
 
     print(f"[CMD] Hasil: {result['output']}")
     return result
@@ -1016,6 +1021,8 @@ def _exec_kill_process(command: dict) -> dict:
     params = command.get("params") or {}
     pid = str(params.get("pid", "")).strip()
     signal_name = str(params.get("signal", "TERM")).strip().upper()
+    if signal_name.startswith("SIG"):
+        signal_name = signal_name[3:]
     if signal_name not in ("TERM", "15", "KILL", "9", "STOP", "19", "CONT", "18"):
         signal_name = "TERM"
 
@@ -2017,8 +2024,17 @@ def _exec_update_agent(cfg: dict, command: dict) -> dict:
 
 
 def _exec_service_action(action: str, command: dict) -> dict:
-    process_name = command.get("process_name", "")
-    service_name = command.get("service_name", "")
+    params = command.get("params") or {}
+    if not isinstance(params, dict):
+        params = {}
+    process_name = command.get("process_name") or params.get("process_name") or ""
+    service_name = (
+        command.get("service_name")
+        or params.get("service_name")
+        or params.get("name")
+        or params.get("unit")
+        or ""
+    )
 
     if action not in ALLOWED_SYSTEMCTL_ACTIONS:
         return {"ok": False, "output": f"Aksi tidak diizinkan: {action}"}
