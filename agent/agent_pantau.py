@@ -676,8 +676,18 @@ def execute_command(cfg: dict, command: dict) -> dict:
         result = _exec_firewall_port_rule(command)
     elif action == "kill_process":
         result = _exec_kill_process(command)
-    elif action in ("user_create", "user_lock", "user_unlock", "user_delete", "session_terminate", "terminate_session"):
-        result = _exec_user_action(action, command)
+    elif action in (
+        "user_create", "user_lock", "user_unlock", "user_delete",
+        "create_user", "lock_user", "unlock_user", "delete_user",
+        "session_terminate", "terminate_session",
+    ):
+        u_map = {
+            "create_user": "user_create",
+            "lock_user": "user_lock",
+            "unlock_user": "user_unlock",
+            "delete_user": "user_delete",
+        }
+        result = _exec_user_action(u_map.get(action, action), command)
     elif action in ("cron_add", "cron_toggle", "cron_delete", "cron_run_now"):
         result = _exec_cron_action(action, command)
     elif action in ("ssl_path_add", "ssl_path_remove"):

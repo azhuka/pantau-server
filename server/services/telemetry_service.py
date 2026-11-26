@@ -111,6 +111,8 @@ def process_telemetry_report(db: Session, api_key: str, report_dict: dict) -> di
 
     if "accounts" in report_dict:
         extras.accounts = _to_json(report_dict["accounts"])
+    if "groups" in report_dict or "system_groups" in report_dict:
+        extras.system_groups = _to_json(report_dict.get("groups") if "groups" in report_dict else report_dict.get("system_groups"))
     if "security" in report_dict:
         extras.security = _to_json(report_dict["security"])
 

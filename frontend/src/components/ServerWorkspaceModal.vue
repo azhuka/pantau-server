@@ -511,7 +511,11 @@
             :server-id="currentServerId"
             :active-s-s-h-sessions="activeSSHSessions"
             :accounts-list="accountsList"
+            :groups-list="groupsList"
+            :is-online="Boolean(server?.is_online)"
+            :is-viewer="currentUser?.role === 'viewer'"
             @terminate-ssh="terminateSSHSession"
+            @user-action="handleUserAction"
           />
           <WorkspaceCronTab
             v-else-if="activeSubTab === 'cron'"
@@ -1030,6 +1034,7 @@ const monitoredServicesList = ref([])
 const processesList = ref([])
 const portsList = ref([])
 const accountsList = ref([])
+const groupsList = ref([])
 const serverProblems = ref([])
 const firewallData = ref({ status: 'unknown', rules: [] })
 const cronData = ref({ jobs: [] })
@@ -1072,7 +1077,7 @@ const canAccessTab = (tabId) => {
   if (tabId === 'ports') return Boolean(userPerms.value.can_services || userPerms.value.can_processes || userPerms.value.can_firewall || props.currentUser?.role === 'viewer')
   if (tabId === 'processes') return Boolean(userPerms.value.can_processes)
   if (tabId === 'firewall') return Boolean(userPerms.value.can_firewall)
-  if (tabId === 'accounts') return Boolean(userPerms.value.can_users_sys)
+  if (tabId === 'accounts') return Boolean(userPerms.value.can_users_sys || props.currentUser?.role === 'viewer')
   if (tabId === 'cron') return Boolean(userPerms.value.can_cron)
   if (tabId === 'packages') return Boolean(userPerms.value.can_apt)
   if (tabId === 'ssl') return Boolean(userPerms.value.can_ssl)
@@ -1221,6 +1226,7 @@ async function loadServerData() {
     processesList.value = procData.processes || []
     portsList.value = portData.ports || []
     accountsList.value = accData.accounts || []
+    groupsList.value = accData.groups || []
     serverProblems.value = probData.problems || []
     firewallData.value = fwData.firewall || { status: 'unknown', rules: [] }
     cronData.value = cronD.cron || { jobs: [] }
@@ -1649,6 +1655,24 @@ async function handleFirewallPort({ port, rule }) {
 }
 
 async function handleGenericAction({ action, params }) {
+  await dispatchAction(action, params)
+}
+
+async function handleUserAction({ action, params }) {
+  const uname = params?.username || ''
+  if (action === 'user_create') {
+    return dispatchAction('user_create', params)
+  }
+  const verbMap = { user_lock: 'Lock Account', user_unlock: 'Unlock Account', user_delete: 'Delete Account' }
+  const ok = await confirmAction({
+    title: verbMap[action] || 'User Action',
+    message: action === 'user_delete'
+      ? `Delete Linux user '${uname}' from target host?`
+      : `${verbMap[action] || action} for '${uname}'?`,
+    confirmText: verbMap[action] || 'Confirm',
+    variant: action === 'user_delete' ? 'danger' : 'warning',
+  })
+  if (!ok) return
   await dispatchAction(action, params)
 }
 

@@ -571,6 +571,16 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.98
+
+Penyempurnaan penuh tab Users & SSH: penyimpanan system_groups di telemetry_service.py, penyelarasan aksi user_create/lock/unlock/delete di servers.py & agent_pantau.py, penyamaran password pada AuditLog, serta pembaruan WorkspaceAccountsTab.vue + WorkspaceGroupsTable.vue dengan sub-nav Users/Groups, filter kategori, form Add User, badge Sudoer/Locked, dan menu Actions.
+
+
+### Versi v0.1.98
+
+Penyempurnaan penuh tab Users & SSH: penyimpanan system_groups di telemetry_service.py, penyelarasan aksi user_create/lock/unlock/delete di servers.py & agent_pantau.py, penyamaran password pada AuditLog, serta pembaruan WorkspaceAccountsTab.vue + WorkspaceGroupsTable.vue dengan sub-nav Users/Groups, filter kategori, form Add User, badge Sudoer/Locked, dan menu Actions.
+
+
 ### Versi v0.1.97
 
 Penambahan form aturan cepat Allow Port / Block Port (TCP/UDP) langsung di WorkspaceFirewallTab.vue agar operator dapat membuka/menutup port meskipun layanan belum berjalan, terhubung ke firewall_port_rule dan guardrail port 22/8400.

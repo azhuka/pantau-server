@@ -806,18 +806,24 @@ def get_server_ports(sid: int, user: User = Depends(get_current_user), db: Sessi
 
 @router.get("/{sid}/accounts")
 def get_server_accounts(sid: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    """Mengembalikan akun pengguna lokal serta sesi SSH remote aktif."""
+    """Return local user accounts, active SSH sessions, and system groups."""
     check_server_access(user, sid)
-    if not (user.is_master_admin or user.has_perm("can_users_sys")):
+    if not (user.is_master_admin or user.is_viewer() or user.has_perm("can_users_sys")):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied: System Users permission (can_users_sys) is required")
     extras = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
-    if not extras or not extras.accounts:
-        return {"ok": True, "accounts": []}
-    try:
-        data = json.loads(extras.accounts)
-        return {"ok": True, "accounts": data}
-    except Exception:
-        return {"ok": True, "accounts": []}
+    accounts_data = []
+    groups_data = []
+    if extras and extras.accounts:
+        try:
+            accounts_data = json.loads(extras.accounts)
+        except Exception:
+            accounts_data = []
+    if extras and extras.system_groups:
+        try:
+            groups_data = json.loads(extras.system_groups)
+        except Exception:
+            groups_data = []
+    return {"ok": True, "accounts": accounts_data, "groups": groups_data}
 
 @router.get("/{sid}/firewall")
 def get_server_firewall(sid: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -995,6 +1001,10 @@ _ACTION_PERMISSION_MAP = {
     "unlock_user": "can_users_sys",
     "delete_user": "can_users_sys",
     "create_user": "can_users_sys",
+    "user_lock": "can_users_sys",
+    "user_unlock": "can_users_sys",
+    "user_delete": "can_users_sys",
+    "user_create": "can_users_sys",
     "block_ip": "can_firewall",
     "unblock_ip": "can_firewall",
     "firewall_port_rule": "can_firewall",
@@ -1081,9 +1091,29 @@ def dispatch_server_action(
         raise HTTPException(status_code=403, detail=f"Access denied: Permission '{req_perm}' is required")
 
     # Normalize to fit varchar(20) commands.action schema & agent_pantau.py handler
-    db_action = "terminate_session" if action == "terminate_ssh_session" else (
-        action.replace("ufw_", "firewall_") if action.startswith("ufw_") else action
-    )
+    action_aliases = {
+        "terminate_ssh_session": "terminate_session",
+        "create_user": "user_create",
+        "lock_user": "user_lock",
+        "unlock_user": "user_unlock",
+        "delete_user": "user_delete",
+    }
+    if action in action_aliases:
+        db_action = action_aliases[action]
+    elif action.startswith("ufw_"):
+        db_action = action.replace("ufw_", "firewall_")
+    else:
+        db_action = action
+
+    # Safety Guardrails: Protect critical Linux system accounts from lock/delete
+    if db_action in ("user_lock", "user_delete"):
+        target_uname = str(params.get("username") or "").strip().lower()
+        protected_users = {"root", "pantau", "pantau-agent", "daemon", "bin", "sys", "sync", "nobody", "www-data", "sshd", "messagebus"}
+        if not target_uname or target_uname in protected_users or target_uname.startswith("systemd-"):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Critical system account '{target_uname}' is protected and cannot be modified."
+            )
 
     if db_action == "update_agent" and not params.get("sha256"):
         from routers.api_agent import _get_latest_agent_meta
@@ -1192,11 +1222,12 @@ def dispatch_server_action(
     db.add(cmd)
     db.flush()
 
+    audit_target = str({k: ("***" if k == "password" else v) for k, v in params.items()}) if isinstance(params, dict) else str(params)
     audit_entry = AuditLog(
         server_id=sid,
         username=user.username,
         action=db_action,
-        target=str(params),
+        target=audit_target,
         result="queued",
         meta=f"Command {db_action} queued by {user.username}",
         created_at=now
