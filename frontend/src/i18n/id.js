@@ -211,6 +211,9 @@ export default {
   ws_col_user: 'Pengguna',
   ws_col_exec: 'Perintah Eksekusi',
   ws_col_source: 'Sumber',
+  ws_col_timer: 'Unit Timer',
+  ws_col_activates: 'Mengaktifkan Service',
+  ws_col_schedule_status: 'Jadwal & Status',
 
   ws_ssh_active_title: 'Sesi Remote SSH Aktif',
   ws_ssh_sessions_count: 'sesi terhubung',

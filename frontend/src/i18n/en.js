@@ -211,6 +211,9 @@ export default {
   ws_col_user: 'User',
   ws_col_exec: 'Execution Command',
   ws_col_source: 'Source',
+  ws_col_timer: 'Timer Unit',
+  ws_col_activates: 'Activates Service',
+  ws_col_schedule_status: 'Schedule & Status',
 
   ws_ssh_active_title: 'Active Remote SSH Sessions',
   ws_ssh_sessions_count: 'connected sessions',

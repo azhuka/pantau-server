@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.102
+
+Penyempurnaan penuh tab Cron Jobs: perbaikan pemetaan cron_run -> cron_run_now serta penambahan izin cron_add/cron_toggle/cron_delete di servers.py, serta pembaruan WorkspaceCronTab.vue dengan form Add Cron Job (preset jadwal), kolom Status & badge Managed, menu Actions (Run Now, Pause/Enable, Delete), dan tabel Systemd Timers.
+
+
 ### Versi v0.1.101
 
 Peningkatan informatif & interaktif pada UserActivityModal.vue: 4 kartu ringkasan akun (UID/GID, Groups, Home/Shell, Sesi Aktif), chip filter kategori interaktif dengan jumlah live, dropdown jenis event, kolom Directory (PWD), paginasi otomatis, serta tombol Terminate Session langsung di header modal.

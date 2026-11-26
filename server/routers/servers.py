@@ -842,9 +842,9 @@ def get_server_firewall(sid: int, user: User = Depends(get_current_user), db: Se
 
 @router.get("/{sid}/cron")
 def get_server_cron(sid: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    """Daftar crontab dan systemd timers."""
+    """List crontab jobs and systemd timers."""
     check_server_access(user, sid)
-    if not (user.is_master_admin or user.has_perm("can_cron")):
+    if not (user.is_master_admin or user.is_viewer() or user.has_perm("can_cron")):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied: Cron Jobs permission (can_cron) is required")
     extras = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
     if not extras or not extras.cron_jobs:
@@ -1016,6 +1016,10 @@ _ACTION_PERMISSION_MAP = {
     "firewall_disable": "can_firewall",
     "firewall_reload": "can_firewall",
     "cron_run": "can_cron",
+    "cron_run_now": "can_cron",
+    "cron_add": "can_cron",
+    "cron_toggle": "can_cron",
+    "cron_delete": "can_cron",
     "apt_update": "can_apt",
     "apt_upgrade": "can_apt",
     "fim_scan": "can_audit",
@@ -1097,6 +1101,7 @@ def dispatch_server_action(
         "lock_user": "user_lock",
         "unlock_user": "user_unlock",
         "delete_user": "user_delete",
+        "cron_run": "cron_run_now",
     }
     if action in action_aliases:
         db_action = action_aliases[action]
