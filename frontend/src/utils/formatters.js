@@ -61,11 +61,12 @@ export function severityBadgeClass(sev) {
   return 'bg-sky-950/90 text-sky-300 border-sky-600/80'
 }
 
-export function formatIncidentDuration(startedAt) {
+export function formatIncidentDuration(startedAt, _locale = null, resolvedAt = null) {
   if (!startedAt) return '-'
   try {
     const start = new Date(startedAt).getTime()
-    const diff = Math.max(0, Math.floor((Date.now() - start) / 1000))
+    const end = resolvedAt ? new Date(resolvedAt).getTime() : Date.now()
+    const diff = Math.max(0, Math.floor((end - start) / 1000))
     if (diff < 60) return `${diff}s`
     const d = Math.floor(diff / 86400)
     const h = Math.floor((diff % 86400) / 3600)

@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.87
+
+- **Host Incidents Tab Fixes:** Fixed frozen duration on closed incidents (formatters.js), separated active vs ignored counts, added Inspect Storage action in Actions dropdown, enabled View Details on closed rows, standardized Triggered At header, and removed // prefix in WorkspaceProblemsTab.vue.
+
+
 ### Versi v0.1.86
 
 - **Fix Performance Chart Crosshair, Storage Analysis & Loading Indicator:** Added preserveAspectRatio=none and vector-effect=non-scaling-stroke to WorkspacePerfCharts.vue SVGs plus visible loading spinner; fixed StorageTriageModal :is-open prop and z-[20000]; fixed Disk Partitions filesystem type (d.type) and avail calculation in WorkspaceOverviewTab.vue.

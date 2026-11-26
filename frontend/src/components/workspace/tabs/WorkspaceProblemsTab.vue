@@ -2,10 +2,10 @@
   <div class="space-y-3 font-mono">
     <div class="flex items-center justify-between flex-wrap gap-2">
       <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider">
-        // {{ t('ws_incidents_title') }}
+        {{ t('ws_incidents_title') }}
       </h3>
       <span class="text-xs text-gray-400">
-        {{ activeCount }} active · {{ closedCount }} closed
+        {{ activeCount }} active<template v-if="ignoredCount > 0"> · {{ ignoredCount }} ignored</template> · {{ closedCount }} closed
       </span>
     </div>
 
@@ -57,7 +57,7 @@
         <table class="w-full text-left border-collapse text-xs">
           <thead>
             <tr class="bg-[#080d1a] border-b border-gray-800 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-              <th class="py-2.5 px-3 whitespace-nowrap">Time</th>
+              <th class="py-2.5 px-3 whitespace-nowrap">Triggered At</th>
               <th class="py-2.5 px-3 text-center whitespace-nowrap">Severity</th>
               <th class="py-2.5 px-3">Incident Description</th>
               <th class="py-2.5 px-3 whitespace-nowrap">Duration</th>
@@ -105,7 +105,7 @@
                 </div>
               </td>
               <td class="py-2.5 px-3 text-gray-400 whitespace-nowrap">
-                {{ formatIncidentDuration(prob.started_at, locale) }}
+                {{ formatIncidentDuration(prob.started_at, locale, prob.resolved_at) }}
               </td>
               <td class="py-2.5 px-3 text-gray-400 max-w-xs">
                 <span class="block truncate cursor-help text-[11px]" :title="formatIncidentTip(prob, locale) || '—'">
@@ -113,26 +113,24 @@
                 </span>
               </td>
               <td class="py-2.5 px-3 text-right whitespace-nowrap">
-                <template v-if="!prob.resolved_at">
-                  <button
-                    v-if="isViewer"
-                    type="button"
-                    @click="openDetail(prob)"
-                    class="w-[26px] h-[26px] min-w-[26px] p-0 inline-flex items-center justify-center rounded bg-gray-800/80 hover:bg-cyan-950 text-gray-300 hover:text-cyan-300 border border-gray-700/80 transition cursor-pointer"
-                    title="View Diagnostics & Details"
-                  >
-                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                  </button>
-                  <button
-                    v-else
-                    type="button"
-                    @click.stop="toggleActDropdown(prob, $event)"
-                    class="h-6 min-w-[58px] px-2 py-0.5 rounded bg-[#080d1a] hover:bg-cyan-950/60 text-cyan-300 border border-gray-700 hover:border-cyan-500 font-bold text-[11px] transition cursor-pointer inline-flex items-center justify-between gap-1 select-none"
-                  >
-                    <span>Actions</span>
-                    <svg class="w-2.5 h-2.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-                  </button>
-                </template>
+                <button
+                  v-if="prob.resolved_at || isViewer"
+                  type="button"
+                  @click="openDetail(prob)"
+                  class="w-[26px] h-[26px] min-w-[26px] p-0 inline-flex items-center justify-center rounded bg-gray-800/80 hover:bg-cyan-950 text-gray-300 hover:text-cyan-300 border border-gray-700/80 transition cursor-pointer"
+                  title="View Diagnostics & Details"
+                >
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+                <button
+                  v-else
+                  type="button"
+                  @click.stop="toggleActDropdown(prob, $event)"
+                  class="h-6 min-w-[58px] px-2 py-0.5 rounded bg-[#080d1a] hover:bg-cyan-950/60 text-cyan-300 border border-gray-700 hover:border-cyan-500 font-bold text-[11px] transition cursor-pointer inline-flex items-center justify-between gap-1 select-none"
+                >
+                  <span>Actions</span>
+                  <svg class="w-2.5 h-2.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
               </td>
             </tr>
           </tbody>
@@ -227,6 +225,15 @@
           >
             <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
             <span>Inspect Processes</span>
+          </button>
+
+          <button
+            v-else-if="activeActProb.action === 'inspect_storage'"
+            @click="$emit('switch-tab', 'overview'); closeActDropdown()"
+            class="w-full text-left px-3 py-1.5 hover:bg-cyan-950/50 text-cyan-300 flex items-center gap-2 cursor-pointer border-t border-gray-800/60"
+          >
+            <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+            <span>Inspect Storage</span>
           </button>
 
           <!-- Ack / Unack -->
@@ -336,7 +343,8 @@ function hasPerm(permKey) {
 }
 
 const displayList = computed(() => props.problems || [])
-const activeCount = computed(() => displayList.value.filter(p => !p.resolved_at).length)
+const activeCount = computed(() => displayList.value.filter(p => !p.resolved_at && !p.is_ignored).length)
+const ignoredCount = computed(() => displayList.value.filter(p => !p.resolved_at && Boolean(p.is_ignored)).length)
 const closedCount = computed(() => displayList.value.filter(p => Boolean(p.resolved_at)).length)
 
 const filteredProblems = computed(() => {
