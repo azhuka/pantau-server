@@ -1,5 +1,5 @@
 <template>
-  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in font-mono">
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in font-mono" @click.self="$emit('close')">
     <div class="w-full max-w-lg bg-[#080d1a] border border-cyan-500/50 rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
       <!-- Header -->
       <div class="p-4 bg-[#0a1122] border-b border-cyan-900/50 flex items-center justify-between">
@@ -49,7 +49,7 @@
                   @click="copySecret"
                   class="text-xs text-cyan-400 hover:text-cyan-300 flex items-center justify-center gap-1.5 cursor-pointer font-bold px-3 py-1.5 rounded bg-cyan-950/80 border border-cyan-800 hover:border-cyan-600 transition w-full"
                 >
-                  <span>{{ copied ? '✔ Copied to Clipboard' : 'Copy Secret Key' }}</span>
+                  <span>{{ copied ? 'Copied to Clipboard' : 'Copy Secret Key' }}</span>
                 </button>
               </div>
             </div>
@@ -91,7 +91,7 @@
         <div v-else class="space-y-3">
           <div class="p-3 rounded-lg bg-amber-950/40 border border-amber-800/60 text-amber-200">
             <h4 class="font-bold text-sm flex items-center gap-1.5 mb-1 text-amber-300">
-              <span>✔</span>
+              <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
               <span>2FA Enabled Successfully! Backup Recovery Codes:</span>
             </h4>
             <p class="text-[11px] leading-relaxed">
@@ -114,7 +114,7 @@
               @click="copyAllCodes"
               class="flex-1 py-1.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-200 font-bold transition cursor-pointer text-center text-xs"
             >
-              {{ copiedCodes ? '✔ All Codes Copied' : 'Copy All Codes' }}
+              {{ copiedCodes ? 'All Codes Copied' : 'Copy All Codes' }}
             </button>
             <button
               @click="downloadCodes"

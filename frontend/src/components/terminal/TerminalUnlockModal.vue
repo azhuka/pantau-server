@@ -28,7 +28,7 @@
       <!-- Form Body -->
       <form @submit.prevent="submitUnlock" class="p-5 space-y-4 text-left">
         <div v-if="server" class="p-3 rounded bg-cyan-950/40 border border-cyan-800/50 text-cyan-300 leading-relaxed">
-          <div class="font-bold text-gray-200 mb-1">// {{ server.hostname }} ({{ server.ip_address || '127.0.0.1' }})</div>
+          <div class="font-bold text-gray-200 mb-1">{{ server.hostname }} ({{ server.ip_address || '127.0.0.1' }})</div>
           <div class="text-[11px] text-gray-400">{{ t('terminal_unlock_desc') }}</div>
         </div>
 
@@ -214,13 +214,13 @@ async function submitUnlock() {
 function translateError(msg) {
   if (!msg) return t('terminal_auth_error')
   const str = String(msg)
-  if (str.includes('Invalid account password') || str.includes('Password akun salah') || str.includes('Invalid password')) {
+  if (str.includes('Invalid account password') || str.includes('Invalid password')) {
     return t('terminal_err_invalid_pwd')
   }
   if (str.includes('2FA') || str.includes('TOTP')) {
     return t('terminal_err_invalid_totp')
   }
-  if (str.includes('password is required') || str.includes('password diperlukan')) {
+  if (str.includes('password is required')) {
     return t('terminal_err_pwd_required')
   }
   return str

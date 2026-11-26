@@ -435,7 +435,7 @@ async def websocket_terminal(
 
     if not is_reconnected:
         welcome_banner = (
-            f"\r\n\x1b[1;36m// PANTAU TACTICAL PTY TERMINAL DOCK\x1b[0m\r\n"
+            f"\r\n\x1b[1;36mPANTAU WEB TERMINAL\x1b[0m\r\n"
             f"\x1b[32m● CONNECTED:\x1b[0m \x1b[1m{server_hostname}\x1b[0m ({server_ip})\r\n"
             f"\x1b[90mSession started at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} | Interactive Agent PTY Ready.\x1b[0m\r\n\r\n"
         )
@@ -471,6 +471,10 @@ async def websocket_terminal(
                 msg = json.loads(raw)
             except Exception:
                 msg = {"type": "input", "data": raw}
+
+            if msg.get("type") == "close":
+                await term_dispatcher.close_session(bridge.session_id)
+                break
 
             if msg.get("type") == "input":
                 data_str = msg.get("data", "")
@@ -556,6 +560,10 @@ async def api_agent_terminal_stdin(
     try:
         while True:
             msg = await asyncio.wait_for(bridge.stdin_queue.get(), timeout=15.0)
+            if msg.get("type") == "close":
+                await term_dispatcher.close_session(bridge.session_id)
+                break
+
             if msg.get("type") == "input":
                 data_str = msg.get("data", "")
                 if isinstance(data_str, str):

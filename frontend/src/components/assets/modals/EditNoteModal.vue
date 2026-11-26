@@ -70,6 +70,7 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { useI18n } from '../../../i18n'
+import { useToast } from '../../../utils/useToast'
 
 const props = defineProps({
   isOpen: Boolean,
@@ -86,8 +87,8 @@ const toast = useToast()
 const submitting = ref(false)
 const notesContent = ref('')
 
-watch(() => props.server, (s) => {
-  if (s) {
+watch([() => props.isOpen, () => props.server], ([open, s]) => {
+  if (open && s) {
     notesContent.value = s.notes || ''
   }
 }, { immediate: true })

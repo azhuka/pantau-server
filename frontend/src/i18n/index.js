@@ -20,7 +20,7 @@ export function toggleLocale() {
 
 export function t(key, params = {}) {
   const dict = translations.en
-  let text = dict[key] || translations.id[key] || key
+  let text = dict[key] || key
   for (const [k, v] of Object.entries(params)) {
     text = text.replace(new RegExp(`\\{${k}\\}`, 'g'), v)
   }

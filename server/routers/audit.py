@@ -3,11 +3,13 @@
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from core.database import get_db
 from models.user import User
 from routers.auth import get_current_user
+from services.activity_stream import get_recent_activities, subscribe_activities
 from services.audit_service import get_audit_metadata, query_audit_entries_with_meta
 
 router = APIRouter(tags=["Audit & Logs"])
@@ -59,3 +61,28 @@ def api_get_audit_logs(
     response.headers["X-Total-Count"] = str(total_count)
     response.headers["X-Truncated"] = "true" if truncated else "false"
     return rows
+
+
+@router.get("/api/activity/recent")
+def api_activity_recent(
+    limit: int = Query(50, ge=5, le=100),
+    user_actor: User = Depends(get_current_user),
+):
+    """Return recent in-memory runtime activity stream entries."""
+    if not (user_actor.is_master_admin or user_actor.has_perm("can_audit")):
+        raise HTTPException(status_code=403, detail="Access denied: can_audit permission required.")
+    return {"items": get_recent_activities(limit=limit)}
+
+
+@router.get("/api/activity/stream")
+async def api_activity_stream(
+    user_actor: User = Depends(get_current_user),
+):
+    """Stream live runtime activity events via Server-Sent Events (SSE)."""
+    if not (user_actor.is_master_admin or user_actor.has_perm("can_audit")):
+        raise HTTPException(status_code=403, detail="Access denied: can_audit permission required.")
+    return StreamingResponse(
+        subscribe_activities(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )

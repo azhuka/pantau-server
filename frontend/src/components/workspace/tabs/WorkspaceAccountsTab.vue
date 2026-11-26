@@ -5,7 +5,7 @@
       <span class="hud-corner-tr"></span>
       <span class="hud-corner-bl"></span>
       <div class="flex items-center justify-between mb-3">
-        <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider">// {{ t('ws_ssh_active_title') }}</h3>
+        <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider">{{ t('ws_ssh_active_title') }}</h3>
         <span v-if="(activeSSHSessions || []).length > 0" class="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-950 text-amber-300 border border-amber-800 radar-warning">
           {{ activeSSHSessions.length }} {{ t('ws_ssh_sessions_count') }}
         </span>
@@ -33,7 +33,7 @@
     <div class="hud-tactical-card rounded-xl p-4 space-y-3">
       <span class="hud-corner-tr"></span>
       <span class="hud-corner-bl"></span>
-      <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider">// {{ t('ws_accounts_title') }}</h3>
+      <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider">{{ t('ws_accounts_title') }}</h3>
 
       <NocFilterPanel
         v-if="(accountsList || []).length > 0"
@@ -61,6 +61,7 @@
               <th class="py-2.5 px-3">{{ t('ws_col_uid') || 'UID' }}</th>
               <th class="py-2.5 px-3">{{ t('ws_col_home') }}</th>
               <th class="py-2.5 px-3">{{ t('ws_col_shell') }}</th>
+              <th class="py-2.5 px-3 text-right">Actions</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-800/40">
@@ -69,12 +70,31 @@
               <td class="py-2.5 px-3 text-gray-400">{{ acc.uid ?? '-' }}</td>
               <td class="py-2.5 px-3 text-gray-300">{{ acc.home || '-' }}</td>
               <td class="py-2.5 px-3 text-cyan-400">{{ acc.shell || '-' }}</td>
+              <td class="py-2.5 px-3 text-right">
+                <button
+                  type="button"
+                  @click="openUserActivity(acc.user || acc.name)"
+                  class="inline-flex items-center justify-center w-[26px] h-[26px] rounded bg-gray-900 border border-gray-700 text-cyan-300 hover:bg-cyan-950 hover:border-cyan-500 cursor-pointer transition"
+                  :title="`View login and command activity for ${acc.user || acc.name}`"
+                >
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                  </svg>
+                </button>
+              </td>
             </tr>
           </tbody>
         </table>
       </div>
       <NocTablePagination v-model:page="currentPage" v-model:pageSize="pageSize" :total="filteredAccounts.length" unitLabel="accounts" :pageSizeOptions="[10, 25, 50, 'all']" />
     </div>
+
+    <UserActivityModal
+      :is-open="activityModalOpen"
+      :server-id="serverId"
+      :username="activityUsername"
+      @close="activityModalOpen = false"
+    />
   </div>
 </template>
 
@@ -83,13 +103,24 @@ import { ref, computed, watch } from 'vue'
 import { useI18n } from '../../../i18n'
 import NocFilterPanel from '../../common/NocFilterPanel.vue'
 import NocTablePagination from '../../common/NocTablePagination.vue'
+import UserActivityModal from '../UserActivityModal.vue'
 
 const { t } = useI18n()
 const props = defineProps({
+  serverId: { type: Number, default: null },
   activeSSHSessions: { type: Array, default: () => [] },
   accountsList: { type: Array, default: () => [] }
 })
 defineEmits(['terminate-ssh'])
+
+const activityModalOpen = ref(false)
+const activityUsername = ref('')
+
+function openUserActivity(username) {
+  if (!username) return
+  activityUsername.value = username
+  activityModalOpen.value = true
+}
 
 const search = ref('')
 const currentPage = ref(1)

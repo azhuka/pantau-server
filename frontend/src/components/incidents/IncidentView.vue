@@ -4,7 +4,7 @@
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-gray-800">
       <div>
         <h2 class="text-lg font-bold text-gray-100 flex items-center gap-2 tracking-wide uppercase">
-          <span class="text-cyan-400 font-extrabold">// 02</span>
+          <span class="text-cyan-400 font-extrabold"></span>
           <span>{{ t('inc_title') }}</span>
         </h2>
         <p class="text-xs text-gray-400 mt-1 max-w-2xl leading-relaxed">

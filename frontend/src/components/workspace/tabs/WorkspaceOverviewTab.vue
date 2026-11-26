@@ -4,7 +4,7 @@
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
       <!-- CPU Chip -->
       <div class="hud-tactical-card p-3 rounded-lg">
-        <div class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">// CPU</div>
+        <div class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">CPU</div>
         <div class="text-xl font-black text-gray-100 mt-0.5">
           {{ (server?.metrics?.cpu || 0).toFixed(1) }}%
         </div>
@@ -18,7 +18,7 @@
 
       <!-- Load Avg Chip -->
       <div class="hud-tactical-card p-3 rounded-lg">
-        <div class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">// LOAD AVG</div>
+        <div class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">LOAD AVG</div>
         <div class="text-sm font-bold text-cyan-300 mt-1 truncate">
           {{ (server?.metrics?.load || [0, 0, 0]).map(v => Number(v).toFixed(2)).join(' · ') }}
         </div>
@@ -27,7 +27,7 @@
 
       <!-- RAM Chip -->
       <div class="hud-tactical-card p-3 rounded-lg">
-        <div class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">// RAM</div>
+        <div class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">RAM</div>
         <div class="text-xl font-black text-gray-100 mt-0.5">
           {{ formatBytes(server?.metrics?.mem_used) }}
         </div>
@@ -41,7 +41,7 @@
 
       <!-- Swap Chip -->
       <div class="hud-tactical-card p-3 rounded-lg">
-        <div class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">// SWAP</div>
+        <div class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">SWAP</div>
         <div class="text-xl font-black text-gray-100 mt-0.5">
           {{ formatBytes(server?.metrics?.swap_used) }}
         </div>
@@ -55,7 +55,7 @@
 
       <!-- Processes Chip -->
       <div class="hud-tactical-card p-3 rounded-lg">
-        <div class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">// PROCESSES</div>
+        <div class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">PROCESSES</div>
         <div class="text-xl font-black text-gray-100 mt-0.5">
           {{ server?.metrics?.procs || processesCount || 0 }}
         </div>
@@ -64,7 +64,7 @@
 
       <!-- Uptime Chip -->
       <div class="hud-tactical-card p-3 rounded-lg">
-        <div class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">// UPTIME</div>
+        <div class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">UPTIME</div>
         <div class="text-sm font-bold text-emerald-400 mt-1 truncate">
           {{ formatUptime(server?.metrics?.uptime_secs) }}
         </div>

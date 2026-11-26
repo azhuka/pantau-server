@@ -229,6 +229,7 @@ function initTerminal() {
   term = new Terminal({
     cursorBlink: true,
     cursorStyle: 'block',
+    drawBoldTextInBrightColors: true,
     fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
     fontSize: 13,
     lineHeight: 1.25,
@@ -254,7 +255,7 @@ function initTerminal() {
       brightCyan: '#56d4dd',
       brightWhite: '#f0f6fc'
     },
-    convertEol: true,
+    convertEol: false,
     scrollback: 5000
   })
 
@@ -393,6 +394,16 @@ function connectWs() {
     }
   }
 }
+
+function closeSession() {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    try {
+      ws.send(JSON.stringify({ type: 'close' }))
+    } catch (e) {}
+  }
+}
+
+defineExpose({ closeSession })
 
 onMounted(() => {
   nextTick(() => {

@@ -1,5 +1,5 @@
 <template>
-  <div class="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 overflow-y-auto font-mono text-xs">
+  <div class="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 overflow-y-auto font-mono text-xs" @click.self="$emit('close')">
     <div class="bg-[#111827] border border-amber-600/50 rounded-xl w-full max-w-lg p-5 shadow-2xl my-8 space-y-4">
       <!-- Header -->
       <div class="flex items-center justify-between pb-3 border-b border-gray-800">
@@ -46,7 +46,7 @@
           class="flex-1 py-2 rounded bg-gray-800 hover:bg-gray-700 text-gray-200 font-bold transition cursor-pointer text-center text-xs flex items-center justify-center gap-1.5"
         >
           <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="13" height="13" x="9" y="9" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-          <span>{{ copied ? (t('settings_copied') || '✔ Copied to Clipboard') : (t('settings_copy_all_codes') || 'Copy All Codes') }}</span>
+          <span>{{ copied ? (t('settings_copied') || 'Copied to Clipboard') : (t('settings_copy_all_codes') || 'Copy All Codes') }}</span>
         </button>
 
         <button

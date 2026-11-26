@@ -188,11 +188,11 @@
             />
             <button
               type="button"
-              class="text-gray-400 hover:text-gray-200 text-sm px-1 cursor-pointer"
+              class="text-gray-400 hover:text-gray-200 px-1 cursor-pointer"
               @click="isManualPathInput = false"
               title="Cancel"
             >
-              ✕
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
           </form>
 
@@ -285,6 +285,18 @@
             </svg>
             <span>{{ t('fm_upload_file') || 'Upload File' }}</span>
           </button>
+          <!-- Storage Analysis -->
+          <button
+            type="button"
+            @click="showStorageTriage = true"
+            class="px-2.5 py-1 rounded bg-gray-900 hover:bg-cyan-950 text-amber-300 border border-amber-800/70 hover:border-amber-500 transition flex items-center gap-1 cursor-pointer font-bold"
+            title="Storage Analysis &amp; Space Reclaim"
+          >
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/>
+            </svg>
+            <span>Storage Analysis</span>
+          </button>
           <!-- Paste (visible when clipboard has items) -->
           <button
             v-if="clipboard && clipboard.items && clipboard.items.length > 0"
@@ -312,9 +324,10 @@
             <button
               v-if="searchFilter"
               @click="searchFilter = ''"
-              class="absolute right-2 text-gray-500 hover:text-gray-300 text-xs cursor-pointer"
+              class="absolute right-2 text-gray-500 hover:text-gray-300 cursor-pointer"
+              title="Clear"
             >
-              ✕
+              <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
           </div>
           <!-- Auto .bak Badge -->
@@ -388,7 +401,7 @@
         :class="feedbackMsg.type === 'error' ? 'bg-rose-950/80 border-rose-800 text-rose-300' : 'bg-emerald-950/80 border-emerald-800 text-emerald-300'"
       >
         <span>{{ feedbackMsg.text }}</span>
-        <button @click="feedbackMsg = null" class="text-xs ml-2 cursor-pointer">✕</button>
+        <button @click="feedbackMsg = null" class="ml-2 cursor-pointer" title="Dismiss"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
       </div>
 
       <!-- Directory Items Table (Canon ~/rj45 table structure) -->
@@ -968,7 +981,7 @@
               <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
             </svg>
             <span class="text-xs font-bold text-cyan-300 font-mono truncate">
-              // EDITOR: {{ editingFile.name }}
+              Editor: {{ editingFile.name }}
             </span>
             <span class="text-[10px] text-emerald-400 font-mono bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800 hidden sm:inline shrink-0">
               auto .bak backup
@@ -1012,6 +1025,13 @@
         ></textarea>
       </div>
     </div>
+    <StorageTriageModal
+      :is-open="showStorageTriage"
+      :server-id="server?.id"
+      :mount-path="currentPath || '/'"
+      @close="showStorageTriage = false"
+      @updated="refreshCurrent"
+    />
   </div>
 </template>
 
@@ -1019,6 +1039,7 @@
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useI18n } from '../../i18n'
 import { confirmAction } from '../../utils/useToast'
+import StorageTriageModal from './StorageTriageModal.vue'
 
 const { t } = useI18n()
 
@@ -1082,6 +1103,7 @@ const duplicateNewName = ref('')
 
 // Upload Modal state
 const showUploadDialog = ref(false)
+const showStorageTriage = ref(false)
 const selectedUploadFile = ref(null)
 const uploadFileInputRef = ref(null)
 const uploading = ref(false)

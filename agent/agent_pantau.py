@@ -491,7 +491,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.11.27"
+AGENT_VERSION = "4.11.28"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -1822,6 +1822,19 @@ def _exec_update_agent(cfg: dict, command: dict) -> dict:
         # -----------------------------------------------------------------
         # Verifikasi Pasca-Tulis & Auto-Rollback:
         # -----------------------------------------------------------------
+        try:
+            baks = sorted(
+                [os.path.join(target_dir, fn) for fn in os.listdir(target_dir) if fn.startswith("agent_pantau.py.bak.")],
+                key=lambda p: os.path.getmtime(p),
+                reverse=True,
+            )
+            for old_bak in baks[3:]:
+                try:
+                    os.remove(old_bak)
+                except Exception:
+                    pass
+        except Exception:
+            pass
         post_check_ok = False
         post_err_detail = ""
         try:
@@ -7805,6 +7818,7 @@ else
 fi
 
 export TERM=xterm-256color
+export COLORTERM=truecolor
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 export LANG=${LANG:-C.UTF-8}
 
@@ -7813,8 +7827,26 @@ chmod 644 "$RCFILE"
 trap 'rm -f "$RCFILE"' EXIT INT TERM
 cat >"$RCFILE" <<'EOF'
 umask 027
-PS1='\u@\h:\w\$ '
+export TERM=xterm-256color
+export COLORTERM=truecolor
+export CLICOLOR=1
+export LESS='-R'
+if [ "$(id -u)" -eq 0 ]; then
+    PS1='\[\033[01;31m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\# '
+else
+    PS1='\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+fi
 PS2='> '
+if command -v dircolors >/dev/null 2>&1; then
+    eval "$(dircolors -b 2>/dev/null || true)"
+fi
+alias ls='ls --color=auto'
+alias ll='ls -alF --color=auto'
+alias la='ls -A --color=auto'
+alias grep='grep --color=auto'
+alias egrep='egrep --color=auto'
+alias fgrep='fgrep --color=auto'
+alias diff='diff --color=auto'
 export HISTFILE="$HOME/.bash_history"
 export HISTSIZE=5000
 export HISTFILESIZE=10000
@@ -7868,44 +7900,24 @@ CURRENT_TTY=$(tty 2>/dev/null || echo "pts")
 CURRENT_TTY=${CURRENT_TTY#/dev/}
 log "[USER=$TARGET_USER] [PWD=$TARGET_HOME] [TTY=$CURRENT_TTY] CMD: [Sesi Web Terminal Dibuka]"
 
-# Jalankan shell sebagai TARGET_USER
-run_as_target() {
-    if [ "$(id -u)" -eq 0 ]; then
-        if command -v runuser >/dev/null 2>&1; then
-            exec runuser -u "$TARGET_USER" -- env TERM=xterm-256color PATH="$PATH" LANG="$LANG" HOME="$TARGET_HOME" USER="$TARGET_USER" "$@"
-        elif command -v sudo >/dev/null 2>&1; then
-            exec sudo -u "$TARGET_USER" -H env TERM=xterm-256color PATH="$PATH" LANG="$LANG" "$@"
-        else
-            exec su -s /bin/bash "$TARGET_USER" -c "cd '$TARGET_HOME' && exec $*"
-        fi
+# Jalankan bash PTY murni secara seragam di semua server (didukung Python Native PTY Supervisor di Agen).
+if [ "$(id -u)" -eq 0 ]; then
+    if command -v runuser >/dev/null 2>&1; then
+        runuser -u "$TARGET_USER" -- env TERM=xterm-256color COLORTERM=truecolor PATH="$PATH" LANG="$LANG" HOME="$TARGET_HOME" USER="$TARGET_USER" /bin/bash --noprofile --rcfile "$RCFILE" -i
+        _rc=$?
+    elif command -v sudo >/dev/null 2>&1; then
+        sudo -u "$TARGET_USER" -H env TERM=xterm-256color COLORTERM=truecolor PATH="$PATH" LANG="$LANG" /bin/bash --noprofile --rcfile "$RCFILE" -i
+        _rc=$?
     else
-        exec "$@"
-    fi
-}
-
-# Jika tmux tersedia di server klien, gunakan sesi persisten tmux (auto-create atau attach).
-# Jika tmux tidak ada, fallback ke bash murni (didukung Python Native PTY Supervisor di Agen).
-if command -v tmux >/dev/null 2>&1; then
-    run_as_target tmux -u new-session -A -s pantau-shell /bin/bash --noprofile --rcfile "$RCFILE" -i
-else
-    if [ "$(id -u)" -eq 0 ]; then
-        if command -v runuser >/dev/null 2>&1; then
-            runuser -u "$TARGET_USER" -- env TERM=xterm-256color PATH="$PATH" LANG="$LANG" HOME="$TARGET_HOME" USER="$TARGET_USER" /bin/bash --noprofile --rcfile "$RCFILE" -i
-            _rc=$?
-        elif command -v sudo >/dev/null 2>&1; then
-            sudo -u "$TARGET_USER" -H env TERM=xterm-256color PATH="$PATH" LANG="$LANG" /bin/bash --noprofile --rcfile "$RCFILE" -i
-            _rc=$?
-        else
-            su -s /bin/bash "$TARGET_USER" -c "cd '$TARGET_HOME' && exec /bin/bash --noprofile --rcfile '$RCFILE' -i"
-            _rc=$?
-        fi
-    else
-        /bin/bash --noprofile --rcfile "$RCFILE" -i
+        su -s /bin/bash "$TARGET_USER" -c "cd '$TARGET_HOME' && exec env TERM=xterm-256color COLORTERM=truecolor /bin/bash --noprofile --rcfile '$RCFILE' -i"
         _rc=$?
     fi
-    log "[USER=$TARGET_USER] [PWD=$TARGET_HOME] [TTY=$CURRENT_TTY] CMD: [Sesi Web Terminal Ditutup (kode=$_rc)]"
-    exit $_rc
+else
+    /bin/bash --noprofile --rcfile "$RCFILE" -i
+    _rc=$?
 fi
+log "[USER=$TARGET_USER] [PWD=$TARGET_HOME] [TTY=$CURRENT_TTY] CMD: [Sesi Web Terminal Ditutup (kode=$_rc)]"
+exit $_rc
 """
 
 
@@ -8011,7 +8023,7 @@ def ensure_pantau_shell_updated(force: bool = False) -> bool:
                     cur_content = f.read()
             except Exception:
                 pass
-            if 'TARGET_USER="operator"' in cur_content and "__pantau_prompt_audit" in cur_content and "run_as_target" in cur_content and "umask 027" in cur_content:
+            if cur_content.strip() == PANTAU_SHELL_SCRIPT_BODY.strip():
                 return True
 
         content_to_write = PANTAU_SHELL_SCRIPT_BODY.strip() + "\n"

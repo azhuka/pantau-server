@@ -8,7 +8,7 @@
       <div>
         <h2 class="text-sm font-bold text-gray-100 uppercase tracking-wider font-mono flex items-center gap-2">
           <span class="w-2 h-2 rounded-full bg-cyan-400 beacon-live"></span>
-          <span>// SYSTEM AUDIT TRAIL</span>
+          <span>SYSTEM AUDIT TRAIL</span>
           <span v-if="lastSyncTime" class="text-[11px] font-normal text-emerald-400/90 normal-case tracking-normal">
             live · {{ lastSyncTime }}
           </span>

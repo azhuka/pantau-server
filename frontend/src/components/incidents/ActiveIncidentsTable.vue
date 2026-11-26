@@ -71,7 +71,7 @@
                     class="text-[9px] px-1.5 py-0.2 rounded font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-0.5 shadow-sm"
                     :title="t('dash_acked_by', { user: prob.acknowledged_by })"
                   >
-                    <span>✓</span><span>{{ t('dash_badge_handled') }}</span>
+                    <svg class="w-2.5 h-2.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span>{{ t('dash_badge_handled') }}</span>
                   </span>
                   <span
                     v-if="prob.is_ignored"
@@ -141,8 +141,8 @@
             <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
             <span>{{ t('inc_btn_ack_done') }}</span>
           </div>
-          <button v-else @click="$emit('ack', activeActProb.id); closeActDropdown()" class="w-full text-left px-3 py-1.5 hover:bg-emerald-950/50 text-emerald-300 flex items-center gap-2 cursor-pointer border-t border-gray-800/60">
-            <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          <button v-else @click="$emit('ack', activeActProb.id); closeActDropdown()" class="w-full text-left px-3 py-1.5 hover:bg-gray-800 text-gray-300 flex items-center gap-2 cursor-pointer border-t border-gray-800/60">
+            <svg class="w-3.5 h-3.5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
             <span>{{ t('inc_btn_ack') }}</span>
           </button>
           <button v-if="activeActProb.is_ignored" @click="$emit('unignore', activeActProb.id); closeActDropdown()" class="w-full text-left px-3 py-1.5 hover:bg-gray-800 text-gray-300 flex items-center gap-2 cursor-pointer border-t border-gray-800/60">

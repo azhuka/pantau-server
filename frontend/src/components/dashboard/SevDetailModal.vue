@@ -88,7 +88,7 @@
                   <button
                     v-if="!p.acknowledged_by && !isViewer"
                     @click="$emit('ack-problem', p.id)"
-                    class="p-1.5 rounded bg-emerald-950/80 text-emerald-400 border border-emerald-700/80 hover:bg-emerald-800 hover:text-white transition cursor-pointer"
+                    class="p-1.5 rounded bg-gray-800/80 text-gray-300 border border-gray-700 hover:bg-gray-700 hover:text-white transition cursor-pointer"
                     :title="t('inc_btn_ack')"
                     :aria-label="t('inc_btn_ack')"
                   ><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></button>
@@ -178,6 +178,13 @@ const pageSize = ref(10)
 
 watch([search, () => props.severity], () => {
   currentPage.value = 1
+})
+
+watch(() => props.isOpen, (open) => {
+  if (open) {
+    search.value = ''
+    currentPage.value = 1
+  }
 })
 
 const TITLES = { danger: 'sdm_title_danger', critical: 'sdm_title_critical', warning: 'sdm_title_warning', info: 'sdm_title_info', ignored: 'sdm_title_ignored' }

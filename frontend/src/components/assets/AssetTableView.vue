@@ -8,13 +8,20 @@
       <div>
         <h2 class="text-sm font-bold text-gray-100 uppercase tracking-wider font-mono flex items-center gap-2">
           <span class="w-2 h-2 rounded-full bg-cyan-400 beacon-live"></span>
-          <span>// ASSET INFRASTRUCTURE MATRIX</span>
+          <span>ASSET INVENTORY MATRIX</span>
           <span class="text-xs text-cyan-400 font-bold">({{ filteredServers.length }} {{ t('nodes_monitored') }})</span>
         </h2>
         <p class="text-xs text-gray-400 font-mono mt-0.5">
           {{ t('assets_subtitle') }}
         </p>
       </div>
+      <button
+        v-if="!isViewer && (userPerms.can_manage_servers || userPerms.can_server_control)"
+        @click="showAddModal = true"
+        class="px-3 py-1.5 rounded bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold font-mono transition cursor-pointer shrink-0"
+      >
+        + Add Asset
+      </button>
     </div>
 
     <!-- BLUEPRINT UNIFIED FILTER BAR (Group, Status, Environment, Search, Reset, Columns) -->
@@ -392,7 +399,7 @@
                     <line x1="6" y1="6" x2="6.01" y2="6"/>
                     <line x1="6" y1="18" x2="6.01" y2="18"/>
                   </svg>
-                  <div class="text-sm font-bold text-gray-200 font-mono tracking-wider uppercase">// {{ t('assets_empty_title') }}</div>
+                  <div class="text-sm font-bold text-gray-200 font-mono tracking-wider uppercase">{{ t('assets_empty_title') }}</div>
                   <div class="text-xs text-gray-400 font-mono max-w-md">{{ t('assets_empty_desc') }}</div>
                 </div>
               </td>
@@ -552,6 +559,13 @@
         </button>
       </div>
     </Teleport>
+    <Teleport to="body">
+      <AddHostModal
+        :is-open="showAddModal"
+        @close="showAddModal = false"
+        @created="$emit('server-updated')"
+      />
+    </Teleport>
   </div>
 </template>
 
@@ -560,6 +574,7 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useI18n } from '../../i18n'
 import { formatBytes, formatUptime, formatRelativeTime } from '../../utils/formatters'
 import EditHostModal from './modals/EditHostModal.vue'
+import AddHostModal from './modals/AddHostModal.vue'
 import EditNoteModal from './modals/EditNoteModal.vue'
 import InjectKeyModal from './modals/InjectKeyModal.vue'
 import DeleteHostModal from './modals/DeleteHostModal.vue'
@@ -585,6 +600,7 @@ const props = defineProps({
 const emit = defineEmits(['open-workspace', 'probe-node', 'server-updated'])
 
 const { t } = useI18n()
+const showAddModal = ref(false)
 
 // --- ENTERPRISE COLUMN VISIBILITY & CUSTOMIZER ---
 const STORAGE_COLS_KEY = 'pantau_asset_matrix_columns_v1'

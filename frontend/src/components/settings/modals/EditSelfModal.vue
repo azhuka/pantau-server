@@ -1,12 +1,12 @@
 <template>
-  <div class="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 overflow-y-auto">
+  <div class="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 overflow-y-auto" @click.self="$emit('close')">
     <div class="bg-[#111827] border border-[#1f2937] rounded-xl w-full max-w-md p-5 shadow-2xl my-8 font-mono text-xs">
       <!-- Header -->
       <div class="flex items-center justify-between pb-3 border-b border-gray-800 mb-4">
         <div>
           <h3 class="text-sm font-bold text-gray-100 flex items-center gap-2">
             <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
-            <span>// {{ t('settings_modal_edit_self_title') || 'Edit Account Credentials' }}</span>
+            <span>{{ t('settings_modal_edit_self_title') || 'Edit Account Credentials' }}</span>
           </h3>
           <p class="text-[11px] text-gray-400 mt-0.5">
             {{ user.username }} &bull; {{ user.is_master_admin ? 'Master Admin' : user.role }}

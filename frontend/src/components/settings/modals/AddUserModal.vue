@@ -1,12 +1,12 @@
 <template>
-  <div class="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 overflow-y-auto font-mono text-xs">
+  <div class="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 overflow-y-auto font-mono text-xs" @click.self="$emit('close')">
     <div class="bg-[#111827] border border-[#1f2937] rounded-xl w-full max-w-xl p-5 shadow-2xl my-8 space-y-4">
       <!-- Header -->
       <div class="flex items-center justify-between pb-3 border-b border-gray-800">
         <div>
           <h3 class="text-sm font-bold text-gray-100 flex items-center gap-2">
             <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
-            <span>// {{ t('settings_modal_add_title') || 'Register New System User' }}</span>
+            <span>{{ t('settings_modal_add_title') || 'Register New System User' }}</span>
           </h3>
           <p class="text-[11px] text-gray-400 mt-0.5">
             {{ t('settings_add_user_card_desc') || 'Register daily operator account or viewer.' }}

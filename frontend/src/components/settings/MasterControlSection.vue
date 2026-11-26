@@ -7,7 +7,9 @@
       :class="flashType === 'success' ? 'bg-emerald-950/60 border-emerald-800 text-emerald-300' : 'bg-rose-950/60 border-rose-800 text-rose-300'"
     >
       <span>{{ flashMsg }}</span>
-      <button @click="flashMsg = ''" class="text-gray-400 hover:text-white font-bold ml-2 cursor-pointer">&times;</button>
+      <button @click="flashMsg = ''" class="text-gray-400 hover:text-white ml-2 cursor-pointer" title="Dismiss" aria-label="Dismiss">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
     </div>
 
     <!-- Stat Cards KPI Strip -->
@@ -18,7 +20,7 @@
           {{ mcStatus?.database?.total_size_mb || '0' }} <span class="text-xs font-normal text-gray-400">MB</span>
         </div>
         <div class="text-[10px] text-gray-400 mt-1">
-          {{ mcStatus?.database?.tables?.length || 0 }} {{ t('tbl_registered', 'Tabel') }}
+          {{ mcStatus?.database?.tables?.length || 0 }} {{ t('tbl_registered') }}
         </div>
       </div>
 
@@ -59,7 +61,7 @@
         <div>
           <h3 class="text-xs font-bold text-gray-200 uppercase tracking-widest font-mono flex items-center gap-2">
             <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
-            <span>// {{ t('mc_thresholds_title') }}</span>
+            <span>{{ t('mc_thresholds_title') }}</span>
           </h3>
           <p class="text-xs text-gray-400 font-mono mt-0.5">
             {{ t('mc_thresholds_subtitle') }}
@@ -79,7 +81,7 @@
             :disabled="savingThresholds"
             class="px-3 py-1 text-xs font-mono font-bold rounded bg-cyan-700 hover:bg-cyan-600 disabled:opacity-50 text-white transition cursor-pointer flex items-center gap-1.5"
           >
-            <span>{{ savingThresholds ? t('saving', 'Menyimpan...') : t('mc_save_thresholds') }}</span>
+            <span>{{ savingThresholds ? t('saving') : t('mc_save_thresholds') }}</span>
           </button>
         </div>
       </div>
@@ -89,7 +91,7 @@
         <div class="p-3 rounded-lg bg-[#0e1628] border border-gray-800 space-y-2">
           <div class="font-bold text-gray-200 flex items-center justify-between">
             <span>CPU Processor Load</span>
-            <span class="text-[10px] text-cyan-400">Warning ≤ Major ≤ Danger</span>
+            <span class="text-[10px] text-cyan-400">Warning ≤ Critical ≤ Danger</span>
           </div>
           <div class="grid grid-cols-3 gap-2">
             <div>
@@ -97,7 +99,7 @@
               <input v-model.number="thForm.cpu_warn" type="number" step="0.5" class="th-input" />
             </div>
             <div>
-              <label class="text-[10px] text-amber-400 block font-semibold">Major (%)</label>
+              <label class="text-[10px] text-orange-400 block font-semibold">Critical (%)</label>
               <input v-model.number="thForm.cpu_average" type="number" step="0.5" class="th-input" />
             </div>
             <div>
@@ -111,7 +113,7 @@
         <div class="p-3 rounded-lg bg-[#0e1628] border border-gray-800 space-y-2">
           <div class="font-bold text-gray-200 flex items-center justify-between">
             <span>Memory RAM Usage</span>
-            <span class="text-[10px] text-emerald-400">Warning ≤ Major ≤ Danger</span>
+            <span class="text-[10px] text-emerald-400">Warning ≤ Critical ≤ Danger</span>
           </div>
           <div class="grid grid-cols-3 gap-2">
             <div>
@@ -119,7 +121,7 @@
               <input v-model.number="thForm.ram_warn" type="number" step="0.5" class="th-input" />
             </div>
             <div>
-              <label class="text-[10px] text-amber-400 block font-semibold">Major (%)</label>
+              <label class="text-[10px] text-orange-400 block font-semibold">Critical (%)</label>
               <input v-model.number="thForm.ram_average" type="number" step="0.5" class="th-input" />
             </div>
             <div>
@@ -133,7 +135,7 @@
         <div class="p-3 rounded-lg bg-[#0e1628] border border-gray-800 space-y-2">
           <div class="font-bold text-gray-200 flex items-center justify-between">
             <span>Storage Disk Capacity</span>
-            <span class="text-[10px] text-purple-400">Warning ≤ Major ≤ Danger</span>
+            <span class="text-[10px] text-purple-400">Warning ≤ Critical ≤ Danger</span>
           </div>
           <div class="grid grid-cols-3 gap-2">
             <div>
@@ -141,7 +143,7 @@
               <input v-model.number="thForm.disk_warn" type="number" step="0.5" class="th-input" />
             </div>
             <div>
-              <label class="text-[10px] text-amber-400 block font-semibold">Major (%)</label>
+              <label class="text-[10px] text-orange-400 block font-semibold">Critical (%)</label>
               <input v-model.number="thForm.disk_average" type="number" step="0.5" class="th-input" />
             </div>
             <div>
@@ -181,7 +183,7 @@
         <div>
           <h3 class="text-xs font-bold text-gray-200 uppercase tracking-widest font-mono flex items-center gap-2">
             <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
-            <span>// {{ t('mc_db_storage_title') }}</span>
+            <span>{{ t('mc_db_storage_title') }}</span>
           </h3>
           <p class="text-xs text-gray-400 font-mono mt-0.5">
             {{ t('mc_db_storage_subtitle') }}

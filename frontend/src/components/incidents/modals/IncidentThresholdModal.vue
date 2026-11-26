@@ -35,11 +35,11 @@
           <div class="space-y-1">
             <div class="flex items-center justify-between">
               <span class="text-amber-400 text-[11px]">Warning:</span>
-              <input v-model.number="form.cpu_warning" type="number" min="1" max="100" class="w-16 bg-gray-900 border border-gray-700 rounded px-1.5 py-0.5 text-right text-xs" />
+              <input v-model.number="form.cpu_warn" type="number" min="1" max="100" class="w-16 bg-gray-900 border border-gray-700 rounded px-1.5 py-0.5 text-right text-xs" />
             </div>
             <div class="flex items-center justify-between">
               <span class="text-orange-400 text-[11px]">Critical:</span>
-              <input v-model.number="form.cpu_critical" type="number" min="1" max="100" class="w-16 bg-gray-900 border border-gray-700 rounded px-1.5 py-0.5 text-right text-xs" />
+              <input v-model.number="form.cpu_average" type="number" min="1" max="100" class="w-16 bg-gray-900 border border-gray-700 rounded px-1.5 py-0.5 text-right text-xs" />
             </div>
             <div class="flex items-center justify-between">
               <span class="text-red-400 text-[11px]">Danger:</span>
@@ -56,11 +56,11 @@
           <div class="space-y-1">
             <div class="flex items-center justify-between">
               <span class="text-amber-400 text-[11px]">Warning:</span>
-              <input v-model.number="form.ram_warning" type="number" min="1" max="100" class="w-16 bg-gray-900 border border-gray-700 rounded px-1.5 py-0.5 text-right text-xs" />
+              <input v-model.number="form.ram_warn" type="number" min="1" max="100" class="w-16 bg-gray-900 border border-gray-700 rounded px-1.5 py-0.5 text-right text-xs" />
             </div>
             <div class="flex items-center justify-between">
               <span class="text-orange-400 text-[11px]">Critical:</span>
-              <input v-model.number="form.ram_critical" type="number" min="1" max="100" class="w-16 bg-gray-900 border border-gray-700 rounded px-1.5 py-0.5 text-right text-xs" />
+              <input v-model.number="form.ram_average" type="number" min="1" max="100" class="w-16 bg-gray-900 border border-gray-700 rounded px-1.5 py-0.5 text-right text-xs" />
             </div>
             <div class="flex items-center justify-between">
               <span class="text-red-400 text-[11px]">Danger:</span>
@@ -77,11 +77,11 @@
           <div class="space-y-1">
             <div class="flex items-center justify-between">
               <span class="text-amber-400 text-[11px]">Warning:</span>
-              <input v-model.number="form.disk_warning" type="number" min="1" max="100" class="w-16 bg-gray-900 border border-gray-700 rounded px-1.5 py-0.5 text-right text-xs" />
+              <input v-model.number="form.disk_warn" type="number" min="1" max="100" class="w-16 bg-gray-900 border border-gray-700 rounded px-1.5 py-0.5 text-right text-xs" />
             </div>
             <div class="flex items-center justify-between">
               <span class="text-orange-400 text-[11px]">Critical:</span>
-              <input v-model.number="form.disk_critical" type="number" min="1" max="100" class="w-16 bg-gray-900 border border-gray-700 rounded px-1.5 py-0.5 text-right text-xs" />
+              <input v-model.number="form.disk_average" type="number" min="1" max="100" class="w-16 bg-gray-900 border border-gray-700 rounded px-1.5 py-0.5 text-right text-xs" />
             </div>
             <div class="flex items-center justify-between">
               <span class="text-red-400 text-[11px]">Danger:</span>
@@ -98,15 +98,19 @@
           <div class="space-y-1">
             <div class="flex items-center justify-between">
               <span class="text-amber-400 text-[11px]">Swap Warn:</span>
-              <input v-model.number="form.swap_warning" type="number" min="1" max="100" class="w-16 bg-gray-900 border border-gray-700 rounded px-1.5 py-0.5 text-right text-xs" />
+              <input v-model.number="form.swap_warn" type="number" min="1" max="100" class="w-16 bg-gray-900 border border-gray-700 rounded px-1.5 py-0.5 text-right text-xs" />
             </div>
             <div class="flex items-center justify-between">
               <span class="text-red-400 text-[11px]">Swap Danger:</span>
               <input v-model.number="form.swap_danger" type="number" min="1" max="100" class="w-16 bg-gray-900 border border-gray-700 rounded px-1.5 py-0.5 text-right text-xs" />
             </div>
             <div class="flex items-center justify-between">
-              <span class="text-amber-400 text-[11px]">SSH Warn (>sess):</span>
-              <input v-model.number="form.ssh_warning" type="number" min="0" max="20" class="w-16 bg-gray-900 border border-gray-700 rounded px-1.5 py-0.5 text-right text-xs" />
+              <span class="text-amber-400 text-[11px]">SSH Warn:</span>
+              <input v-model.number="form.ssh_fail_warn" type="number" min="1" max="100" class="w-16 bg-gray-900 border border-gray-700 rounded px-1.5 py-0.5 text-right text-xs" />
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-red-400 text-[11px]">SSH Danger:</span>
+              <input v-model.number="form.ssh_fail_danger" type="number" min="1" max="500" class="w-16 bg-gray-900 border border-gray-700 rounded px-1.5 py-0.5 text-right text-xs" />
             </div>
           </div>
         </div>
@@ -149,18 +153,20 @@ const props = defineProps({
 const emit = defineEmits(['close', 'saved'])
 
 const form = ref({
-  cpu_warning: 80,
-  cpu_critical: 90,
+  cpu_warn: 85,
+  cpu_average: 90,
   cpu_danger: 95,
-  ram_warning: 80,
-  ram_critical: 90,
+  ram_warn: 85,
+  ram_average: 90,
   ram_danger: 95,
-  disk_warning: 85,
-  disk_critical: 90,
+  disk_warn: 90,
+  disk_average: 92.5,
   disk_danger: 95,
-  swap_warning: 70,
-  swap_danger: 85,
-  ssh_warning: 1
+  swap_warn: 80,
+  swap_average: 86,
+  swap_danger: 92,
+  ssh_fail_warn: 5,
+  ssh_fail_danger: 10
 })
 
 const saving = ref(false)

@@ -5,7 +5,7 @@
       <div>
         <h2 class="text-xs font-bold text-gray-200 uppercase tracking-widest font-mono flex items-center gap-2">
           <span class="w-2 h-2 rounded-full bg-cyan-400 beacon-live"></span>
-          <span>// {{ activeTab === 'rbac' ? t('settings_title') : t('settings_subtab_master_control') }}</span>
+          <span>{{ activeTab === 'rbac' ? t('settings_title') : t('settings_subtab_master_control') }}</span>
         </h2>
         <p class="text-xs text-gray-400 font-mono mt-1">
           {{ activeTab === 'rbac' ? t('settings_header_desc_rbac') : t('settings_header_desc_mc') }}
@@ -41,7 +41,9 @@
       :class="flashType === 'success' ? 'bg-emerald-950/60 border-emerald-800 text-emerald-300' : 'bg-rose-950/60 border-rose-800 text-rose-300'"
     >
       <span>{{ flashMsg }}</span>
-      <button @click="flashMsg = ''" class="text-gray-400 hover:text-white font-bold ml-2 cursor-pointer">&times;</button>
+      <button @click="flashMsg = ''" class="text-gray-400 hover:text-white ml-2 cursor-pointer" title="Dismiss" aria-label="Dismiss">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
     </div>
 
     <!-- TAB 1: OTORITAS & MANAJEMEN PENGGUNA (RBAC) -->
@@ -103,7 +105,7 @@
                 </span>
               </div>
               <div v-if="profile?.role === 'operator'" class="pt-2 border-t border-gray-800/60">
-                <div class="text-[11px] font-bold text-cyan-400 mb-1">// Active Permissions:</div>
+                <div class="text-[11px] font-bold text-cyan-400 mb-1">Active Permissions:</div>
                 <div class="flex flex-wrap gap-1">
                   <span
                     v-for="(val, k) in profile?.permissions || {}"
@@ -111,7 +113,7 @@
                     v-show="val"
                     class="px-1.5 py-0.5 rounded text-[9.5px] bg-cyan-950 text-cyan-300 border border-cyan-800/80 font-bold"
                   >
-                    ✔ {{ t('perm_' + k) || k }}
+                    {{ t('perm_' + k) || k }}
                   </span>
                 </div>
               </div>
@@ -197,7 +199,7 @@
           <div>
             <h3 class="text-xs font-bold text-gray-200 uppercase tracking-widest flex items-center gap-2">
               <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
-              <span>// {{ t('settings_users_title') }}</span>
+              <span>{{ t('settings_users_title') }}</span>
             </h3>
             <p class="text-xs text-gray-400 mt-0.5">
               {{ t('settings_dir_desc') }}
@@ -462,7 +464,7 @@
             class="w-full px-3 py-1.5 text-left text-cyan-300 hover:text-white hover:bg-cyan-950/80 flex items-center gap-2 cursor-pointer transition font-bold"
           >
             <svg class="w-3.5 h-3.5 text-cyan-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            <span>{{ t('settings_action_perms') || 'Atur Izin' }}</span>
+            <span>{{ t('settings_action_perms') }}</span>
           </button>
 
           <!-- Reset Password -->

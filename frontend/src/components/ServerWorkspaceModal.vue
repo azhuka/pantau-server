@@ -1,10 +1,10 @@
 <template>
   <!-- Floating Workspace Modal Backdrop -->
   <div
-    v-if="isOpen && !isMinimized"
+    v-if="isOpen"
+    v-show="!isMinimized"
     class="fixed inset-0 z-50 bg-black/75 backdrop-blur-[4px] flex items-center justify-center p-2 sm:p-4 transition-all duration-200"
     @click.self="handleBackdropClick"
-    @keydown.esc="handleClose"
   >
     <!-- Modal Window Card (Tactical Cyber Command Deck) -->
     <div
@@ -36,7 +36,7 @@
           </div>
           <div class="min-w-0">
             <div class="flex items-center gap-2 font-mono flex-wrap sm:flex-nowrap">
-              <span class="text-xs text-cyan-400 font-bold">// Asset Details:</span>
+              <span class="text-xs text-cyan-400 font-bold">Server Details:</span>
               <span class="font-extrabold text-gray-100 text-sm tracking-tight truncate">
                 {{ server?.hostname || t('ws_loading_host') }}
               </span>
@@ -345,6 +345,7 @@
       <!-- 2.5 INTEGRATED WEB TERMINAL PANEL (Terintegrasi, Persis Seperti Blueprint Asli) -->
       <div v-if="isTerminalOpen && server" class="px-4 bg-[#080d1a] border-b border-cyan-500/20">
         <ServerWorkspaceTerminal
+          ref="workspaceTerminalRef"
           :server="server"
           :lease-seconds="terminalLeaseSeconds"
           @request-close="showTerminalCloseModal = true"
@@ -380,10 +381,10 @@
           <span>{{ tab.label }}</span>
           <!-- Dynamic Badges -->
           <span
-            v-if="tab.id === 'problems' && serverProblems.length > 0"
+            v-if="tab.id === 'problems' && activeNonIgnoredProblemsCount > 0"
             class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-rose-500 text-white ml-0.5"
           >
-            {{ serverProblems.length }}
+            {{ activeNonIgnoredProblemsCount }}
           </span>
           <span
             v-else-if="tab.id === 'accounts' && activeSSHSessions.length > 0"
@@ -424,10 +425,13 @@
           />
           <WorkspaceProblemsTab
             v-else-if="activeSubTab === 'problems'"
+            :server-id="currentServerId"
             :problems="serverProblems"
             :current-user="currentUser"
             @terminate-ssh-problem="terminateSSHSessionFromProblem"
             @ack-problem="handleWorkspaceProblemAck"
+            @switch-tab="activeSubTab = $event"
+            @refresh="loadServerData(); emit('refresh-problems')"
           />
           <WorkspaceServicesPortsTab
             v-else-if="activeSubTab === 'services_ports'"
@@ -448,6 +452,7 @@
           />
           <WorkspaceAccountsTab
             v-else-if="activeSubTab === 'accounts'"
+            :server-id="currentServerId"
             :active-s-s-h-sessions="activeSSHSessions"
             :accounts-list="accountsList"
             @terminate-ssh="terminateSSHSession"
@@ -490,7 +495,7 @@
         </div>
         <div class="flex items-center gap-2">
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 beacon-live"></span>
-          <span class="text-emerald-400 font-bold">// SECURE CONNECTION ACTIVE</span>
+          <span class="text-emerald-400 font-bold">SECURE CONNECTION ACTIVE</span>
         </div>
       </div>
     </div>
@@ -575,10 +580,10 @@
           <button
             type="button"
             @click="closeMaintenanceModal"
-            class="text-gray-400 hover:text-white transition cursor-pointer text-sm"
+            class="text-gray-400 hover:text-white transition cursor-pointer p-1"
             title="Close (Esc)"
           >
-            ✕
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
 
@@ -656,7 +661,7 @@
               :disabled="maintSubmitting"
               class="px-3 py-1.5 rounded bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-800 transition cursor-pointer font-bold flex items-center gap-1.5 shadow"
             >
-              <span v-if="maintSubmitting" class="animate-spin text-xs">⟳</span>
+              <svg v-if="maintSubmitting" class="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
               <span>{{ t('maint_btn_disable') }}</span>
             </button>
           </div>
@@ -675,7 +680,7 @@
               :disabled="maintSubmitting"
               class="px-3.5 py-1.5 rounded bg-amber-600 hover:bg-amber-500 text-white transition cursor-pointer font-bold flex items-center gap-1.5 shadow-lg"
             >
-              <span v-if="maintSubmitting" class="animate-spin text-xs">⟳</span>
+              <svg v-if="maintSubmitting" class="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
               <span>{{ server?.is_maintenance ? t('maint_btn_update') : t('maint_btn_enable') }}</span>
             </button>
           </div>
@@ -769,6 +774,7 @@ const isTerminalOpen = ref(false)
 const showTerminalUnlockModal = ref(false)
 const showTerminalCloseModal = ref(false)
 const showTerminalLockModal = ref(false)
+const workspaceTerminalRef = ref(null)
 const userHasTotp = ref(false)
 const terminalLeaseSeconds = ref(0)
 let terminalLeaseTimer = null
@@ -819,6 +825,7 @@ function onTerminalUnlocked(payload) {
 }
 
 function confirmCloseTerminal() {
+  workspaceTerminalRef.value?.closeSession()
   showTerminalCloseModal.value = false
   isTerminalOpen.value = false
 }
@@ -902,6 +909,7 @@ const userPerms = computed(() => {
       can_users_sys: true,
       can_cron: true,
       can_apt: true,
+      can_ota: true,
       can_ssl: true,
       can_audit: true,
       can_file_manager: true
@@ -945,10 +953,12 @@ const activeSSHSessions = computed(() => {
   return result
 })
 
+const activeNonIgnoredProblemsCount = computed(() => serverProblems.value.filter(p => !p.resolved_at && !p.is_ignored).length)
+
 const subTabs = computed(() => {
   const allTabs = [
     { id: 'overview', label: t('tab_perf') },
-    { id: 'problems', label: t('tab_incidents'), badge: serverProblems.value.length || null },
+    { id: 'problems', label: t('tab_incidents'), badge: activeNonIgnoredProblemsCount.value || null },
     { id: 'services_ports', label: t('tab_services_ports'), badge: servicesList.value.length + portsList.value.length || null },
     { id: 'processes', label: t('tab_tasks'), badge: processesList.value.length || null },
     { id: 'firewall', label: t('tab_firewall') },
@@ -1103,6 +1113,9 @@ function handleBackdropClick() {
 
 function selectHost(sid) {
   showHostDropdown.value = false
+  if (isTerminalOpen.value) {
+    workspaceTerminalRef.value?.closeSession()
+  }
   currentServerId.value = sid
   isTerminalOpen.value = false
   stopLeaseCountdown()
@@ -1125,8 +1138,24 @@ function navigateHost(direction) {
 function handleKeyDown(e) {
   if (!props.isOpen || props.isMinimized) return
   if (e.key === 'Escape') {
+    if (showHostDropdown.value) {
+      showHostDropdown.value = false
+      return
+    }
+    if (showTerminalLockModal.value) { showTerminalLockModal.value = false; return }
+    if (showTerminalCloseModal.value) { showTerminalCloseModal.value = false; return }
+    if (showTerminalUnlockModal.value) { showTerminalUnlockModal.value = false; return }
+    if (showGuardrailModal.value) { showGuardrailModal.value = false; return }
+    if (showMaintenanceModal.value) { showMaintenanceModal.value = false; return }
+    if (showFileManagerModal.value) return
     handleClose()
-  } else if (e.key === '[') {
+    return
+  }
+  const tag = (e.target?.tagName || '').toUpperCase()
+  if (['INPUT', 'TEXTAREA', 'SELECT'].includes(tag) || e.target?.isContentEditable || e.target?.closest?.('.xterm')) {
+    return
+  }
+  if (e.key === '[') {
     navigateHost(-1)
   } else if (e.key === ']') {
     navigateHost(1)

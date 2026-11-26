@@ -149,7 +149,7 @@ def _get_cached_server_id(raw_key: str) -> Optional[int]:
     with SessionLocal() as db:
         srv = (
             db.query(Server.id)
-            .filter((Server.api_key == hk) | (Server.api_key == raw_key), Server.is_active == 1)
+            .filter(Server.api_key == hk, Server.is_active == 1)
             .first()
         )
         if not srv:

@@ -31,12 +31,12 @@ def _classify_platform(platform_dict: dict | None, override: str | None = None) 
         if override == "baremetal":
             return {"type": "baremetal", "label": "Baremetal", "short_label": "Baremetal", "virt": "Baremetal"}
         elif override == "vm":
-            return {"type": "vm", "label": "Mesin Virtual (VM)", "short_label": "VM", "virt": "VM"}
+            return {"type": "vm", "label": "Virtual Machine (VM)", "short_label": "VM", "virt": "VM"}
         elif override == "lxc":
             return {"type": "lxc", "label": "LXC Container", "short_label": "LXC", "virt": "LXC"}
 
     if not isinstance(platform_dict, dict) or not platform_dict:
-        return {"type": "pending", "label": "Auto Deteksi", "short_label": "AUTO", "virt": "Auto"}
+        return {"type": "pending", "label": "Auto Detect", "short_label": "AUTO", "virt": "Auto"}
 
     virt = str(platform_dict.get("virt") or "").strip().upper()
     vendor = str(platform_dict.get("vendor") or "").strip()
@@ -542,34 +542,130 @@ def get_server_cron(sid: int, user: User = Depends(get_current_user), db: Sessio
         return {"ok": True, "cron": {"jobs": []}}
 
 @router.get("/{sid}/problems")
-def get_server_problems(sid: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    """Insiden / anomali aktif khusus untuk server ini."""
+def get_server_problems(
+    sid: int,
+    include_resolved: bool = True,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Insiden aktif (atas) dan riwayat teratasi (bawah) dalam satu daftar untuk server ini."""
     check_server_access(user, sid)
-    problems = (
+    srv = db.query(Server).filter(Server.id == sid).first()
+    hostname = srv.hostname if srv else f"Server #{sid}"
+
+    sev_rank = {"danger": 0, "critical": 1, "average": 1, "warning": 2, "info": 3}
+    open_probs = (
         db.query(ServerProblem)
-        .filter(ServerProblem.server_id == sid, ServerProblem.resolved_at == None)
+        .filter(ServerProblem.server_id == sid, ServerProblem.resolved_at.is_(None))
         .order_by(ServerProblem.id.desc())
         .all()
     )
+    open_probs.sort(key=lambda p: (sev_rank.get((p.severity or "info").lower(), 4), -(p.id or 0)))
+
+    if include_resolved:
+        hist_probs = (
+            db.query(ServerProblem)
+            .filter(ServerProblem.server_id == sid, ServerProblem.resolved_at.is_not(None))
+            .order_by(ServerProblem.resolved_at.desc())
+            .limit(30)
+            .all()
+        )
+        problems = open_probs + hist_probs
+    else:
+        problems = open_probs
+
+    master_names: set[str] = set()
+    if not user.is_master_admin:
+        master_names = {
+            u.username.lower()
+            for u in db.query(User).filter(User.role.in_(["master_admin", "master-admin"])).all()
+            if u.username
+        }
+
+    def _mask_actor(name: str | None) -> str | None:
+        if not name:
+            return name
+        if not user.is_master_admin and name.strip().lower() in master_names:
+            return "System"
+        return name
+
     result = []
     now = datetime.utcnow()
+    dirty = False
     for prob in problems:
-        is_ign = bool(prob.is_ignored and (not prob.ignored_until or prob.ignored_until > now))
+        is_ign = bool(prob.is_ignored)
+        if is_ign and prob.ignored_until and prob.ignored_until < now:
+            prob.is_ignored = 0
+            prob.ignored_until = None
+            prob.ignored_reason = None
+            prob.ignore_mode = None
+            is_ign = False
+            dirty = True
+
+        ctx_obj = None
+        if prob.context:
+            try:
+                ctx_obj = json.loads(prob.context) if isinstance(prob.context, str) else prob.context
+            except Exception:
+                ctx_obj = prob.context
+
+        k = prob.key or ""
+        action = None
+        log_unit = None
+        if k.startswith("ssh_active_session:"):
+            action = "terminate_session"
+            log_unit = "AUTH"
+        elif k.startswith("service_down:"):
+            action = "restart_service"
+            log_unit = k.split(":", 1)[1]
+        elif k == "failed_logins":
+            action = "block_ip"
+            log_unit = "AUTH"
+        elif k in ("apt_updates", "pkg_updates"):
+            action = "apt_update"
+        elif k.startswith("fim_anomaly:"):
+            action = "fim_view"
+        elif k == "agent_outdated":
+            action = "update_agent"
+        elif k.startswith(("cpu_", "ram_", "swap_", "oom_kill:", "segfault:")):
+            action = "inspect_processes"
+        elif k.startswith("disk_"):
+            action = "inspect_storage"
+
+        duration_sec = None
+        if prob.started_at:
+            end_t = prob.resolved_at or now
+            duration_sec = max(0, int((end_t - prob.started_at).total_seconds()))
+
         result.append({
             "id": prob.id,
+            "server_id": prob.server_id,
+            "hostname": hostname,
             "key": prob.key,
             "severity": prob.severity,
             "message": prob.message,
             "tip": prob.tip,
+            "context": ctx_obj,
             "started_at": prob.started_at.isoformat() if prob.started_at else None,
-            "is_active": prob.is_active,
-            "acknowledged_by": prob.acknowledged_by,
+            "resolved_at": prob.resolved_at.isoformat() if prob.resolved_at else None,
+            "resolved_note": prob.resolved_note,
+            "duration_sec": duration_sec,
+            "is_active": prob.is_active if prob.resolved_at is None else 0,
+            "acknowledged_by": _mask_actor(prob.acknowledged_by),
             "acknowledged_at": prob.acknowledged_at.isoformat() if prob.acknowledged_at else None,
             "is_ignored": is_ign,
             "ignored_until": prob.ignored_until.isoformat() if prob.ignored_until else None,
-            "ignored_by": prob.ignored_by,
+            "ignored_by": _mask_actor(prob.ignored_by),
             "ignored_reason": prob.ignored_reason,
+            "ignore_mode": prob.ignore_mode,
+            "action": action,
+            "log_unit": log_unit,
         })
+    if dirty:
+        try:
+            db.commit()
+        except Exception:
+            db.rollback()
     return {"ok": True, "problems": result}
 
 _ACTION_PERMISSION_MAP = {
@@ -607,6 +703,51 @@ _ACTION_PERMISSION_MAP = {
 }
 
 
+@router.get("/{sid}/actions")
+def get_server_action_history(
+    sid: int,
+    limit: int = 100,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Riwayat tindakan dan perintah yang dieksekusi melalui aplikasi Pantau Server pada aset ini."""
+    check_server_access(user, sid)
+    from services.audit_service import query_audit_entries_with_meta
+    rows, total_count, _ = query_audit_entries_with_meta(
+        db=db,
+        user_actor=user,
+        period="30d",
+        server_id=sid,
+        limit=200,
+    )
+    excluded_actions = {
+        "ssh_command", "shell_command", "pantau-shell", "terminal_cmd", "ssh_login",
+        "incident_detected", "incident_resolved", "incident_escalated",
+        "masalah_danger", "masalah_critical", "masalah_average", "masalah_warning",
+        "masalah_info", "masalah_selesai", "eskalasi_insiden",
+    }
+    filtered = []
+    for r in rows:
+        act = (r.get("action") or "").lower()
+        if act in excluded_actions:
+            continue
+        # Hindari duplikasi baris 'queued' dari AuditLog jika Command sudah tercatat
+        if r.get("kind") == "log" and (r.get("result") or "").upper() == "PENDING" and (r.get("result_detail") or "").lower() == "queued":
+            continue
+        filtered.append({
+            "id": r.get("id"),
+            "time": r.get("created_at"),
+            "user": r.get("username") or "System",
+            "action": r.get("action"),
+            "action_label": r.get("action_label") or r.get("action"),
+            "target": r.get("target") or "-",
+            "status": r.get("result") or "SUCCESS",
+            "result": r.get("meta") or r.get("result_detail") or "-",
+        })
+    max_n = min(max(1, limit), 200)
+    return {"ok": True, "actions": filtered[:max_n], "total": len(filtered)}
+
+
 @router.post("/{sid}/actions")
 def dispatch_server_action(
     sid: int,
@@ -629,6 +770,13 @@ def dispatch_server_action(
 
     # Normalize to fit varchar(20) commands.action schema & agent_pantau.py handler
     db_action = "terminate_session" if action == "terminate_ssh_session" else action
+
+    if db_action == "update_agent" and not params.get("sha256"):
+        from routers.api_agent import _get_latest_agent_meta
+        latest_ver, sha256, _ = _get_latest_agent_meta()
+        if not sha256:
+            raise HTTPException(status_code=404, detail="Agent source not found for OTA push")
+        params = {"version": latest_ver, "sha256": sha256}
 
     # Safety Guardrails: Proteksi Proses Kritis (Anti-Host Crash / Anti-Brick)
     if action in ("kill_process", "suspend_process"):
@@ -699,85 +847,12 @@ def _format_size(size_bytes: int) -> str:
 
 
 @router.post("/{sid}/terminal/exec")
-def execute_terminal_command(
-    sid: int,
-    body: dict = Body(...),
-    user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """Eksekusi perintah terminal pada server secara real-time."""
-    check_server_access(user, sid)
-    if not (user.is_master_admin or user.has_perm("can_terminal")):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied: Web Terminal permission (can_terminal) is required")
-
-    server = db.query(Server).filter(Server.id == sid, Server.is_active == 1).first()
-    if not server:
-        raise HTTPException(status_code=404, detail="Server not found")
-
-    now = datetime.utcnow()
-    is_online = bool(server.last_seen and (now - server.last_seen).total_seconds() <= 60)
-    was_maint = bool(server.is_maintenance)
-    if not sync_maintenance_state(server, now) and was_maint:
-        db.commit()
-
-    cmd = (body.get("cmd") or "").strip()
-    cwd = body.get("cwd") or "/root"
-    if not cmd:
-        return {"ok": False, "error": "Command is empty"}
-
-    # Proteksi dasar perintah destruktif fatal
-    dangerous_patterns = [r"\brm\s+-rf\s+/\b", r"\bmkfs\b", r"\bdd\s+if="]
-    for pattern in dangerous_patterns:
-        if re.search(pattern, cmd):
-            raise HTTPException(status_code=400, detail="Command blocked by safety guardrails")
-
-    now = datetime.utcnow()
-    audit = AuditLog(
-        server_id=sid,
-        username=user.username,
-        action="terminal_exec",
-        target=cmd[:200],
-        result="success",
-        meta=f"Terminal command executed by {user.username}",
-        created_at=now
+def execute_terminal_command(sid: int):
+    """Disabled: use WebSocket PTY terminal (/ws/servers/{sid}/terminal) routed to the remote agent."""
+    raise HTTPException(
+        status_code=410,
+        detail="Localhost terminal/exec is disabled. Use the WebSocket remote agent terminal.",
     )
-    db.add(audit)
-    db.commit()
-
-    try:
-        run_cwd = cwd if (os.path.isdir(cwd) and os.access(cwd, os.R_OK | os.X_OK)) else os.path.expanduser("~")
-        res = subprocess.run(
-            cmd,
-            shell=True,
-            cwd=run_cwd,
-            text=True,
-            capture_output=True,
-            timeout=15,
-            executable="/bin/bash"
-        )
-        out = res.stdout
-        if res.stderr:
-            out = f"{out}\n{res.stderr}" if out else res.stderr
-        return {
-            "ok": True,
-            "output": out if out else "(Command completed with no output)",
-            "exit_code": res.returncode,
-            "cwd": run_cwd
-        }
-    except subprocess.TimeoutExpired:
-        return {
-            "ok": False,
-            "output": "Error: Command timed out after 15 seconds.",
-            "exit_code": 124,
-            "cwd": cwd
-        }
-    except Exception as e:
-        return {
-            "ok": False,
-            "output": f"Execution error: {str(e)}",
-            "exit_code": 1,
-            "cwd": cwd
-        }
 
 
 
@@ -1007,6 +1082,63 @@ def get_server_fim(sid: int, user: User = Depends(get_current_user), db: Session
         return {"ok": True, "fim": []}
 
 
+@router.post("")
+def create_server(
+    body: dict = Body(...),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Register a new monitored host and return its one-time agent API key."""
+    if not (user.is_master_admin or user.has_perm("can_manage_servers") or user.has_perm("can_server_control")):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied: Server management permission is required",
+        )
+
+    import secrets
+    from core.utils import hash_api_key
+
+    hostname = str(body.get("hostname") or "").strip()[:255]
+    if not hostname:
+        raise HTTPException(status_code=400, detail="Hostname is required")
+
+    ip_address = str(body.get("ip_address") or "").strip()[:45] or None
+    group_name = str(body.get("group_name") or "").strip()[:64] or None
+    tier = 2 if str(body.get("tier")) == "2" else 1
+    is_proxmox_ha = 1 if body.get("is_proxmox_ha") else 0
+
+    raw_key = "pk_" + secrets.token_hex(24)
+    srv = Server(
+        hostname=hostname,
+        ip_address=ip_address,
+        api_key=hash_api_key(raw_key),
+        is_active=1,
+        group_name=group_name,
+        tier=tier,
+        is_proxmox_ha=is_proxmox_ha,
+        allow_web_terminal=1,
+    )
+    db.add(srv)
+    db.flush()
+    db.add(AuditLog(
+        server_id=srv.id,
+        username=user.username,
+        action="create_server",
+        target=f"{hostname} ({ip_address or 'pending'})",
+        result="success",
+        created_at=datetime.utcnow(),
+    ))
+    db.commit()
+    db.refresh(srv)
+    return {
+        "ok": True,
+        "server_id": srv.id,
+        "hostname": srv.hostname,
+        "api_key": raw_key,
+        "message": f"Asset '{srv.hostname}' registered successfully",
+    }
+
+
 @router.put("/{sid}")
 def update_server(
     sid: int,
@@ -1051,7 +1183,7 @@ def update_server(
     db.add(audit_entry)
     db.commit()
     db.refresh(server)
-    return {"ok": True, "message": f"Konfigurasi host {server.hostname} berhasil diperbarui", "server_id": sid}
+    return {"ok": True, "message": f"Host {server.hostname} configuration updated successfully", "server_id": sid}
 
 
 @router.get("/{sid}/note")
@@ -1090,7 +1222,7 @@ def update_server_note(
     )
     db.add(audit_entry)
     db.commit()
-    return {"ok": True, "notes": server.notes or "", "message": "Catatan host berhasil disimpan"}
+    return {"ok": True, "notes": server.notes or "", "message": "Host notes saved successfully"}
 
 
 @router.post("/{sid}/test-connection")
@@ -1127,13 +1259,13 @@ def test_server_connection(
                 "latency_ms": latency_ms,
                 "banner": banner,
                 "output": f"SSH Connected: {host}:{port} [{latency_ms}ms]{banner_info}",
-                "message": f"Koneksi SSH ke {host}:{port} berhasil [{latency_ms}ms]{banner_info}"
+                "message": f"SSH connection to {host}:{port} succeeded [{latency_ms}ms]{banner_info}"
             }
         else:
             s.close()
-            return {"ok": False, "error": f"Koneksi ke {host}:{port} gagal (TCP errno {res})"}
+            return {"ok": False, "error": f"Connection to {host}:{port} failed (TCP errno {res})"}
     except Exception as e:
-        return {"ok": False, "error": f"Gagal menghubungi {host}:{port}: {str(e)}"}
+        return {"ok": False, "error": f"Failed to reach {host}:{port}: {str(e)}"}
 
 
 @router.post("/{sid}/inject-key")
@@ -1200,7 +1332,7 @@ def inject_server_key(
 
     return {
         "ok": True,
-        "message": f"SSH Public Key berhasil diinjeksi untuk host {server.hostname}"
+        "message": f"SSH public key provisioned for host {server.hostname}"
     }
 
 
@@ -1230,4 +1362,98 @@ def delete_server(
     )
     db.add(audit_entry)
     db.commit()
-    return {"ok": True, "message": f"Host {server.hostname} berhasil dihapus dari inventaris"}
+    return {"ok": True, "message": f"Host {server.hostname} removed from inventory"}
+
+
+@router.post("/{sid}/regenerate-key")
+def regenerate_server_key(
+    sid: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Rotate the agent API key for a host (Master Admin only)."""
+    import secrets
+    from core.utils import hash_api_key
+
+    if not user.is_master_admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only master-admin can regenerate API keys")
+
+    server = db.query(Server).filter(Server.id == sid, Server.is_active == 1).first()
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+
+    raw_key = secrets.token_hex(32)
+    server.api_key = hash_api_key(raw_key)
+    db.add(AuditLog(
+        server_id=sid,
+        username=user.username,
+        action="regenerate_key",
+        target=server.hostname,
+        result="success",
+        meta="Agent API key rotated",
+        created_at=datetime.utcnow(),
+    ))
+    db.commit()
+    return {"ok": True, "api_key": raw_key, "hostname": server.hostname}
+
+
+@router.post("/{sid}/fim/events/{event_id}/ack")
+def ack_fim_event(
+    sid: int,
+    event_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Acknowledge a single File Integrity Monitoring (FIM) event."""
+    from models.fim import FIMEvent
+
+    check_server_access(user, sid)
+    if user.is_viewer:
+        raise HTTPException(status_code=403, detail="Access denied: Viewers cannot acknowledge FIM events")
+    ev = db.query(FIMEvent).filter(FIMEvent.id == event_id, FIMEvent.server_id == sid).first()
+    if not ev:
+        raise HTTPException(status_code=404, detail="FIM event not found")
+    now = datetime.utcnow()
+    ev.acknowledged = 1
+    ev.acknowledged_at = now
+    ev.acknowledged_by = user.username
+    db.add(AuditLog(
+        server_id=sid,
+        username=user.username,
+        action="fim_ack",
+        target=ev.path[:255],
+        result="success",
+        created_at=now,
+    ))
+    db.commit()
+    return {"ok": True}
+
+
+@router.post("/{sid}/fim/events/ack-all")
+def ack_all_fim_events(
+    sid: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Acknowledge all pending FIM events for a host."""
+    from models.fim import FIMEvent
+
+    check_server_access(user, sid)
+    if user.is_viewer:
+        raise HTTPException(status_code=403, detail="Access denied: Viewers cannot acknowledge FIM events")
+    now = datetime.utcnow()
+    updated = (
+        db.query(FIMEvent)
+        .filter(FIMEvent.server_id == sid, FIMEvent.acknowledged == 0)
+        .update({"acknowledged": 1, "acknowledged_at": now, "acknowledged_by": user.username}, synchronize_session=False)
+    )
+    db.add(AuditLog(
+        server_id=sid,
+        username=user.username,
+        action="fim_ack_all",
+        target=f"Server #{sid} ({updated} events)",
+        result="success",
+        created_at=now,
+    ))
+    db.commit()
+    return {"ok": True, "acknowledged_count": updated}

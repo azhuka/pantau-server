@@ -1,6 +1,6 @@
 # Pantau Server
 
-[![Version](https://img.shields.io/badge/version-v0.1.69-blue.svg)](file:///home/bos/pantau-server/server/config.py)
+[![Version](https://img.shields.io/badge/version-v0.1.70-blue.svg)](file:///home/bos/pantau-server/server/config.py)
 [![Backend](https://img.shields.io/badge/backend-FastAPI%20%7C%20Python%203.12-emerald.svg)](file:///home/bos/pantau-server/server/main.py)
 [![Frontend](https://img.shields.io/badge/frontend-Vue%203%20%7C%20Tailwind%20CSS-cyan.svg)](file:///home/bos/pantau-server/frontend/src/App.vue)
 [![Database](https://img.shields.io/badge/database-MySQL%208.0%2B%20%7C%20MariaDB-orange.svg)](file:///home/bos/pantau-server/server/models/)
@@ -44,52 +44,51 @@ Pantau Server is a self-hosted Linux infrastructure monitoring and operations co
 
 ---
 
-## Quick Start
+## Production Installation
 
-### 1. Clone Repository
+Run on the central monitoring server (Ubuntu 22.04/24.04 LTS or Debian 12):
+
 ```bash
+# 1. Install system prerequisites
+sudo apt update && sudo apt install -y python3 python3-venv python3-pip mariadb-server git curl rsync openssl
+
+# 2. Clone repository
 git clone https://github.com/azhuka/pantau-server.git
 cd pantau-server
+
+# 3. Run production installer
+sudo bash install-server.sh
 ```
 
-### 2. Configure Backend
+The installer automatically:
+- Creates the dedicated `pantau-server` system user and installs backend files to `/opt/pantau/server/` and compiled SPA assets to `/opt/pantau/frontend/dist/`.
+- Creates `/opt/pantau/server/env` and installs dependencies from `server/requirements.txt`.
+- Initializes MariaDB database `pantau_db` and user `pantau_dash`, and writes `/opt/pantau/server/.env` (mode `640`).
+- Installs, enables, and starts `pantau-server.service` on port `8400`.
+- Creates the initial `master_admin` account via `seed_admin.py` (skipped if a `master_admin` already exists).
+
+Access the control console at `http://<SERVER_IP>:8400`.
+
+---
+
+## Development Setup
+
+### 1. Backend
 ```bash
 python3 -m venv env
 source env/bin/activate
 pip install --upgrade pip
 pip install -r server/requirements.txt
+cp server/.env.example server/.env
+uvicorn main:app --app-dir server --host 0.0.0.0 --port 8400 --reload
 ```
 
-### 3. Build Frontend
+### 2. Frontend
 ```bash
 cd frontend
 npm install
 npm run build
-cd ..
 ```
-
-### 4. Environment Setup
-```bash
-cp server/.env.example server/.env
-```
-Edit `server/.env` with your database credentials and secret key:
-```env
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_USER=pantau_db
-DB_PASS=pantau_server
-DB_NAME=pantau_server_db
-SERVER_HOST=0.0.0.0
-SERVER_PORT=8401
-SECRET_KEY=your_secure_secret_key
-```
-
-### 5. Run the Server
-```bash
-source env/bin/activate
-uvicorn main:app --app-dir server --host 0.0.0.0 --port 8401
-```
-Access the control console at `http://<SERVER_IP>:8401`.
 
 ---
 

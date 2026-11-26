@@ -4,7 +4,7 @@
     <span class="hud-corner-bl"></span>
     <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
       <div class="flex items-center gap-2">
-        <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider">// {{ t('ws_procs_title') }}</h3>
+        <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider">{{ t('ws_procs_title') }}</h3>
         <span class="text-xs text-gray-400">({{ filteredProcesses.length }})</span>
       </div>
     </div>

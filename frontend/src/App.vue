@@ -34,7 +34,37 @@
       :user="currentUser"
       @nav="handleNav"
       @logout="handleLogout"
+      @toggle-activity="activityOpen = !activityOpen"
+      @open-theme="themeModalOpen = true"
     />
+
+    <!-- GLOBAL DANGER ALERT BANNER (Active non-ignored danger incidents) -->
+    <div
+      v-if="activeDangerIncidents.length > 0"
+      @click="handleNav('incidents')"
+      class="bg-gradient-to-r from-rose-950 via-red-900 to-rose-950 border-b border-rose-500/40 text-white px-4 py-2 cursor-pointer hover:brightness-110 transition select-none"
+      role="alert"
+    >
+      <div class="max-w-[1650px] mx-auto flex items-center justify-between gap-3 text-xs font-mono">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <span class="w-2.5 h-2.5 rounded-full bg-rose-400 animate-ping shrink-0"></span>
+          <svg class="w-4 h-4 text-rose-200 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <span class="font-bold uppercase tracking-wider text-rose-100 shrink-0">
+            DANGER ({{ activeDangerIncidents.length }})
+          </span>
+          <span class="text-rose-100/90 truncate">
+            {{ dangerBannerSummary }}
+          </span>
+        </div>
+        <span class="px-2 py-0.5 rounded bg-white/15 text-white font-bold text-[11px] shrink-0 border border-white/20">
+          View Incidents
+        </span>
+      </div>
+    </div>
 
     <!-- MAIN CONTENT VIEWPORT -->
     <main class="flex-1 max-w-[1650px] w-full mx-auto px-3 sm:px-5 pt-3 sm:pt-5 pb-28 sm:pb-32">
@@ -68,14 +98,33 @@
         @server-updated="fetchServers"
       />
 
-      <!-- HALAMAN 3: AUDIT TRAIL (Log Akuntabilitas Aksi Operator) -->
+      <!-- HALAMAN 4: SYNTHETIC PROBING -->
+      <ProbingView
+        v-else-if="activeTab === 'probing'"
+        :servers="servers"
+        :current-user="currentUser"
+      />
+
+      <!-- HALAMAN 5: SCHEDULED MAINTENANCE WINDOWS -->
+      <MaintenanceView
+        v-else-if="activeTab === 'maintenance'"
+        :servers="servers"
+        :current-user="currentUser"
+      />
+
+      <!-- HALAMAN 6: AUDIT TRAIL (Log Akuntabilitas Aksi Operator) -->
       <AuditView
         v-else-if="activeTab === 'audit' && canAccessTab('audit')"
       />
 
-      <!-- HALAMAN 4: SETTINGS & RBAC (Otoritas & Ambang Batas) -->
+      <!-- HALAMAN 7: SETTINGS & RBAC (Otoritas & Ambang Batas) -->
       <SettingsView
         v-else-if="activeTab === 'settings' && canAccessTab('settings')"
+      />
+
+      <!-- HALAMAN 8: PUBLIC STATUS PAGE -->
+      <StatusPageView
+        v-else-if="activeTab === 'status'"
       />
 
       <!-- FALLBACK AMAN: Jika tab tidak diizinkan / hash salah, selalu tampilkan Dasbor (Cegah Blank Screen) -->
@@ -172,6 +221,14 @@
       </div>
     </div>
 
+    <ActivityConsoleDrawer
+      :is-open="activityOpen"
+      @close="activityOpen = false"
+    />
+    <ThemeCustomizerModal
+      :is-open="themeModalOpen"
+      @close="themeModalOpen = false"
+    />
     <NocToastContainer />
     <NocConfirmModal />
   </div>
@@ -181,6 +238,8 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useI18n } from './i18n'
 import Navbar from './components/Navbar.vue'
+import ActivityConsoleDrawer from './components/common/ActivityConsoleDrawer.vue'
+import ThemeCustomizerModal from './components/common/ThemeCustomizerModal.vue'
 import NocToastContainer from './components/common/NocToastContainer.vue'
 import NocConfirmModal from './components/common/NocConfirmModal.vue'
 import DashboardView from './components/dashboard/DashboardView.vue'
@@ -188,6 +247,9 @@ import AssetTableView from './components/assets/AssetTableView.vue'
 import AuditView from './components/audit/AuditView.vue'
 import SettingsView from './components/settings/SettingsView.vue'
 import IncidentView from './components/incidents/IncidentView.vue'
+import ProbingView from './components/probing/ProbingView.vue'
+import MaintenanceView from './components/maintenance/MaintenanceView.vue'
+import StatusPageView from './components/StatusPageView.vue'
 import ServerWorkspaceModal from './components/ServerWorkspaceModal.vue'
 import LoginModal from './components/LoginModal.vue'
 
@@ -197,6 +259,8 @@ const activeTab = ref('dashboard') // 'dashboard', 'assets', 'audit', 'settings'
 const workspaceServerId = ref(null)
 const isWorkspaceOpen = ref(false)
 const isWorkspaceMinimized = ref(false)
+const activityOpen = ref(false)
+const themeModalOpen = ref(false)
 
 function onServerUpdated(updated) {
   if (!updated || !updated.id) return
@@ -221,13 +285,24 @@ const activeSSHCount = computed(() => {
   return problems.value.filter((p) => p.is_active && !p.is_ignored && p.key.startsWith('ssh_active_session:')).length
 })
 
+const activeDangerIncidents = computed(() => {
+  return problems.value.filter((p) => p.is_active && !p.is_ignored && (p.severity || '').toLowerCase() === 'danger')
+})
+
+const dangerBannerSummary = computed(() => {
+  const list = activeDangerIncidents.value
+  if (!list.length) return ''
+  const top = list.slice(0, 2).map((p) => `${p.hostname || 'Host'}: ${p.message}`)
+  return list.length > 2 ? `${top.join(' | ')} (+${list.length - 2} more)` : top.join(' | ')
+})
+
 const workspaceHost = computed(() => {
   if (!workspaceServerId.value) return null
   return servers.value.find((s) => s.id === workspaceServerId.value) || null
 })
 
 function canAccessTab(tab) {
-  if (tab === 'dashboard' || tab === 'incidents' || tab === 'assets') return true
+  if (['dashboard', 'incidents', 'assets', 'probing', 'maintenance', 'status'].includes(tab)) return true
   if (tab === 'audit') return Boolean(currentUser.value?.is_master_admin || currentUser.value?.permissions?.can_audit)
   if (tab === 'settings') return Boolean(currentUser.value?.is_master_admin || currentUser.value?.permissions?.can_manage_users || currentUser.value?.permissions?.can_manage_viewers)
   return false
@@ -245,7 +320,7 @@ function handleNav(tab) {
 
 function syncTabFromHash() {
   const hash = window.location.hash.replace(/^#/, '')
-  if (['dashboard', 'incidents', 'assets', 'audit', 'settings'].includes(hash)) {
+  if (['dashboard', 'incidents', 'assets', 'probing', 'maintenance', 'status', 'audit', 'settings'].includes(hash)) {
     if (canAccessTab(hash)) {
       activeTab.value = hash
     } else {
@@ -427,6 +502,13 @@ async function fetchProblems() {
 
 function handleGlobalKeydown(e) {
   if (!currentUser.value) return
+  if (e.ctrlKey && e.key === '`') {
+    if (currentUser.value?.is_master_admin || currentUser.value?.permissions?.can_audit) {
+      e.preventDefault()
+      activityOpen.value = !activityOpen.value
+    }
+    return
+  }
   // If modal is open, let modal handle hotkeys
   if (isWorkspaceOpen.value && !isWorkspaceMinimized.value) return
 
@@ -440,13 +522,22 @@ function handleGlobalKeydown(e) {
   } else if (e.key === '3') {
     handleNav('assets')
   } else if (e.key === '4') {
-    handleNav('audit')
+    handleNav('probing')
   } else if (e.key === '5') {
+    handleNav('maintenance')
+  } else if (e.key === '6') {
+    handleNav('audit')
+  } else if (e.key === '7') {
     handleNav('settings')
+  } else if (e.key === '8') {
+    handleNav('status')
   }
 }
 
 onMounted(() => {
+  document.documentElement.setAttribute('data-theme', localStorage.getItem('pantau_theme') || 'dark')
+  document.documentElement.setAttribute('data-accent', localStorage.getItem('pantau_accent') || 'cyan')
+  document.documentElement.setAttribute('data-density', localStorage.getItem('pantau_density') || 'compact')
   syncTabFromHash()
   window.addEventListener('hashchange', syncTabFromHash)
   checkAuth()

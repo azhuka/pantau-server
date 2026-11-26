@@ -76,6 +76,19 @@ def api_get_thresholds(
 
 def validate_and_save_thresholds(db: Session, body: dict, actor_username: str) -> dict:
     """Validate threshold ordering/bounds and persist atomically to SystemSetting."""
+    # Normalize modern UI alias keys (*_warning -> *_warn, *_critical -> *_average)
+    alias_map = {
+        "cpu_warning": "cpu_warn", "cpu_critical": "cpu_average",
+        "ram_warning": "ram_warn", "ram_critical": "ram_average",
+        "disk_warning": "disk_warn", "disk_critical": "disk_average",
+        "swap_warning": "swap_warn", "swap_critical": "swap_average",
+        "ssh_warning": "ssh_fail_warn", "ssh_danger": "ssh_fail_danger",
+    }
+    normalized_body = dict(body)
+    for src_k, dst_k in alias_map.items():
+        if src_k in normalized_body and dst_k not in normalized_body:
+            normalized_body[dst_k] = normalized_body[src_k]
+
     new_th = {}
     float_keys = [
         "cpu_warn", "cpu_average", "cpu_danger",
@@ -86,9 +99,9 @@ def validate_and_save_thresholds(db: Session, body: dict, actor_username: str) -
     int_keys = ["ssh_fail_warn", "ssh_fail_danger"]
 
     for k in float_keys:
-        if k in body and body[k] is not None:
+        if k in normalized_body and normalized_body[k] is not None:
             try:
-                val = float(body[k])
+                val = float(normalized_body[k])
                 if not (1.0 <= val <= 100.0):
                     raise HTTPException(status_code=400, detail=f"Threshold {k} must be between 1 and 100.")
                 new_th[k] = val
@@ -96,9 +109,9 @@ def validate_and_save_thresholds(db: Session, body: dict, actor_username: str) -
                 raise HTTPException(status_code=400, detail=f"Invalid numeric value for threshold {k}.")
 
     for k in int_keys:
-        if k in body and body[k] is not None:
+        if k in normalized_body and normalized_body[k] is not None:
             try:
-                val = int(body[k])
+                val = int(normalized_body[k])
                 if val < 1:
                     raise HTTPException(status_code=400, detail=f"Threshold {k} must be at least 1.")
                 new_th[k] = val

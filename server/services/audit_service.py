@@ -509,6 +509,14 @@ def _translate_legacy_result(raw: Optional[str]) -> str:
         return "Power off cancelled: systemd is not running as PID 1"
     if low.startswith("optimasi ") and low.endswith(" selesai"):
         return re.sub(r"(?i)^optimasi (.+) selesai$", r"Optimized \1", text)
+    if low.startswith("push ota sukses ke "):
+        m = re.search(r"v([\d.]+)", text)
+        ver = m.group(1) if m else ""
+        return f"OTA push to v{ver} succeeded (SHA-256 verified). Agent restart scheduled."
+    if low.startswith("pembaruan agen ke ") and "terverifikasi" in low:
+        m = re.search(r"v([\d.]+)", text)
+        ver = m.group(1) if m else ""
+        return f"Agent update to v{ver} verified via telemetry."
     if low.startswith("gagal:"):
         return "Failed:" + text[6:]
     if low.startswith("berhasil (") and text.endswith(")"):

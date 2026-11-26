@@ -571,6 +571,16 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.70
+
+Perbaikan keamanan remote File Manager RPC, penonaktifan terminal/exec lokal, pengetatan RBAC & SSRF, perbaikan navigasi & modal UI, Activity Console, Theme Customizer, Storage Analysis, dan User Activity.
+
+
+### Versi v0.1.70
+
+Perbaikan keamanan remote File Manager RPC, penonaktifan terminal/exec lokal, pengetatan RBAC & SSRF, perbaikan navigasi & modal UI, Activity Console, Theme Customizer, Storage Analysis, dan User Activity.
+
+
 ### Versi v0.1.69
 
 - **Normalisasi Bahasa Inggris Penuh Audit Trail (`audit_service.py`, `problems.py`, `problem_service.py`):** Mengubah seluruh penulisan `AuditLog` di `problems.py` dan `problem_service.py` ke Bahasa Inggris NOC baku, melengkapi seluruh `AUDIT_ACTION_LABELS` (termasuk `service_recovered`), menormalkan aktor `sistem` menjadi `System`, memperbaiki target `{}` menjadi `-`, serta menambahkan `_translate_legacy_result()` untuk menerjemahkan string hasil historis/agen ke Bahasa Inggris saat pembacaan.
@@ -1164,3 +1174,16 @@ Memperbaiki kalkulasi posisi dropdown menu aksi pada Remote File Manager agar ot
 - Banner metrik KPI asimetris, dasbor insiden pasif, dan tabel inventaris armada.
 - Modal kerja aset mengambang (*Workspace Controller*) dengan sistem rak bawah (*shelf tray*).
 
+
+### Pembaruan Keamanan, Alur Kerja & Stabilitas (Post-v0.1.69)
+
+- **Keamanan & Isolasi Eksekusi Remote:**
+  - Seluruh operasi berkas (`server/routers/files.py`) kini diteruskan ke node target melalui antrean RPC agen (`FileManagerDispatcher` & `/api/agent/file-requests`), termasuk analisis penyimpanan (`/storage-triage`, `/truncate-log`, `/storage-reclaim`).
+  - Endpoint eksekusi shell lokal `/api/servers/{sid}/terminal/exec` dinonaktifkan (`410 Gone`) demi memusatkan akses shell pada WebSocket PTY teraudit (`/ws/servers/{sid}/terminal`).
+  - Pengetatan otorisasi: validasi `allowed_server_ids` dan pembatasan penetapan izin pada pembuatan/pengubahan pengguna (`routers/users.py`), penegakan cakupan aset pada `probes.py` & `maintenance.py`, proteksi anti-SSRF pada `probe_service.py`, hashing API key agen tanpa *pass-the-hash*, penghapusan `SECRET_KEY` statis, penonaktifan `/api/docs`, pembatasan CORS, serta penambahan *security headers* HTTP di `main.py`.
+- **Siklus Hidup Backend & Alur Operasional:**
+  - Penambahan `_retention_loop` per jam di `main.py` (`run_retention_prune`) untuk memangkas sesi kedaluwarsa, metrik lama, log audit, perintah, dan insiden selesai.
+  - Pengaktifan streaming progres & input interaktif APT/log (`/api/logs/{req_id}/progress` & `/input`), layanan aliran aktivitas live SSE (`services/activity_stream.py` + `/api/activity/recent` & `/stream`), rotasi kunci agen (`POST /{sid}/regenerate-key`), dan pengakuan event FIM (`ack` / `ack-all`).
+- **Stabilitas & Paritas Antarmuka SPA:**
+  - Perbaikan navigasi `probing`, `maintenance`, dan `status` di `App.vue`, perbaikan impor `useToast` di modal aset, penyelarasan prop/emit `ProblemDetailModal` & `confirmAction`, penghapusan dialog ganda *restart service*, serta *keep-alive* sesi terminal saat jendela workspace diminimalkan (`v-show`).
+  - Penambahan **Mobile Navigation Drawer** (`Navbar.vue`), **Activity Console Drawer** (`Ctrl+\``), **Theme & Density Customizer**, **Storage Analysis** di File Manager, **User Activity Modal** di tab akun, serta pembersihan prefiks `// ` dan ikon non-SVG di seluruh antarmuka.

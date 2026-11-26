@@ -1,10 +1,22 @@
 <template>
   <header class="bg-[#080d19]/95 border-b border-cyan-500/20 px-4 sm:px-6 h-14 flex items-center justify-between sticky top-0 z-40 select-none backdrop-blur-md shadow-[0_4px_20px_rgba(0,0,0,0.6)]">
     <!-- LEFT: BRAND & TACTICAL NAVIGATION -->
-    <div class="flex items-center gap-6">
-      <!-- Cyber Brand with Tactical HUD Moniker -->
-      <div class="flex items-center gap-3 cursor-pointer group" @click="$emit('nav', 'dashboard')">
-        <div class="w-8 h-8 rounded bg-cyan-950/60 border border-cyan-400/50 flex items-center justify-center text-cyan-300 shadow-[0_0_12px_rgba(56,189,248,0.35)] group-hover:border-cyan-300 transition-all">
+    <div class="flex items-center gap-3 min-w-0">
+      <!-- Mobile Drawer Trigger -->
+      <button
+        type="button"
+        @click="mobileMenuOpen = !mobileMenuOpen"
+        class="md:hidden p-1.5 rounded border border-gray-800 bg-gray-900/70 text-gray-300 hover:text-white cursor-pointer"
+        title="Open Navigation Menu"
+        aria-label="Open Navigation Menu"
+      >
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+      <!-- Brand -->
+      <div class="flex items-center gap-2.5 cursor-pointer group shrink-0" @click="$emit('nav', 'dashboard')">
+        <div class="w-8 h-8 rounded bg-cyan-950/60 border border-cyan-400/50 flex items-center justify-center text-cyan-300 shadow-[0_0_12px_rgba(56,189,248,0.35)] group-hover:border-cyan-300 transition-all shrink-0">
           <svg class="w-4 h-4 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect width="20" height="8" x="2" y="2" rx="2" ry="2"/>
             <rect width="20" height="8" x="2" y="14" rx="2" ry="2"/>
@@ -12,33 +24,31 @@
             <line x1="6" y1="18" x2="6.01" y2="18"/>
           </svg>
         </div>
-        <div>
-          <div class="font-bold text-sm tracking-wider text-gray-100 flex items-center gap-2 font-mono">
+        <div class="shrink-0">
+          <div class="font-bold text-sm tracking-wider text-gray-100 flex items-center gap-2 font-mono whitespace-nowrap">
             <span class="text-cyan-400 font-extrabold">{{ t('app_name') }}</span>
             <span class="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-800/60 tracking-normal">
-              v0.1.69
+              v0.1.70
             </span>
           </div>
-          <div class="text-[10px] text-gray-400 tracking-widest font-mono uppercase flex items-center gap-1.5">
-            <span class="text-cyan-500/80">//</span>
-            <span>ASSET TELEMETRY &amp; NOC CONTROL</span>
+          <div class="text-[10px] text-gray-400 tracking-wider font-mono uppercase whitespace-nowrap">
+            ASSET TELEMETRY &amp; NOC CONTROL
           </div>
         </div>
       </div>
 
-      <!-- 4-VIEW TACTICAL NAVIGATION (Segmented Deck Buttons) -->
-      <nav class="hidden md:flex items-center gap-1 border-l border-gray-800/80 pl-5 text-xs font-mono">
+      <!-- Navigation -->
+      <nav class="hidden md:flex items-center gap-1 border-l border-gray-800/80 pl-3 text-xs font-mono overflow-x-auto no-scrollbar">
         <!-- 1: DASHBOARD -->
         <button
           @click="$emit('nav', 'dashboard')"
           :class="[
-            'px-3 py-1.5 rounded transition-all cursor-pointer flex items-center gap-2 font-semibold tracking-wide border',
+            'px-2.5 py-1.5 rounded transition-all cursor-pointer flex items-center gap-1.5 font-semibold tracking-wide border whitespace-nowrap shrink-0',
             activeTab === 'dashboard'
               ? 'bg-cyan-950/50 text-cyan-300 border-cyan-500/60 font-bold shadow-[0_0_10px_rgba(56,189,248,0.2)]'
               : 'text-gray-400 hover:text-gray-100 hover:bg-gray-800/40 border-transparent'
           ]"
         >
-          <span class="text-cyan-400/70">01 //</span>
           <span>{{ t('nav_dashboard') }}</span>
         </button>
 
@@ -46,24 +56,23 @@
         <button
           @click="$emit('nav', 'incidents')"
           :class="[
-            'px-3 py-1.5 rounded transition-all cursor-pointer flex items-center gap-2 font-semibold tracking-wide border',
+            'px-2.5 py-1.5 rounded transition-all cursor-pointer flex items-center gap-1.5 font-semibold tracking-wide border whitespace-nowrap shrink-0',
             activeTab === 'incidents'
               ? 'bg-cyan-950/50 text-cyan-300 border-cyan-500/60 font-bold shadow-[0_0_10px_rgba(56,189,248,0.2)]'
               : 'text-gray-400 hover:text-gray-100 hover:bg-gray-800/40 border-transparent'
           ]"
         >
-          <span class="text-cyan-400/70">02 //</span>
           <span>{{ t('nav_incidents') }}</span>
           <span
             v-if="problemCount > 0"
-            class="text-[10px] px-1.5 py-0.2 rounded font-bold ml-0.5 border bg-amber-500/20 text-amber-300 border-amber-500/40 flex items-center gap-1"
+            class="text-[10px] px-1.5 py-0.2 rounded font-bold border bg-amber-500/20 text-amber-300 border-amber-500/40 flex items-center gap-1"
           >
             <svg class="w-2.5 h-2.5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             <span>{{ problemCount }}</span>
           </span>
           <span
             v-else
-            class="text-[10px] px-1.5 py-0.2 rounded font-bold ml-0.5 border bg-emerald-500/20 text-emerald-300 border-emerald-500/30 flex items-center gap-1"
+            class="text-[10px] px-1.5 py-0.2 rounded font-bold border bg-emerald-500/20 text-emerald-300 border-emerald-500/30 flex items-center gap-1"
           >
             <svg class="w-2.5 h-2.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
             <span>0</span>
@@ -74,66 +83,127 @@
         <button
           @click="$emit('nav', 'assets')"
           :class="[
-            'px-3 py-1.5 rounded transition-all cursor-pointer flex items-center gap-2 font-semibold tracking-wide border',
+            'px-2.5 py-1.5 rounded transition-all cursor-pointer flex items-center gap-1.5 font-semibold tracking-wide border whitespace-nowrap shrink-0',
             activeTab === 'assets'
               ? 'bg-cyan-950/50 text-cyan-300 border-cyan-500/60 font-bold shadow-[0_0_10px_rgba(56,189,248,0.2)]'
               : 'text-gray-400 hover:text-gray-100 hover:bg-gray-800/40 border-transparent'
           ]"
         >
-          <span class="text-cyan-400/70">03 //</span>
           <span>{{ t('nav_assets') }}</span>
           <span
             v-if="serverCount"
-            class="text-[11px] px-1.5 py-0.2 rounded bg-gray-800/90 text-cyan-300 font-bold ml-0.5 border border-cyan-800/40"
+            class="text-[11px] px-1.5 py-0.2 rounded bg-gray-800/90 text-cyan-300 font-bold border border-cyan-800/40"
           >
             {{ serverCount }}
           </span>
         </button>
 
-        <!-- 4: AUDIT TRAIL -->
+        <!-- 4: SYNTHETIC PROBING -->
+        <button
+          @click="$emit('nav', 'probing')"
+          :class="[
+            'px-2.5 py-1.5 rounded transition-all cursor-pointer flex items-center gap-1.5 font-semibold tracking-wide border whitespace-nowrap shrink-0',
+            activeTab === 'probing'
+              ? 'bg-cyan-950/50 text-cyan-300 border-cyan-500/60 font-bold shadow-[0_0_10px_rgba(56,189,248,0.2)]'
+              : 'text-gray-400 hover:text-gray-100 hover:bg-gray-800/40 border-transparent'
+          ]"
+        >
+          <span>{{ t('nav_probing') }}</span>
+        </button>
+
+        <!-- 5: MAINTENANCE -->
+        <button
+          @click="$emit('nav', 'maintenance')"
+          :class="[
+            'px-2.5 py-1.5 rounded transition-all cursor-pointer flex items-center gap-1.5 font-semibold tracking-wide border whitespace-nowrap shrink-0',
+            activeTab === 'maintenance'
+              ? 'bg-cyan-950/50 text-cyan-300 border-cyan-500/60 font-bold shadow-[0_0_10px_rgba(56,189,248,0.2)]'
+              : 'text-gray-400 hover:text-gray-100 hover:bg-gray-800/40 border-transparent'
+          ]"
+        >
+          <span>{{ t('nav_maintenance') }}</span>
+        </button>
+
+        <!-- 6: AUDIT TRAIL -->
         <button
           v-if="user?.is_master_admin || user?.permissions?.can_audit"
           @click="$emit('nav', 'audit')"
           :class="[
-            'px-3 py-1.5 rounded transition-all cursor-pointer flex items-center gap-2 font-semibold tracking-wide border',
+            'px-2.5 py-1.5 rounded transition-all cursor-pointer flex items-center gap-1.5 font-semibold tracking-wide border whitespace-nowrap shrink-0',
             activeTab === 'audit'
               ? 'bg-cyan-950/50 text-cyan-300 border-cyan-500/60 font-bold shadow-[0_0_10px_rgba(56,189,248,0.2)]'
               : 'text-gray-400 hover:text-gray-100 hover:bg-gray-800/40 border-transparent'
           ]"
         >
-          <span class="text-cyan-400/70">04 //</span>
           <span>{{ t('nav_audit') }}</span>
         </button>
 
-        <!-- 5: SETTINGS & RBAC -->
+        <!-- 7: SETTINGS & RBAC -->
         <button
           v-if="user?.is_master_admin || user?.permissions?.can_manage_users || user?.permissions?.can_manage_viewers"
           @click="$emit('nav', 'settings')"
           :class="[
-            'px-3 py-1.5 rounded transition-all cursor-pointer flex items-center gap-2 font-semibold tracking-wide border',
+            'px-2.5 py-1.5 rounded transition-all cursor-pointer flex items-center gap-1.5 font-semibold tracking-wide border whitespace-nowrap shrink-0',
             activeTab === 'settings'
               ? 'bg-cyan-950/50 text-cyan-300 border-cyan-500/60 font-bold shadow-[0_0_10px_rgba(56,189,248,0.2)]'
               : 'text-gray-400 hover:text-gray-100 hover:bg-gray-800/40 border-transparent'
           ]"
         >
-          <span class="text-cyan-400/70">05 //</span>
           <span>{{ t('nav_settings') }}</span>
+        </button>
+
+        <!-- 8: STATUS PAGE -->
+        <button
+          @click="$emit('nav', 'status')"
+          :class="[
+            'px-2.5 py-1.5 rounded transition-all cursor-pointer flex items-center gap-1.5 font-semibold tracking-wide border whitespace-nowrap shrink-0',
+            activeTab === 'status'
+              ? 'bg-cyan-950/50 text-cyan-300 border-cyan-500/60 font-bold shadow-[0_0_10px_rgba(56,189,248,0.2)]'
+              : 'text-gray-400 hover:text-gray-100 hover:bg-gray-800/40 border-transparent'
+          ]"
+        >
+          <span>{{ t('nav_status_page') }}</span>
         </button>
       </nav>
     </div>
 
-    <!-- RIGHT: RADAR STATUS & OPERATOR PROFILE -->
-    <div class="flex items-center gap-3">
-      <!-- Live Heartbeat Radar Beacon -->
-      <div class="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded bg-[#060a14] border border-cyan-900/40 text-xs font-mono font-semibold text-emerald-400">
-        <span class="w-2 h-2 rounded-full bg-emerald-400 beacon-live beacon-radar"></span>
-        <span class="tracking-wider text-[11px]">FEED // LIVE</span>
+    <!-- RIGHT: LIVE STATUS & OPERATOR PROFILE -->
+    <div class="flex items-center gap-2 shrink-0">
+      <!-- Live Heartbeat Beacon -->
+      <div class="hidden xl:flex items-center gap-2 px-2.5 py-1 rounded bg-[#060a14] border border-cyan-900/40 text-xs font-mono font-semibold text-emerald-400 whitespace-nowrap shrink-0">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 beacon-live beacon-radar shrink-0"></span>
+        <span class="tracking-wider text-[11px]">LIVE</span>
       </div>
 
+      <!-- Activity Console Toggle -->
+      <button
+        v-if="user?.is_master_admin || user?.permissions?.can_audit"
+        type="button"
+        @click="$emit('toggle-activity')"
+        class="p-1.5 rounded border border-gray-800 bg-gray-900/60 text-gray-400 hover:text-cyan-300 hover:border-cyan-700/50 transition cursor-pointer"
+        title="Activity Console (Ctrl+`)"
+      >
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>
+        </svg>
+      </button>
+
+      <!-- Theme Customizer Toggle -->
+      <button
+        type="button"
+        @click="$emit('open-theme')"
+        class="p-1.5 rounded border border-gray-800 bg-gray-900/60 text-gray-400 hover:text-cyan-300 hover:border-cyan-700/50 transition cursor-pointer"
+        title="UI Theme & Density"
+      >
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>
+        </svg>
+      </button>
+
       <!-- Operator User Badge -->
-      <div v-if="user" class="flex items-center gap-2.5 border-l border-gray-800 pl-3.5">
+      <div v-if="user" class="flex items-center gap-2.5 border-l border-gray-800 pl-3 shrink-0">
         <div class="text-right">
-          <div class="text-xs font-bold text-gray-100 font-mono leading-none mb-1">{{ user.username }}</div>
+          <div class="text-xs font-bold text-gray-100 font-mono leading-none mb-1 whitespace-nowrap">{{ user.username }}</div>
           <div class="flex items-center justify-end">
             <span
               v-if="user.is_master_admin || user.role === 'master_admin'"
@@ -184,9 +254,42 @@
       </div>
     </div>
   </header>
+
+  <!-- Mobile Navigation Drawer -->
+  <div
+    v-if="mobileMenuOpen"
+    class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm md:hidden flex"
+    @click.self="mobileMenuOpen = false"
+  >
+    <div class="w-64 bg-[#080d19] border-r border-cyan-500/30 h-full p-4 flex flex-col gap-2 font-mono text-xs shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-gray-800 mb-1">
+        <span class="font-bold text-cyan-400">{{ t('app_name') }}</span>
+        <button type="button" @click="mobileMenuOpen = false" class="p-1 text-gray-400 hover:text-white cursor-pointer" title="Close">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <button
+        v-for="item in mobileNavItems"
+        :key="item.id"
+        type="button"
+        @click="$emit('nav', item.id); mobileMenuOpen = false"
+        :class="[
+          'w-full text-left px-3 py-2 rounded border transition cursor-pointer font-semibold',
+          activeTab === item.id
+            ? 'bg-cyan-950/60 text-cyan-300 border-cyan-500/50'
+            : 'text-gray-300 border-transparent hover:bg-gray-800/60'
+        ]"
+      >
+        {{ item.label }}
+      </button>
+    </div>
+  </div>
 </template>
 
 <script setup>
+import { computed, ref } from 'vue'
 import { useI18n } from '../i18n'
 
 const props = defineProps({
@@ -197,7 +300,26 @@ const props = defineProps({
   user: Object,
 })
 
-defineEmits(['nav', 'logout', 'login-click'])
+defineEmits(['nav', 'logout', 'login-click', 'toggle-activity', 'open-theme'])
 
 const { t } = useI18n()
+const mobileMenuOpen = ref(false)
+
+const mobileNavItems = computed(() => {
+  const items = [
+    { id: 'dashboard', label: t('nav_dashboard') },
+    { id: 'incidents', label: t('nav_incidents') },
+    { id: 'assets', label: t('nav_assets') },
+    { id: 'probing', label: t('nav_probing') },
+    { id: 'maintenance', label: t('nav_maintenance') },
+  ]
+  if (props.user?.is_master_admin || props.user?.permissions?.can_audit) {
+    items.push({ id: 'audit', label: t('nav_audit') })
+  }
+  if (props.user?.is_master_admin || props.user?.permissions?.can_manage_users || props.user?.permissions?.can_manage_viewers) {
+    items.push({ id: 'settings', label: t('nav_settings') })
+  }
+  items.push({ id: 'status', label: t('nav_status_page') })
+  return items
+})
 </script>

@@ -82,7 +82,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useI18n } from '../../i18n'
 import { formatIncidentMessage } from '../../utils/formatters'
 import { useToast } from '../../utils/useToast'
@@ -101,6 +101,13 @@ const emit = defineEmits(['close', 'ignored'])
 const duration = ref('incident')
 const reason = ref('')
 const submitting = ref(false)
+
+watch(() => props.isOpen, (open) => {
+  if (open) {
+    duration.value = 'incident'
+    reason.value = ''
+  }
+})
 
 async function submitIgnore() {
   if (!props.problem) return

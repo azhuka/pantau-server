@@ -83,7 +83,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useI18n } from '../../../i18n'
 import { formatIncidentMessage, severityBadgeClass } from '../../../utils/formatters'
 import { useToast } from '../../../utils/useToast'
@@ -102,6 +102,13 @@ const emit = defineEmits(['close', 'ignored'])
 const duration = ref('24h')
 const reason = ref('')
 const submitting = ref(false)
+
+watch(() => props.isOpen, (open) => {
+  if (open) {
+    duration.value = '24h'
+    reason.value = ''
+  }
+})
 
 const severityClass = severityBadgeClass
 

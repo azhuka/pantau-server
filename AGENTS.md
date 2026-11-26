@@ -85,7 +85,7 @@ tools/                  # Otomasi rilis (sop_release.py), test_terminal_dock.js,
    - Jika membuat simplifikasi teknis yang disengaja, beri anotasi:
      `# ponytail: <alasan simplifikasi>, <kapan harus di-upgrade>`
 9. **Supremasi Blueprint Matang & Anti-Solusi Spekulatif:**
-   - Blueprint sistem, alur kerja (*workflow*), dan UX taktis selalu mengacu pada fondasi perancangan asli yang sudah teruji matang.
+   - Blueprint sistem, alur kerja (*workflow*), dan UX taktis selalu mengacu pada fondasi perancangan asli yang sudah teruji matang. Wajib inspeksi referensi di `/home/bos/rj45` secara *read-only* terlebih dahulu sebelum menambah atau mengubah UI/workflow di `/home/bos/pantau-server`.
    - Hakikat repositori ini (`/home/bos/pantau-server`) murni adalah **penyempurnaan dan modernisasi dari sisi UI/Frontend** (Vue 3 SPA, komponen terisolasi `<250` baris, Tailwind CSS v4, xterm.js) **plus penguatan backend yang diperlukan**.
    - Dilarang keras mengarang alur kerja baru, model interaksi asing, atau opsi spekulatif (seperti dual-reporting agent tiruan atau menjalankan proses agen sementara di terminal).
    - Basis data operasional resmi adalah **`pantau_db`**, di mana seluruh 10 aset server riil melapor aktif ke agen systemd resmi.
@@ -114,6 +114,10 @@ tools/                  # Otomasi rilis (sop_release.py), test_terminal_dock.js,
      - Kontrol & Mitigasi: `Actions`, `Actions ▾`, `Server Details`, `Mark Handled`, `HANDLED BY`, `Ignore Incident`, `IGNORED UNTIL`, `Cancel Ignore`.
      - Infrastruktur & Subsistem: `Services`, `Units`, `Processes`, `PID`, `Listening Ports`, `Sockets`, `Firewall Rules`, `Cron Tasks`, `Storage / Mount Points`.
      - Metrik & Telemetri: `Telemetry`, `Heartbeat`, `Latency`, `Probe`, `Load Average`, `CPU Usage`, `Memory / RAM`, `Disk Usage`, `Uptime`.
+   - **Larangan Teks Non-Standar & Kamus Pengganti Baku:**
+     - **Dilarang keras** menyematkan prefiks komentar kode (`// ...`) pada judul modal, header seksi, atau label kartu di antarmuka.
+     - **Dilarang keras** mengembalikan pesan `message` atau `error` berbahasa Indonesia pada endpoint API FastAPI (`server/routers/*.py`) maupun cabang *fallback* Bahasa Indonesia di *formatter* frontend.
+     - **Padanan Baku (Terlarang → Wajib):** `Tactical Workspace Controller` → `Host Workspace` / `Server Details`; `Active SSH Intercepts` → `Active SSH Sessions`; `Sever SSH Session` → `Terminate SSH Session`; `Storage Triage` → `Storage Analysis`; `HIGH INCIDENTS (CRITICAL)` → `CRITICAL INCIDENTS`; `STORAGE (%)` → `Storage (%)`; `Non-production` → `Non-Production`; `NO SERVERS CONNECTED` → `NO ASSETS CONNECTED`; `Agent / Pkg` → `Agent / Packages`; `{count} Perms` → `{count} Permissions`.
 14. **Mandat Dokumentasi Otonom & Permanen di `DEVELOPMENT.md` (Autonomous & Mandatory Documentation in DEVELOPMENT.md):**
    - Berkas `DEVELOPMENT.md` adalah *Single Source of Truth* arsitektur, rujukan rekayasa utama, dan basis pengetahuan permanen sistem Pantau Server.
    - Seluruh pengetahuan teknis baru, aturan sistem, standardisasi alur kerja (*workflows*), formulasi ergonomi tombol/tabel, dan penerapan metode *best practice* **WAJIB dicatat dan diperbarui ke dalam `DEVELOPMENT.md` secara otonom pada setiap iterasi/rilis, bahkan tanpa harus diperintah secara eksplisit oleh operator**.
@@ -190,6 +194,7 @@ Skill `security-audit` dipasang lokal di `.agents/skills/security-audit/` untuk 
 - **Larangan Mutlak Hardcoding & Workaround:** Dilarang keras menggunakan jalan pintas praktis (*lazy shortcuts*), akal-akalan, tambal sulam, regex substring hack yang rapuh di UI, data dummy, atau hardcoding nilai statis pada seluruh lapisan (backend FastAPI, routers, services, frontend Vue, script, agent).
 - **Penanganan Akar Masalah (*Root Cause First*):** Perbaikan wajib menyentuh akar masalah. Jika data kurang di antarmuka, perbaiki skema & domain servis di backend, alirkan melalui Pydantic response envelope resmi, lalu sajikan di Vue secara bersih dan terstruktur.
 - **Standar Rekayasa Tinggi:** Mengharuskan data fisik terukur tingkat kernel Linux (`/proc`, `/sys`, socket, systemd), konkurensi InnoDB murni, pemisahan lapisan yang disiplin, dan verifikasi nyata berbasis bukti.
+- **Proteksi Mutlak App Lama (`/home/bos/rj45` — Zero-Touch Immutable):** Dilarang keras mengubah, menyentuh, mem-patch, me-restart, atau memodifikasi satu byte pun pada direktori, konfigurasi, skrip, maupun proses app lama (`/home/bos/rj45`). Seluruh pekerjaan hanya boleh dilakukan di dalam `/home/bos/pantau-server`.
 
 
 

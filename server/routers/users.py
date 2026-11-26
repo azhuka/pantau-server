@@ -321,9 +321,23 @@ def create_user(
     perms_json = None
     allowed_servers_json = None
     if assigned_role == "operator":
-        if req.permissions:
+        if req.permissions is not None:
+            if not user.is_master_admin:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Only master-admin can assign operator permissions.",
+                )
             perms_json = json.dumps(req.permissions)
-        if req.allowed_server_ids is not None:
+        creator_scope = user.get_allowed_server_ids()
+        if creator_scope is not None:
+            requested = sorted(req.allowed_server_ids or [])
+            if not requested or not set(requested).issubset(set(creator_scope)):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Scoped operators can only assign assets within their own scope.",
+                )
+            allowed_servers_json = json.dumps(requested)
+        elif req.allowed_server_ids is not None:
             allowed_servers_json = json.dumps(sorted(req.allowed_server_ids)) if req.allowed_server_ids else None
 
     now = datetime.utcnow()
@@ -468,7 +482,17 @@ def update_user(
         # Allowed server ids
         if req.allowed_server_ids is not None:
             if target.role in ("operator", "operator_utama", "operator_pembantu"):
-                target.allowed_server_ids = json.dumps(sorted(req.allowed_server_ids)) if req.allowed_server_ids else None
+                creator_scope = user.get_allowed_server_ids()
+                if creator_scope is not None:
+                    requested = sorted(req.allowed_server_ids or [])
+                    if not requested or not set(requested).issubset(set(creator_scope)):
+                        raise HTTPException(
+                            status_code=status.HTTP_403_FORBIDDEN,
+                            detail="Scoped operators can only assign assets within their own scope.",
+                        )
+                    target.allowed_server_ids = json.dumps(requested)
+                else:
+                    target.allowed_server_ids = json.dumps(sorted(req.allowed_server_ids)) if req.allowed_server_ids else None
             else:
                 target.allowed_server_ids = None
 

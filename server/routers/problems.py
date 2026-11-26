@@ -27,6 +27,8 @@ def _classify_resolution_type(prob: ServerProblem) -> str:
         return "stale_closed"
     if "session_closed" in note or "ssh_closed" in note:
         return "session_closed"
+    if "packages_updated" in note:
+        return "packages_updated"
     if "duplicate" in note or "dedup" in note:
         return "dedup"
     return "auto"
@@ -107,6 +109,21 @@ def list_problems(
         query = query.filter(ServerProblem.severity == severity)
     
     problems = query.order_by(ServerProblem.id.desc()).limit(limit).all()
+    master_names: set[str] = set()
+    if not user.is_master_admin:
+        master_names = {
+            u.username.lower()
+            for u in db.query(User).filter(User.role.in_(["master_admin", "master-admin"])).all()
+            if u.username
+        }
+
+    def _mask_actor(name: str | None) -> str | None:
+        if not name:
+            return name
+        if not user.is_master_admin and name.strip().lower() in master_names:
+            return "System"
+        return name
+
     result = []
     
     for prob, hostname, s_group_name in problems:
@@ -166,11 +183,11 @@ def list_problems(
             "res_type": derived_res_type,
             "duration_sec": duration_sec,
             "is_active": prob.is_active,
-            "acknowledged_by": prob.acknowledged_by,
+            "acknowledged_by": _mask_actor(prob.acknowledged_by),
             "acknowledged_at": prob.acknowledged_at.isoformat() if prob.acknowledged_at else None,
             "is_ignored": is_ign,
             "ignored_until": prob.ignored_until.isoformat() if prob.ignored_until else None,
-            "ignored_by": prob.ignored_by,
+            "ignored_by": _mask_actor(prob.ignored_by),
             "ignored_reason": prob.ignored_reason,
             "ignore_mode": prob.ignore_mode,
             "action": action,
@@ -197,6 +214,8 @@ def get_incident_stats(
         else:
             counts["active_total"] += 1
             sev = (p.severity or "").lower()
+            if sev == "average":
+                sev = "critical"
             if sev in counts:
                 counts[sev] += 1
 
@@ -359,7 +378,7 @@ def unacknowledge_problem_action(
         "id": pid,
         "acknowledged_by": None,
         "acknowledged_at": None,
-        "message": f"Tanda penanganan insiden berhasil dibatalkan oleh {user.username}"
+        "message": f"Incident handled mark cleared by {user.username}"
     }
 
 
@@ -537,4 +556,4 @@ def terminate_ssh_session_action(
     db.add(audit)
     db.commit()
 
-    return {"ok": True, "message": f"Perintah pemutusan sesi SSH {user_name} ({tty_name}) berhasil dijadwalkan"}
+    return {"ok": True, "message": f"SSH session termination queued for {user_name} ({tty_name})"}

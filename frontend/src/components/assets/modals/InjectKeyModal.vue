@@ -29,7 +29,7 @@
       <!-- Form Body -->
       <form @submit.prevent="submitKey" class="p-5 space-y-4 text-left">
         <div v-if="server" class="p-3 rounded bg-cyan-950/40 border border-cyan-800/50 text-cyan-300 leading-relaxed">
-          <div class="font-bold text-gray-200 mb-1">// {{ server.hostname }} ({{ server.ip_address }})</div>
+          <div class="font-bold text-gray-200 mb-1">{{ server.hostname }} ({{ server.ip_address }})</div>
           <div class="text-[11px] text-gray-400">{{ t('inject_key_desc') }}</div>
         </div>
 
@@ -73,6 +73,7 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { useI18n } from '../../../i18n'
+import { useToast } from '../../../utils/useToast'
 
 const props = defineProps({
   isOpen: Boolean,

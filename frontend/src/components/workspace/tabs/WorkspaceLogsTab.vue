@@ -6,7 +6,7 @@
     <div class="flex items-center justify-between border-b border-cyan-500/20 pb-2 flex-wrap gap-2">
       <div class="flex items-center gap-2">
         <span class="w-2 h-2 rounded-full bg-cyan-400 beacon-live"></span>
-        <h3 class="text-xs font-bold text-cyan-300 uppercase tracking-wider">// SYSTEM JOURNAL &amp; LOG STREAM</h3>
+        <h3 class="text-xs font-bold text-cyan-300 uppercase tracking-wider">SYSTEM JOURNAL &amp; LOG STREAM</h3>
         <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-[#060a14] border border-gray-800 text-cyan-300">{{ selectedSource }}</span>
         <span v-if="pollStatus" class="text-[11px] text-amber-300">{{ pollStatus }}</span>
       </div>

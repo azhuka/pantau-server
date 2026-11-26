@@ -4,7 +4,7 @@
     <span class="hud-corner-bl"></span>
     <div class="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-cyan-500/20">
       <div class="flex items-center gap-2">
-        <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider">// {{ t('ws_fw_title') }}</h3>
+        <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider">{{ t('ws_fw_title') }}</h3>
         <span class="px-2 py-0.5 rounded text-[11px] uppercase font-bold" :class="firewallData?.status === 'active' ? 'bg-emerald-950 text-emerald-300 border border-emerald-700/60' : 'bg-gray-800 text-gray-400 border border-gray-700'">
           {{ firewallData?.status || 'unknown' }}
         </span>
@@ -20,7 +20,7 @@
     </div>
 
     <div class="p-3 rounded-lg bg-[#070c18] border border-cyan-900/40 space-y-2">
-      <div class="text-[11px] font-bold text-gray-300 uppercase">// Manual IP Blocklist</div>
+      <div class="text-[11px] font-bold text-gray-300 uppercase">Manual IP Blocklist</div>
       <form @submit.prevent="submitBlockIp" class="flex items-center gap-2 flex-wrap">
         <input v-model="blockIpInput" type="text" placeholder="IP Address (e.g. 192.168.1.50 or 10.0.0.0/24)" required class="bg-[#0b1326] border border-gray-800 focus:border-rose-500 rounded px-3 py-1.5 text-xs text-gray-200 outline-none flex-1 min-w-[200px]" />
         <input v-model="blockCommentInput" type="text" placeholder="Comment (optional, e.g. SSH brute force)" class="bg-[#0b1326] border border-gray-800 focus:border-rose-500 rounded px-3 py-1.5 text-xs text-gray-200 outline-none w-48" />

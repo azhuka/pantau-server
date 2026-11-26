@@ -21,7 +21,7 @@
               <line x1="6" y1="6" x2="6.01" y2="6"/>
               <line x1="6" y1="18" x2="6.01" y2="18"/>
             </svg>
-            <span>// {{ t('dash_kpi_total_servers').toUpperCase() }}</span>
+            <span>{{ t('dash_kpi_total_servers').toUpperCase() }}</span>
           </div>
           <svg class="w-3.5 h-3.5 text-gray-500 group-hover:text-cyan-400 transition shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
@@ -64,7 +64,7 @@
               class="w-2 h-2 rounded-full shrink-0"
               :class="incidentDotClass"
             ></span>
-            <span>// {{ t('dash_kpi_active_incidents').toUpperCase() }}</span>
+            <span>{{ t('dash_kpi_active_incidents').toUpperCase() }}</span>
           </div>
           <div class="text-xs text-gray-400 font-mono whitespace-nowrap">
             {{ t('dash_kpi_total') }}: <strong class="text-cyan-300 font-bold text-sm">{{ activeProblems.length }}</strong>
@@ -142,7 +142,7 @@
         <div class="flex items-center justify-between mb-1">
           <div class="text-xs font-bold uppercase tracking-wider text-gray-400 font-mono flex items-center gap-2 whitespace-nowrap">
             <span class="w-2 h-2 rounded-full bg-emerald-400 beacon-live shrink-0"></span>
-            <span>// {{ t('dash_kpi_system_clock').toUpperCase() }}</span>
+            <span>{{ t('dash_kpi_system_clock').toUpperCase() }}</span>
           </div>
           <span class="text-[10px] px-1.5 py-0.2 rounded bg-emerald-950/80 text-emerald-300 font-mono font-bold border border-emerald-700/60 shrink-0">
             {{ t('dash_kpi_wita') }}
@@ -229,11 +229,11 @@
         <table class="w-full text-left text-xs font-mono border-collapse">
           <thead>
             <tr class="border-b border-cyan-500/20 text-gray-400 bg-[#070c18]/80 font-bold tracking-wider select-none">
-              <th class="py-2 px-3 w-28">{{ t('dash_col_time').toUpperCase() }}</th>
-              <th class="py-2 px-3 w-48">{{ t('dash_col_server').toUpperCase() }}</th>
-              <th class="py-2 px-2.5 w-28 text-center">{{ t('dash_col_severity').toUpperCase() }}</th>
-              <th class="py-2 px-3">{{ t('dash_col_description').toUpperCase() }}</th>
-              <th class="py-2 px-3 w-28 text-right">{{ t('dash_col_duration').toUpperCase() }}</th>
+              <th class="py-2 px-3 w-28">{{ t('dash_col_time') }}</th>
+              <th class="py-2 px-3 w-48">{{ t('dash_col_server') }}</th>
+              <th class="py-2 px-2.5 w-28 text-center">{{ t('dash_col_severity') }}</th>
+              <th class="py-2 px-3">{{ t('dash_col_description') }}</th>
+              <th class="py-2 px-3 w-28 text-right">{{ t('dash_col_duration') }}</th>
               <th class="py-2 px-2 w-8 text-center"></th>
             </tr>
           </thead>
@@ -1000,7 +1000,15 @@ async function terminateSshSession(prob) {
   }
 }
 
-function handleIgnored() {
+function handleIgnored(payload) {
+  if (selectedProblem.value && payload && selectedProblem.value.id === payload.id) {
+    selectedProblem.value = {
+      ...selectedProblem.value,
+      is_ignored: true,
+      ignored_until: payload.ignored_until || null,
+      ignored_reason: payload.ignored_reason || null,
+    }
+  }
   emit('refresh-problems')
 }
 

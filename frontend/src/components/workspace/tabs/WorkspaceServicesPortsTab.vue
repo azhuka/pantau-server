@@ -212,7 +212,6 @@ function isProtectedService(name) {
 
 function handleAction(action, unit) {
   closeDropdowns()
-  if (action === 'restart_service') emit('restart-service', unit)
   emit('service-action', { action, unit })
 }
 

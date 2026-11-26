@@ -88,7 +88,23 @@ def process_telemetry_report(db: Session, api_key: str, report_dict: dict) -> di
     if "arch" in report_dict:
         extras.arch = str(report_dict.get("arch") or "")[:24]
     if "agent_version" in report_dict:
-        extras.agent_version = str(report_dict.get("agent_version") or "")[:16]
+        new_ver = str(report_dict.get("agent_version") or "")[:16]
+        extras.agent_version = new_ver
+        from models.command import Command
+        exec_otas = db.query(Command).filter(
+            Command.server_id == srv.id,
+            Command.action == "update_agent",
+            Command.status.in_(["pending", "executing"]),
+        ).all()
+        for ota_cmd in exec_otas:
+            try:
+                p_ver = json.loads(ota_cmd.params or "{}").get("version")
+            except Exception:
+                p_ver = None
+            if p_ver and new_ver == p_ver:
+                ota_cmd.status = "success"
+                ota_cmd.result = f"Agent update to v{new_ver} verified via telemetry."
+                ota_cmd.executed_at = now
 
     if "accounts" in report_dict:
         extras.accounts = _to_json(report_dict["accounts"])
