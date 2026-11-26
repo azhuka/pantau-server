@@ -805,6 +805,7 @@ def evaluate_server_problems(db: Session, srv: Server, report_dict: dict, extras
     try:
         anom_paths = db.query(FIMPath).filter(
             FIMPath.server_id == srv.id,
+            FIMPath.is_active == 1,
             FIMPath.status.in_(["CHANGED", "MISSING", "ERROR"]),
         ).all()
         for ap in anom_paths:

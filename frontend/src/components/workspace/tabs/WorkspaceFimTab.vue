@@ -173,14 +173,24 @@
               <td class="py-2 px-3 text-gray-400 truncate max-w-xs" :title="ev.details || ''">{{ ev.details || '-' }}</td>
               <td class="py-2 px-3 text-center">
                 <button
-                  v-if="!isViewer && !ev.acknowledged"
+                  v-if="isViewer"
                   type="button"
-                  @click="$emit('fim-ack', ev.id)"
-                  class="px-2 py-0.5 rounded bg-emerald-950/60 hover:bg-emerald-900 border border-emerald-700/60 text-emerald-300 text-[11px] font-bold cursor-pointer"
+                  disabled
+                  class="w-[26px] h-[26px] min-w-[26px] rounded bg-gray-900 border border-gray-700 text-gray-500 opacity-40 cursor-not-allowed inline-flex items-center justify-center"
+                  title="Read-only role: FIM actions are disabled"
                 >
-                  Ack
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                 </button>
-                <span v-else class="text-gray-500 text-[11px]">{{ ev.acknowledged_by || '-' }}</span>
+                <button
+                  v-else
+                  type="button"
+                  @click.stop="openEventMenu(ev, $event)"
+                  class="px-2 h-[24px] min-w-[58px] rounded bg-gray-900 hover:bg-cyan-950 border border-gray-700 hover:border-cyan-600/50 text-gray-300 hover:text-cyan-300 text-[11px] font-bold transition cursor-pointer inline-flex items-center justify-center gap-1"
+                  title="FIM event actions"
+                >
+                  <span>Actions</span>
+                  <span class="text-[9px]">▾</span>
+                </button>
               </td>
             </tr>
           </tbody>
@@ -197,6 +207,18 @@
           <button v-if="menuTarget.sha256_hash && menuTarget.sha256_hash !== '-'" type="button" @click="copyHash(menuTarget.sha256_hash); menuTarget = null" class="w-full px-3 py-1.5 text-left text-gray-200 hover:bg-gray-800/80 cursor-pointer">Copy Checksum</button>
           <button type="button" :disabled="!isOnline" @click="execPathAction('fim_rebaseline', menuTarget.path)" class="w-full px-3 py-1.5 text-left text-amber-300 hover:bg-amber-950/60 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">Rebaseline</button>
           <button v-if="menuTarget.category === 'custom'" type="button" :disabled="!isOnline" @click="execPathAction('fim_path_remove', menuTarget.path)" class="w-full px-3 py-1.5 text-left text-rose-400 hover:bg-rose-950/60 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">Remove Path</button>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Floating FIM Event Actions Dropdown -->
+    <Teleport to="body">
+      <div v-if="eventMenuTarget" @click.stop :style="eventDropdownStyle" class="rounded-lg bg-[#0b1326] border border-cyan-800/80 shadow-2xl z-[100005] py-1 font-mono text-xs divide-y divide-gray-800 select-none">
+        <div class="py-0.5">
+          <button v-if="!eventMenuTarget.acknowledged" type="button" @click="$emit('fim-ack', eventMenuTarget.id); eventMenuTarget = null" class="w-full px-3 py-1.5 text-left text-emerald-300 hover:bg-emerald-950/60 cursor-pointer">Acknowledge</button>
+          <button v-else type="button" @click="$emit('fim-unack', eventMenuTarget.id); eventMenuTarget = null" class="w-full px-3 py-1.5 text-left text-gray-300 hover:bg-gray-800/80 cursor-pointer">Unacknowledge</button>
+          <button type="button" :disabled="!isOnline" @click="execEventAction('fim_scan', eventMenuTarget.path)" class="w-full px-3 py-1.5 text-left text-cyan-300 hover:bg-cyan-950/80 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">Scan Now</button>
+          <button type="button" :disabled="!isOnline" @click="execEventAction('fim_rebaseline', eventMenuTarget.path)" class="w-full px-3 py-1.5 text-left text-amber-300 hover:bg-amber-950/60 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">Rebaseline</button>
         </div>
       </div>
     </Teleport>
@@ -217,7 +239,7 @@ const props = defineProps({
   isViewer: { type: Boolean, default: false },
 })
 
-const emit = defineEmits(['fim-action', 'fim-ack', 'fim-ack-all'])
+const emit = defineEmits(['fim-action', 'fim-ack', 'fim-unack', 'fim-ack-all'])
 
 const showAddPath = ref(false)
 const newPathInput = ref('')
@@ -229,6 +251,8 @@ const eventsPage = ref(1)
 const eventsPageSize = ref(10)
 const menuTarget = ref(null)
 const dropdownPos = ref({ top: 0, left: 0 })
+const eventMenuTarget = ref(null)
+const eventDropdownPos = ref({ top: 0, left: 0 })
 
 const eventFilters = [
   { id: 'all', label: 'All' },
@@ -282,6 +306,7 @@ const dropdownStyle = computed(() => ({
 }))
 
 function openMenu(fp, event) {
+  eventMenuTarget.value = null
   if (menuTarget.value === fp) { menuTarget.value = null; return }
   const rect = event.currentTarget.getBoundingClientRect()
   dropdownPos.value = {
@@ -291,8 +316,31 @@ function openMenu(fp, event) {
   menuTarget.value = fp
 }
 
+const eventDropdownStyle = computed(() => ({
+  position: 'fixed',
+  top: `${eventDropdownPos.value.top}px`,
+  left: `${eventDropdownPos.value.left}px`,
+  width: '175px',
+}))
+
+function openEventMenu(ev, event) {
+  menuTarget.value = null
+  if (eventMenuTarget.value === ev) { eventMenuTarget.value = null; return }
+  const rect = event.currentTarget.getBoundingClientRect()
+  eventDropdownPos.value = {
+    top: Math.min(rect.bottom + 4, window.innerHeight - 135),
+    left: Math.max(8, Math.min(rect.right - 175, window.innerWidth - 183)),
+  }
+  eventMenuTarget.value = ev
+}
+
 function execPathAction(action, path) {
   menuTarget.value = null
+  emit('fim-action', { action, params: { path } })
+}
+
+function execEventAction(action, path) {
+  eventMenuTarget.value = null
   emit('fim-action', { action, params: { path } })
 }
 
@@ -313,7 +361,7 @@ async function copyHash(hash) {
   } catch (e) {}
 }
 
-const closeMenu = () => { menuTarget.value = null }
+const closeMenu = () => { menuTarget.value = null; eventMenuTarget.value = null }
 onMounted(() => document.addEventListener('click', closeMenu))
 onUnmounted(() => document.removeEventListener('click', closeMenu))
 </script>

@@ -532,6 +532,7 @@
             :is-viewer="currentUser?.role === 'viewer'"
             @fim-action="handleGenericAction"
             @fim-ack="handleFimAck"
+            @fim-unack="handleFimUnack"
             @fim-ack-all="handleFimAckAll"
           />
           <WorkspacePackagesTab
@@ -1128,7 +1129,7 @@ const subTabs = computed(() => {
     { id: 'firewall', label: t('tab_firewall') },
     { id: 'accounts', label: t('tab_users_ssh'), badge: activeSSHSessions.value.length || null },
     { id: 'cron', label: t('tab_cron'), badge: cronData.value?.jobs?.length || null },
-    { id: 'fim', label: t('tab_fim'), badge: fimEventsList.value.length || null },
+    { id: 'fim', label: t('tab_fim'), badge: fimPathsList.value.filter(p => ['CHANGED', 'MISSING', 'ERROR'].includes(p.status)).length || null },
     { id: 'packages', label: t('tab_packages'), badge: server.value?.apt_upgradable || packagesList.value.length || null },
     { id: 'ssl', label: t('tab_ssl'), badge: sslCertsList.value.length || null },
     { id: 'logs', label: t('tab_logs') },
@@ -1680,6 +1681,19 @@ async function handleFimAck(eventId) {
     const data = await res.json()
     if (res.ok && data.ok) { toast.success(data.message); loadServerData() }
     else { toast.error(data.detail || 'Failed to acknowledge FIM event') }
+  } catch (err) { toast.error(t('msg_conn_failed') + err.message) }
+}
+
+async function handleFimUnack(eventId) {
+  const token = localStorage.getItem('pantau_token')
+  try {
+    const res = await fetch(`/api/servers/${currentServerId.value}/fim/${eventId}/unack`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    const data = await res.json()
+    if (res.ok && data.ok) { toast.success(data.message); loadServerData() }
+    else { toast.error(data.detail || 'Failed to revert FIM acknowledgment') }
   } catch (err) { toast.error(t('msg_conn_failed') + err.message) }
 }
 

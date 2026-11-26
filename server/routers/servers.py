@@ -1552,6 +1552,27 @@ def acknowledge_fim_event(
     return {"ok": True, "message": "FIM event acknowledged."}
 
 
+@router.post("/{sid}/fim/{event_id}/unack")
+def unacknowledge_fim_event(
+    sid: int,
+    event_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Revert acknowledgment on a single FIM change event."""
+    check_server_access(user, sid)
+    if user.is_viewer() or not (user.is_master_admin or user.has_perm("can_audit")):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied: Security/FIM audit permission is required")
+    ev = db.query(FIMEvent).filter(FIMEvent.id == event_id, FIMEvent.server_id == sid).first()
+    if not ev:
+        raise HTTPException(status_code=404, detail="FIM event not found")
+    ev.acknowledged = 0
+    ev.acknowledged_at = None
+    ev.acknowledged_by = None
+    db.commit()
+    return {"ok": True, "message": "FIM event acknowledgment reverted."}
+
+
 @router.post("/{sid}/fim/ack-all")
 def acknowledge_all_fim_events(
     sid: int,
