@@ -5,9 +5,26 @@
         <h3 class="text-xs font-bold text-gray-100 uppercase tracking-wider">Listening Ports &amp; Sockets</h3>
         <p class="text-[11px] text-gray-400">Active TCP/UDP listening sockets reported by kernel ss -tulpn</p>
       </div>
-      <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-cyan-950/60 text-cyan-300 border border-cyan-800/60">
-        {{ (ports || []).length }} active sockets
-      </span>
+      <div class="flex items-center gap-2 flex-wrap">
+        <button
+          type="button"
+          @click="accessFilter = ''"
+          class="px-2 py-0.5 rounded text-[11px] font-bold bg-cyan-950/60 text-cyan-300 border border-cyan-800/60 cursor-pointer"
+          title="Show all listening sockets"
+        >
+          {{ (ports || []).length }} active sockets
+        </button>
+        <button
+          v-if="publicCount > 0"
+          type="button"
+          @click="accessFilter = accessFilter === 'public' ? '' : 'public'"
+          class="px-2 py-0.5 rounded text-[11px] font-bold border transition cursor-pointer"
+          :class="accessFilter === 'public' ? 'bg-rose-950 text-rose-200 border-rose-400' : 'bg-rose-950/40 text-rose-300 border-rose-800/60'"
+          title="Filter public exposed ports (click again to reset)"
+        >
+          {{ publicCount }} public
+        </button>
+      </div>
     </div>
 
     <NocFilterPanel
@@ -50,10 +67,10 @@
       <table class="w-full text-left text-xs border-collapse">
         <thead class="sticky top-0 bg-[#070c18] z-10 border-b border-cyan-500/20">
           <tr class="text-gray-400 uppercase font-bold tracking-wider">
-            <th class="py-2 px-3">{{ t('ws_col_proto') || 'Proto' }}</th>
-            <th class="py-2 px-3">{{ t('ws_col_port') || 'Port' }}</th>
+            <th class="py-2 px-3 cursor-pointer" @click="toggleSort('proto')">{{ t('ws_col_proto') || 'Proto' }} ↕</th>
+            <th class="py-2 px-3 cursor-pointer" @click="toggleSort('port')">{{ t('ws_col_port') || 'Port' }} ↕</th>
             <th class="py-2 px-3">{{ t('ws_col_bind') }}</th>
-            <th class="py-2 px-3 text-center">{{ t('ws_col_class') }}</th>
+            <th class="py-2 px-3 text-center cursor-pointer" @click="toggleSort('access')">{{ t('ws_col_class') }} ↕</th>
             <th class="py-2 px-3">{{ t('ws_col_service') }}</th>
             <th class="py-2 px-3 text-center">{{ t('col_actions') }}</th>
           </tr>
@@ -119,12 +136,12 @@
             <button
               v-if="canServices"
               type="button"
-              :disabled="!isOnline"
+              :disabled="!isOnline || isPortMonitored(menuTarget)"
               @click="monitorPort(menuTarget)"
               class="w-full px-3 py-1.5 text-left text-cyan-300 hover:bg-cyan-950/80 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-              :title="isOnline ? `Register port ${menuTarget.port} to Monitored Services` : 'Server offline'"
+              :title="!isOnline ? 'Server offline' : (isPortMonitored(menuTarget) ? `Port ${menuTarget.port} is already registered in Monitored Services` : `Register port ${menuTarget.port} to Monitored Services`)"
             >
-              Monitor as Service
+              {{ isPortMonitored(menuTarget) ? 'Already Monitored' : 'Monitor as Service' }}
             </button>
             <button
               v-if="canProcesses && menuTarget.pid"
@@ -175,6 +192,7 @@ const { t } = useI18n()
 
 const props = defineProps({
   ports: { type: Array, default: () => [] },
+  monitoredServices: { type: Array, default: () => [] },
   isOnline: { type: Boolean, default: true },
   isViewer: { type: Boolean, default: false },
   canServices: { type: Boolean, default: false },
@@ -187,12 +205,26 @@ const emit = defineEmits(['monitor-port', 'kill-process', 'firewall-port'])
 const protoFilter = ref('')
 const accessFilter = ref('')
 const search = ref('')
+const sortKey = ref('port')
+const sortAsc = ref(true)
 const currentPage = ref(1)
 const pageSize = ref(10)
 const menuTarget = ref(null)
 const dropdownPos = ref({ top: 0, left: 0 })
 
 watch([protoFilter, accessFilter, search], () => { currentPage.value = 1 })
+
+const publicCount = computed(() => (props.ports || []).filter(isPublicPort).length)
+
+function isPortMonitored(pt) {
+  const p = Number(pt?.port)
+  return Boolean(p && (props.monitoredServices || []).some(ms => Number(ms.port) === p))
+}
+
+function toggleSort(key) {
+  if (sortKey.value === key) sortAsc.value = !sortAsc.value
+  else { sortKey.value = key; sortAsc.value = true }
+}
 
 function isPublicPort(pt) {
   if (typeof pt.is_public === 'boolean') return pt.is_public
@@ -222,6 +254,18 @@ const filteredPorts = computed(() => {
       if (!hay.includes(q)) return false
     }
     return true
+  }).sort((a, b) => {
+    if (sortKey.value === 'port') {
+      return sortAsc.value ? (Number(a.port) - Number(b.port)) : (Number(b.port) - Number(a.port))
+    }
+    if (sortKey.value === 'access') {
+      const va = isPublicPort(a) ? 0 : 1
+      const vb = isPublicPort(b) ? 0 : 1
+      return sortAsc.value ? (va - vb) : (vb - va)
+    }
+    const va = String(a[sortKey.value] || '').toLowerCase()
+    const vb = String(b[sortKey.value] || '').toLowerCase()
+    return sortAsc.value ? va.localeCompare(vb) : vb.localeCompare(va)
   })
 })
 

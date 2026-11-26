@@ -480,6 +480,7 @@
           <WorkspacePortsTab
             v-else-if="activeSubTab === 'ports'"
             :ports="portsList"
+            :monitored-services="monitoredServicesList"
             :is-online="Boolean(server?.is_online)"
             :is-viewer="currentUser?.role === 'viewer'"
             :can-services="Boolean(currentUser?.is_master_admin || currentUser?.role === 'operator_utama' || userPerms.can_services)"

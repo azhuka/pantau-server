@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.93
+
+Penyempurnaan tab Ports (WorkspacePortsTab.vue): penambahan badge klik cepat jumlah port publik, sortir kolom Proto/Port/Access, serta deteksi status Already Monitored pada menu Actions.
+
+
 ### Versi v0.1.92
 
 Penyempurnaan penuh workflow modal log per-service pada WorkspaceServiceLogModal.vue: Live Tail 4 detik otomatis dengan pause saat scroll, tombol Jump to Latest di statusbar footer, Copy ke clipboard, pencocokan alias log dinamis, serta tombol Open in Full Logs Tab yang meneruskan sumber log ke WorkspaceLogsTab.vue.
