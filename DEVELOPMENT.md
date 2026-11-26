@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.89
+
+- **Streamlined Incident Diagnostics Modal:** Removed action/status mutation buttons from ProblemDetailModal.vue footer so only Open Workspace and Close remain.
+
+
 ### Versi v0.1.88
 
 - **Root Cause Column in Host Incidents Table:** Added formatIncidentRootCause() in formatters.js, replaced Solution column with Root Cause in WorkspaceProblemsTab.vue while keeping full recommendations and CLI commands in ProblemDetailModal.vue (z-[20000], read-only footer for closed incidents).

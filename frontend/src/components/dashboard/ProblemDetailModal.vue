@@ -93,60 +93,13 @@
           {{ t('pdm_btn_open_workspace') }}
         </button>
 
-        <div class="flex items-center gap-2">
-          <!-- Button: Tandai Ditangani / Status Ditangani -->
-          <button
-            v-if="!problem.resolved_at && !problem.acknowledged_by && !isViewer"
-            @click="$emit('ack-problem', problem.id)"
-            class="px-3 py-1.5 rounded bg-gray-800/80 text-gray-300 border border-gray-700 hover:bg-gray-700 hover:text-white text-xs font-bold transition cursor-pointer flex items-center gap-1.5 shadow-sm"
-            :title="t('pdm_btn_ack')"
-          >
-            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-            <span>{{ t('pdm_btn_ack') }}</span>
-          </button>
-          <span
-            v-else-if="problem.acknowledged_by"
-            class="px-2.5 py-1.5 rounded bg-emerald-950/40 text-emerald-300 border border-emerald-700/60 text-xs font-bold flex items-center gap-1.5 cursor-default select-none"
-            :title="t('dash_acked_by', { user: problem.acknowledged_by })"
-          >
-            <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-            <span>{{ t('dash_badge_handled') }}</span>
-          </span>
-
-          <button
-            v-if="!problem.resolved_at && !problem.is_ignored && !isViewer"
-            @click="$emit('ignore-problem', problem)"
-            class="px-3 py-1.5 rounded bg-amber-950/80 text-amber-300 border border-amber-800 hover:bg-amber-800 hover:text-white text-xs font-bold transition cursor-pointer"
-            :title="t('pdm_btn_ignore_tooltip')"
-          >
-            {{ t('pdm_btn_ignore') }}
-          </button>
-          <span
-            v-else-if="problem.is_ignored"
-            class="px-2.5 py-1.5 rounded bg-emerald-950/60 text-emerald-300 border border-emerald-500/40 text-xs font-bold flex items-center gap-1.5 cursor-default select-none"
-            :title="problem.ignored_reason || t('sev_ignored')"
-          >
-            <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-            <span>{{ t('sev_ignored') }}</span>
-          </span>
-
-          <button
-            v-if="problem.action === 'terminate_session' && !isViewer && canTerminateSsh"
-            @click="$emit('terminate-ssh', problem)"
-            class="px-3 py-1.5 rounded bg-rose-700 hover:bg-rose-600 text-white text-xs font-bold transition cursor-pointer"
-            :title="t('pdm_btn_terminate_ssh_tooltip')"
-          >
-            {{ t('pdm_btn_terminate_ssh') }}
-          </button>
-
-          <button
-            @click="$emit('close')"
-            class="px-4 py-1.5 rounded bg-cyan-700 hover:bg-cyan-600 text-white text-xs font-bold transition cursor-pointer"
-            :title="t('pdm_btn_close_tooltip')"
-          >
-            {{ t('pdm_btn_close') }}
-          </button>
-        </div>
+        <button
+          @click="$emit('close')"
+          class="px-4 py-1.5 rounded bg-cyan-700 hover:bg-cyan-600 text-white text-xs font-bold transition cursor-pointer"
+          :title="t('pdm_btn_close_tooltip')"
+        >
+          {{ t('pdm_btn_close') }}
+        </button>
       </div>
     </div>
   </div>
@@ -165,18 +118,7 @@ const props = defineProps({
   currentUser: { type: Object, default: null }
 })
 
-defineEmits(['close', 'open-server', 'ignore-problem', 'terminate-ssh', 'ack-problem'])
-
-const isViewer = computed(() => {
-  const r = (props.currentUser?.role || '').toLowerCase()
-  return !props.currentUser || ['viewer', 'guest', 'tamu'].includes(r)
-})
-
-const canTerminateSsh = computed(() => {
-  if (isViewer.value) return false
-  const r = (props.currentUser?.role || '').toLowerCase()
-  return ['master_admin', 'master-admin', 'operator_utama', 'operator-utama'].includes(r) || Boolean(props.currentUser?.permissions?.can_users_sys)
-})
+defineEmits(['close', 'open-server'])
 
 const copied = ref(false)
 
