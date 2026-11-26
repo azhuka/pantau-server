@@ -501,6 +501,8 @@
           <WorkspaceFirewallTab
             v-else-if="activeSubTab === 'firewall'"
             :firewall-data="firewallData"
+            :is-online="Boolean(server?.is_online)"
+            :is-viewer="currentUser?.role === 'viewer'"
             @firewall-action="handleGenericAction"
           />
           <WorkspaceAccountsTab

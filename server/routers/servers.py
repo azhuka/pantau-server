@@ -1002,6 +1002,9 @@ _ACTION_PERMISSION_MAP = {
     "ufw_enable": "can_firewall",
     "ufw_disable": "can_firewall",
     "ufw_reload": "can_firewall",
+    "firewall_enable": "can_firewall",
+    "firewall_disable": "can_firewall",
+    "firewall_reload": "can_firewall",
     "cron_run": "can_cron",
     "apt_update": "can_apt",
     "apt_upgrade": "can_apt",
@@ -1078,7 +1081,9 @@ def dispatch_server_action(
         raise HTTPException(status_code=403, detail=f"Access denied: Permission '{req_perm}' is required")
 
     # Normalize to fit varchar(20) commands.action schema & agent_pantau.py handler
-    db_action = "terminate_session" if action == "terminate_ssh_session" else action
+    db_action = "terminate_session" if action == "terminate_ssh_session" else (
+        action.replace("ufw_", "firewall_") if action.startswith("ufw_") else action
+    )
 
     if db_action == "update_agent" and not params.get("sha256"):
         from routers.api_agent import _get_latest_agent_meta

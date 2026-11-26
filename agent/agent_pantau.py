@@ -669,8 +669,9 @@ def execute_command(cfg: dict, command: dict) -> dict:
         result = _exec_block_ip(command)
     elif action == "unblock_ip":
         result = _exec_unblock_ip(command)
-    elif action in ("firewall_enable", "firewall_disable", "firewall_reload"):
-        result = _exec_firewall_toggle(action)
+    elif action in ("firewall_enable", "firewall_disable", "firewall_reload", "ufw_enable", "ufw_disable", "ufw_reload"):
+        mapped_fw = action.replace("ufw_", "firewall_")
+        result = _exec_firewall_toggle(mapped_fw)
     elif action == "firewall_port_rule":
         result = _exec_firewall_port_rule(command)
     elif action == "kill_process":
@@ -926,7 +927,10 @@ def _exec_block_ip(command: dict) -> dict:
     """Blokir IP sumber serangan / pengganggu: iptables -I INPUT 1 -s <ip> -j DROP."""
     ensure_pantau_firewall_updated()
     params = command.get("params") or {}
-    ips = [str(i).strip() for i in (params.get("ips") or [])][:10]
+    raw_ips = params.get("ips")
+    if not raw_ips and params.get("ip"):
+        raw_ips = [params.get("ip")]
+    ips = [str(i).strip() for i in (raw_ips or []) if str(i).strip()][:10]
     if not ips:
         return {"ok": False, "output": "Tidak ada IP untuk diblokir."}
     outs: list = []
@@ -966,7 +970,10 @@ def _exec_unblock_ip(command: dict) -> dict:
     """Lepas blokir IP: iptables -D INPUT -s <ip> -j DROP."""
     ensure_pantau_firewall_updated()
     params = command.get("params") or {}
-    ips = [str(i).strip() for i in (params.get("ips") or [])][:10]
+    raw_ips = params.get("ips")
+    if not raw_ips and params.get("ip"):
+        raw_ips = [params.get("ip")]
+    ips = [str(i).strip() for i in (raw_ips or []) if str(i).strip()][:10]
     if not ips:
         return {"ok": False, "output": "Tidak ada IP untuk dilepas blokirnya."}
     outs: list = []

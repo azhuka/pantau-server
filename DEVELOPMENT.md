@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.95
+
+Perbaikan bug kritis Firewall: penyelarasan aksi ufw_*/firewall_* di servers.py & agent_pantau.py, dukungan parameter ip tunggal dan ips list pada block_ip/unblock_ip di agent_pantau.py, serta pembaruan WorkspaceFirewallTab.vue dengan 3 kartu KPI, tabel Firewall Rules, dan tabel Blocked IP Blacklist (iptables DROP) lengkap dengan Unblock & salin IP.
+
+
 ### Versi v0.1.94
 
 Perbaikan bug kritis pada agent_pantau.py yang sebelumnya menurunkan SIGKILL/SIGSTOP/SIGCONT menjadi TERM, pelestarian field state proses serta penggabungan CPU/MEM pada GET /processes, dan penyempurnaan WorkspaceProcessesTab.vue (kolom Status R/S/T/Z, sortir kolom interaktif, tombol Refresh, proteksi proses kritis, serta penyesuaian status tombol SIGSTOP/SIGCONT).
