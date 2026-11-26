@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.97
+
+Penambahan form aturan cepat Allow Port / Block Port (TCP/UDP) langsung di WorkspaceFirewallTab.vue agar operator dapat membuka/menutup port meskipun layanan belum berjalan, terhubung ke firewall_port_rule dan guardrail port 22/8400.
+
+
 ### Versi v0.1.96
 
 Perbaikan jeda pembaruan status pasca-aksi Firewall: api_command_result kini langsung menyimpan snapshot firewall dari agen, tombol aksi menampilkan status Enabling/Processing (terkunci sementara), dan dispatchAction melakukan re-poll otomatis pada 1.6s, 3.4s, dan 5.5s.

@@ -69,9 +69,35 @@
         </div>
       </div>
 
-      <!-- Firewall Rules Table -->
-      <div class="space-y-2">
+      <!-- Port Rule Quick Form + Firewall Rules Table -->
+      <div class="space-y-2.5">
         <h4 class="text-[11px] font-bold text-gray-300 uppercase tracking-wider">Firewall Rules &amp; Port Policies ({{ rawRules.length }})</h4>
+
+        <form v-if="!isViewer" @submit.prevent="submitPortRule('allow')" class="flex items-center gap-2 flex-wrap p-2.5 rounded-lg bg-[#060a14] border border-cyan-900/40">
+          <input v-model.number="portInput" type="number" min="1" max="65535" placeholder="Port (e.g. 443)" required class="bg-[#0b1326] border border-gray-800 focus:border-cyan-500 rounded px-3 py-1.5 text-xs text-gray-200 outline-none w-36" />
+          <select v-model="portProto" class="bg-[#0b1326] border border-gray-800 focus:border-cyan-500 rounded px-2.5 py-1.5 text-xs text-gray-200 outline-none">
+            <option value="tcp">TCP</option>
+            <option value="udp">UDP</option>
+          </select>
+          <button
+            type="submit"
+            :disabled="!isOnline || busy"
+            class="px-3 py-1.5 rounded bg-emerald-950 hover:bg-emerald-900 border border-emerald-800 text-emerald-300 text-xs font-bold transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            :title="isOnline ? 'Allow inbound traffic on this port' : 'Server offline — action disabled'"
+          >
+            Allow Port
+          </button>
+          <button
+            type="button"
+            :disabled="!isOnline || busy"
+            @click="submitPortRule('deny')"
+            class="px-3 py-1.5 rounded bg-amber-950 hover:bg-amber-900 border border-amber-800 text-amber-300 text-xs font-bold transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            :title="isOnline ? 'Block inbound traffic on this port (ports 22 & 8400 protected)' : 'Server offline — action disabled'"
+          >
+            Block Port
+          </button>
+        </form>
+
         <div v-if="rawRules.length === 0" class="text-xs text-gray-400 py-6 text-center bg-[#060a14] rounded-lg border border-gray-800/60">
           {{ isActive ? 'No explicit rules configured (using default backend policy).' : 'Firewall is currently inactive. Ports are unfiltered.' }}
         </div>
@@ -183,6 +209,8 @@ const emit = defineEmits(['firewall-action'])
 
 const blockIpInput = ref('')
 const blockCommentInput = ref('')
+const portInput = ref('')
+const portProto = ref('tcp')
 const copiedIp = ref('')
 const rulesPage = ref(1)
 const rulesPageSize = ref(10)
@@ -227,6 +255,22 @@ async function toggleUfw() {
   })
   if (!ok) return
   emit('firewall-action', { action: next, params: {} })
+}
+
+async function submitPortRule(rule) {
+  const p = Number(portInput.value)
+  if (!Number.isInteger(p) || p < 1 || p > 65535) return
+  const portSpec = `${p}/${portProto.value}`
+  const isDeny = rule === 'deny'
+  const ok = await confirmAction({
+    title: isDeny ? 'Block Port (Firewall)' : 'Allow Port (Firewall)',
+    message: `${isDeny ? 'Block' : 'Allow'} traffic on port '${portSpec}' via host firewall?`,
+    confirmText: isDeny ? 'Block Port' : 'Allow Port',
+    variant: isDeny ? 'danger' : 'primary',
+  })
+  if (!ok) return
+  emit('firewall-action', { action: 'firewall_port_rule', params: { port: portSpec, rule } })
+  portInput.value = ''
 }
 
 function submitBlockIp() {
