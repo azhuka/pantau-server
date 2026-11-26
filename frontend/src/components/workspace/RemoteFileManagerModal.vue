@@ -21,7 +21,7 @@
             <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/>
           </svg>
           <span class="text-xs font-bold text-cyan-300 uppercase tracking-wider shrink-0">
-            // REMOTE FILE MANAGER · {{ server?.hostname || 'Host' }}
+            REMOTE FILE MANAGER · {{ server?.hostname || 'Host' }}
           </span>
           <span
             v-if="server?.ip_address"
@@ -35,6 +35,19 @@
 
         <!-- Window Controls -->
         <div class="flex items-center gap-1 text-xs">
+          <!-- Lock Session -->
+          <button
+            type="button"
+            @click="lockFileManager"
+            class="px-2 h-7 flex items-center justify-center gap-1 rounded text-amber-300 hover:text-white bg-amber-950/50 hover:bg-amber-900 border border-amber-700/60 transition cursor-pointer font-bold mr-1"
+            title="Lock File Manager Session"
+          >
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            <span class="hidden sm:inline">Lock</span>
+          </button>
           <!-- Full Window -->
           <button
             @click="isFullWindow = !isFullWindow"
@@ -398,6 +411,12 @@
         </div>
         <div class="flex items-center gap-2">
           <button
+            @click="openBatchChmodModal"
+            class="px-2.5 py-1 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 hover:bg-cyan-900 cursor-pointer font-bold text-xs transition"
+          >
+            Batch Chmod
+          </button>
+          <button
             @click="confirmBulkDelete"
             class="px-2.5 py-1 rounded bg-rose-950 text-rose-300 border border-rose-800 hover:bg-rose-900 cursor-pointer font-bold text-xs transition"
           >
@@ -620,6 +639,17 @@
                     </button>
                     <button
                       type="button"
+                      @click="openChownModal(item); closeDropdown()"
+                      class="w-full text-left px-3 py-1.5 hover:bg-cyan-950 text-gray-200 hover:text-white flex items-center gap-2 cursor-pointer"
+                    >
+                      <svg class="w-3.5 h-3.5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                      </svg>
+                      <span>Change Owner</span>
+                    </button>
+                    <button
+                      type="button"
                       @click="openRenameModal(item); closeDropdown()"
                       class="w-full text-left px-3 py-1.5 hover:bg-cyan-950 text-gray-200 hover:text-white flex items-center gap-2 cursor-pointer"
                     >
@@ -831,7 +861,7 @@
           <div class="flex justify-end gap-2 pt-2">
             <button
               type="button"
-              @click="itemToChmod = null"
+              @click="itemToChmod = null; isBatchChmod = false"
               class="px-3 py-1 rounded bg-gray-800 text-gray-300 hover:bg-gray-700 text-xs cursor-pointer"
             >
               Cancel
@@ -842,6 +872,57 @@
               class="px-3 py-1 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs cursor-pointer"
             >
               Update Mode
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL: CHOWN -->
+      <div
+        v-if="itemToChown"
+        class="absolute inset-0 bg-black/70 z-30 flex items-center justify-center p-4"
+        @click.self="itemToChown = null"
+      >
+        <div class="bg-[#0b1325] border border-cyan-500/50 rounded-lg p-5 w-full max-w-sm flex flex-col space-y-3 shadow-2xl">
+          <div class="text-xs font-bold text-cyan-300">Change Owner (chown)</div>
+          <div class="text-[11px] text-gray-400 font-mono truncate">{{ itemToChown.path }}</div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[10px] text-gray-400 uppercase mb-1">Owner</label>
+              <input
+                v-model="chownOwner"
+                type="text"
+                placeholder="e.g. www-data"
+                class="w-full bg-[#030612] border border-cyan-900 rounded px-2.5 py-1 text-xs text-gray-100 focus:outline-none focus:border-cyan-400 font-mono"
+                @keydown.enter="submitChown"
+                autofocus
+              />
+            </div>
+            <div>
+              <label class="block text-[10px] text-gray-400 uppercase mb-1">Group (optional)</label>
+              <input
+                v-model="chownGroup"
+                type="text"
+                placeholder="e.g. www-data"
+                class="w-full bg-[#030612] border border-cyan-900 rounded px-2.5 py-1 text-xs text-gray-100 focus:outline-none focus:border-cyan-400 font-mono"
+                @keydown.enter="submitChown"
+              />
+            </div>
+          </div>
+          <div class="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              @click="itemToChown = null"
+              class="px-3 py-1 rounded bg-gray-800 text-gray-300 hover:bg-gray-700 text-xs cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              @click="submitChown"
+              class="px-3 py-1 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs cursor-pointer"
+            >
+              Update Owner
             </button>
           </div>
         </div>
@@ -1090,7 +1171,11 @@ const newDirName = ref('')
 const itemToRename = ref(null)
 const renameNewName = ref('')
 const itemToChmod = ref(null)
+const isBatchChmod = ref(false)
 const chmodOctalMode = ref('0644')
+const itemToChown = ref(null)
+const chownOwner = ref('root')
+const chownGroup = ref('')
 const itemToDelete = ref(null)
 const feedbackMsg = ref(null)
 
@@ -1172,6 +1257,8 @@ function handleEsc() {
     closeEditor()
   } else if (activeDropdownPath.value) {
     closeDropdown()
+  } else if (itemToChown.value) {
+    itemToChown.value = null
   } else if (itemToDuplicate.value) {
     itemToDuplicate.value = null
   } else if (showUploadDialog.value) {
@@ -1629,10 +1716,30 @@ async function submitRename() {
   }
 }
 
-// Chmod
+// Lock session
+async function lockFileManager() {
+  const token = localStorage.getItem('pantau_token')
+  try {
+    await fetch(`/api/servers/${props.server.id}/files/lock`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` }
+    })
+  } catch (_) {}
+  emit('close')
+}
+
+// Chmod (Single & Batch)
 function openChmodModal(item) {
+  isBatchChmod.value = false
   itemToChmod.value = item
   chmodOctalMode.value = item.is_dir ? '0755' : '0644'
+}
+
+function openBatchChmodModal() {
+  if (selectedPaths.value.length === 0) return
+  isBatchChmod.value = true
+  itemToChmod.value = { name: `${selectedPaths.value.length} selected items`, path: `${selectedPaths.value.length} selected items` }
+  chmodOctalMode.value = '0644'
 }
 
 async function submitChmod() {
@@ -1641,27 +1748,70 @@ async function submitChmod() {
   if (!mode) return
   const token = localStorage.getItem('pantau_token')
   try {
-    const res = await fetch(`/api/servers/${props.server.id}/files/chmod`, {
+    const endpoint = isBatchChmod.value
+      ? `/api/servers/${props.server.id}/files/batch-chmod`
+      : `/api/servers/${props.server.id}/files/chmod`
+    const payload = isBatchChmod.value
+      ? { paths: selectedPaths.value, mode }
+      : { path: itemToChmod.value.path, mode }
+    const res = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`
       },
-      body: JSON.stringify({
-        path: itemToChmod.value.path,
-        mode: mode
-      })
+      body: JSON.stringify(payload)
     })
-    const data = await res.json()
-    if (data.ok) {
+    const data = await res.json().catch(() => ({}))
+    if (res.ok && data.ok) {
       notify(`Permissions updated to ${mode}`)
       itemToChmod.value = null
+      isBatchChmod.value = false
       await loadDirectory(currentPath.value, false)
     } else {
       notify(data.detail || 'Failed to update permissions', 'error')
     }
   } catch (err) {
     notify('Error updating permissions: ' + err.message, 'error')
+  }
+}
+
+// Chown
+function openChownModal(item) {
+  itemToChown.value = item
+  chownOwner.value = item.owner || 'root'
+  chownGroup.value = item.group || ''
+}
+
+async function submitChown() {
+  if (!itemToChown.value) return
+  const owner = chownOwner.value.trim()
+  const group = chownGroup.value.trim()
+  if (!owner) return
+  const token = localStorage.getItem('pantau_token')
+  try {
+    const res = await fetch(`/api/servers/${props.server.id}/files/chown`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        path: itemToChown.value.path,
+        owner,
+        group: group || null
+      })
+    })
+    const data = await res.json().catch(() => ({}))
+    if (res.ok && data.ok) {
+      notify(`Ownership updated to ${group ? `${owner}:${group}` : owner}`)
+      itemToChown.value = null
+      await loadDirectory(currentPath.value, false)
+    } else {
+      notify(data.detail || 'Failed to update ownership', 'error')
+    }
+  } catch (err) {
+    notify('Error updating ownership: ' + err.message, 'error')
   }
 }
 
@@ -1695,38 +1845,39 @@ async function executeDeleteItem() {
   }
 }
 
-// Bulk Delete
+// Bulk Delete (Atomic Batch RPC)
 async function confirmBulkDelete() {
   if (selectedPaths.value.length === 0) return
+  const count = selectedPaths.value.length
   const ok = await confirmAction({
     title: 'Delete Selected Items',
-    message: `Are you sure you want to delete ${selectedPaths.value.length} selected items?`,
+    message: `Are you sure you want to delete ${count} selected items?`,
     confirmText: 'Delete',
     variant: 'danger',
   })
   if (!ok) return
 
   const token = localStorage.getItem('pantau_token')
-  let deletedCount = 0
-  for (const path of selectedPaths.value) {
-    try {
-      const res = await fetch(`/api/servers/${props.server.id}/files/rm`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ path })
-      })
-      const data = await res.json()
-      if (data.ok) deletedCount++
-    } catch (err) {
-      console.error('Error deleting:', path, err)
+  try {
+    const res = await fetch(`/api/servers/${props.server.id}/files/batch-rm`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ paths: selectedPaths.value })
+    })
+    const data = await res.json().catch(() => ({}))
+    if (res.ok && data.ok) {
+      notify(`Deleted ${data.count ?? count} items`)
+      selectedPaths.value = []
+      await loadDirectory(currentPath.value, false)
+    } else {
+      notify(data.detail || 'Failed to delete selected items', 'error')
     }
+  } catch (err) {
+    notify('Error deleting selected items: ' + err.message, 'error')
   }
-  notify(`Deleted ${deletedCount} of ${selectedPaths.value.length} items`)
-  selectedPaths.value = []
-  await loadDirectory(currentPath.value, false)
 }
 
 // Editor

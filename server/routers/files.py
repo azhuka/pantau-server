@@ -12,7 +12,15 @@ from fastapi import APIRouter, Body, Depends, File, Form, HTTPException, UploadF
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
+import security_auth
 from core.database import get_db
+from core.security import (
+    get_file_manager_lease_remaining,
+    is_file_manager_unlocked,
+    revoke_file_manager_unlock,
+    set_file_manager_unlock,
+    verify_password,
+)
 from models.misc import AuditLog
 from models.server import Server
 from models.user import User
@@ -83,6 +91,12 @@ class FileManagerDispatcher:
             )
         finally:
             self._waiters.pop(req_id, None)
+            async with self._get_lock():
+                pending = self._pending.get(server_id)
+                if pending:
+                    self._pending[server_id] = [item for item in pending if item.get("id") != req_id]
+                    if not self._pending[server_id] and server_id in self._events:
+                        self._events[server_id].clear()
 
     async def pop_pending(self, server_id: int) -> list[dict]:
         async with self._get_lock():
@@ -102,11 +116,18 @@ class FileManagerDispatcher:
 file_dispatcher = FileManagerDispatcher()
 
 
-def _check_access_and_online_server(user: User, sid: int, db: Session) -> Server:
+def _check_access_and_online_server(
+    user: User, sid: int, db: Session, require_unlock: bool = True
+) -> Server:
     if not user.can_access_server(sid):
         raise HTTPException(status_code=403, detail="Access denied: You do not have permission for this server.")
     if not (user.is_master_admin or user.has_perm("can_file_manager")):
         raise HTTPException(status_code=403, detail="Access denied: File Manager permission (can_file_manager) is required.")
+    if require_unlock and not is_file_manager_unlocked(user.id, sid):
+        raise HTTPException(
+            status_code=423,
+            detail="File Manager session is locked. Please unlock with your password to continue.",
+        )
 
     server = db.query(Server).filter(Server.id == sid, Server.is_active == 1).first()
     if not server:
@@ -137,6 +158,108 @@ def _record_file_audit(db: Session, sid: int, username: str, action: str, target
     except Exception:
         db.rollback()
         raise
+
+
+@router.get("/status")
+def get_file_manager_status(
+    sid: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Check File Manager permission and ephemeral step-up auth lease status."""
+    if not user.can_access_server(sid):
+        raise HTTPException(status_code=403, detail="Access denied")
+    server = db.query(Server).filter(Server.id == sid, Server.is_active == 1).first()
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+
+    user_can = bool(user.is_master_admin or user.has_perm("can_file_manager"))
+    remaining = get_file_manager_lease_remaining(user.id, sid)
+    return {
+        "server_id": sid,
+        "can_file_manager": user_can,
+        "is_unlocked": remaining > 0,
+        "remaining_seconds": remaining,
+        "user_has_totp": bool(user.totp_enabled and user.totp_secret),
+    }
+
+
+@router.post("/unlock")
+def unlock_file_manager(
+    sid: int,
+    body: dict = Body(...),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Unlock Remote File Manager access via step-up password + TOTP verification."""
+    if not (user.is_master_admin or user.has_perm("can_file_manager")):
+        raise HTTPException(status_code=403, detail="Access denied: File Manager permission is required")
+    if not user.can_access_server(sid):
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    server = db.query(Server).filter(Server.id == sid, Server.is_active == 1).first()
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+
+    password = str(body.get("password") or "").strip()
+    totp_code = str(body.get("totp") or "").strip()
+    duration_minutes = max(5, min(120, int(body.get("duration_minutes") or 15)))
+    reason = str(body.get("reason") or "").strip()[:255]
+
+    if not password:
+        raise HTTPException(status_code=400, detail="User account password is required")
+
+    if not verify_password(password, user.password_hash):
+        db.add(AuditLog(
+            server_id=sid,
+            username=user.username,
+            action="file_manager_unlock_fail",
+            target=server.hostname,
+            result="failed",
+            meta="Invalid password during File Manager unlock challenge",
+            created_at=datetime.utcnow(),
+        ))
+        db.commit()
+        raise HTTPException(status_code=401, detail="Invalid account password. File Manager access denied.")
+
+    if user.totp_enabled and user.totp_secret:
+        if not totp_code or not security_auth.verify_totp(user.totp_secret, totp_code):
+            db.add(AuditLog(
+                server_id=sid,
+                username=user.username,
+                action="file_manager_unlock_fail",
+                target=server.hostname,
+                result="failed",
+                meta="Invalid 2FA code during File Manager unlock challenge",
+                created_at=datetime.utcnow(),
+            ))
+            db.commit()
+            raise HTTPException(status_code=401, detail="Invalid or expired 2FA / TOTP code")
+
+    set_file_manager_unlock(user.id, sid, duration_minutes)
+    meta = f"Duration: {duration_minutes}m, reason: {reason}" if reason else f"Duration: {duration_minutes}m"
+    _record_file_audit(db, sid, user.username, "file_manager_unlock", server.hostname, meta)
+    return {
+        "ok": True,
+        "remaining_seconds": duration_minutes * 60,
+        "message": f"File Manager unlocked for {duration_minutes} minutes",
+    }
+
+
+@router.post("/lock")
+def lock_file_manager(
+    sid: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Immediately lock Remote File Manager access and revoke the active lease."""
+    if not user.can_access_server(sid):
+        raise HTTPException(status_code=403, detail="Access denied")
+    revoke_file_manager_unlock(user.id, sid)
+    server = db.query(Server).filter(Server.id == sid, Server.is_active == 1).first()
+    hostname = server.hostname if server else f"sid={sid}"
+    _record_file_audit(db, sid, user.username, "file_manager_lock", hostname, "File Manager session locked by operator")
+    return {"ok": True, "message": "File Manager locked successfully"}
 
 
 @router.get("")
@@ -346,6 +469,84 @@ async def chmod_server_file(
     return {"ok": True, "path": path, "mode": mode}
 
 
+@router.post("/chown")
+async def chown_server_file(
+    sid: int,
+    body: dict = Body(...),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Change file ownership (user/group) on the remote target host via agent RPC."""
+    _check_access_and_online_server(user, sid, db)
+    path = str(body.get("path") or "").strip()
+    owner = str(body.get("owner") or "").strip()
+    group = str(body.get("group") or "").strip() or None
+    if not path or not owner:
+        raise HTTPException(status_code=400, detail="Path and owner are required")
+    if os.path.normpath(path) in PROTECTED_SYSTEM_PATHS:
+        raise HTTPException(status_code=403, detail="Protected critical system directory ownership cannot be changed.")
+
+    res = await file_dispatcher.dispatch(sid, "chown", {"path": path, "owner": owner, "group": group})
+    if not res.get("ok"):
+        raise HTTPException(status_code=400, detail=res.get("error", "Failed to change ownership"))
+
+    target_owner = f"{owner}:{group}" if group else owner
+    _record_file_audit(db, sid, user.username, "file_chown", f"{path} ({target_owner})", "Changed ownership via Remote File Manager")
+    return {"ok": True, "path": path, "owner": owner, "group": group}
+
+
+@router.post("/batch-rm")
+async def batch_remove_server_files(
+    sid: int,
+    body: dict = Body(...),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Batch delete files or directories on the remote target host via agent RPC."""
+    _check_access_and_online_server(user, sid, db)
+    paths = body.get("paths") or []
+    if not paths or not isinstance(paths, list):
+        raise HTTPException(status_code=400, detail="Paths list cannot be empty")
+    clean_paths = [str(p).strip() for p in paths if str(p).strip()]
+    if not clean_paths:
+        raise HTTPException(status_code=400, detail="Paths list cannot be empty")
+    for p in clean_paths:
+        if os.path.normpath(p) in PROTECTED_SYSTEM_PATHS:
+            raise HTTPException(status_code=403, detail=f"Protected critical system directory cannot be deleted: {p}")
+
+    res = await file_dispatcher.dispatch(sid, "batch_rm", {"paths": clean_paths}, timeout=60.0)
+    if not res.get("ok"):
+        raise HTTPException(status_code=400, detail=res.get("error", "Failed to batch delete items"))
+
+    _record_file_audit(db, sid, user.username, "file_batch_rm", f"{len(clean_paths)} items", f"Deleted {clean_paths}")
+    return res
+
+
+@router.post("/batch-chmod")
+async def batch_chmod_server_files(
+    sid: int,
+    body: dict = Body(...),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Batch change permissions on the remote target host via agent RPC."""
+    _check_access_and_online_server(user, sid, db)
+    paths = body.get("paths") or []
+    mode = str(body.get("mode") or "").strip()
+    if not paths or not isinstance(paths, list) or not mode:
+        raise HTTPException(status_code=400, detail="Paths list and octal mode are required")
+    clean_paths = [str(p).strip() for p in paths if str(p).strip()]
+    if not clean_paths:
+        raise HTTPException(status_code=400, detail="Paths list cannot be empty")
+
+    res = await file_dispatcher.dispatch(sid, "batch_chmod", {"paths": clean_paths, "mode": mode}, timeout=60.0)
+    if not res.get("ok"):
+        raise HTTPException(status_code=400, detail=res.get("error", "Failed to batch change permissions"))
+
+    _record_file_audit(db, sid, user.username, "file_batch_chmod", f"{len(clean_paths)} items ({mode})", f"Chmod {mode} on {clean_paths}")
+    return res
+
+
 @router.post("/copy")
 async def copy_server_files(
     sid: int,
@@ -469,7 +670,7 @@ async def storage_triage_server(
     db: Session = Depends(get_db),
 ):
     """Inspect large files, deleted-open-file handles, and runaway logs on the remote host."""
-    _check_access_and_online_server(user, sid, db)
+    _check_access_and_online_server(user, sid, db, require_unlock=False)
     mount_clean = (mount or "/").strip() or "/"
     res = await file_dispatcher.dispatch(sid, "storage_triage", {"mount_path": mount_clean}, timeout=40.0)
     if not res.get("ok"):
@@ -485,7 +686,7 @@ async def truncate_remote_log(
     db: Session = Depends(get_db),
 ):
     """Safely truncate a runaway log file to zero bytes on the remote host."""
-    _check_access_and_online_server(user, sid, db)
+    _check_access_and_online_server(user, sid, db, require_unlock=False)
     path = str(body.get("path") or "").strip()
     if not path:
         raise HTTPException(status_code=400, detail="Log file path is required")
@@ -504,7 +705,7 @@ async def reclaim_remote_storage(
     db: Session = Depends(get_db),
 ):
     """Reclaim disk space on the remote host (journal, apt_cache, or rotated_logs)."""
-    _check_access_and_online_server(user, sid, db)
+    _check_access_and_online_server(user, sid, db, require_unlock=False)
     target = str(body.get("target") or "").strip()
     if target not in ("journal", "apt_cache", "rotated_logs"):
         raise HTTPException(status_code=400, detail="Invalid reclaim target (must be journal, apt_cache, or rotated_logs)")

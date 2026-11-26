@@ -688,13 +688,21 @@
       </div>
     </div>
 
-    <!-- Terminal Unlock (Step-Up Auth) Modal -->
+    <!-- Terminal / File Manager Unlock (Step-Up Auth) Modal -->
     <TerminalUnlockModal
       :is-open="showTerminalUnlockModal"
       :server="server"
       :user-has-totp="userHasTotp"
       @close="showTerminalUnlockModal = false"
       @unlocked="onTerminalUnlocked"
+    />
+    <TerminalUnlockModal
+      :is-open="showFileManagerUnlockModal"
+      mode="file_manager"
+      :server="server"
+      :user-has-totp="userHasTotp"
+      @close="showFileManagerUnlockModal = false"
+      @unlocked="onFileManagerUnlocked"
     />
 
     <!-- Terminal Close Confirm Modal -->
@@ -871,8 +879,35 @@ function stopLeaseCountdown() {
 
 // Dedicated Floating File Manager State
 const showFileManagerModal = ref(false)
+const showFileManagerUnlockModal = ref(false)
 
-function openFileManagerModal() {
+async function openFileManagerModal() {
+  if (!server.value || !currentServerId.value) return
+  try {
+    const token = localStorage.getItem('pantau_token') || ''
+    const headers = token ? { Authorization: `Bearer ${token}` } : {}
+    const res = await fetch(`/api/servers/${currentServerId.value}/files/status`, { headers })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      toast.error(data.detail || 'Failed to check File Manager status')
+      return
+    }
+    if (!data.can_file_manager) {
+      toast.error('Access denied: File Manager permission (can_file_manager) is required.')
+      return
+    }
+    if (data.is_unlocked && data.remaining_seconds > 0) {
+      showFileManagerModal.value = true
+    } else {
+      userHasTotp.value = Boolean(data.user_has_totp)
+      showFileManagerUnlockModal.value = true
+    }
+  } catch (err) {
+    toast.error('Failed to initialize File Manager: ' + (err.message || 'Error'))
+  }
+}
+
+function onFileManagerUnlocked() {
   showFileManagerModal.value = true
 }
 
@@ -1144,6 +1179,7 @@ function handleKeyDown(e) {
     }
     if (showTerminalLockModal.value) { showTerminalLockModal.value = false; return }
     if (showTerminalCloseModal.value) { showTerminalCloseModal.value = false; return }
+    if (showFileManagerUnlockModal.value) { showFileManagerUnlockModal.value = false; return }
     if (showTerminalUnlockModal.value) { showTerminalUnlockModal.value = false; return }
     if (showGuardrailModal.value) { showGuardrailModal.value = false; return }
     if (showMaintenanceModal.value) { showMaintenanceModal.value = false; return }

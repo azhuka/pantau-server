@@ -12,7 +12,7 @@
             <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
             <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
           </svg>
-          <span class="font-bold text-gray-200 uppercase tracking-wider text-sm">{{ t('modal_terminal_unlock_title') }}</span>
+          <span class="font-bold text-gray-200 uppercase tracking-wider text-sm">{{ mode === 'file_manager' ? 'Unlock File Manager' : t('modal_terminal_unlock_title') }}</span>
         </div>
         <button
           @click="handleClose"
@@ -29,7 +29,7 @@
       <form @submit.prevent="submitUnlock" class="p-5 space-y-4 text-left">
         <div v-if="server" class="p-3 rounded bg-cyan-950/40 border border-cyan-800/50 text-cyan-300 leading-relaxed">
           <div class="font-bold text-gray-200 mb-1">{{ server.hostname }} ({{ server.ip_address || '127.0.0.1' }})</div>
-          <div class="text-[11px] text-gray-400">{{ t('terminal_unlock_desc') }}</div>
+          <div class="text-[11px] text-gray-400">{{ mode === 'file_manager' ? 'Step-up authentication is required to access Remote File Manager.' : t('terminal_unlock_desc') }}</div>
         </div>
 
         <div v-if="errorMsg" class="p-2.5 rounded bg-rose-950/60 border border-rose-500/50 text-rose-300 text-[11px] leading-relaxed flex items-center gap-2">
@@ -110,7 +110,7 @@
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
               <path d="M7 11V7a5 5 0 0 1 9.9-1"/>
             </svg>
-            <span>{{ t('btn_unlock_terminal') }}</span>
+            <span>{{ mode === 'file_manager' ? 'Unlock File Manager' : t('btn_unlock_terminal') }}</span>
           </button>
         </div>
       </form>
@@ -124,6 +124,10 @@ import { useI18n } from '../../i18n'
 
 const props = defineProps({
   isOpen: Boolean,
+  mode: {
+    type: String,
+    default: 'terminal'
+  },
   server: {
     type: Object,
     default: null
@@ -179,7 +183,10 @@ async function submitUnlock() {
     const headers = { 'Content-Type': 'application/json' }
     if (token) headers['Authorization'] = `Bearer ${token}`
 
-    const res = await fetch(`/api/servers/${props.server.id}/terminal/unlock`, {
+    const endpoint = props.mode === 'file_manager'
+      ? `/api/servers/${props.server.id}/files/unlock`
+      : `/api/servers/${props.server.id}/terminal/unlock`
+    const res = await fetch(endpoint, {
       method: 'POST',
       headers,
       body: JSON.stringify({
