@@ -396,7 +396,8 @@
           <!-- Tab Icon SVG -->
           <svg v-if="tab.id === 'overview'" class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
           <svg v-else-if="tab.id === 'problems'" class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          <svg v-else-if="tab.id === 'services_ports'" class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          <svg v-else-if="tab.id === 'services'" class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          <svg v-else-if="tab.id === 'ports'" class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
           <svg v-else-if="tab.id === 'processes'" class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="m9 12 2 2 4-4"/></svg>
           <svg v-else-if="tab.id === 'firewall'" class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
           <svg v-else-if="tab.id === 'accounts'" class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -462,12 +463,30 @@
             @switch-tab="activeSubTab = $event"
             @refresh="loadServerData(); emit('refresh-problems')"
           />
-          <WorkspaceServicesPortsTab
-            v-else-if="activeSubTab === 'services_ports'"
+          <WorkspaceServicesTab
+            v-else-if="activeSubTab === 'services'"
+            :server-id="currentServerId"
+            :is-online="Boolean(server?.is_online)"
+            :is-viewer="currentUser?.role === 'viewer'"
+            :can-manage="Boolean(currentUser?.is_master_admin || currentUser?.role === 'operator_utama' || userPerms.can_services)"
             :services="servicesList"
-            :ports="portsList"
-            @restart-service="restartService"
+            :monitored-services="monitoredServicesList"
             @service-action="handleServiceAction"
+            @view-logs="activeSubTab = 'logs'"
+            @refresh="loadServerData()"
+            @monitored-updated="handleMonitoredUpdated"
+          />
+          <WorkspacePortsTab
+            v-else-if="activeSubTab === 'ports'"
+            :ports="portsList"
+            :is-online="Boolean(server?.is_online)"
+            :is-viewer="currentUser?.role === 'viewer'"
+            :can-services="Boolean(currentUser?.is_master_admin || currentUser?.role === 'operator_utama' || userPerms.can_services)"
+            :can-processes="Boolean(currentUser?.is_master_admin || currentUser?.role === 'operator_utama' || userPerms.can_processes)"
+            :can-firewall="Boolean(currentUser?.is_master_admin || currentUser?.role === 'operator_utama' || userPerms.can_firewall)"
+            @monitor-port="handleMonitorPort"
+            @kill-process="killProcess"
+            @firewall-port="handleFirewallPort"
           />
           <WorkspaceProcessesTab
             v-else-if="activeSubTab === 'processes'"
@@ -810,7 +829,8 @@ import RemoteFileManagerModal from './workspace/RemoteFileManagerModal.vue'
 import AptTaskRunnerModal from './workspace/AptTaskRunnerModal.vue'
 import WorkspaceOverviewTab from './workspace/tabs/WorkspaceOverviewTab.vue'
 import WorkspaceProblemsTab from './workspace/tabs/WorkspaceProblemsTab.vue'
-import WorkspaceServicesPortsTab from './workspace/tabs/WorkspaceServicesPortsTab.vue'
+import WorkspaceServicesTab from './workspace/tabs/WorkspaceServicesTab.vue'
+import WorkspacePortsTab from './workspace/tabs/WorkspacePortsTab.vue'
 import WorkspaceProcessesTab from './workspace/tabs/WorkspaceProcessesTab.vue'
 import WorkspaceFirewallTab from './workspace/tabs/WorkspaceFirewallTab.vue'
 import WorkspaceAccountsTab from './workspace/tabs/WorkspaceAccountsTab.vue'
@@ -852,7 +872,6 @@ const hostSearchQuery = ref('')
 const loading = ref(false)
 const server = ref(null)
 const activeSubTab = ref('overview')
-const servicesPortsMode = ref('services') // 'services' or 'ports'
 
 const showGuardrailModal = ref(false)
 const guardrailAction = ref('reboot') // 'reboot' or 'poweroff'
@@ -996,6 +1015,7 @@ function handleTerminalFromFm(payload) {
 }
 
 const servicesList = ref([])
+const monitoredServicesList = ref([])
 const processesList = ref([])
 const portsList = ref([])
 const accountsList = ref([])
@@ -1037,7 +1057,8 @@ const canAccessTab = (tabId) => {
   if (!props.currentUser) return true
   if (props.currentUser.is_master_admin || props.currentUser.role === 'operator_utama') return true
   if (tabId === 'overview' || tabId === 'problems') return true
-  if (tabId === 'services_ports') return Boolean(userPerms.value.can_services)
+  if (tabId === 'services') return Boolean(userPerms.value.can_services || props.currentUser?.role === 'viewer')
+  if (tabId === 'ports') return Boolean(userPerms.value.can_services || userPerms.value.can_processes || userPerms.value.can_firewall || props.currentUser?.role === 'viewer')
   if (tabId === 'processes') return Boolean(userPerms.value.can_processes)
   if (tabId === 'firewall') return Boolean(userPerms.value.can_firewall)
   if (tabId === 'accounts') return Boolean(userPerms.value.can_users_sys)
@@ -1074,7 +1095,8 @@ const subTabs = computed(() => {
   const allTabs = [
     { id: 'overview', label: t('tab_perf') },
     { id: 'problems', label: t('tab_incidents'), badge: activeNonIgnoredProblemsCount.value || null },
-    { id: 'services_ports', label: t('tab_services_ports'), badge: servicesList.value.length + portsList.value.length || null },
+    { id: 'services', label: t('ws_tab_services'), badge: monitoredServicesList.value.length || servicesList.value.length || null },
+    { id: 'ports', label: t('ws_tab_ports'), badge: portsList.value.length || null },
     { id: 'processes', label: t('tab_tasks'), badge: processesList.value.length || null },
     { id: 'firewall', label: t('tab_firewall') },
     { id: 'accounts', label: t('tab_users_ssh'), badge: activeSSHSessions.value.length || null },
@@ -1133,7 +1155,7 @@ watch(() => props.initialFloatingTool, (tool) => {
     openFileManagerModal()
   } else if (tool === 'maintenance') {
     openMaintenanceModal()
-  } else if (tool && ['overview', 'problems', 'services_ports', 'processes', 'firewall', 'accounts', 'cron', 'fim', 'packages', 'ssl', 'logs'].includes(tool)) {
+  } else if (tool && ['overview', 'problems', 'services', 'ports', 'processes', 'firewall', 'accounts', 'cron', 'fim', 'packages', 'ssl', 'logs'].includes(tool)) {
     activeSubTab.value = tool
   }
 }, { immediate: true })
@@ -1184,6 +1206,7 @@ async function loadServerData() {
     const fimData = await fimRes.json()
 
     servicesList.value = svcData.services || []
+    monitoredServicesList.value = svcData.monitored_services || []
     processesList.value = procData.processes || []
     portsList.value = portData.ports || []
     accountsList.value = accData.accounts || []
@@ -1555,15 +1578,63 @@ async function handleServiceAction({ action, unit }) {
   if (action === 'restart_service') {
     return restartService(unit)
   }
-  const verb = action === 'start_service' ? 'Start' : (action === 'stop_service' ? 'Stop' : 'Reload')
+  const verbMap = {
+    start_service: 'Start',
+    stop_service: 'Stop',
+    reload_service: 'Reload',
+    enable_service: 'Enable Autostart',
+    disable_service: 'Disable Autostart',
+  }
+  const verb = verbMap[action] || 'Execute'
   const ok = await confirmAction({
     title: `${verb} Service`,
     message: `${verb} systemd service '${unit}' on target host?`,
     confirmText: verb,
-    variant: action === 'stop_service' ? 'danger' : 'warning',
+    variant: action === 'stop_service' || action === 'disable_service' ? 'danger' : 'warning',
   })
   if (!ok) return
   await dispatchAction(action, { name: unit, unit })
+}
+
+function handleMonitoredUpdated({ ok, message }) {
+  if (ok) {
+    toast.success(message || 'Monitored services updated')
+    loadServerData()
+  } else {
+    toast.error(message || 'Failed to update monitored services')
+  }
+}
+
+async function handleMonitorPort({ service_name, port, process_name }) {
+  const token = localStorage.getItem('pantau_token')
+  try {
+    const res = await fetch(`/api/servers/${currentServerId.value}/services/add`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ service_name, port, process_name, is_core: true }),
+    })
+    const data = await res.json()
+    if (res.ok && data.ok) {
+      toast.success(data.message)
+      loadServerData()
+    } else {
+      toast.error(data.detail || 'Failed to monitor port as service')
+    }
+  } catch (err) {
+    toast.error(t('msg_conn_failed') + err.message)
+  }
+}
+
+async function handleFirewallPort({ port, rule }) {
+  const isDeny = rule === 'deny'
+  const ok = await confirmAction({
+    title: isDeny ? 'Block Port (Firewall)' : 'Allow Port (Firewall)',
+    message: `${isDeny ? 'Block' : 'Allow'} traffic on port '${port}' via host firewall?`,
+    confirmText: isDeny ? 'Block Port' : 'Allow Port',
+    variant: isDeny ? 'danger' : 'warning',
+  })
+  if (!ok) return
+  await dispatchAction('firewall_port_rule', { port, rule })
 }
 
 async function handleGenericAction({ action, params }) {

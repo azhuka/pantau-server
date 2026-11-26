@@ -4,14 +4,14 @@ import re
 import subprocess
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Body, status
-from sqlalchemy import func
+from sqlalchemy import func, desc
 from sqlalchemy.orm import Session
 import security_auth
 from core.database import get_db
 from core.security import verify_password
 from routers.auth import get_current_user
 from models.user import User
-from models.server import Server, ServerExtras, SystemSnapshot, SysSnapshotHour, Service
+from models.server import Server, ServerExtras, SystemSnapshot, SysSnapshotHour, Service, Metric
 from models.problem import ServerProblem
 from models.command import Command
 from models.misc import AuditLog
@@ -395,46 +395,344 @@ def get_server_detail(sid: int, user: User = Depends(get_current_user), db: Sess
 @router.get("/{sid}/services")
 def get_server_services(sid: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     check_server_access(user, sid)
-    if not (user.is_master_admin or user.has_perm("can_services")):
+    if not (user.is_master_admin or user.is_viewer() or user.has_perm("can_services")):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied: Service Control permission (can_services) is required")
     extras = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
-    if not extras or not extras.systemd_units:
-        return {"ok": True, "services": []}
+
+    normalized_units = []
+    raw_units_json = (extras.units if extras and extras.units else None) or (extras.systemd_units if extras and extras.systemd_units else None)
+    if raw_units_json:
+        try:
+            data = json.loads(raw_units_json)
+            if isinstance(data, list):
+                for s in data:
+                    if isinstance(s, dict):
+                        name = s.get("name") or s.get("unit") or s.get("service_name") or "service"
+                        is_up = (s.get("status") == "up") or (s.get("active") == "active") or (s.get("sub") == "running")
+                        active = "active" if is_up else (s.get("active") or "inactive")
+                        sub = s.get("sub") or ("running" if is_up else "stopped")
+                        desc_val = s.get("description") or (f"Port {s.get('port')}" if s.get("port") else "-")
+                        normalized_units.append({
+                            "name": name,
+                            "active": active,
+                            "sub": sub,
+                            "status": s.get("status") or sub,
+                            "boot": s.get("boot") or "unknown",
+                            "memory": s.get("memory"),
+                            "description": desc_val,
+                            "port": s.get("port"),
+                        })
+                    elif isinstance(s, str):
+                        normalized_units.append({
+                            "name": s,
+                            "active": "active",
+                            "sub": "running",
+                            "status": "running",
+                            "boot": "unknown",
+                            "memory": None,
+                            "description": "System service unit",
+                            "port": None,
+                        })
+        except Exception:
+            pass
+
+    # Monitored services with latest metric + 24h uptime
+    monitored_rows = db.query(Service).filter(Service.server_id == sid).order_by(Service.service_name.asc()).all()
+    monitored_list = []
+    if monitored_rows:
+        svc_ids = [s.id for s in monitored_rows]
+        cutoff_24h = datetime.utcnow() - timedelta(hours=24)
+        uptime_rows = (
+            db.query(
+                Metric.service_id,
+                func.count(Metric.id),
+                func.sum(getattr(func, "if")(Metric.status == "up", 1, 0)),
+            )
+            .filter(Metric.service_id.in_(svc_ids), Metric.timestamp >= cutoff_24h)
+            .group_by(Metric.service_id)
+            .all()
+        )
+        uptime_map = {}
+        for u_sid, total_n, up_n in uptime_rows:
+            if total_n:
+                uptime_map[u_sid] = round((int(up_n or 0) / int(total_n)) * 100, 2)
+
+        for s in monitored_rows:
+            latest = (
+                db.query(Metric)
+                .filter(Metric.service_id == s.id)
+                .order_by(desc(Metric.timestamp))
+                .first()
+            )
+            monitored_list.append({
+                "id": s.id,
+                "service_name": s.service_name,
+                "port": s.port,
+                "process_name": s.process_name,
+                "is_core": bool(s.is_core),
+                "is_ignored": bool(s.is_ignored),
+                "ignored_until": s.ignored_until.isoformat() if s.ignored_until else None,
+                "ignored_by": s.ignored_by,
+                "ignored_reason": s.ignored_reason,
+                "status": (latest.status if latest else "unknown"),
+                "connections": (latest.active_connections if latest else 0),
+                "response_time_ms": (latest.response_time_ms if latest else None),
+                "health_message": (latest.health_message if latest else None),
+                "uptime_24h": uptime_map.get(s.id),
+            })
+
+    return {"ok": True, "services": normalized_units, "monitored_services": monitored_list}
+
+
+@router.post("/{sid}/services/add")
+def add_monitored_service(
+    sid: int,
+    body: dict = Body(...),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Register a service/port to monitored services for this server."""
+    check_server_access(user, sid)
+    if user.is_viewer() or not (user.is_master_admin or user.has_perm("can_services")):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied: Service Control permission (can_services) is required")
+
+    service_name = str(body.get("service_name") or "").strip()[:100]
+    process_name = str(body.get("process_name") or service_name).strip()[:100]
     try:
-        data = json.loads(extras.systemd_units)
-        normalized = []
-        if isinstance(data, list):
-            for s in data:
-                if isinstance(s, dict):
-                    name = s.get("name") or s.get("service_name") or s.get("unit") or "service"
-                    is_up = (s.get("status") == "up") or (s.get("active") == "active") or (s.get("sub") == "running")
-                    active = "active" if is_up else (s.get("active") or "inactive")
-                    sub = "running" if is_up else (s.get("sub") or "stopped")
-                    desc = s.get("description") or (f"Port {s.get('port')}" if s.get("port") else "-")
-                    normalized.append({
-                        "name": name,
-                        "active": active,
-                        "sub": sub,
-                        "status": s.get("status") or sub,
-                        "boot": s.get("boot") or "unknown",
-                        "memory": s.get("memory"),
-                        "description": desc,
-                        "port": s.get("port")
-                    })
-                elif isinstance(s, str):
-                    normalized.append({
-                        "name": s,
-                        "active": "active",
-                        "sub": "running",
-                        "status": "running",
-                        "boot": "unknown",
-                        "memory": None,
-                        "description": "System service unit",
-                        "port": None
-                    })
-        return {"ok": True, "services": normalized}
-    except Exception:
-        return {"ok": True, "services": []}
+        port = int(body.get("port") or 0)
+    except (TypeError, ValueError):
+        port = 0
+
+    if not service_name or not (1 <= port <= 65535):
+        raise HTTPException(status_code=400, detail="Service name and valid port (1-65535) are required.")
+
+    existing = db.query(Service).filter(Service.server_id == sid, Service.service_name == service_name).first()
+    if existing:
+        raise HTTPException(status_code=409, detail=f"Service '{service_name}' is already monitored on this host.")
+
+    svc = Service(
+        server_id=sid,
+        service_name=service_name,
+        port=port,
+        process_name=process_name or service_name,
+        is_core=1 if body.get("is_core", True) else 0,
+    )
+    db.add(svc)
+    db.flush()
+    db.add(AuditLog(
+        server_id=sid,
+        username=user.username,
+        action="service_add",
+        target=f"{service_name} (port {port})",
+        result="success",
+        meta=f"Added monitored service {service_name} on port {port}",
+        created_at=datetime.utcnow(),
+    ))
+    db.commit()
+    return {"ok": True, "service_id": svc.id, "message": f"Service '{service_name}' added to monitoring."}
+
+
+@router.delete("/{sid}/services/{svc_id}")
+def delete_monitored_service(
+    sid: int,
+    svc_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Remove a service from monitored services."""
+    check_server_access(user, sid)
+    if user.is_viewer() or not (user.is_master_admin or user.has_perm("can_services")):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied: Service Control permission (can_services) is required")
+
+    svc = db.query(Service).filter(Service.id == svc_id, Service.server_id == sid).first()
+    if not svc:
+        raise HTTPException(status_code=404, detail="Monitored service not found")
+
+    sname = svc.service_name
+    db.query(Metric).filter(Metric.service_id == svc.id).delete(synchronize_session=False)
+    db.delete(svc)
+    db.add(AuditLog(
+        server_id=sid,
+        username=user.username,
+        action="service_remove",
+        target=sname,
+        result="success",
+        meta=f"Removed service '{sname}' from monitoring",
+        created_at=datetime.utcnow(),
+    ))
+    db.commit()
+    return {"ok": True, "message": f"Service '{sname}' removed from monitoring."}
+
+
+@router.post("/{sid}/services/{svc_id}/ignore")
+def ignore_monitored_service(
+    sid: int,
+    svc_id: int,
+    body: dict = Body(default={}),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Mute/ignore incident alerts for a monitored service."""
+    check_server_access(user, sid)
+    if user.is_viewer() or not (user.is_master_admin or user.has_perm("can_services")):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied: Service Control permission (can_services) is required")
+
+    svc = db.query(Service).filter(Service.id == svc_id, Service.server_id == sid).first()
+    if not svc:
+        raise HTTPException(status_code=404, detail="Monitored service not found")
+
+    duration = str(body.get("duration", "permanent")).lower().strip()
+    reason = str(body.get("reason", "")).strip()[:255] or f"Ignored by {user.username}"
+    now = datetime.utcnow()
+    dur_map = {"2h": timedelta(hours=2), "24h": timedelta(hours=24), "7d": timedelta(days=7), "30d": timedelta(days=30)}
+    until = now + dur_map[duration] if duration in dur_map else None
+    ignore_mode = "duration" if until else "permanent"
+
+    svc.is_ignored = 1
+    svc.ignored_until = until
+    svc.ignored_by = user.username
+    svc.ignored_reason = reason
+    svc.ignore_mode = ignore_mode
+
+    prob = db.query(ServerProblem).filter(
+        ServerProblem.server_id == sid,
+        ServerProblem.key == f"service_down:{svc.service_name}",
+        ServerProblem.resolved_at.is_(None),
+    ).first()
+    if prob:
+        prob.is_ignored = 1
+        prob.ignored_until = until
+        prob.ignored_by = user.username
+        prob.ignored_reason = reason
+        prob.ignore_mode = ignore_mode
+        prob.updated_at = now
+
+    db.add(AuditLog(
+        server_id=sid,
+        username=user.username,
+        action="problem_ignore",
+        target=f"Service {svc.service_name}",
+        result=f"ignored ({duration})",
+        meta=reason,
+        created_at=now,
+    ))
+    db.commit()
+    return {"ok": True, "message": f"Alerts ignored for '{svc.service_name}'."}
+
+
+@router.post("/{sid}/services/{svc_id}/unignore")
+def unignore_monitored_service(
+    sid: int,
+    svc_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Resume incident monitoring for a monitored service."""
+    check_server_access(user, sid)
+    if user.is_viewer() or not (user.is_master_admin or user.has_perm("can_services")):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied: Service Control permission (can_services) is required")
+
+    svc = db.query(Service).filter(Service.id == svc_id, Service.server_id == sid).first()
+    if not svc:
+        raise HTTPException(status_code=404, detail="Monitored service not found")
+
+    svc.is_ignored = 0
+    svc.ignored_until = None
+    svc.ignored_reason = None
+    svc.ignore_mode = None
+
+    db.query(ServerProblem).filter(
+        ServerProblem.server_id == sid,
+        ServerProblem.key == f"service_down:{svc.service_name}",
+    ).update({
+        ServerProblem.is_ignored: 0,
+        ServerProblem.ignored_until: None,
+        ServerProblem.ignored_reason: None,
+        ServerProblem.ignore_mode: None,
+    }, synchronize_session=False)
+
+    db.add(AuditLog(
+        server_id=sid,
+        username=user.username,
+        action="problem_unignore",
+        target=f"Service {svc.service_name}",
+        result="monitoring resumed",
+        created_at=datetime.utcnow(),
+    ))
+    db.commit()
+    return {"ok": True, "message": f"Monitoring resumed for '{svc.service_name}'."}
+
+
+@router.get("/{sid}/services/{svc_id}/history")
+def get_monitored_service_history(
+    sid: int,
+    svc_id: int,
+    range: str = "24h",
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Return uptime timeline, active connections, and response time history for a monitored service."""
+    check_server_access(user, sid)
+    svc = db.query(Service).filter(Service.id == svc_id, Service.server_id == sid).first()
+    if not svc:
+        raise HTTPException(status_code=404, detail="Monitored service not found")
+
+    now = datetime.utcnow()
+    if range == "today":
+        start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        span = max(now - start, timedelta(minutes=5))
+    else:
+        span = {
+            "1h": timedelta(hours=1),
+            "6h": timedelta(hours=6),
+            "24h": timedelta(hours=24),
+            "7d": timedelta(days=7),
+            "30d": timedelta(days=30),
+        }.get(range)
+        if not span:
+            raise HTTPException(status_code=400, detail="Unsupported time range")
+        start = now - span
+
+    step_secs = max(int(span.total_seconds() / 120), 30)
+    rows = (
+        db.query(
+            (func.floor(func.unix_timestamp(Metric.timestamp) / step_secs) * step_secs).label("tb"),
+            func.count(Metric.id),
+            func.sum(getattr(func, "if")(Metric.status == "up", 1, 0)),
+            func.avg(Metric.active_connections),
+            func.avg(Metric.response_time_ms),
+        )
+        .filter(Metric.service_id == svc_id, Metric.timestamp >= start, Metric.timestamp <= now)
+        .group_by("tb")
+        .order_by("tb")
+        .all()
+    )
+    points = []
+    for tb, n, ups, conns, rt in rows:
+        ups_count = int(ups or 0)
+        up_ratio = (ups_count / n) if n else None
+        points.append({
+            "t": int(tb),
+            "up_ratio": round(up_ratio, 3) if up_ratio is not None else None,
+            "samples": int(n),
+            "conns": round(float(conns), 1) if conns is not None else 0,
+            "rt": round(float(rt), 1) if rt is not None else None,
+        })
+
+    latest = db.query(Metric).filter(Metric.service_id == svc_id).order_by(desc(Metric.timestamp)).first()
+    return {
+        "ok": True,
+        "service": {"id": svc.id, "name": svc.service_name, "port": svc.port},
+        "range": range,
+        "from": int(start.timestamp()),
+        "to": int(now.timestamp()),
+        "now": {
+            "status": latest.status if latest else "unknown",
+            "connections": latest.active_connections if latest else 0,
+            "response_time_ms": latest.response_time_ms if latest else None,
+        },
+        "points": points,
+    }
 
 @router.get("/{sid}/processes")
 def get_server_processes(sid: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -691,6 +989,7 @@ _ACTION_PERMISSION_MAP = {
     "create_user": "can_users_sys",
     "block_ip": "can_firewall",
     "unblock_ip": "can_firewall",
+    "firewall_port_rule": "can_firewall",
     "toggle_ufw": "can_firewall",
     "ufw_enable": "can_firewall",
     "ufw_disable": "can_firewall",
@@ -803,6 +1102,17 @@ def dispatch_server_action(
             raise HTTPException(
                 status_code=400,
                 detail=f"Critical service '{params.get('name')}' is protected and cannot be stopped!"
+            )
+
+    # Safety Guardrails: Proteksi Port Manajemen (22/8400) dari pemblokiran firewall
+    if action == "firewall_port_rule":
+        port_spec = str(params.get("port") or "").strip()
+        rule_type = str(params.get("rule") or "deny").strip().lower()
+        port_num_str = port_spec.split("/")[0].strip()
+        if rule_type in ("deny", "block", "deny-port") and port_num_str in ("22", "8400"):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Management port {port_num_str} is protected by system guardrails and cannot be blocked."
             )
 
     # Host Power Control (Reboot / Power Off): Step-up Auth + Online + Proxmox HA + Anti-Duplicate

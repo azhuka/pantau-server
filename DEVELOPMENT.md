@@ -571,6 +571,16 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.90
+
+Pemisahan tab Services dan Ports secara mandiri, penambahan Monitored Services + Service History Panel, perbaikan pemetaan *_service di agent_pantau.py & telemetry_service.py, serta penambahan Actions dropdown pada tab Ports dengan guardrail port manajemen 22/8400.
+
+
+### Versi v0.1.90
+
+Pemisahan tab Services dan Ports secara mandiri, penambahan Monitored Services + Service History Panel, perbaikan pemetaan *_service di agent_pantau.py & telemetry_service.py, serta penambahan Actions dropdown pada tab Ports dengan guardrail port manajemen 22/8400.
+
+
 ### Versi v0.1.89
 
 - **Streamlined Incident Diagnostics Modal:** Removed action/status mutation buttons from ProblemDetailModal.vue footer so only Open Workspace and Close remain.
@@ -1295,5 +1305,8 @@ Memperbaiki kalkulasi posisi dropdown menu aksi pada Remote File Manager agar ot
   - Penambahan `_retention_loop` per jam di `main.py` (`run_retention_prune`) untuk memangkas sesi kedaluwarsa, metrik lama, log audit, perintah, dan insiden selesai.
   - Pengaktifan streaming progres & input interaktif APT/log (`/api/logs/{req_id}/progress` & `/input`), layanan aliran aktivitas live SSE (`services/activity_stream.py` + `/api/activity/recent` & `/stream`), rotasi kunci agen (`POST /{sid}/regenerate-key`), dan pengakuan event FIM (`ack` / `ack-all`).
 - **Stabilitas & Paritas Antarmuka SPA:**
+  - Pemisahan tab **Services** (`WorkspaceServicesTab.vue`) dan **Ports** (`WorkspacePortsTab.vue`) secara mandiri di `ServerWorkspaceModal.vue` dengan RBAC terpisah (`can_services` vs `can_services`/`can_processes`/`can_firewall`).
+  - Penambahan **Monitored Services** (`POST /services/add`, `DELETE /services/{svc_id}`, `ignore`/`unignore`) beserta panel kontekstual **Service History** (`WorkspaceServiceHistoryPanel.vue` & `GET /services/{svc_id}/history`), serta penyelarasan aksi `*_service` di `agent/agent_pantau.py` dan `telemetry_service.py` (memisahkan `units` dari `services` dan mencatat sampel `Metric`).
+  - Penambahan menu `Actions ▾` pada tab **Ports** (`Monitor as Service`, `Terminate PID`, `Block/Allow Port` via `firewall_port_rule` dengan guardrail proteksi port manajemen `22`/`8400`).
   - Perbaikan navigasi `probing`, `maintenance`, dan `status` di `App.vue`, perbaikan impor `useToast` di modal aset, penyelarasan prop/emit `ProblemDetailModal` & `confirmAction`, penghapusan dialog ganda *restart service*, serta *keep-alive* sesi terminal saat jendela workspace diminimalkan (`v-show`).
   - Penambahan **Mobile Navigation Drawer** (`Navbar.vue`), **Activity Console Drawer** (`Ctrl+\``), **Theme & Density Customizer**, **Storage Analysis** di File Manager, **User Activity Modal** di tab akun, serta pembersihan prefiks `// ` dan ikon non-SVG di seluruh antarmuka.

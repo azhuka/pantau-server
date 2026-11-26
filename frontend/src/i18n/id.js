@@ -179,6 +179,12 @@ export default {
   ws_services_title: 'Unit Layanan Systemd',
   ws_services_search: 'Saring nama unit layanan...',
   ws_col_service_name: 'Nama Layanan',
+  ws_col_service_short: 'Layanan',
+  ws_col_process: 'Proses',
+  ws_col_connections: 'Koneksi',
+  ws_col_response_ms: 'Respons (ms)',
+  ws_col_info: 'Keterangan',
+  ws_col_uptime_24h: 'Uptime 24j',
   ws_col_description: 'Deskripsi',
   ws_act_restart: 'Restart',
 

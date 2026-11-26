@@ -179,6 +179,12 @@ export default {
   ws_services_title: 'Systemd Service Units',
   ws_services_search: 'Filter service unit name...',
   ws_col_service_name: 'Service Name',
+  ws_col_service_short: 'Service',
+  ws_col_process: 'Process',
+  ws_col_connections: 'Connections',
+  ws_col_response_ms: 'Response (ms)',
+  ws_col_info: 'Info',
+  ws_col_uptime_24h: '24h Uptime',
   ws_col_description: 'Description',
   ws_act_restart: 'Restart',
 

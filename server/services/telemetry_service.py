@@ -4,7 +4,7 @@ from sqlalchemy import desc
 from sqlalchemy.orm import Session
 from models.command import Command
 from models.misc import AuditLog
-from models.server import Server, ServerExtras, SystemSnapshot
+from models.server import Server, ServerExtras, Service, SystemSnapshot, Metric
 from services.problem_service import evaluate_server_problems
 
 from core.utils import hash_api_key
@@ -118,11 +118,60 @@ def process_telemetry_report(db: Session, api_key: str, report_dict: dict) -> di
     if top_procs is not None:
         extras.top_procs = _to_json(top_procs)
 
-    units_raw = report_dict.get("systemd_units") or report_dict.get("services") or report_dict.get("units")
+    units_raw = report_dict.get("systemd_units") or report_dict.get("units")
     if units_raw is not None:
         extras.systemd_units = _to_json(units_raw)
     if "units" in report_dict:
         extras.units = _to_json(report_dict["units"])
+
+    # Ingest monitored services & metric samples
+    raw_services = report_dict.get("services")
+    if isinstance(raw_services, list):
+        existing_svcs = {
+            s.service_name: s
+            for s in db.query(Service).filter(Service.server_id == srv.id).all()
+        }
+        for svc_item in raw_services[:100]:
+            if not isinstance(svc_item, dict):
+                continue
+            sname = str(svc_item.get("service_name") or svc_item.get("name") or "").strip()[:100]
+            if not sname:
+                continue
+            sport = svc_item.get("port")
+            try:
+                sport = int(sport) if sport is not None else None
+            except (TypeError, ValueError):
+                sport = None
+            sproc = str(svc_item.get("process_name") or svc_item.get("process") or "")[:100] or None
+            svc_obj = existing_svcs.get(sname)
+            if not svc_obj:
+                svc_obj = Service(
+                    server_id=srv.id,
+                    service_name=sname,
+                    port=sport,
+                    process_name=sproc,
+                )
+                db.add(svc_obj)
+                db.flush()
+                existing_svcs[sname] = svc_obj
+            else:
+                if sport is not None:
+                    svc_obj.port = sport
+                if sproc:
+                    svc_obj.process_name = sproc
+
+            s_status = str(svc_item.get("status") or "unknown").lower()[:20]
+            s_conns = int(svc_item.get("active_connections") or svc_item.get("connections") or 0)
+            s_rt = int(svc_item.get("response_time_ms") or 0)
+            s_msg = str(svc_item.get("health_message") or "")[:255] or None
+            db.add(Metric(
+                service_id=svc_obj.id,
+                timestamp=now,
+                status=s_status,
+                active_connections=s_conns,
+                response_time_ms=s_rt,
+                health_message=s_msg,
+            ))
 
     if "cron_jobs" in report_dict:
         extras.cron_jobs = _to_json(report_dict["cron_jobs"])
