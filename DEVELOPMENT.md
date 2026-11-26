@@ -571,6 +571,16 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.76
+
+- **Remove Activity Console Toggle & Drawer:** Removed the Activity Console button from Navbar.vue, deleted ActivityConsoleDrawer.vue, and cleaned up its state and keyboard shortcut in App.vue.
+
+
+### Versi v0.1.76
+
+- **Remove Activity Console Toggle & Drawer:** Removed the Activity Console button from Navbar.vue, deleted ActivityConsoleDrawer.vue, and cleaned up its state and keyboard shortcut in App.vue.
+
+
 ### Versi v0.1.75
 
 - **Clear Activity Console Icon:** Replaced the terminal prompt SVG icon on the Activity Console toggle in Navbar.vue with an Activity waveform icon to eliminate ambiguity with SSH terminal controls.

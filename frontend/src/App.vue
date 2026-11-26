@@ -34,7 +34,6 @@
       :user="currentUser"
       @nav="handleNav"
       @logout="handleLogout"
-      @toggle-activity="activityOpen = !activityOpen"
       @open-theme="themeModalOpen = true"
     />
 
@@ -202,10 +201,6 @@
       </div>
     </div>
 
-    <ActivityConsoleDrawer
-      :is-open="activityOpen"
-      @close="activityOpen = false"
-    />
     <ThemeCustomizerModal
       :is-open="themeModalOpen"
       @close="themeModalOpen = false"
@@ -219,7 +214,6 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useI18n } from './i18n'
 import Navbar from './components/Navbar.vue'
-import ActivityConsoleDrawer from './components/common/ActivityConsoleDrawer.vue'
 import ThemeCustomizerModal from './components/common/ThemeCustomizerModal.vue'
 import NocToastContainer from './components/common/NocToastContainer.vue'
 import NocConfirmModal from './components/common/NocConfirmModal.vue'
@@ -237,7 +231,6 @@ const activeTab = ref('dashboard') // 'dashboard', 'assets', 'audit', 'settings'
 const workspaceServerId = ref(null)
 const isWorkspaceOpen = ref(false)
 const isWorkspaceMinimized = ref(false)
-const activityOpen = ref(false)
 const themeModalOpen = ref(false)
 
 function onServerUpdated(updated) {
@@ -480,13 +473,6 @@ async function fetchProblems() {
 
 function handleGlobalKeydown(e) {
   if (!currentUser.value) return
-  if (e.ctrlKey && e.key === '`') {
-    if (currentUser.value?.is_master_admin || currentUser.value?.permissions?.can_audit) {
-      e.preventDefault()
-      activityOpen.value = !activityOpen.value
-    }
-    return
-  }
   // If modal is open, let modal handle hotkeys
   if (isWorkspaceOpen.value && !isWorkspaceMinimized.value) return
 
