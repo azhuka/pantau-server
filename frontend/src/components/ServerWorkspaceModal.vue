@@ -503,6 +503,7 @@
             :firewall-data="firewallData"
             :is-online="Boolean(server?.is_online)"
             :is-viewer="currentUser?.role === 'viewer'"
+            :busy="actionBusy"
             @firewall-action="handleGenericAction"
           />
           <WorkspaceAccountsTab
@@ -878,6 +879,7 @@ const showHostDropdown = ref(false)
 const hostSearchQuery = ref('')
 
 const loading = ref(false)
+const actionBusy = ref(false)
 const server = ref(null)
 const activeSubTab = ref('overview')
 const initialLogSource = ref('')
@@ -1730,6 +1732,7 @@ async function handleWorkspaceProblemAck(problemId) {
 
 async function dispatchAction(action, params) {
   const token = localStorage.getItem('pantau_token')
+  actionBusy.value = true
   try {
     const res = await fetch(`/api/servers/${currentServerId.value}/actions`, {
       method: 'POST',
@@ -1743,10 +1746,16 @@ async function dispatchAction(action, params) {
     if (data.ok) {
       toast.success(data.message)
       loadServerData()
+      // Re-poll after agent executes async command so UI reflects updated state automatically
+      setTimeout(() => { if (props.isOpen) loadServerData() }, 1600)
+      setTimeout(() => { if (props.isOpen) loadServerData(); actionBusy.value = false }, 3400)
+      setTimeout(() => { if (props.isOpen) loadServerData() }, 5500)
     } else {
+      actionBusy.value = false
       toast.error(t('msg_failed') + (data.detail || 'Error'))
     }
   } catch (err) {
+    actionBusy.value = false
     toast.error(t('msg_conn_failed') + err.message)
   }
 }

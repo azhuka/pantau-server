@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.96
+
+Perbaikan jeda pembaruan status pasca-aksi Firewall: api_command_result kini langsung menyimpan snapshot firewall dari agen, tombol aksi menampilkan status Enabling/Processing (terkunci sementara), dan dispatchAction melakukan re-poll otomatis pada 1.6s, 3.4s, dan 5.5s.
+
+
 ### Versi v0.1.95
 
 Perbaikan bug kritis Firewall: penyelarasan aksi ufw_*/firewall_* di servers.py & agent_pantau.py, dukungan parameter ip tunggal dan ips list pada block_ip/unblock_ip di agent_pantau.py, serta pembaruan WorkspaceFirewallTab.vue dengan 3 kartu KPI, tabel Firewall Rules, dan tabel Blocked IP Blacklist (iptables DROP) lengkap dengan Unblock & salin IP.

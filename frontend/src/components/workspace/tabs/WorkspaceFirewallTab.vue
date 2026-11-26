@@ -17,32 +17,32 @@
           <template v-if="isActive">
             <button
               type="button"
-              :disabled="!isOnline"
+              :disabled="!isOnline || busy"
               @click="$emit('firewall-action', { action: 'firewall_reload', params: {} })"
               class="px-2.5 py-1 rounded bg-cyan-950 text-cyan-300 border border-cyan-700/60 hover:bg-cyan-900 text-xs font-bold transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-              :title="isOnline ? 'Reload firewall rules without dropping active connections' : 'Server offline — action disabled'"
+              :title="busy ? 'Applying firewall command...' : (isOnline ? 'Reload firewall rules without dropping active connections' : 'Server offline — action disabled')"
             >
-              Reload Rules
+              {{ busy ? 'Processing...' : 'Reload Rules' }}
             </button>
             <button
               type="button"
-              :disabled="!isOnline"
+              :disabled="!isOnline || busy"
               @click="toggleUfw"
               class="px-2.5 py-1 rounded bg-amber-950 text-amber-300 border border-amber-700/60 hover:bg-amber-900 text-xs font-bold transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-              :title="isOnline ? 'Disable UFW firewall' : 'Server offline — action disabled'"
+              :title="busy ? 'Applying firewall command...' : (isOnline ? 'Disable UFW firewall' : 'Server offline — action disabled')"
             >
-              Disable Firewall
+              {{ busy ? 'Processing...' : 'Disable Firewall' }}
             </button>
           </template>
           <button
             v-else
             type="button"
-            :disabled="!isOnline"
+            :disabled="!isOnline || busy"
             @click="toggleUfw"
             class="px-2.5 py-1 rounded bg-emerald-950 text-emerald-300 border border-emerald-700/60 hover:bg-emerald-900 text-xs font-bold transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-            :title="isOnline ? 'Enable UFW firewall (auto-allows SSH & port 8400)' : 'Server offline — action disabled'"
+            :title="busy ? 'Applying firewall command...' : (isOnline ? 'Enable UFW firewall (auto-allows SSH & port 8400)' : 'Server offline — action disabled')"
           >
-            Enable Firewall
+            {{ busy ? 'Enabling...' : 'Enable Firewall' }}
           </button>
         </div>
       </div>
@@ -176,6 +176,7 @@ const props = defineProps({
   firewallData: { type: Object, default: () => ({ status: 'unknown', backend: 'ufw', rules: [], blocked_ips: [] }) },
   isOnline: { type: Boolean, default: true },
   isViewer: { type: Boolean, default: false },
+  busy: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['firewall-action'])

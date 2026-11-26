@@ -171,6 +171,11 @@ def api_command_result(
     cmd.status = "success" if body.get("status") in ("success", "executed") else "failed"
     cmd.result = json.dumps(body.get("result", "")) if isinstance(body.get("result"), (dict, list)) else str(body.get("result", ""))
     cmd.executed_at = datetime.utcnow()
+    if isinstance(body.get("firewall"), dict):
+        extras = db.query(ServerExtras).filter(ServerExtras.server_id == server.id).first()
+        if extras:
+            extras.firewall = json.dumps(body["firewall"], ensure_ascii=False)
+            extras.updated_at = cmd.executed_at
     db.commit()
     return {"ok": True}
 
