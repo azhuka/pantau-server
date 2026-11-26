@@ -363,21 +363,26 @@
       <!-- Active Background OS Package Task Banner -->
       <div
         v-if="aptTaskRunning && !aptRunnerOpen"
-        class="bg-cyan-950/60 border-b border-cyan-500/40 px-4 py-2 flex items-center justify-between gap-3 text-xs font-mono shrink-0"
+        class="bg-cyan-950/70 border-b border-cyan-500/50 px-4 py-2 flex items-center justify-between gap-3 text-xs font-mono shrink-0"
       >
         <div class="flex items-center gap-2 text-cyan-200 min-w-0">
           <svg class="w-3.5 h-3.5 text-cyan-400 animate-spin shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>
           </svg>
-          <span class="truncate">OS package task ({{ aptTaskUnit }}) is running in the background...</span>
+          <span class="truncate">{{ aptTaskLabel }} is running in the background...</span>
         </div>
-        <button
-          type="button"
-          @click="aptRunnerOpen = true"
-          class="px-2.5 py-1 rounded bg-cyan-800/80 hover:bg-cyan-700 text-white font-bold text-[11px] cursor-pointer shrink-0"
-        >
-          View Output
-        </button>
+        <div class="flex items-center gap-2 shrink-0">
+          <span class="px-2 py-0.5 rounded bg-gray-900/90 border border-cyan-800/60 text-cyan-300 text-[11px] tabular-nums">
+            {{ aptElapsedFormatted }}
+          </span>
+          <button
+            type="button"
+            @click="aptRunnerOpen = true"
+            class="px-2.5 py-1 rounded bg-cyan-700 hover:bg-cyan-600 text-white font-bold text-[11px] cursor-pointer transition"
+          >
+            View Output
+          </button>
+        </div>
       </div>
 
       <!-- 3. SUB-TABS NAVIGATION BAR (Tab Taktis Ramping) -->
@@ -836,6 +841,7 @@
       :task-id="aptTaskId"
       :task-unit="aptTaskUnit"
       :task-detail="aptTaskDetail"
+      :started-at="aptTaskStartedAt"
       @close="aptRunnerOpen = false"
       @completed="onAptTaskCompleted"
       @trigger-upgrade="triggerOSUpgrade"
@@ -1410,14 +1416,42 @@ const aptTaskRunning = ref(false)
 const aptTaskId = ref(null)
 const aptTaskUnit = ref('APT_UPDATE')
 const aptTaskDetail = ref('')
+const aptTaskStartedAt = ref(null)
+const aptElapsedSec = ref(0)
 let aptBgPollTimer = null
+let aptElapsedTimer = null
+
+const aptTaskLabel = computed(() => {
+  if (aptTaskUnit.value === 'APT_UPDATE') return 'Update OS Package Index'
+  if (aptTaskUnit.value === 'APT_UPGRADE' || aptTaskUnit.value === 'APT_UPGRADE_INTERACT') return 'Upgrade OS Packages'
+  if (aptTaskUnit.value === 'APT_FIX') return 'Repair OS Packages'
+  if (aptTaskUnit.value === 'PKG_UPGRADE') return `Upgrade Package: ${aptTaskDetail.value || ''}`
+  if (aptTaskUnit.value === 'PKG_CLEAN') return 'Clean Package Cache'
+  return 'OS Package Operation'
+})
+
+const aptElapsedFormatted = computed(() => {
+  const m = Math.floor(aptElapsedSec.value / 60)
+  const s = aptElapsedSec.value % 60
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+})
 
 function stopAptBgPoll() {
   if (aptBgPollTimer) { clearInterval(aptBgPollTimer); aptBgPollTimer = null }
+  if (aptElapsedTimer) { clearInterval(aptElapsedTimer); aptElapsedTimer = null }
 }
 
 function startAptBgPoll() {
   stopAptBgPoll()
+  const updateElapsed = () => {
+    if (!aptTaskStartedAt.value) return
+    const ms = typeof aptTaskStartedAt.value === 'number'
+      ? aptTaskStartedAt.value
+      : Date.parse(String(aptTaskStartedAt.value).endsWith('Z') ? aptTaskStartedAt.value : `${aptTaskStartedAt.value}Z`)
+    if (ms && !Number.isNaN(ms)) aptElapsedSec.value = Math.max(0, Math.floor((Date.now() - ms) / 1000))
+  }
+  updateElapsed()
+  aptElapsedTimer = setInterval(updateElapsed, 1000)
   aptBgPollTimer = setInterval(async () => {
     if (!aptTaskRunning.value || aptRunnerOpen.value || !aptTaskId.value) return
     const token = localStorage.getItem('pantau_token') || ''
@@ -1449,6 +1483,7 @@ async function checkActiveAptTask() {
       aptTaskId.value = data.active.id
       aptTaskUnit.value = data.active.unit
       aptTaskDetail.value = data.active.detail || ''
+      aptTaskStartedAt.value = data.active.created_at || Date.now()
       aptTaskRunning.value = true
       startAptBgPoll()
     } else {
@@ -1485,6 +1520,7 @@ async function startAptTask(unit, detail = '') {
           aptTaskId.value = activeData.active.id
           aptTaskUnit.value = activeData.active.unit
           aptTaskDetail.value = activeData.active.detail || ''
+          aptTaskStartedAt.value = activeData.active.created_at || Date.now()
           aptTaskRunning.value = true
           aptRunnerOpen.value = true
           startAptBgPoll()
@@ -1497,6 +1533,7 @@ async function startAptTask(unit, detail = '') {
     aptTaskId.value = data.id
     aptTaskUnit.value = unit
     aptTaskDetail.value = detail || ''
+    aptTaskStartedAt.value = Date.now()
     aptTaskRunning.value = true
     aptRunnerOpen.value = true
     startAptBgPoll()

@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.108
+
+Penyempurnaan workflow background task Update/Upgrade OS Packages: banner di ServerWorkspaceModal kini menampilkan nama tugas yang jelas serta timer MM:SS live, dan membuka ulang AptTaskRunnerModal tidak lagi me-reset timer ke 00:00.
+
+
 ### Versi v0.1.107
 
 Penyempurnaan lanjutan FIM: filter is_active == 1 di problem_service.py agar path kustom yang dihapus tidak menyisakan insiden, penambahan endpoint POST /{sid}/fim/{event_id}/unack, menu Actions seragam pada baris event FIM (Acknowledge/Unacknowledge, Scan Now, Rebaseline), dan pembaruan badge tab Integrity agar menampilkan jumlah anomali aktif.

@@ -86,6 +86,7 @@ const props = defineProps({
   taskId: [Number, String],
   taskUnit: { type: String, default: 'APT_UPDATE' },
   taskDetail: { type: String, default: '' },
+  startedAt: { type: [Number, String], default: null },
 })
 
 const emit = defineEmits(['close', 'completed', 'trigger-upgrade', 'trigger-fix'])
@@ -218,6 +219,13 @@ async function pollTask() {
   } catch (_) {}
 }
 
+function computeElapsed() {
+  if (!props.startedAt) return 0
+  const ms = typeof props.startedAt === 'number' ? props.startedAt : Date.parse(String(props.startedAt).endsWith('Z') ? props.startedAt : `${props.startedAt}Z`)
+  if (!ms || Number.isNaN(ms)) return 0
+  return Math.max(0, Math.floor((Date.now() - ms) / 1000))
+}
+
 watch(
   () => [props.isOpen, props.taskId],
   ([open, rid]) => {
@@ -226,14 +234,16 @@ watch(
       status.value = 'running'
       upgradableCount.value = 0
       canSuggestFix.value = false
-      elapsedSec.value = 0
+      elapsedSec.value = computeElapsed()
       lastRendered = ''
       footerNote.value = 'Dispatching command to remote agent...'
       nextTick(() => {
         initTerminal()
         pollTask()
         pollTimer = setInterval(pollTask, 800)
-        secTimer = setInterval(() => { elapsedSec.value += 1 }, 1000)
+        secTimer = setInterval(() => {
+          elapsedSec.value = props.startedAt ? computeElapsed() : (elapsedSec.value + 1)
+        }, 1000)
       })
     } else if (!open && term) {
       term.dispose()
