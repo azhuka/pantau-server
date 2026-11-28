@@ -491,7 +491,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.11.30"
+AGENT_VERSION = "4.11.31"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -4326,19 +4326,19 @@ def clear_package_cache(pkg: str = "") -> str:
                             except OSError:
                                 pass
         mb_freed = bytes_freed / (1024 * 1024)
-        return f"Cache untuk package '{pkg}' berhasil dibersihkan: {cleaned} berkas ({mb_freed:.2f} MB)."
+        return f"Cache for package '{pkg}' cleared: {cleaned} file(s) ({mb_freed:.2f} MB)."
     prefix = [] if IS_ROOT else ["/usr/bin/sudo", "-n"]
     res = _run_cmd(prefix + [PANTAU_APT_CMD, "clean"], timeout=30)
     if res and res.returncode == 0:
-        return "Seluruh cache packages sistem operasi berhasil dibersihkan."
-    return "Cache packages sistem dibersihkan."
+        return "All OS package caches cleared successfully."
+    return "OS package caches cleared."
 
 
 def get_package_logs(pkg: str, lines: int = 100) -> str:
-    """Membaca riwayat aktivitas paket spesifik dari dpkg.log, dnf.log, yum.log, atau pacman.log."""
+    """Read package activity history from dpkg.log, dnf.log, yum.log, or pacman.log."""
     pkg = (pkg or "").strip()
     if not pkg or not re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9+._-]+", pkg):
-        return "Nama package tidak valid."
+        return "Invalid package name."
     matched_lines = []
     log_candidates = (
         "/var/log/dpkg.log.1", "/var/log/dpkg.log",
@@ -4354,36 +4354,36 @@ def get_package_logs(pkg: str, lines: int = 100) -> str:
                     if f" {pkg}:" in line or f" {pkg} " in line or f": {pkg}-" in line:
                         matched_lines.append(line.strip())
         except OSError as e:
-            matched_lines.append(f"[Gagal membaca {path}: {e}]")
+            matched_lines.append(f"[Failed to read {path}: {e}]")
     if not matched_lines:
-        return f"Belum ada riwayat aktivitas log untuk package '{pkg}' pada berkas log sistem."
+        return f"No log activity history found for package '{pkg}' in system log files."
     return "\n".join(matched_lines[-lines:])
 
 
 def _apt_sudo_denied_hint(err: str) -> str:
-    """Pesan bantuan bila wrapper/sudoers belum tersedia di host klien."""
+    """Help message when wrapper/sudoers is unavailable on client host."""
     low_err = (err or "").lower()
     if "no new privileges" in low_err:
         return (
-            "[apt tidak dapat dijalankan] Konfigurasi systemd agen pada host/container ini "
-            "mengaktifkan flag 'NoNewPrivileges' atau isolasi namespace (PrivateTmp/Protect*), "
-            "sehingga kernel menolak eskalasi sudo.\n"
-            "Perbaiki (sebagai root di host ini):\n"
+            "[apt cannot run] The agent systemd configuration on this host/container "
+            "has 'NoNewPrivileges' or namespace isolation (PrivateTmp/Protect*) enabled, "
+            "blocking sudo escalation.\n"
+            "Fix (as root on this host):\n"
             "  sudo sed -i 's/^PrivateTmp=yes/PrivateTmp=no/' /etc/systemd/system/agent_pantau.service\n"
             "  sudo sed -i 's/^ProtectKernelTunables=yes/ProtectKernelTunables=no/' /etc/systemd/system/agent_pantau.service\n"
             "  sudo sed -i 's/^ProtectControlGroups=yes/ProtectControlGroups=no/' /etc/systemd/system/agent_pantau.service\n"
             "  sudo sed -i 's/^ProtectClock=yes/ProtectClock=no/' /etc/systemd/system/agent_pantau.service\n"
             "  echo 'NoNewPrivileges=no' | sudo tee -a /etc/systemd/system/agent_pantau.service\n"
             "  sudo systemctl daemon-reload && sudo systemctl restart agent_pantau.service\n"
-            "Rincian teknis:\n" + (err or "")
+            "Technical details:\n" + (err or "")
         )
     return (
-        "[apt tidak dapat dijalankan] hak sudo agen 'pantau' untuk wrapper "
-        "pantau-apt belum tersedia di host ini.\n"
-        "Perbaiki (sebagai root di host ini):\n"
-        "  cd <folder-paket-pantau>/package && sudo bash install.sh\n"
-        "(memasang ulang sudoers + wrapper pantau-apt; aman/idempotent.)\n"
-        "Rincian teknis:\n" + (err or "")
+        "[apt cannot run] sudo permission for agent 'pantau' on wrapper "
+        "pantau-apt is not configured on this host.\n"
+        "Fix (as root on this host):\n"
+        "  cd <pantau-package-dir>/package && sudo bash install.sh\n"
+        "(re-installs sudoers + pantau-apt wrapper; safe/idempotent.)\n"
+        "Technical details:\n" + (err or "")
     )
 
 
@@ -4665,7 +4665,7 @@ def _run_apt_in_thread(cfg: dict, rid: int, kind: str, detail: str = ""):
             print(f"[APT] {kind} (rid={rid}) DITOLAK: proses apt lain sedang berjalan")
             http_json_request(cfg, f"/api/logs/{rid}/result", "POST",
                               {"status": "failed",
-                               "result": "Dibatalkan: proses apt lain masih berjalan di server ini."})
+                               "result": "Cancelled: another apt process is still running on this server."})
             return
         _APT_RUNNING = True
     try:
@@ -4709,7 +4709,7 @@ def _run_apt_inner(cfg: dict, rid: int, kind: str, detail: str = ""):
                                 stdin=subprocess.PIPE, start_new_session=True)
     except OSError as e:
         proc = None
-        failed, errmsg = True, f"[gagal menjalankan apt: {e}]"
+        failed, errmsg = True, f"[failed to run apt: {e}]"
 
     if proc is not None and interactive:
         # Mode interaktif: admin yang menjawab, agen TIDAK menebak. Thread ini
@@ -4771,10 +4771,10 @@ def _run_apt_inner(cfg: dict, rid: int, kind: str, detail: str = ""):
                         note = ""
                 elif not answer and not hint_shown and _looks_like_prompt(tail):
                     hint_shown = True
-                    note = ("\n[pantau] Proses berhenti & menunggu jawaban pada prompt yang tidak "
-                            "dikenali, sehingga tidak bisa dilanjut otomatis.\n"
-                            "         Selesaikan manual di server ini:  sudo dpkg --configure -a\n"
-                            "         lalu ulangi Update OS dari Dashboard.\n")
+                    note = ("\n[pantau] Process paused waiting for input on an unrecognized prompt "
+                            "and cannot proceed automatically.\n"
+                            "         Resolve manually on this server:  sudo dpkg --configure -a\n"
+                            "         then retry OS Update from the Dashboard.\n")
                 if note:
                     output_parts.append(note)
                     raw_len += len(note)
@@ -4805,7 +4805,7 @@ def _run_apt_inner(cfg: dict, rid: int, kind: str, detail: str = ""):
 
     full = termify("".join(output_parts))
     if truncated and full:
-        note = "[catatan: output potongan awal dibuang agen karena melebihi kuota]\n\n"
+        note = "[note: initial output truncated by agent due to size limit]\n\n"
         full = note + full.strip("\n") + "\n"
     elif full:
         full = full.strip("\n")
@@ -4835,15 +4835,15 @@ def _run_apt_inner(cfg: dict, rid: int, kind: str, detail: str = ""):
         if "w: some index files failed to download" in low_full or "w: failed to fetch" in low_full or "failed to fetch" in low_full:
             has_fetch_err = True
             if "temporary failure resolving" in low_full or "could not resolve" in low_full or "no servers could be reached" in low_full:
-                fetch_err_reason = "Gagal mengunduh indeks repositori: resolusi DNS bermasalah."
+                fetch_err_reason = "Failed to download repository index: DNS resolution error."
             elif "connection refused" in low_full or "could not connect" in low_full:
-                fetch_err_reason = "Gagal mengunduh indeks repositori: koneksi jaringan ditolak / terputus."
+                fetch_err_reason = "Failed to download repository index: network connection refused / interrupted."
             else:
-                fetch_err_reason = "Sebagian atau seluruh indeks repositori gagal diunduh (periksa URL repositori/koneksi)."
+                fetch_err_reason = "Some or all repository index files failed to download (check repository URL/network)."
 
     if failed:
         result_ok = False
-        err_desc = errmsg or "Eksekusi proses apt gagal"
+        err_desc = errmsg or "apt process execution failed"
         msg = json.dumps({
             "type": kind,
             "output": (full or partial)[-APT_AGENT_OUTPUT_MAX:],
@@ -4860,8 +4860,8 @@ def _run_apt_inner(cfg: dict, rid: int, kind: str, detail: str = ""):
                 "output": full[-APT_AGENT_OUTPUT_MAX:],
                 "apt": apt,
                 "has_fetch_err": True,
-                "fetch_err_reason": fetch_err_reason or "Sebagian indeks repositori gagal diunduh.",
-                "warning": fetch_err_reason or "Sebagian indeks repositori gagal diunduh.",
+                "fetch_err_reason": fetch_err_reason or "Some repository index files failed to download.",
+                "warning": fetch_err_reason or "Some repository index files failed to download.",
                 "rc": proc.returncode,
             })
         elif proc is not None and proc.returncode in (-15, 143) and ("restarting services" in low_full or "scanning processes" in low_full or (apt and apt.get("upgradable") == 0)):
@@ -4872,7 +4872,7 @@ def _run_apt_inner(cfg: dict, rid: int, kind: str, detail: str = ""):
                 "type": kind,
                 "output": full[-APT_AGENT_OUTPUT_MAX:],
                 "apt": apt,
-                "warning": "Pembaruan paket selesai sukses. Layanan sistem telah disegarkan oleh OS.",
+                "warning": "Package update completed successfully. System services were refreshed by OS.",
                 "rc": 0,
             })
         else:
@@ -4880,7 +4880,7 @@ def _run_apt_inner(cfg: dict, rid: int, kind: str, detail: str = ""):
             if "no new privileges" in low_full or "permission denied" in low_full or "a password is required" in low_full or proc.returncode in (126, 127):
                 err_desc = _apt_sudo_denied_hint(full or f"rc={proc.returncode}")
             else:
-                err_desc = f"Proses apt selesai dengan kode kegagalan (rc={proc.returncode})"
+                err_desc = f"apt process exited with failure code (rc={proc.returncode})"
             msg = json.dumps({
                 "type": kind,
                 "output": full[-APT_AGENT_OUTPUT_MAX:],
@@ -4988,7 +4988,7 @@ def _run_shell_inner(cfg: dict, rid: int) -> None:
     except OSError as e:
         http_json_request(cfg, f"/api/logs/{rid}/result", "POST",
                           {"status": "failed",
-                           "result": f"[gagal membuka shell: {e}]"})
+                           "result": f"[failed to open shell: {e}]"})
         return
 
     # Admin yang mengetik; agen tidak pernah menyuntik perintah ke shell.
@@ -5064,7 +5064,7 @@ def _run_shell_inner(cfg: dict, rid: int) -> None:
 
     full = termify("".join(output_parts))
     if truncated and full:
-        full = ("[catatan: output awal dibuang agen karena melebihi kuota]\n\n"
+        full = ("[note: initial output truncated by agent due to size limit]\n\n"
                 + full.strip("\n") + "\n")
     elif full:
         full = full.strip("\n")
@@ -5076,13 +5076,13 @@ def _run_shell_inner(cfg: dict, rid: int) -> None:
 
     is_ok = True
     if closed:
-        msg = (full + "\n\n[catatan: sesi shell ditutup otomatis karena "
-                      "melewati batas waktu 8 jam]").strip("\n")
+        msg = (full + "\n\n[note: shell session closed automatically after "
+                      "exceeding 8-hour limit]").strip("\n")
     elif proc.returncode not in (0, None):
         is_ok = False
-        msg = _shell_sudo_denied_hint(full or f"shell berhenti rc={proc.returncode}")
+        msg = _shell_sudo_denied_hint(full or f"shell exited rc={proc.returncode}")
     else:
-        msg = full or "[shell ditutup tanpa output]"
+        msg = full or "[shell closed with no output]"
 
     print(f"[SHELL] rid={rid} selesai rc={proc.returncode} ({len(msg)} byte)")
     http_json_request(cfg, f"/api/logs/{rid}/result", "POST",
@@ -5095,7 +5095,7 @@ def _run_shell_in_thread(cfg: dict, rid: int) -> None:
         if _SHELL_RIDS:
             http_json_request(cfg, f"/api/logs/{rid}/result", "POST",
                               {"status": "failed",
-                               "result": "Sesi shell lain masih terbuka di server ini."})
+                               "result": "Another shell session is still open on this server."})
             return
         _SHELL_RIDS.add(rid)
     try:
@@ -5108,7 +5108,7 @@ def _run_shell_in_thread(cfg: dict, rid: int) -> None:
 def fetch_log_lines(unit: str, lines: int) -> str:
     """Ambil baris log layanan secara dinamis dan agnostik."""
     if not unit:
-        return "[Target log tidak ditentukan]"
+        return "[Log target not specified]"
 
     # 1. Jika unit adalah path berkas fisik absolut langsung
     if unit.startswith("/") and os.path.isfile(unit):
@@ -5126,23 +5126,23 @@ def fetch_log_lines(unit: str, lines: int) -> str:
              "-n", str(lines), "--no-pager", "-o", "short-iso"],
             timeout=30,
         )
-        return (res.stdout.rstrip() if res else "") or "[log autentikasi tidak ditemukan]"
+        return (res.stdout.rstrip() if res else "") or "[Authentication log not found]"
 
     if u_upper == "SYSLOG":
         if os.path.isfile(SYSLOG_FILE):
             return _tail_file(SYSLOG_FILE, lines)
         res = _run_cmd(["journalctl", "-n", str(lines), "--no-pager", "-o", "short-iso"], timeout=30)
-        return (res.stdout.rstrip() if res else "") or f"[file {SYSLOG_FILE} tidak ditemukan]"
+        return (res.stdout.rstrip() if res else "") or f"[File {SYSLOG_FILE} not found]"
 
     if u_upper in ("DPKG", "PKG_LOGS", "DPKG_LOG"):
         for cand in ("/var/log/dpkg.log", "/var/log/apt/history.log", "/var/log/dnf.log", "/var/log/yum.log", "/var/log/pacman.log"):
             if os.path.isfile(cand):
                 return _tail_file(cand, lines)
-        return "[Berkas riwayat paket sistem tidak ditemukan di server ini]"
+        return "[System package history log file not found on this host]"
 
     if u_upper in ("SYSTEM_ERRORS", "JOURNAL_ERRORS"):
         res = _run_cmd(["journalctl", "-p", "3", "-n", str(lines), "-r", "--no-pager", "-o", "short-iso"], timeout=20)
-        return (res.stdout.rstrip() if res else "") or "[tidak ada catatan galat kritis sistem]"
+        return (res.stdout.rstrip() if res else "") or "[No critical system error entries found]"
 
     # 3. Pencarian Berkas Log dari Katalog Penemuan Dinamis
     for log_item in collect_available_logs():
@@ -5206,7 +5206,7 @@ def fetch_log_lines(unit: str, lines: int) -> str:
     if out:
         return out
     msg = (res.stderr or "").strip() if res else ""
-    return msg or f"[Log untuk {unit} tidak ditemukan di server ini]"
+    return msg or f"[Logs for {unit} not found on this host]"
 
 
 IGNORED_SHELL_BASE_COMMANDS = {
@@ -5507,35 +5507,35 @@ def collect_user_logins(max_events: int = 100, target_user: str | None = None) -
                                 "ts": ts,
                                 "user": u,
                                 "type": "sudo_gagal",
-                                "from": "(lokal)",
+                                "from": "(local)",
                                 "tty": tty,
                                 "pwd": pwd_val,
                                 "target_user": "root",
-                                "alert": "Kata Sandi Salah",
-                                "method": "Percobaan Otentikasi Ditolak",
+                                "alert": "Incorrect Password",
+                                "method": "Authentication Attempt Rejected",
                             })
                         continue
 
                     # 2. Tangkap eksekusi perintah sudo atau alert sudo terminal
                     m = p_sudo.search(line)
                     if m:
-                        tty = m.group("tty") or "(lokal)"
+                        tty = m.group("tty") or "(local)"
                         pwd_val = m.group("pwd") or ""
                         target_val = m.group("target") or "root"
-                        cmd_val = (m.group("cmd") or "").strip() or "Otentikasi Sudo Gagal"
+                        cmd_val = (m.group("cmd") or "").strip() or "Sudo Authentication Failed"
                         alert_raw = (m.group("alert") or "").strip().rstrip(";")
                         is_failed = bool(alert_raw and ("incorrect" in alert_raw.lower() or "not in sudoers" in alert_raw.lower() or "failure" in alert_raw.lower() or "failed" in alert_raw.lower()))
                         ev_type = "sudo_gagal" if is_failed else "sudo"
                         clean_alert = alert_raw
                         if is_failed:
                             if "not in sudoers" in alert_raw.lower():
-                                clean_alert = "Pengguna Tidak Berhak Sudo"
+                                clean_alert = "User Not Authorized for Sudo"
                             elif "incorrect" in alert_raw.lower():
-                                clean_alert = "Kata Sandi Salah"
+                                clean_alert = "Incorrect Password"
                             elif "conversation" in alert_raw.lower():
-                                clean_alert = "Sesi Prompt Dibatalkan"
+                                clean_alert = "Prompt Session Cancelled"
                             else:
-                                clean_alert = "Kata Sandi Salah"
+                                clean_alert = "Incorrect Password"
                         sudo_key = (target_user, ts, tty, cmd_val, ev_type)
                         if sudo_key not in seen_sudo:
                             seen_sudo.add(sudo_key)
@@ -5543,7 +5543,7 @@ def collect_user_logins(max_events: int = 100, target_user: str | None = None) -
                                 "ts": ts,
                                 "user": target_user,
                                 "type": ev_type,
-                                "from": "(lokal)",
+                                "from": "(local)",
                                 "tty": tty,
                                 "pwd": pwd_val,
                                 "target_user": target_val,
@@ -5556,8 +5556,8 @@ def collect_user_logins(max_events: int = 100, target_user: str | None = None) -
     # 4. Kueri Otorisasi Administratif Polkit (Perintah sistem tanpa sudo, e.g. systemctl)
     try:
         polkit_action_map = {
-            "org.freedesktop.systemd1.manage-units": "systemctl (Kontrol Unit Layanan)",
-            "org.freedesktop.systemd1.manage-unit-files": "systemctl (Konfigurasi Unit File)",
+            "org.freedesktop.systemd1.manage-units": "systemctl (Service Unit Control)",
+            "org.freedesktop.systemd1.manage-unit-files": "systemctl (Unit File Configuration)",
             "org.freedesktop.systemd1.reload-daemon": "systemctl daemon-reload",
             "org.freedesktop.login1.reboot": "systemctl reboot",
             "org.freedesktop.login1.reboot-multiple-sessions": "systemctl reboot",
@@ -5596,7 +5596,7 @@ def collect_user_logins(max_events: int = 100, target_user: str | None = None) -
                     action = g.get("action") or ""
                     cmd_label = polkit_action_map.get(action, action.split(".")[-1])
                     ev_type = "polkit_gagal" if is_fail else "polkit"
-                    alert_msg = "Otorisasi Ditolak / Dibatalkan" if is_fail else ""
+                    alert_msg = "Authorization Denied / Cancelled" if is_fail else ""
                     pk_key = (u, ts, action, ev_type)
                     if pk_key not in seen_sudo:
                         seen_sudo.add(pk_key)
@@ -7085,7 +7085,7 @@ def collect_fim(force: bool = False) -> dict:
                     "path": p,
                     "event_type": "DELETED",
                     "severity": ev_sev,
-                    "details": "Objek berkas atau direktori telah dihapus dari sistem",
+                    "details": "File or directory object deleted from system",
                     "detected_at": now_iso,
                 })
                 last_state[p] = {"exists": False, "sha256": "", "files": {}}
@@ -7120,7 +7120,7 @@ def collect_fim(force: bool = False) -> dict:
                             "path": p,
                             "event_type": "DELETED",
                             "severity": ev_sev,
-                            "details": f"File {disp_name} dihapus dari direktori",
+                            "details": f"File {disp_name} deleted from directory",
                             "detected_at": now_iso,
                         })
 
@@ -7132,7 +7132,7 @@ def collect_fim(force: bool = False) -> dict:
                             "path": p,
                             "event_type": "CREATED",
                             "severity": ev_sev,
-                            "details": f"File {disp_name} baru ditambahkan ke direktori",
+                            "details": f"New file {disp_name} added to directory",
                             "detected_at": now_iso,
                         })
 
@@ -7156,7 +7156,7 @@ def collect_fim(force: bool = False) -> dict:
                                 "path": p,
                                 "event_type": "PERMISSION_CHANGED",
                                 "severity": "warning",
-                                "details": f"Hak akses file {disp_name} berubah ({last_perm_f} -> {cur_perm_f})",
+                                "details": f"File permissions changed for {disp_name} ({last_perm_f} -> {cur_perm_f})",
                                 "detected_at": now_iso,
                             })
                         elif cur_og_f and last_og_f and cur_og_f != last_og_f and cur_og_f != ":" and last_og_f != ":":
@@ -7164,7 +7164,7 @@ def collect_fim(force: bool = False) -> dict:
                                 "path": p,
                                 "event_type": "OWNERSHIP_CHANGED",
                                 "severity": "warning",
-                                "details": f"Kepemilikan file {disp_name} berubah ({last_og_f} -> {cur_og_f})",
+                                "details": f"File ownership changed for {disp_name} ({last_og_f} -> {cur_og_f})",
                                 "detected_at": now_iso,
                             })
                         elif not is_vol:
@@ -7173,7 +7173,7 @@ def collect_fim(force: bool = False) -> dict:
                                     "path": p,
                                     "event_type": "MODIFIED",
                                     "severity": ev_sev,
-                                    "details": f"Modifikasi isi/ukuran file {disp_name} terdeteksi",
+                                    "details": f"Content/size modification detected for {disp_name}",
                                     "detected_at": now_iso,
                                 })
 
@@ -7203,14 +7203,14 @@ def collect_fim(force: bool = False) -> dict:
                 diffs_single = []
                 ev_type_single = "MODIFIED"
                 if cur_perm and last_p and cur_perm != last_p:
-                    diffs_single.append(f"Hak akses berkas berubah ({last_p} -> {cur_perm})")
+                    diffs_single.append(f"File permissions changed ({last_p} -> {cur_perm})")
                     ev_type_single = "PERMISSION_CHANGED"
                 elif cur_og and last_og and cur_og != last_og:
-                    diffs_single.append(f"Kepemilikan berkas berubah ({last_og} -> {cur_og})")
+                    diffs_single.append(f"File ownership changed ({last_og} -> {cur_og})")
                     ev_type_single = "OWNERSHIP_CHANGED"
                 elif not is_vol_single:
                     if (cur_hash and last_h and cur_hash != last_h) or (size_b != last_sz) or (cur_mtime != last_m):
-                        diffs_single.append("Modifikasi isi/ukuran berkas terdeteksi")
+                        diffs_single.append("File content/size modification detected")
                         ev_type_single = "MODIFIED"
 
                 if diffs_single:
@@ -7420,21 +7420,21 @@ def collect_available_logs() -> list[dict]:
     # 1. Log Keamanan & Sistem Baku
     auth_file = AUTH_FILE if os.path.isfile(AUTH_FILE) else ("/var/log/secure" if os.path.isfile("/var/log/secure") else "")
     if auth_file:
-        _add_log("AUTH", "Keamanan & Sistem", "Log Autentikasi SSH & Sudo", auth_file)
+        _add_log("AUTH", "Security & System", "SSH & Sudo Authentication Log", auth_file)
 
     syslog_file = SYSLOG_FILE if os.path.isfile(SYSLOG_FILE) else ("/var/log/messages" if os.path.isfile("/var/log/messages") else "")
     if syslog_file:
-        _add_log("SYSLOG", "Keamanan & Sistem", "Syslog Sistem", syslog_file)
+        _add_log("SYSLOG", "Security & System", "System Syslog", syslog_file)
 
     for pkg_cand, pkg_name in [
-        ("/var/log/dpkg.log", "Riwayat Paket (dpkg.log)"),
-        ("/var/log/apt/history.log", "Riwayat APT (history.log)"),
-        ("/var/log/dnf.log", "Riwayat DNF (dnf.log)"),
-        ("/var/log/yum.log", "Riwayat YUM (yum.log)"),
-        ("/var/log/pacman.log", "Riwayat Pacman (pacman.log)"),
+        ("/var/log/dpkg.log", "Package History (dpkg.log)"),
+        ("/var/log/apt/history.log", "APT History (history.log)"),
+        ("/var/log/dnf.log", "DNF History (dnf.log)"),
+        ("/var/log/yum.log", "YUM History (yum.log)"),
+        ("/var/log/pacman.log", "Pacman History (pacman.log)"),
     ]:
         if os.path.isfile(pkg_cand):
-            _add_log("DPKG", "Keamanan & Sistem", pkg_name, pkg_cand)
+            _add_log("DPKG", "Security & System", pkg_name, pkg_cand)
             break
 
     # 2. Penemuan Dinamis Berkas Log di /var/log/* (Web Server, Database, Layanan Aplikasi)
@@ -7450,7 +7450,7 @@ def collect_available_logs() -> list[dict]:
                     elif any(m in sub_name for m in ("mail", "postfix", "exim")):
                         grp = "Mail Server"
                     else:
-                        grp = f"Layanan ({entry.name})"
+                        grp = f"Service ({entry.name})"
 
                     try:
                         for sub_f in os.scandir(entry.path):
@@ -7467,7 +7467,7 @@ def collect_available_logs() -> list[dict]:
         except Exception:
             pass
 
-    avail.append({"id": "SYSTEM_ERRORS", "group": "Keamanan & Sistem", "name": "Jurnal Galat Kritis Sistem", "desc": "journalctl -p 0..3"})
+    avail.append({"id": "SYSTEM_ERRORS", "group": "Security & System", "name": "Critical System Error Journal", "desc": "journalctl -p 0..3"})
 
     _avail_logs_cache["at"] = now
     _avail_logs_cache["data"] = avail
@@ -9106,7 +9106,7 @@ def action_storage_triage(mount_path: str = "/") -> None:
         reclaimables.append({
             "key": "journal",
             "name": "Systemd Journal Logs",
-            "description": "Log runtime systemd yang diarsip. Dapat dipangkas hingga batas 200MB dengan aman.",
+            "description": "Archived systemd runtime logs. Safe to vacuum down to 200MB.",
             "estimated_bytes": max(0, journal_bytes - (200 * 1024 * 1024)),
             "human_size": journal_human,
             "command": "journalctl --vacuum-size=200M",
@@ -9131,7 +9131,7 @@ def action_storage_triage(mount_path: str = "/") -> None:
         reclaimables.append({
             "key": "apt_cache",
             "name": "APT Package Cache",
-            "description": "Berkas installer .deb sisa unduhan instalasi/pembaruan paket OS.",
+            "description": "Cached .deb installer packages from OS updates/installations.",
             "estimated_bytes": apt_bytes,
             "human_size": _fmt_bytes(apt_bytes),
             "command": "apt-get clean",
@@ -9156,8 +9156,8 @@ def action_storage_triage(mount_path: str = "/") -> None:
     if rotated_bytes > 0:
         reclaimables.append({
             "key": "rotated_logs",
-            "name": "Arsip Rotasi Log Usang",
-            "description": "Berkas log lawas yang telah dikompresi (.gz / .1) di /var/log.",
+            "name": "Rotated Log Archives",
+            "description": "Compressed rotated log archives (.gz / .1) in /var/log.",
             "estimated_bytes": rotated_bytes,
             "human_size": _fmt_bytes(rotated_bytes),
             "command": "find /var/log -type f ( -name '*.gz' -o -name '*.[0-9].gz' -o -name '*.[0-9]' ) -delete",
@@ -9189,15 +9189,15 @@ def action_storage_triage(mount_path: str = "/") -> None:
 
 def action_truncate_log(path: str) -> None:
     if not path:
-        err_exit("Path file harus ditentukan")
+        err_exit("File path is required")
     abs_p = os.path.abspath(path)
 
     # Validasi keamanan sistem
     check_path_protection(abs_p, for_write=True)
     if not os.path.exists(abs_p):
-        err_exit(f"Berkas '{path}' tidak ditemukan")
+        err_exit(f"File '{path}' not found")
     if not os.path.isfile(abs_p):
-        err_exit(f"Target '{path}' bukan sebuah berkas reguler (dilarang truncate direktori/device)")
+        err_exit(f"Target '{path}' is not a regular file (truncating directories/devices is forbidden)")
 
     # Tolak berkas database & binari penting
     lower_p = abs_p.lower()
@@ -9210,11 +9210,11 @@ def action_truncate_log(path: str) -> None:
     ]
     for ext in db_exts:
         if lower_p.endswith(ext):
-            err_exit(f"Aksi ditolak: Berkas '{path}' memiliki ekstensi terproteksi ({ext}) dan tidak boleh di-truncate")
+            err_exit(f"Action denied: File '{path}' has a protected extension ({ext}) and cannot be truncated")
 
     for db_dir in ["/mysql/", "/mariadb/", "/postgresql/", "/postgres/", "/redis/", "/mongodb/", "/docker/volumes/"]:
         if db_dir in lower_p:
-            err_exit(f"Aksi ditolak: Berkas '{path}' berada di dalam direktori penyimpanan database")
+            err_exit(f"Action denied: File '{path}' resides inside a database storage directory")
 
     try:
         prev_size = os.stat(abs_p).st_size
@@ -9227,28 +9227,28 @@ def action_truncate_log(path: str) -> None:
             "freed_human": _fmt_bytes(prev_size),
         })
     except Exception as e:
-        err_exit(f"Gagal mengosongkan berkas log '{path}': {e}")
+        err_exit(f"Failed to truncate log file '{path}': {e}")
 
 
 def action_storage_reclaim(target: str) -> None:
     if not target:
-        err_exit("Target reclaim harus ditentukan")
+        err_exit("Reclaim target must be specified")
 
     if target == "journal":
         try:
             p = subprocess.run(["journalctl", "--vacuum-size=200M"], capture_output=True, text=True, timeout=20)
-            out = p.stdout.strip() or p.stderr.strip() or "Vacuum journalctl berhasil."
+            out = p.stdout.strip() or p.stderr.strip() or "Journalctl vacuum completed."
             ok_exit({"target": target, "success": True, "output": out})
         except Exception as e:
-            err_exit(f"Gagal vacuum journal: {e}")
+            err_exit(f"Failed to vacuum journal: {e}")
 
     elif target == "apt_cache":
         try:
             p = subprocess.run(["apt-get", "clean"], capture_output=True, text=True, timeout=20)
-            out = p.stdout.strip() or p.stderr.strip() or "Cache APT berhasil dibersihkan (apt-get clean)."
+            out = p.stdout.strip() or p.stderr.strip() or "APT cache cleared (apt-get clean)."
             ok_exit({"target": target, "success": True, "output": out})
         except Exception as e:
-            err_exit(f"Gagal membersihkan cache APT: {e}")
+            err_exit(f"Failed to clear APT cache: {e}")
 
     elif target == "rotated_logs":
         try:
@@ -9265,19 +9265,19 @@ def action_storage_reclaim(target: str) -> None:
                             removed_count += 1
                         except Exception:
                             pass
-            out = f"Berhasil menghapus {removed_count} berkas arsip log lama, membebaskan {_fmt_bytes(freed_bytes)} ruang disk."
+            out = f"Removed {removed_count} old log archive(s), freeing {_fmt_bytes(freed_bytes)} of disk space."
             ok_exit({"target": target, "success": True, "output": out, "freed_bytes": freed_bytes})
         except Exception as e:
-            err_exit(f"Gagal menghapus arsip log: {e}")
+            err_exit(f"Failed to remove log archives: {e}")
 
     else:
-        err_exit(f"Target reclaim tidak dikenal: '{target}'")
+        err_exit(f"Unknown reclaim target: '{target}'")
 
 
 def action_duplicate(source_path: str, target_name: str = "") -> None:
-    """Kloning lokal aman berkas atau direktori (ADR-0028)."""
+    """Safe local file or directory clone (ADR-0028)."""
     if not source_path or not os.path.exists(source_path):
-        err_exit(f"Sumber berkas/direktori tidak ditemukan: '{source_path}'")
+        err_exit(f"Source file/directory not found: '{source_path}'")
     parent_dir = os.path.dirname(os.path.abspath(source_path))
     if not target_name:
         now_str = datetime.now().strftime("%Y%m%d%H%M%S")
@@ -9290,13 +9290,13 @@ def action_duplicate(source_path: str, target_name: str = "") -> None:
 
     target_name = os.path.basename(target_name.strip())
     if not target_name:
-        err_exit("Nama target duplikasi tidak valid")
+        err_exit("Invalid duplicate target name")
 
     target_path = os.path.join(parent_dir, target_name)
     if os.path.exists(target_path):
-        err_exit(f"Target berkas/direktori sudah ada: '{target_path}'")
+        err_exit(f"Target file/directory already exists: '{target_path}'")
 
-    # Disk Space Safety Check (ADR-0028): periksa kapasitas sisa partisi + safety buffer 100 MB
+    # Disk Space Safety Check (ADR-0028): check remaining partition space + 100 MB safety buffer
     src_bytes = 0
     try:
         vfs = os.statvfs(parent_dir)
@@ -9311,14 +9311,14 @@ def action_duplicate(source_path: str, target_name: str = "") -> None:
                 src_bytes = 10 * 1024 * 1024
         SAFETY_BUFFER = 100 * 1024 * 1024
         if free_bytes < (src_bytes + SAFETY_BUFFER):
-            err_exit(f"Kapasitas sisa partisi tidak mencukupi (tersedia: {free_bytes // 1048576} MB, dibutuhkan: {(src_bytes + SAFETY_BUFFER) // 1048576} MB termasuk buffer 100MB)")
+            err_exit(f"Insufficient partition free space (available: {free_bytes // 1048576} MB, required: {(src_bytes + SAFETY_BUFFER) // 1048576} MB including 100MB buffer)")
     except Exception:
         pass
 
     cmd = ["cp", "-a", "--", source_path, target_path]
     res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     if res.returncode != 0:
-        err_exit(f"Gagal melakukan duplikasi: {res.stderr.strip() or 'Unknown error'}")
+        err_exit(f"Failed to duplicate: {res.stderr.strip() or 'Unknown error'}")
 
     ok_exit({"target_path": target_path, "target_name": target_name, "source_size": src_bytes})
 
@@ -9575,7 +9575,7 @@ def poll_log_requests(cfg: dict):
         http_json_request(cfg, f"/api/logs/{rid}/status", "POST", {"status": "executing"})
 
         if not re.fullmatch(r"[A-Za-z0-9@_.:+-]{1,100}", unit):
-            result = {"status": "failed", "result": "Nama unit tidak valid"}
+            result = {"status": "failed", "result": "Invalid unit name"}
         elif unit in ("APT_UPDATE", "APT_UPGRADE", "APT_UPGRADE_INTERACT", "APT_DIST_UPGRADE", "APT_FIX", "PKG_UPGRADE", "PKG_CLEAN"):
             detail_val = str(req.get("detail", "") or "")
             threading.Thread(
@@ -9587,27 +9587,27 @@ def poll_log_requests(cfg: dict):
                 pkgs = collect_installed_packages()
                 result = {"status": "success", "result": json.dumps(pkgs)}
             except Exception as e:
-                result = {"status": "failed", "result": f"Gagal membaca daftar packages: {e}"}
+                result = {"status": "failed", "result": f"Failed to read package list: {e}"}
         elif unit == "SYSTEMD_LIST":
             try:
                 units = collect_systemd_units()
                 result = {"status": "success", "result": json.dumps(units)}
             except Exception as e:
-                result = {"status": "failed", "result": f"Gagal membaca unit systemd: {e}"}
+                result = {"status": "failed", "result": f"Failed to read systemd units: {e}"}
         elif unit == "PKG_CLEAR_CACHE":
             try:
                 pkg_name = str(req.get("detail", "") or "").strip()
                 res_msg = clear_package_cache(pkg_name)
                 result = {"status": "success", "result": res_msg}
             except Exception as e:
-                result = {"status": "failed", "result": f"Gagal membersihkan cache packages: {e}"}
+                result = {"status": "failed", "result": f"Failed to clear package cache: {e}"}
         elif unit == "PKG_LOGS":
             try:
                 pkg_name = str(req.get("detail", "") or "").strip()
                 log_out = get_package_logs(pkg_name, lines)
                 result = {"status": "success", "result": log_out}
             except Exception as e:
-                result = {"status": "failed", "result": f"Gagal membaca log package: {e}"}
+                result = {"status": "failed", "result": f"Failed to read package logs: {e}"}
         elif unit == "SHELL":
             # Terminal Bawaan: shell root interaktif milik admin dashboard.
             threading.Thread(
@@ -9792,7 +9792,7 @@ def _run_terminal_session(cfg: dict, session_id: str) -> None:
             cfg,
             f"/api/agent/terminal/{session_id}/stdout",
             method="POST",
-            data={"chunk": f"\r\n[Gagal membuka terminal: {e}]\r\n"},
+            data={"chunk": f"\r\n[Failed to open terminal: {e}]\r\n"},
             timeout=5,
         )
         http_json_request(cfg, f"/api/agent/terminal/{session_id}/close", method="POST", timeout=5)

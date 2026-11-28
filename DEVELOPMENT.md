@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.116
+
+### v0.1.116 — Standardisasi Total Output Agen ke Bahasa Inggris (Agent v4.11.31)\n- **Agen v4.11.31 ()**: Menerjemahkan seluruh sisa output Bahasa Indonesia pada `get_package_logs`, `clear_package_cache`, `_run_apt_inner`, `fetch_log_lines`, `collect_available_logs`, `collect_fim`, `pantau-file`, dan error terminal ke Bahasa Inggris baku NOC.
+
+
 ### Versi v0.1.115
 
 ### v0.1.115 — Standardisasi Bahasa Inggris pada Seluruh Output Agen\n- **Output Agen Baku NOC ()**: Mengubah seluruh pesan hasil perintah, error firewall, manajemen user/TTY, port health check, FIM, OTA update, kontrol host, dan error  ke Bahasa Inggris baku agar konsisten di seluruh antarmuka web.
