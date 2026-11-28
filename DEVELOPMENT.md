@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.115
+
+### v0.1.115 — Standardisasi Bahasa Inggris pada Seluruh Output Agen\n- **Output Agen Baku NOC ()**: Mengubah seluruh pesan hasil perintah, error firewall, manajemen user/TTY, port health check, FIM, OTA update, kontrol host, dan error  ke Bahasa Inggris baku agar konsisten di seluruh antarmuka web.
+
+
 ### Versi v0.1.114
 
 ### v0.1.114 — Perbaikan Token Autentikasi pada Modal Riwayat Paket\n- **Perbaikan Auth Token ()**: Mengubah pembacaan token dari `localStorage.getItem('token')` menjadi `localStorage.getItem('pantau_token')` agar header `Authorization: Bearer` terkirim ke `/api/logs/request`.

@@ -412,7 +412,7 @@ def http_health_check(port: int, addr: str) -> dict:
         elapsed = (time.monotonic() - start) * 1000
         return {
             "response_time_ms": int(elapsed),
-            "health_message": f"HTTP {e.code} (service hidup)",
+            "health_message": f"HTTP {e.code} (service alive)",
             "healthy": True,
         }
     except _HTTP_BAD_RESPONSE as e:
@@ -420,7 +420,7 @@ def http_health_check(port: int, addr: str) -> dict:
         elapsed = (time.monotonic() - start) * 1000
         return {
             "response_time_ms": int(elapsed),
-            "health_message": f"Port terbuka, respons HTTP tidak valid: {type(e).__name__}",
+            "health_message": f"Port open, invalid HTTP response: {type(e).__name__}",
             "healthy": True,
         }
     except ssl.SSLError as e:
@@ -428,7 +428,7 @@ def http_health_check(port: int, addr: str) -> dict:
         # TLS handshake gagal: port hidup, sertifikat/HTTPS-nya yang bermasalah.
         return {
             "response_time_ms": int(elapsed),
-            "health_message": f"TLS gagal ({e.reason or type(e).__name__}), service hidup",
+            "health_message": f"TLS failed ({e.reason or type(e).__name__}), service alive",
             "healthy": True,
         }
     except (urllib.error.URLError, OSError, ValueError) as e:
@@ -437,24 +437,24 @@ def http_health_check(port: int, addr: str) -> dict:
         if isinstance(reason, ssl.SSLError):
             return {
                 "response_time_ms": int(elapsed),
-                "health_message": f"TLS gagal ({reason.reason or type(reason).__name__}), service hidup",
+                "health_message": f"TLS failed ({reason.reason or type(reason).__name__}), service alive",
                 "healthy": True,
             }
         if isinstance(reason, _HTTP_BAD_RESPONSE):
             return {
                 "response_time_ms": int(elapsed),
-                "health_message": f"Port terbuka, respons HTTP tidak valid: {type(reason).__name__}",
+                "health_message": f"Port open, invalid HTTP response: {type(reason).__name__}",
                 "healthy": True,
             }
         if isinstance(reason, _CONNECT_FAIL):
             return {
                 "response_time_ms": int(elapsed),
-                "health_message": f"Tidak ada yang melayani: {reason}",
+                "health_message": f"Connection refused / unreachable: {reason}",
                 "healthy": False,
             }
         return {
             "response_time_ms": int(elapsed),
-            "health_message": f"Gagal connect: {e}",
+            "health_message": f"Connection failed: {e}",
             "healthy": False,
         }
 
@@ -510,7 +510,7 @@ def tcp_health_check(port: int, addr: str) -> dict:
         elapsed = (time.monotonic() - start) * 1000
         return {
             "response_time_ms": int(elapsed),
-            "health_message": f"TCP connect gagal: {e}",
+            "health_message": f"TCP connect failed: {e}",
             "healthy": False,
         }
 
@@ -710,8 +710,8 @@ def execute_command(cfg: dict, command: dict) -> dict:
     else:
         result = {
             "ok": False,
-            "output": f"Aksi tidak dikenal oleh agen ini ('{action}') "
-                      "— indikasi agen versi lama. Update agen: jalankan ulang install.sh.",
+            "output": f"Unknown action for this agent ('{action}') "
+                      "— outdated agent detected. Update agent or re-run install.sh.",
         }
 
     print(f"[CMD] Hasil: {result['output']}")
@@ -751,83 +751,83 @@ case "$ACTION" in
             ufw allow 8400/tcp >/dev/null 2>&1 || true
             ufw allow 80/tcp >/dev/null 2>&1 || true
             ufw allow 443/tcp >/dev/null 2>&1 || true
-            out="$(ufw --force enable 2>&1)" || fail "UFW enable gagal: $out"
-            echo "OK: Firewall UFW berhasil diaktifkan (port SSH, Dashboard 8400, dan Web diizinkan)"
+            out="$(ufw --force enable 2>&1)" || fail "UFW enable failed: $out"
+            echo "OK: UFW firewall enabled (SSH, Dashboard 8400, and Web ports allowed)"
             exit 0
         fi
-        fail "ufw tidak terpasang di sistem ini"
+        fail "ufw is not installed on this system"
         ;;
     disable)
         if command -v ufw >/dev/null 2>&1; then
-            out="$(ufw disable 2>&1)" || fail "UFW disable gagal: $out"
-            echo "OK: Firewall UFW berhasil dinonaktifkan"
+            out="$(ufw disable 2>&1)" || fail "UFW disable failed: $out"
+            echo "OK: UFW firewall disabled"
             exit 0
         fi
-        fail "ufw tidak terpasang di sistem ini"
+        fail "ufw is not installed on this system"
         ;;
     reload)
         if command -v ufw >/dev/null 2>&1; then
-            out="$(ufw reload 2>&1)" || fail "UFW reload gagal: $out"
-            echo "OK: Firewall UFW berhasil dimuat ulang (reloaded)"
+            out="$(ufw reload 2>&1)" || fail "UFW reload failed: $out"
+            echo "OK: UFW firewall reloaded"
             exit 0
         fi
-        fail "ufw tidak terpasang di sistem ini"
+        fail "ufw is not installed on this system"
         ;;
     deny-port)
         PORT_SPEC="${1:-}"
-        [ -n "$PORT_SPEC" ] || fail "Spesifikasi port wajib diisi (misal: 8080/tcp atau 3000)"
+        [ -n "$PORT_SPEC" ] || fail "Port specification is required (e.g. 8080/tcp or 3000)"
         PORT_NUM="${PORT_SPEC%%/*}"
         PROTO="${PORT_SPEC##*/}"
         [ "$PROTO" = "$PORT_NUM" ] && PROTO="tcp"
 
         case "$PROTO" in
             tcp|udp) ;;
-            *) fail "Protokol tidak valid: '$PROTO' (hanya tcp atau udp)" ;;
+            *) fail "Invalid protocol: '$PROTO' (must be tcp or udp)" ;;
         esac
 
         if [ "$PORT_NUM" = "22" ] || [ "$PORT_NUM" = "8400" ]; then
-            fail "Port $PORT_NUM (SSH / Pantau Dashboard) dilindungi dan dilarang diblokir!"
+            fail "Port $PORT_NUM (SSH / Pantau Dashboard) is protected and cannot be blocked!"
         fi
         if ! [[ "$PORT_NUM" =~ ^[0-9]+$ ]] || [ "$PORT_NUM" -lt 1 ] || [ "$PORT_NUM" -gt 65535 ]; then
-            fail "Nomor port tidak valid: '$PORT_NUM'"
+            fail "Invalid port number: '$PORT_NUM'"
         fi
 
         if command -v ufw >/dev/null 2>&1; then
-            out="$(ufw deny "$PORT_NUM/$PROTO" 2>&1)" || fail "UFW deny gagal: $out"
-            echo "OK: Port $PORT_NUM/$PROTO berhasil ditutup/diblokir pada UFW"
+            out="$(ufw deny "$PORT_NUM/$PROTO" 2>&1)" || fail "UFW deny failed: $out"
+            echo "OK: Port $PORT_NUM/$PROTO blocked on UFW"
             exit 0
         elif [ -x "$IPT" ]; then
-            "$IPT" -I INPUT 1 -p "$PROTO" --dport "$PORT_NUM" -j DROP || fail "iptables drop port gagal"
-            echo "OK: Port $PORT_NUM/$PROTO berhasil ditutup/diblokir pada iptables"
+            "$IPT" -I INPUT 1 -p "$PROTO" --dport "$PORT_NUM" -j DROP || fail "iptables drop port failed"
+            echo "OK: Port $PORT_NUM/$PROTO blocked on iptables"
             exit 0
         fi
-        fail "Tidak ada firewall aktif (ufw / iptables) di sistem"
+        fail "No active firewall (ufw / iptables) found on system"
         ;;
     allow-port)
         PORT_SPEC="${1:-}"
-        [ -n "$PORT_SPEC" ] || fail "Spesifikasi port wajib diisi (misal: 8080/tcp)"
+        [ -n "$PORT_SPEC" ] || fail "Port specification is required (e.g. 8080/tcp)"
         PORT_NUM="${PORT_SPEC%%/*}"
         PROTO="${PORT_SPEC##*/}"
         [ "$PROTO" = "$PORT_NUM" ] && PROTO="tcp"
 
         if ! [[ "$PORT_NUM" =~ ^[0-9]+$ ]] || [ "$PORT_NUM" -lt 1 ] || [ "$PORT_NUM" -gt 65535 ]; then
-            fail "Nomor port tidak valid: '$PORT_NUM'"
+            fail "Invalid port number: '$PORT_NUM'"
         fi
         case "$PROTO" in
             tcp|udp) ;;
-            *) fail "Protokol tidak valid: '$PROTO' (hanya tcp atau udp)" ;;
+            *) fail "Invalid protocol: '$PROTO' (must be tcp or udp)" ;;
         esac
 
         if command -v ufw >/dev/null 2>&1; then
             out="$(ufw delete deny "$PORT_NUM/$PROTO" 2>&1)" || ufw allow "$PORT_NUM/$PROTO" 2>&1 || true
-            echo "OK: Aturan blokir untuk port $PORT_NUM/$PROTO berhasil dibuka pada UFW"
+            echo "OK: Block rule for port $PORT_NUM/$PROTO removed on UFW"
             exit 0
         elif [ -x "$IPT" ]; then
             "$IPT" -D INPUT -p "$PROTO" --dport "$PORT_NUM" -j DROP 2>/dev/null || true
-            echo "OK: Aturan blokir untuk port $PORT_NUM/$PROTO berhasil dibuka pada iptables"
+            echo "OK: Block rule for port $PORT_NUM/$PROTO removed on iptables"
             exit 0
         fi
-        fail "Tidak ada firewall aktif (ufw / iptables) di sistem"
+        fail "No active firewall (ufw / iptables) found on system"
         ;;
     status)
         if command -v ufw >/dev/null 2>&1; then
@@ -839,49 +839,49 @@ case "$ACTION" in
         fi
         exit 0
         ;;
-    *) fail "Aksi tidak dikenal: '${ACTION:-}' (harus 'block', 'unblock', 'enable', 'disable', 'reload', 'deny-port', 'allow-port', atau 'status')" ;;
+    *) fail "Unknown action: '${ACTION:-}' (must be 'block', 'unblock', 'enable', 'disable', 'reload', 'deny-port', 'allow-port', or 'status')" ;;
 esac
 
-[ -x "$IPT" ] || fail "iptables tidak terpasang (install iptables)"
+[ -x "$IPT" ] || fail "iptables is not installed"
 
-[ "$#" -ge 1 ] || fail "Tidak ada IP diberikan"
-[ "$#" -le "$MAX_IP" ] || fail "Terlalu banyak IP (maks $MAX_IP)"
+[ "$#" -ge 1 ] || fail "No IP address provided"
+[ "$#" -le "$MAX_IP" ] || fail "Too many IP addresses (max $MAX_IP)"
 
 IPC=0
 for ip in "$@"; do
     case "$ip" in
-        *[!0-9.]*) fail "IP tidak valid: '$ip'" ;;
+        *[!0-9.]*) fail "Invalid IP address: '$ip'" ;;
     esac
     IFS=. read -r o1 o2 o3 o4 rest <<EOF
 $ip
 EOF
     for o in "$o1" "$o2" "$o3" "$o4"; do
-        [ -n "$o" ] || fail "IP tidak valid: '$ip'"
-        [ "$o" -ge 0 ] && [ "$o" -le 255 ] 2>/dev/null || fail "IP tidak valid: '$ip'"
+        [ -n "$o" ] || fail "Invalid IP address: '$ip'"
+        [ "$o" -ge 0 ] && [ "$o" -le 255 ] 2>/dev/null || fail "Invalid IP address: '$ip'"
     done
-    [ -z "$rest" ] || fail "IP tidak valid: '$ip'"
+    [ -z "$rest" ] || fail "Invalid IP address: '$ip'"
 
-    [ "$o1" -ge 1 ] && [ "$o1" -le 223 ] || fail "IP tidak valid atau di luar jangkauan unicast: '$ip'"
-    [ "$o1" -eq 127 ] && fail "IP loopback (127.0.0.0/8) tidak boleh diblokir: '$ip'"
-    [ "$o1" -eq 169 ] && [ "$o2" -eq 254 ] && fail "IP link-local (169.254.0.0/16) tidak boleh diblokir: '$ip'"
+    [ "$o1" -ge 1 ] && [ "$o1" -le 223 ] || fail "Invalid IP or outside unicast range: '$ip'"
+    [ "$o1" -eq 127 ] && fail "Loopback IP (127.0.0.0/8) cannot be blocked: '$ip'"
+    [ "$o1" -eq 169 ] && [ "$o2" -eq 254 ] && fail "Link-local IP (169.254.0.0/16) cannot be blocked: '$ip'"
     if [ "$ACTION" = "block" ]; then
         if command -v ufw >/dev/null 2>&1; then
             ufw insert 1 deny from "$ip" to any >/dev/null 2>&1 || true
         fi
-        out="$("$IPT" -I INPUT 1 -s "$ip" -j DROP 2>&1)" || fail "iptables gagal utk $ip: $out"
-        echo "OK: INPUT DROP utk $ip"
+        out="$("$IPT" -I INPUT 1 -s "$ip" -j DROP 2>&1)" || fail "iptables failed for $ip: $out"
+        echo "OK: INPUT DROP for $ip"
     else
         if command -v ufw >/dev/null 2>&1; then
             ufw delete deny from "$ip" to any >/dev/null 2>&1 || true
         fi
-        out="$("$IPT" -D INPUT -s "$ip" -j DROP 2>&1)" || fail "iptables hapus gagal utk $ip (mungkin aturan tidak ada): $out"
-        echo "OK: Hapus blokir INPUT DROP utk $ip"
+        out="$("$IPT" -D INPUT -s "$ip" -j DROP 2>&1)" || fail "iptables delete failed for $ip (rule may not exist): $out"
+        echo "OK: Removed INPUT DROP rule for $ip"
     fi
     IPC=$((IPC + 1))
 done
 
 if [ "$ACTION" = "block" ]; then
-    echo "Total $IPC IP diblokir. CATATAN: aturan volatile (hilang saat reboot); untuk permanen gunakan iptables-persistent."
+    echo "Total $IPC IP(s) blocked. NOTE: rules are volatile (lost on reboot); use iptables-persistent for persistence."
 else
     echo "Total $IPC IP dilepas blokirnya."
 fi
@@ -942,18 +942,18 @@ def _exec_block_ip(command: dict) -> dict:
         raw_ips = [params.get("ip")]
     ips = [str(i).strip() for i in (raw_ips or []) if str(i).strip()][:10]
     if not ips:
-        return {"ok": False, "output": "Tidak ada IP untuk diblokir."}
+        return {"ok": False, "output": "No IP addresses provided to block."}
     outs: list = []
     ok_all = True
     any_success = False
     my_ip = get_local_ip()
     for ip in ips:
         if not _validate_ipv4(ip):
-            outs.append(f"{ip}: Format IP tidak valid atau terlarang (loopback/link-local/multicast)")
+            outs.append(f"{ip}: Invalid or forbidden IP format (loopback/link-local/multicast)")
             ok_all = False
             continue
         if ip == my_ip:
-            outs.append(f"{ip}: Ditolak (tidak dapat memblokir IP server itu sendiri)")
+            outs.append(f"{ip}: Rejected (cannot block the server's own IP address)")
             ok_all = False
             continue
         if IS_ROOT:
@@ -969,7 +969,7 @@ def _exec_block_ip(command: dict) -> dict:
         else:
             any_success = True
         outs.append(f"{ip}: {res['output']}")
-    note = " | aturan diterapkan (iptables volatile / permanen jika ufw/iptables-persistent aktif)" if any_success else ""
+    note = " | rules applied (volatile iptables / persistent if ufw or iptables-persistent is active)" if any_success else ""
     _fw_cache["at"] = 0.0
     _fw_cache["data"] = None
     fw_snapshot = collect_firewall()
@@ -985,12 +985,12 @@ def _exec_unblock_ip(command: dict) -> dict:
         raw_ips = [params.get("ip")]
     ips = [str(i).strip() for i in (raw_ips or []) if str(i).strip()][:10]
     if not ips:
-        return {"ok": False, "output": "Tidak ada IP untuk dilepas blokirnya."}
+        return {"ok": False, "output": "No IP addresses provided to unblock."}
     outs: list = []
     ok_all = True
     for ip in ips:
         if not _validate_ipv4(ip):
-            outs.append(f"{ip}: Format IP tidak valid")
+            outs.append(f"{ip}: Invalid IP format")
             ok_all = False
             continue
         if IS_ROOT:
@@ -1020,7 +1020,7 @@ def _exec_firewall_toggle(action: str) -> dict:
     }
     sub = sub_map.get(action)
     if not sub:
-        return {"ok": False, "output": f"Aksi firewall tidak valid: {action}"}
+        return {"ok": False, "output": f"Invalid firewall action: {action}"}
     if IS_ROOT:
         res = _run_native([PANTAU_FIREWALL, sub], f"{PANTAU_FIREWALL} {sub}")
     else:
@@ -1044,11 +1044,11 @@ def _exec_kill_process(command: dict) -> dict:
         signal_name = "TERM"
 
     if not pid.isdigit() or int(pid) <= 1:
-        return {"ok": False, "output": f"PID tidak valid atau dilindungi: {pid}"}
+        return {"ok": False, "output": f"Invalid or protected PID: {pid}"}
 
     # Proteksi tambahan sisi Python: jangan izinkan bunuh PID agen sendiri
     if int(pid) == os.getpid():
-        return {"ok": False, "output": "Tidak dapat menghentikan proses agen monitor itu sendiri!"}
+        return {"ok": False, "output": "Cannot terminate the monitor agent's own process!"}
 
     cmd = [PANTAU_RESTART, "kill", pid, signal_name]
     label = f"{PANTAU_RESTART} kill {pid} {signal_name}"
@@ -1059,7 +1059,7 @@ def _exec_kill_process(command: dict) -> dict:
     res = _run_native(cmd, label)
     # Bersihkan cache proses agar pemindaian berikutnya langsung memuat daftar segar
     _top_procs_cache["at"] = 0.0
-    return {"ok": res.get("ok", False), "output": res.get("output", "Gagal mengirim sinyal ke proses")[:2000]}
+    return {"ok": res.get("ok", False), "output": res.get("output", "Failed to send signal to process")[:2000]}
 
 
 PANTAU_USER_SCRIPT_BODY = r"""#!/usr/bin/env bash
@@ -1098,7 +1098,7 @@ is_protected_user() {
 validate_username() {
     local u="$1"
     if [[ ! "$u" =~ ^[a-z_][a-z0-9_-]{1,31}$ ]]; then
-        fail "Nama pengguna tidak valid: '$u' (harus diawali huruf kecil/underscore, maks 32 karakter)"
+        fail "Invalid username: '$u' (must start with lowercase letter or underscore, max 32 chars)"
     fi
 }
 
@@ -1107,14 +1107,14 @@ case "$ACTION" in
         USERNAME="${1:-}"
         SHELL_PATH="${2:-/bin/bash}"
         IS_SUDO="${3:-0}"
-        COMMENT="${4:-Dibuat via Pantau Server}"
+        COMMENT="${4:-Created via Pantau Server}"
         PASSWORD="${5:-}"
 
-        [ -n "$USERNAME" ] || fail "Username wajib diisi"
+        [ -n "$USERNAME" ] || fail "Username is required"
         validate_username "$USERNAME"
 
         if id "$USERNAME" >/dev/null 2>&1; then
-            fail "Pengguna '$USERNAME' sudah ada di sistem"
+            fail "User '$USERNAME' already exists on the system"
         fi
 
         # Validasi shell
@@ -1128,16 +1128,16 @@ case "$ACTION" in
         COMMENT="${COMMENT//$'\r'/ }"
 
         if getent group "$USERNAME" >/dev/null 2>&1; then
-            useradd -m -s "$SHELL_PATH" -g "$USERNAME" -c "$COMMENT" "$USERNAME" 2>/dev/null || useradd -m -s "$SHELL_PATH" -c "$COMMENT" "$USERNAME" || fail "Gagal membuat pengguna '$USERNAME'"
+            useradd -m -s "$SHELL_PATH" -g "$USERNAME" -c "$COMMENT" "$USERNAME" 2>/dev/null || useradd -m -s "$SHELL_PATH" -c "$COMMENT" "$USERNAME" || fail "Failed to create user '$USERNAME'"
         else
-            useradd -m -s "$SHELL_PATH" -c "$COMMENT" "$USERNAME" || fail "Gagal membuat pengguna '$USERNAME'"
+            useradd -m -s "$SHELL_PATH" -c "$COMMENT" "$USERNAME" || fail "Failed to create user '$USERNAME'"
         fi
 
         if [ -n "$PASSWORD" ]; then
             if [[ "$PASSWORD" == *$'\n'* ]] || [[ "$PASSWORD" == *$'\r'* ]]; then
-                fail "Karakter newline pada password tidak diizinkan"
+                fail "Newline characters in password are not allowed"
             fi
-            echo "${USERNAME}:${PASSWORD}" | chpasswd 2>/dev/null || fail "Gagal mengatur password awal pengguna '$USERNAME'"
+            echo "${USERNAME}:${PASSWORD}" | chpasswd 2>/dev/null || fail "Failed to set initial password for user '$USERNAME'"
         else
             # Best practice POSIX/Linux untuk akun SSH key / tanpa password lokal:
             # Gunakan token unroutable '*' agar akun tidak terkunci disabled ('!') dan dapat di-unlock kapan saja
@@ -1148,14 +1148,14 @@ case "$ACTION" in
             usermod -aG sudo,adm "$USERNAME" 2>/dev/null || usermod -aG sudo "$USERNAME" 2>/dev/null || usermod -aG wheel "$USERNAME" 2>/dev/null || true
         fi
 
-        echo "OK: Pengguna '$USERNAME' berhasil dibuat (Shell: $SHELL_PATH, Sudo: $IS_SUDO)"
+        echo "OK: User '$USERNAME' created (Shell: $SHELL_PATH, Sudo: $IS_SUDO)"
         ;;
 
     add-group)
         USERNAME="${1:-}"
         NEW_GROUPS="${2:-}"
-        [ -n "$USERNAME" ] || fail "Username wajib diisi"
-        [ -n "$NEW_GROUPS" ] || fail "Grup tujuan wajib diisi"
+        [ -n "$USERNAME" ] || fail "Username is required"
+        [ -n "$NEW_GROUPS" ] || fail "Target group is required"
         validate_username "$USERNAME"
         IFS=',' read -ra ADDM_GRPS <<< "$NEW_GROUPS"
         for g in "${ADDM_GRPS[@]}"; do
@@ -1167,46 +1167,46 @@ case "$ACTION" in
                     fi
                     ;;
                 *)
-                    fail "Grup '$g' tidak diizinkan untuk eskalasi otomatis"
+                    fail "Group '$g' is not allowed for automatic escalation"
                     ;;
             esac
         done
-        echo "OK: Grup '$NEW_GROUPS' berhasil ditambahkan ke '$USERNAME'"
+        echo "OK: Group(s) '$NEW_GROUPS' added to '$USERNAME'"
         ;;
 
     lock)
         USERNAME="${1:-}"
-        [ -n "$USERNAME" ] || fail "Username wajib diisi"
+        [ -n "$USERNAME" ] || fail "Username is required"
         validate_username "$USERNAME"
 
         if is_protected_user "$USERNAME"; then
-            fail "Pengguna '$USERNAME' adalah akun sistem penting dan dilarang dikunci!"
+            fail "User '$USERNAME' is a protected system account and cannot be locked!"
         fi
 
-        passwd -l "$USERNAME" >/dev/null 2>&1 || usermod -L "$USERNAME" >/dev/null 2>&1 || fail "Gagal mengunci akun '$USERNAME'"
-        echo "OK: Akun '$USERNAME' berhasil dikunci"
+        passwd -l "$USERNAME" >/dev/null 2>&1 || usermod -L "$USERNAME" >/dev/null 2>&1 || fail "Failed to lock account '$USERNAME'"
+        echo "OK: Account '$USERNAME' locked"
         ;;
 
     unlock)
         USERNAME="${1:-}"
-        [ -n "$USERNAME" ] || fail "Username wajib diisi"
+        [ -n "$USERNAME" ] || fail "Username is required"
         validate_username "$USERNAME"
 
         if is_protected_user "$USERNAME"; then
-            fail "Pengguna '$USERNAME' adalah akun sistem penting!"
+            fail "User '$USERNAME' is a protected system account!"
         fi
 
         # Deteksi status password di /etc/shadow
         shadow_pwd="$(grep "^${USERNAME}:" /etc/shadow 2>/dev/null | cut -d: -f2 || true)"
         if [ "$shadow_pwd" = "!" ] || [ "$shadow_pwd" = "!*" ] || [ "$shadow_pwd" = "!!" ] || [ -z "$shadow_pwd" ]; then
-            usermod -p '*' "$USERNAME" 2>/dev/null || fail "Gagal membuka kunci akun '$USERNAME'"
-            echo "OK: Akun '$USERNAME' berhasil dibuka kuncinya"
+            usermod -p '*' "$USERNAME" 2>/dev/null || fail "Failed to unlock account '$USERNAME'"
+            echo "OK: Account '$USERNAME' unlocked"
         else
             if passwd -u "$USERNAME" >/dev/null 2>&1 || usermod -U "$USERNAME" >/dev/null 2>&1; then
-                echo "OK: Akun '$USERNAME' berhasil dibuka kuncinya"
+                echo "OK: Account '$USERNAME' unlocked"
             else
-                usermod -p '*' "$USERNAME" 2>/dev/null || fail "Gagal membuka kunci akun '$USERNAME'"
-                echo "OK: Akun '$USERNAME' berhasil dibuka kuncinya"
+                usermod -p '*' "$USERNAME" 2>/dev/null || fail "Failed to unlock account '$USERNAME'"
+                echo "OK: Account '$USERNAME' unlocked"
             fi
         fi
         ;;
@@ -1214,11 +1214,11 @@ case "$ACTION" in
     delete)
         USERNAME="${1:-}"
         REMOVE_HOME="${2:-0}"
-        [ -n "$USERNAME" ] || fail "Username wajib diisi"
+        [ -n "$USERNAME" ] || fail "Username is required"
         validate_username "$USERNAME"
 
         if is_protected_user "$USERNAME"; then
-            fail "Pengguna '$USERNAME' adalah akun sistem terlindungi dan dilarang dihapus!"
+            fail "User '$USERNAME' is a protected system account and cannot be deleted!"
         fi
 
         # Hentikan proses yang masih dijalankan user sebelum dihapus
@@ -1226,12 +1226,12 @@ case "$ACTION" in
         sleep 0.5
 
         if [ "$REMOVE_HOME" = "1" ] || [ "$REMOVE_HOME" = "true" ]; then
-            userdel -r "$USERNAME" 2>/dev/null || userdel "$USERNAME" || fail "Gagal menghapus pengguna '$USERNAME'"
+            userdel -r "$USERNAME" 2>/dev/null || userdel "$USERNAME" || fail "Failed to delete user '$USERNAME'"
         else
-            userdel "$USERNAME" || fail "Gagal menghapus pengguna '$USERNAME'"
+            userdel "$USERNAME" || fail "Failed to delete user '$USERNAME'"
         fi
 
-        echo "OK: Pengguna '$USERNAME' berhasil dihapus"
+        echo "OK: User '$USERNAME' deleted"
         ;;
 
     list-locked)
@@ -1240,10 +1240,10 @@ case "$ACTION" in
 
     terminate-session)
         TTY="${1:-}"
-        [ -n "$TTY" ] || fail "Parameter TTY wajib diisi (misal: pts/0, pts/1, tty1)"
+        [ -n "$TTY" ] || fail "TTY parameter is required (e.g. pts/0, pts/1, tty1)"
         TTY="${TTY#/dev/}"
         if [[ ! "$TTY" =~ ^(pts/[0-9]+|tty[0-9]+)$ ]]; then
-            fail "Format terminal TTY tidak valid: '$TTY' (hanya pts/N atau ttyN yang diizinkan)"
+            fail "Invalid TTY format: '$TTY' (only pts/N or ttyN allowed)"
         fi
 
         # 1. Hentikan seluruh proses yang terikat dengan terminal tersebut
@@ -1252,11 +1252,11 @@ case "$ACTION" in
         if [ -e "/dev/$TTY" ]; then
             fuser -k -9 "/dev/$TTY" 2>/dev/null || true
         fi
-        echo "OK: Sesi terminal '$TTY' berhasil diputus paksa"
+        echo "OK: Terminal session '$TTY' terminated"
         ;;
 
     *)
-        fail "Aksi tidak dikenal: '$ACTION' (harus create, add-group, lock, unlock, delete, list-locked, terminate-session)"
+        fail "Unknown action: '$ACTION' (must be create, add-group, lock, unlock, delete, list-locked, or terminate-session)"
         ;;
 esac
 """
@@ -1317,9 +1317,9 @@ def _exec_user_action(action: str, command: dict) -> dict:
     if action in ("session_terminate", "terminate_session"):
         tty = str(params.get("tty", "")).strip().lstrip("/dev/")
         if not tty:
-            return {"ok": False, "output": "Parameter TTY terminal (misal: pts/0) wajib diisi."}
+            return {"ok": False, "output": "TTY parameter (e.g. pts/0) is required."}
         if not re.match(r"^(pts/\d+|tty\d+)$", tty):
-            return {"ok": False, "output": f"Format terminal TTY '{tty}' tidak valid (hanya pts/N atau ttyN)."}
+            return {"ok": False, "output": f"Invalid TTY format '{tty}' (only pts/N or ttyN allowed)."}
         cmd = [PANTAU_USER_CMD, "terminate-session", tty]
         label = f"{PANTAU_USER_CMD} terminate-session {tty}"
         if not IS_ROOT:
@@ -1327,21 +1327,21 @@ def _exec_user_action(action: str, command: dict) -> dict:
             label = f"sudo -n {label}"
         res = _run_native(cmd, label)
         # Jika wrapper lama di disk menolak aksi karena belum terbarui, paksa pembaruan mandiri lalu coba lagi sekali
-        if not res.get("ok") and "Aksi tidak dikenal" in res.get("output", ""):
-            print("[USER] Terdeteksi pantau-user versi lama, memperbarui paksa wrapper dan mengulang...")
+        if not res.get("ok") and ("Unknown action" in res.get("output", "") or "Aksi tidak dikenal" in res.get("output", "")):
+            print("[USER] Outdated pantau-user wrapper detected, forcing self-update and retrying...")
             if ensure_pantau_user_updated(force=True):
                 res = _run_native(cmd, label)
         return {"ok": res.get("ok", False), "output": res.get("output", "")[:2000]}
 
     username = str(params.get("username", "")).strip().lower()
     if not username:
-        return {"ok": False, "output": "Nama pengguna (username) wajib diisi."}
+        return {"ok": False, "output": "Username is required."}
 
     cmd = [PANTAU_USER_CMD]
     if action == "user_create":
         shell = str(params.get("shell", "/bin/bash")).strip()
         is_sudo = "1" if params.get("is_sudo") in (1, True, "1", "true") else "0"
-        comment = str(params.get("comment", "Dibuat via Pantau Server")).strip()
+        comment = str(params.get("comment", "Created via Pantau Server")).strip()
         password = str(params.get("password", "")).strip()
         cmd.extend(["create", username, shell, is_sudo, comment, password])
     elif action == "user_lock":
@@ -1352,7 +1352,7 @@ def _exec_user_action(action: str, command: dict) -> dict:
         remove_home = "1" if params.get("remove_home") in (1, True, "1", "true") else "0"
         cmd.extend(["delete", username, remove_home])
     else:
-        return {"ok": False, "output": f"Aksi pengguna tidak valid: {action}"}
+        return {"ok": False, "output": f"Invalid user action: {action}"}
 
     display_cmd = list(cmd)
     if action == "user_create" and len(display_cmd) >= 7 and display_cmd[6]:
@@ -1381,27 +1381,27 @@ def _exec_cron_action(action: str, command: dict) -> dict:
         target_user = str(params.get("user", "root")).strip()
         cron_cmd = str(params.get("command", "")).strip()
         if not ident or not cron_cmd:
-            return {"ok": False, "output": "Identifikasi tugas dan perintah cron wajib diisi."}
+            return {"ok": False, "output": "Task identifier and cron command are required."}
         cmd.extend(["add", ident, minute, hour, dom, month, dow, target_user, cron_cmd])
     elif action == "cron_toggle":
         ident = str(params.get("ident", "")).strip()
         mode = str(params.get("mode", "enable")).strip().lower()
         if not ident:
-            return {"ok": False, "output": "Identifikasi tugas cron wajib diisi."}
+            return {"ok": False, "output": "Cron task identifier is required."}
         cmd.extend(["toggle", ident, mode])
     elif action == "cron_delete":
         ident = str(params.get("ident", "")).strip()
         if not ident:
-            return {"ok": False, "output": "Identifikasi tugas cron wajib diisi."}
+            return {"ok": False, "output": "Cron task identifier is required."}
         cmd.extend(["delete", ident])
     elif action == "cron_run_now":
         target_user = str(params.get("user", "root")).strip()
         cron_cmd = str(params.get("command", "")).strip()
         if not cron_cmd:
-            return {"ok": False, "output": "Perintah cron wajib diisi."}
+            return {"ok": False, "output": "Cron command is required."}
         cmd.extend(["run", target_user, cron_cmd])
     else:
-        return {"ok": False, "output": f"Aksi cron tidak valid: {action}"}
+        return {"ok": False, "output": f"Invalid cron action: {action}"}
 
     label = " ".join(cmd)
     if not IS_ROOT:
@@ -1419,7 +1419,7 @@ def _exec_firewall_port_rule(command: dict) -> dict:
     port_spec = str(params.get("port", "")).strip()
     rule_type = str(params.get("rule", "deny")).strip().lower()
     if not port_spec:
-        return {"ok": False, "output": "Spesifikasi port wajib diisi."}
+        return {"ok": False, "output": "Port specification is required."}
 
     sub = "deny-port" if rule_type in ("deny", "block", "deny-port") else "allow-port"
     cmd = [PANTAU_FIREWALL, sub, port_spec]
@@ -1440,7 +1440,7 @@ def _exec_ssl_action(action: str, command: dict) -> dict:
     params = command.get("params") or {}
     cert_path = str(params.get("path", "")).strip()
     if not cert_path:
-        return {"ok": False, "output": "Path berkas sertifikat SSL wajib diisi."}
+        return {"ok": False, "output": "SSL certificate file path is required."}
 
     sub = "add-path" if action == "ssl_path_add" else "remove-path"
     cmd = [PANTAU_SSL_CMD, sub, cert_path]
@@ -1461,7 +1461,7 @@ def _exec_fim_action(action: str, command: dict) -> dict:
 
     if action == "fim_path_add":
         if not target_path:
-            return {"ok": False, "output": "Jalur file/direktori wajib diisi."}
+            return {"ok": False, "output": "File/directory path is required."}
         scope = str(params.get("scope", "single_file"))
         custom_paths = _load_fim_custom_paths()
         exists = any(p["path"] == target_path for p in custom_paths)
@@ -1470,32 +1470,32 @@ def _exec_fim_action(action: str, command: dict) -> dict:
             _save_fim_custom_paths(custom_paths)
         _fim_cache["at"] = 0.0
         collect_fim(force=True)
-        return {"ok": True, "output": f"Path '{target_path}' berhasil ditambahkan ke pemantauan FIM."}
+        return {"ok": True, "output": f"Path '{target_path}' added to FIM monitoring."}
 
     elif action == "fim_path_remove":
         if not target_path:
-            return {"ok": False, "output": "Path file/direktori wajib diisi."}
+            return {"ok": False, "output": "File/directory path is required."}
         custom_paths = _load_fim_custom_paths()
         new_paths = [p for p in custom_paths if p["path"] != target_path]
         _save_fim_custom_paths(new_paths)
         _remove_fim_baseline(target_path)
         _fim_cache["at"] = 0.0
         collect_fim(force=True)
-        return {"ok": True, "output": f"Path '{target_path}' berhasil dihapus dari pemantauan FIM."}
+        return {"ok": True, "output": f"Path '{target_path}' removed from FIM monitoring."}
 
     elif action == "fim_scan":
         _fim_cache["at"] = 0.0
         data = collect_fim(force=True)
-        return {"ok": True, "output": f"Pemindaian integritas selesai. {len(data.get('paths', []))} path diperiksa."}
+        return {"ok": True, "output": f"Integrity scan completed. {len(data.get('paths', []))} path(s) checked."}
 
     elif action == "fim_rebaseline":
         _fim_cache["at"] = 0.0
         _rebaseline_fim_path(target_path)
         collect_fim(force=True)
-        target_disp = target_path if target_path else "seluruh path"
-        return {"ok": True, "output": f"Acuan baseline untuk {target_disp} berhasil diperbarui."}
+        target_disp = target_path if target_path else "all paths"
+        return {"ok": True, "output": f"Baseline updated for {target_disp}."}
 
-    return {"ok": False, "output": f"Aksi FIM tidak dikenal: {action}"}
+    return {"ok": False, "output": f"Unknown FIM action: {action}"}
 
 
 def _exec_host_control(action: str) -> dict:
@@ -1523,9 +1523,9 @@ def _exec_host_control(action: str) -> dict:
     ok_check, msg_check = _run_wrapper("check")
     if not ok_check:
         return {"ok": False,
-                "output": f"Perintah {sub_action} DIBATALKAN: wrapper pantau-host belum "
-                          f"terpasang/diizinkan di server ini. {msg_check} "
-                          "-- jalankan ulang package install.sh (agen v3.6+)."}
+                "output": f"Command {sub_action} CANCELLED: pantau-host wrapper is not "
+                          f"installed/authorized on this server. {msg_check} "
+                          "-- re-run package install.sh (agent v3.6+)."}
     if "systemd TIDAK berjalan" in msg_check or "TIDAK berjalan" in msg_check:
         # Deteksi false positive dari wrapper pantau-host versi lama pada sistem dengan status degraded.
         # Jika /run/systemd/system ada, systemd aktif dan siap menerima reboot/poweroff (termasuk pada Proxmox LXC).
@@ -1567,7 +1567,7 @@ def _exec_host_control(action: str) -> dict:
                 pass
         else:
             return {"ok": False,
-                    "output": f"Perintah {sub_action} DIBATALKAN: {msg_check}"}
+                    "output": f"Command {sub_action} CANCELLED: {msg_check}"}
 
     label = f"{PANTAU_HOST_CMD} {sub_action}"
     if not IS_ROOT:
@@ -1582,12 +1582,12 @@ def _exec_host_control(action: str) -> dict:
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
             start_new_session=True, close_fds=True,
         )
-        verb = "di-reboot" if sub_action == "reboot" else "di-matikan (poweroff)"
+        verb = "reboot" if sub_action == "reboot" else "power off"
         return {"ok": True,
-                "output": f"Perintah diterima: server akan {verb} dalam ±4 detik. "
-                          "Dashboard akan terputus dari server ini."}
+                "output": f"Command accepted: server will {verb} in ~4 seconds. "
+                          "Dashboard connection to this host will be interrupted."}
     except Exception as e:  # noqa: BLE001
-        return {"ok": False, "output": f"Gagal menjadwalkan {sub_action}: {e}"}
+        return {"ok": False, "output": f"Failed to schedule {sub_action}: {e}"}
 
 
 def _exec_restart_agent() -> dict:
@@ -1602,9 +1602,9 @@ def _exec_restart_agent() -> dict:
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
             start_new_session=True, close_fds=True,
         )
-        return {"ok": True, "output": "Restart agen (agent_pantau) dijadwalkan otomatis (systemd akan menghidupkan ulang)."}
+        return {"ok": True, "output": "Agent restart (agent_pantau) scheduled automatically (systemd will restart it)."}
     except Exception as e:  # noqa: BLE001
-        return {"ok": False, "output": f"Gagal menjadwalkan restart agen: {e}"}
+        return {"ok": False, "output": f"Failed to schedule agent restart: {e}"}
 
 
 def _exec_update_agent(cfg: dict, command: dict) -> dict:
@@ -1669,22 +1669,22 @@ def _exec_update_agent(cfg: dict, command: dict) -> dict:
     if not code_bytes:
         return {
             "ok": False,
-            "output": f"Gagal mengunduh berkas agen terbaru: {'; '.join(fetch_err)}"
+            "output": f"Failed to download latest agent file: {'; '.join(fetch_err)}"
         }
 
     # Verifikasi Kriptografis SHA-256 wajib dan mutlak
     if not expected_sha256 or len(expected_sha256) != 64 or not re.fullmatch(r"[0-9a-f]{64}", expected_sha256.lower()):
         return {
             "ok": False,
-            "output": "Pembaruan ditolak: Hash SHA-256 target wajib disertakan oleh dashboard (64 karakter hex)."
+            "output": "Update rejected: Target SHA-256 hash must be provided by dashboard (64 hex chars)."
         }
 
     actual_sha256 = hashlib.sha256(code_bytes).hexdigest().lower()
     if actual_sha256 != expected_sha256.lower():
         msg = (
-            f"Verifikasi integritas SHA-256 GAGAL! Hash unduhan ({actual_sha256}) "
-            f"tidak cocok dengan instruksi dashboard ({expected_sha256}). "
-            "Pembaruan dibatalkan demi mencegah eksekusi berkas tidak terverifikasi."
+            f"SHA-256 integrity check FAILED! Downloaded hash ({actual_sha256}) "
+            f"does not match dashboard instruction ({expected_sha256}). "
+            "Update aborted to prevent executing unverified code."
         )
         print(f"[SECURITY ALERT] {msg}")
         return {"ok": False, "output": msg}
@@ -1704,7 +1704,7 @@ def _exec_update_agent(cfg: dict, command: dict) -> dict:
         except Exception as se:
             return {
                 "ok": False,
-                "output": f"Pembaruan ditolak: Validasi sintaks Python gagal: {se}"
+                "output": f"Update rejected: Python syntax validation failed: {se}"
             }
 
         # Validasi 2: Pre-flight isolated runtime execution check
@@ -1719,26 +1719,26 @@ def _exec_update_agent(cfg: dict, command: dict) -> dict:
             )
             if test_proc.returncode != 0:
                 err_detail = (test_proc.stderr or test_proc.stdout or f"exit code {test_proc.returncode}").strip()
-                print(f"[OTA REJECTED] Pre-flight runtime check gagal (exit {test_proc.returncode}): {err_detail}")
+                print(f"[OTA REJECTED] Pre-flight runtime check failed (exit {test_proc.returncode}): {err_detail}")
                 return {
                     "ok": False,
                     "output": (
-                        f"Pembaruan ditolak: Pre-flight runtime check gagal (exit code {test_proc.returncode}). "
-                        f"Berkas target aman dan tidak disentuh. Detail: {err_detail[:400]}"
+                        f"Update rejected: Pre-flight runtime check failed (exit code {test_proc.returncode}). "
+                        f"Target file is safe and untouched. Detail: {err_detail[:400]}"
                     )
                 }
-            print(f"[OTA] Pre-flight runtime check sukses: {test_proc.stdout.strip()}")
+            print(f"[OTA] Pre-flight runtime check passed: {test_proc.stdout.strip()}")
         except subprocess.TimeoutExpired:
-            print("[OTA REJECTED] Pre-flight runtime check timeout (>15 detik)")
+            print("[OTA REJECTED] Pre-flight runtime check timeout (>15s)")
             return {
                 "ok": False,
-                "output": "Pembaruan ditolak: Pre-flight runtime check timeout (>15 detik). Berkas target tidak disentuh."
+                "output": "Update rejected: Pre-flight runtime check timed out (>15s). Target file untouched."
             }
         except Exception as e:
-            print(f"[OTA REJECTED] Eksekusi pre-flight runtime check gagal: {e}")
+            print(f"[OTA REJECTED] Pre-flight runtime check execution failed: {e}")
             return {
                 "ok": False,
-                "output": f"Pembaruan ditolak: Eksekusi pre-flight runtime check gagal ({e}). Berkas target tidak disentuh."
+                "output": f"Update rejected: Pre-flight runtime check failed ({e}). Target file untouched."
             }
 
         try:
@@ -2030,7 +2030,7 @@ def _exec_update_agent(cfg: dict, command: dict) -> dict:
 
         return {
             "ok": True,
-            "output": f"Push OTA sukses ke v{new_version} (SHA-256: {actual_sha256[:12]}… terverifikasi). Restart otomatis dijadwalkan."
+            "output": f"OTA push succeeded to v{new_version} (SHA-256: {actual_sha256[:12]}… verified). Automatic restart scheduled."
         }
     finally:
         if os.path.exists(tmp_path):
@@ -2054,7 +2054,7 @@ def _exec_service_action(action: str, command: dict) -> dict:
     )
 
     if action not in ALLOWED_SYSTEMCTL_ACTIONS:
-        return {"ok": False, "output": f"Aksi tidak diizinkan: {action}"}
+        return {"ok": False, "output": f"Action not allowed: {action}"}
 
     candidates = []
     for name in (process_name, service_name):
@@ -2066,7 +2066,7 @@ def _exec_service_action(action: str, command: dict) -> dict:
                 candidates.append(hyphen_name)
 
     if not candidates:
-        return {"ok": False, "output": "Nama proses/service kosong atau tidak valid"}
+        return {"ok": False, "output": "Process/service name is empty or invalid"}
 
     last_res = None
     for cand in candidates:
@@ -2079,7 +2079,7 @@ def _exec_service_action(action: str, command: dict) -> dict:
         if last_res.get("ok"):
             return last_res
 
-    return last_res or {"ok": False, "output": f"Gagal mengeksekusi {action} pada {candidates}"}
+    return last_res or {"ok": False, "output": f"Failed to execute {action} on {candidates}"}
 
 
 
@@ -2106,11 +2106,11 @@ def _run_native(cmd: list[str], label: str) -> dict:
             "output": output or f"{label} rc={proc.returncode}",
         }
     except subprocess.TimeoutExpired:
-        return {"ok": False, "output": f"Timeout eksekusi: {label}"}
+        return {"ok": False, "output": f"Execution timeout: {label}"}
     except FileNotFoundError as e:
-        return {"ok": False, "output": f"Perintah tidak tersedia: {e}"}
+        return {"ok": False, "output": f"Command not available: {e}"}
     except Exception as e:
-        return {"ok": False, "output": f"Gagal mengeksekusi {label}: {e}"}
+        return {"ok": False, "output": f"Failed to execute {label}: {e}"}
 
 
 def report_command_result(cfg: dict, command_id: int, result: dict):
@@ -9679,7 +9679,7 @@ def run_file_op(action: str, params: dict) -> dict:
             if err:
                 return {"ok": False, "error": f"[pantau-file error] {err}"}
         except Exception as e:
-            return {"ok": False, "error": f"Eksekusi pantau-file gagal: {e}"}
+            return {"ok": False, "error": f"pantau-file execution failed: {e}"}
 
     # Fallback jika wrapper sudo belum terpasang atau jalan native
     try:
@@ -9693,8 +9693,8 @@ def run_file_op(action: str, params: dict) -> dict:
         if proc.stdout:
             return json.loads(proc.stdout.decode("utf-8", errors="replace"))
     except Exception as e:
-        return {"ok": False, "error": f"Fallback pantau-file gagal: {e}"}
-    return {"ok": False, "error": "pantau-file tidak dapat dieksekusi"}
+        return {"ok": False, "error": f"pantau-file fallback failed: {e}"}
+    return {"ok": False, "error": "pantau-file is not executable"}
 
 
 def _file_worker_loop(cfg: dict) -> None:
