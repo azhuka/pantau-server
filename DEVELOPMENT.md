@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.125
+
+Upgraded /api/probes/{pid}/history to return probe details, avg_latency_ms stats, and chronological chart series; upgraded EndpointHistoryModal.vue with 4 mini KPI cards and SVG latency line/area chart; made EndpointInventoryTab.vue rows clickable to open History & Chart directly and refined responsive KPI/filter layout.
+
+
 ### Versi v0.1.124
 
 ### v0.1.124 — Perbaikan Default created_at pada ProbeTarget & Safe JSON Error Parsing\n- **Fix Insert ProbeTarget (server/models/probe.py, server/routers/probes.py)**: Mengubah created_at dan checked_at memakai default Python datetime.utcnow serta mengisi created_at eksplisit saat POST /api/probes.\n- **Safe JSON Parsing (EndpointFormModal.vue, AddHostModal.vue)**: Menggunakan res.json().catch(() => ({})) agar respons non-JSON tidak memicu error parse JSON.
