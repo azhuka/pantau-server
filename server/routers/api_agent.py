@@ -9,6 +9,7 @@ from fastapi.responses import PlainTextResponse
 from sqlalchemy import desc, text
 from sqlalchemy.orm import Session
 from core.database import get_db
+from core.security import _get_cached_server_id
 from core.utils import hash_api_key
 from models.misc import AuditLog
 from models.problem import ServerProblem
@@ -425,22 +426,26 @@ def api_log_result(
 
 @router.get("/api/agent/file-requests")
 async def api_agent_file_requests(
-    server: Server = Depends(get_server_by_agent_key),
+    x_api_key: str = Header(alias="X-Api-Key"),
 ):
     """Long-poll handler (15s) delivering pending Remote File Manager RPC requests to the target agent."""
+    server_id = await asyncio.to_thread(_get_cached_server_id, x_api_key)
+    if not server_id:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+
     from routers.files import file_dispatcher
 
-    reqs = await file_dispatcher.pop_pending(server.id)
+    reqs = await file_dispatcher.pop_pending(server_id)
     if reqs:
         return {"requests": reqs}
 
-    event = await file_dispatcher.get_or_create_event(server.id)
+    event = await file_dispatcher.get_or_create_event(server_id)
     try:
         await asyncio.wait_for(event.wait(), timeout=15.0)
     except asyncio.TimeoutError:
         pass
 
-    reqs = await file_dispatcher.pop_pending(server.id)
+    reqs = await file_dispatcher.pop_pending(server_id)
     return {"requests": reqs}
 
 

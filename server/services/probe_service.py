@@ -275,36 +275,43 @@ def record_probe_execution(db: Session, probe_id: int, res: ProbeResult, checked
 
 
 async def run_due_probes(db_factory) -> None:
-    """Run all active probes whose interval has elapsed."""
+    """Run all active probes whose interval has elapsed without blocking the event loop."""
     now = datetime.utcnow()
-    due_items: list[dict[str, Any]] = []
-    with db_factory() as db:
-        active = db.query(ProbeTarget).filter(ProbeTarget.is_active == 1).all()
-        for p in active:
-            interval = max(10, int(p.interval_seconds or 60))
-            if p.last_checked_at is None or (now - p.last_checked_at).total_seconds() >= interval:
-                due_items.append({
-                    "id": p.id,
-                    "probe_type": p.probe_type,
-                    "target": p.target,
-                    "port": p.port,
-                    "timeout_seconds": p.timeout_seconds,
-                    "http_method": p.http_method,
-                    "expected_status": p.expected_status,
-                    "keyword_match": p.keyword_match,
-                    "ssl_verify": bool(p.ssl_verify),
-                    "latency_threshold_ms": p.latency_threshold_ms,
-                })
 
+    def _load_due_items() -> list[dict[str, Any]]:
+        items: list[dict[str, Any]] = []
+        with db_factory() as db:
+            active = db.query(ProbeTarget).filter(ProbeTarget.is_active == 1).all()
+            for p in active:
+                interval = max(10, int(p.interval_seconds or 60))
+                if p.last_checked_at is None or (now - p.last_checked_at).total_seconds() >= interval:
+                    items.append({
+                        "id": p.id,
+                        "probe_type": p.probe_type,
+                        "target": p.target,
+                        "port": p.port,
+                        "timeout_seconds": p.timeout_seconds,
+                        "http_method": p.http_method,
+                        "expected_status": p.expected_status,
+                        "keyword_match": p.keyword_match,
+                        "ssl_verify": bool(p.ssl_verify),
+                        "latency_threshold_ms": p.latency_threshold_ms,
+                    })
+        return items
+
+    due_items = await asyncio.to_thread(_load_due_items)
     if not due_items:
         return
 
     sem = asyncio.Semaphore(10)
 
+    def _save_probe_result(probe_id: int, res: ProbeResult) -> None:
+        with db_factory() as db:
+            record_probe_execution(db, probe_id, res, datetime.utcnow())
+
     async def _run_one(item: dict[str, Any]) -> None:
         async with sem:
             res = await execute_probe(item)
-            with db_factory() as db:
-                record_probe_execution(db, item["id"], res, datetime.utcnow())
+            await asyncio.to_thread(_save_probe_result, item["id"], res)
 
     await asyncio.gather(*[_run_one(i) for i in due_items], return_exceptions=True)

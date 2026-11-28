@@ -14,18 +14,34 @@ from services.probe_service import run_due_probes
 from services.maintenance_service import evaluate_maintenance_windows
 
 
+def _run_stale_and_maintenance_tick() -> None:
+    """Run synchronous stale-host and maintenance-window checks in a worker thread."""
+    db = SessionLocal()
+    try:
+        check_all_servers_stale(db)
+        evaluate_maintenance_windows(db)
+    except Exception:
+        db.rollback()
+    finally:
+        db.close()
+
+
+def _run_retention_tick() -> None:
+    """Run synchronous retention pruning in a worker thread."""
+    db = SessionLocal()
+    try:
+        run_retention_prune(db)
+    except Exception:
+        db.rollback()
+    finally:
+        db.close()
+
+
 async def _stale_monitor_loop():
     """Periodically evaluate host connectivity, maintenance windows, and synthetic probes."""
     while True:
         await asyncio.sleep(15)
-        db = SessionLocal()
-        try:
-            check_all_servers_stale(db)
-            evaluate_maintenance_windows(db)
-        except Exception:
-            db.rollback()
-        finally:
-            db.close()
+        await asyncio.to_thread(_run_stale_and_maintenance_tick)
         try:
             await run_due_probes(SessionLocal)
         except Exception:
@@ -36,13 +52,7 @@ async def _retention_loop():
     """Periodically prune expired sessions and old telemetry/audit/command history."""
     while True:
         await asyncio.sleep(3600)
-        db = SessionLocal()
-        try:
-            run_retention_prune(db)
-        except Exception:
-            db.rollback()
-        finally:
-            db.close()
+        await asyncio.to_thread(_run_retention_tick)
 
 
 @asynccontextmanager

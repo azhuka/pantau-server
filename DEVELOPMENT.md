@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.111
+
+### v0.1.111 — Perbaikan Kelelahan Pool Koneksi DB & Pemblokiran Event Loop\n- **Non-Blocking Long-Poll Agent ()**: Mengganti `Depends(get_server_by_agent_key)` pada `/api/agent/file-requests` dengan `_get_cached_server_id` via `asyncio.to_thread` sehingga sesi DB tidak ditahan selama 15 detik *long-poll*.\n- **Pembersihan Sesi Tak Terpakai ()**: Menghapus `Depends(get_db)` yang tidak terpakai pada `api_agent_terminal_stdout` dan `api_agent_terminal_close`, serta menjalankan `_get_cached_server_id` melalui `asyncio.to_thread`.\n- **Isolasi Threadpool Background Loop (, `server/services/probe_service.py`)**: Memindahkan eksekusi kueri DB sinkron di `_stale_monitor_loop`, `_retention_loop`, dan `run_due_probes` ke `asyncio.to_thread` agar *asyncio event loop* tetap responsif.
+
+
 ### Versi v0.1.110
 
 Audit dan penyelarasan penuh fitur Packages: perbaikan penyimpanan hasil PKG_LIST dan antrean otomatis pasca-upgrade di api_agent.py, pelestarian status runtime systemd pada get_server_packages di servers.py, penambahan tombol Refresh (PKG_LIST), Upgrade All, sorting kolom, filter status runtime, dropdown Actions (Upgrade/View Logs/Clear Cache), serta modal PackageLogsModal (PKG_LOGS).

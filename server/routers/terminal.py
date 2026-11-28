@@ -523,7 +523,7 @@ async def api_agent_terminal_requests(
     wait: bool = Query(default=True),
 ):
     """Agen mem-poll permintaan pembukaan terminal session realtime (long-poll 15 dtk jika wait=True)."""
-    server_id = _get_cached_server_id(x_api_key)
+    server_id = await asyncio.to_thread(_get_cached_server_id, x_api_key)
     if not server_id:
         raise HTTPException(status_code=401, detail="Invalid API key")
 
@@ -547,7 +547,7 @@ async def api_agent_terminal_stdin(
     x_api_key: str = Header(alias="X-Api-Key"),
 ):
     """Agen mengambil ketikan admin (stdin) atau sinyal resize dari dashboard."""
-    server_id = _get_cached_server_id(x_api_key)
+    server_id = await asyncio.to_thread(_get_cached_server_id, x_api_key)
     if not server_id:
         raise HTTPException(status_code=401, detail="Invalid API key")
 
@@ -581,10 +581,9 @@ async def api_agent_terminal_stdout(
     session_id: str,
     body: dict = Body(...),
     x_api_key: str = Header(alias="X-Api-Key"),
-    db: Session = Depends(get_db),
 ):
     """Agen mengirimkan potongan teks output terminal ke browser WebSocket."""
-    server_id = _get_cached_server_id(x_api_key)
+    server_id = await asyncio.to_thread(_get_cached_server_id, x_api_key)
     if not server_id:
         raise HTTPException(status_code=401, detail="Invalid API key")
 
@@ -620,10 +619,9 @@ async def api_agent_terminal_stdout(
 async def api_agent_terminal_close(
     session_id: str,
     x_api_key: str = Header(alias="X-Api-Key"),
-    db: Session = Depends(get_db),
 ):
     """Agen melaporkan bahwa proses shell lokal telah selesai/ditutup."""
-    server_id = _get_cached_server_id(x_api_key)
+    server_id = await asyncio.to_thread(_get_cached_server_id, x_api_key)
     if not server_id:
         raise HTTPException(status_code=401, detail="Invalid API key")
 
