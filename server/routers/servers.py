@@ -607,6 +607,9 @@ def ignore_monitored_service(
         prob.ignored_reason = reason
         prob.ignore_mode = ignore_mode
         prob.updated_at = now
+        if not prob.acknowledged_at:
+            prob.acknowledged_at = now
+            prob.acknowledged_by = user.username
 
     db.add(AuditLog(
         server_id=sid,

@@ -430,6 +430,9 @@ def ignore_problem_action(
     prob.ignored_reason = reason
     prob.ignore_mode = ignore_mode
     prob.updated_at = now
+    if not prob.acknowledged_at:
+        prob.acknowledged_at = now
+        prob.acknowledged_by = user.username
 
     audit = AuditLog(
         server_id=prob.server_id,
@@ -451,6 +454,8 @@ def ignore_problem_action(
         "ignore_mode": ignore_mode,
         "ignored_by": user.username,
         "ignored_reason": reason,
+        "acknowledged_by": prob.acknowledged_by,
+        "acknowledged_at": prob.acknowledged_at.isoformat() if prob.acknowledged_at else None,
         "message": f"Incident ignored ({duration})"
     }
 

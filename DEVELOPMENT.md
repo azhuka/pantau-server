@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.112
+
+### v0.1.112 — Sinkronisasi Status Acknowledged Saat Insiden Diabaikan\n- **Auto-Acknowledge pada Ignore Insiden ()**: Endpoint `POST /api/problems/{pid}/ignore` kini otomatis mengisi `acknowledged_at` dan `acknowledged_by` jika belum ditangani sebelumnya.\n- **Auto-Acknowledge pada Ignore Service & Pewarisan Kebijakan (, )**: Pengabaian service yang memiliki insiden aktif `service_down` serta insiden baru yang mewarisi kebijakan *ignore* aktif kini juga otomatis menandai status `acknowledged`.
+
+
 ### Versi v0.1.111
 
 ### v0.1.111 — Perbaikan Kelelahan Pool Koneksi DB & Pemblokiran Event Loop\n- **Non-Blocking Long-Poll Agent ()**: Mengganti `Depends(get_server_by_agent_key)` pada `/api/agent/file-requests` dengan `_get_cached_server_id` via `asyncio.to_thread` sehingga sesi DB tidak ditahan selama 15 detik *long-poll*.\n- **Pembersihan Sesi Tak Terpakai ()**: Menghapus `Depends(get_db)` yang tidak terpakai pada `api_agent_terminal_stdout` dan `api_agent_terminal_close`, serta menjalankan `_get_cached_server_id` melalui `asyncio.to_thread`.\n- **Isolasi Threadpool Background Loop (, `server/services/probe_service.py`)**: Memindahkan eksekusi kueri DB sinkron di `_stale_monitor_loop`, `_retention_loop`, dan `run_due_probes` ke `asyncio.to_thread` agar *asyncio event loop* tetap responsif.

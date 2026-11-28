@@ -862,6 +862,8 @@ def evaluate_server_problems(db: Session, srv: Server, report_dict: dict, extras
             inh_by = None
             inh_reason = None
             inh_mode = None
+            inh_ack_at = None
+            inh_ack_by = None
             if prev_ign:
                 p_mode = prev_ign.ignore_mode
                 if p_mode == "permanent" or (p_mode == "duration" and prev_ign.ignored_until and prev_ign.ignored_until > now):
@@ -870,6 +872,8 @@ def evaluate_server_problems(db: Session, srv: Server, report_dict: dict, extras
                     inh_by = prev_ign.ignored_by
                     inh_reason = prev_ign.ignored_reason
                     inh_mode = p_mode
+                    inh_ack_at = now
+                    inh_ack_by = prev_ign.ignored_by or "operator"
 
             db.add(ServerProblem(
                 server_id=srv.id,
@@ -886,6 +890,8 @@ def evaluate_server_problems(db: Session, srv: Server, report_dict: dict, extras
                 ignored_by=inh_by,
                 ignored_reason=inh_reason,
                 ignore_mode=inh_mode,
+                acknowledged_at=inh_ack_at,
+                acknowledged_by=inh_ack_by,
             ))
             db.flush()
             db.add(AuditLog(
