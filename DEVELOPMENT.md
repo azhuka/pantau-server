@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.113
+
+### v0.1.113 — Standardisasi Istilah Acknowledge Incident pada Audit Log\n- **Standardisasi Label & Pesan Audit (, )**: Mengganti `Mark Incident Handled` menjadi `Acknowledge Incident` serta `Incident marked as handled` / `handled mark cleared` menjadi `Incident acknowledged` / `Incident acknowledgement cleared`.
+
+
 ### Versi v0.1.112
 
 ### v0.1.112 — Sinkronisasi Status Acknowledged Saat Insiden Diabaikan\n- **Auto-Acknowledge pada Ignore Insiden ()**: Endpoint `POST /api/problems/{pid}/ignore` kini otomatis mengisi `acknowledged_at` dan `acknowledged_by` jika belum ditangani sebelumnya.\n- **Auto-Acknowledge pada Ignore Service & Pewarisan Kebijakan (, )**: Pengabaian service yang memiliki insiden aktif `service_down` serta insiden baru yang mewarisi kebijakan *ignore* aktif kini juga otomatis menandai status `acknowledged`.

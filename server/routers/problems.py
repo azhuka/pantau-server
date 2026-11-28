@@ -323,7 +323,7 @@ def acknowledge_problem_action(
         action="problem_ack",
         target=prob.message[:100],
         result="success",
-        meta=f"Incident marked as handled by {user.username}",
+        meta=f"Incident acknowledged by {user.username}",
         created_at=now
     )
     db.add(audit)
@@ -334,7 +334,7 @@ def acknowledge_problem_action(
         "id": pid,
         "acknowledged_by": user.username,
         "acknowledged_at": now.isoformat(),
-        "message": f"Incident marked as handled by {user.username}"
+        "message": f"Incident acknowledged by {user.username}"
     }
 
 
@@ -367,7 +367,7 @@ def unacknowledge_problem_action(
         action="problem_unack",
         target=prob.message[:100],
         result="success",
-        meta=f"Incident handled mark cleared by {user.username} (previous: {old_ack})",
+        meta=f"Incident acknowledgement cleared by {user.username} (previous: {old_ack})",
         created_at=now
     )
     db.add(audit)
@@ -378,7 +378,7 @@ def unacknowledge_problem_action(
         "id": pid,
         "acknowledged_by": None,
         "acknowledged_at": None,
-        "message": f"Incident handled mark cleared by {user.username}"
+        "message": f"Incident acknowledgement cleared by {user.username}"
     }
 
 
