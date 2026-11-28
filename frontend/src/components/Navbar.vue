@@ -28,7 +28,7 @@
           <div class="font-bold text-sm tracking-wider text-gray-100 flex items-center gap-2 font-mono whitespace-nowrap">
             <span class="text-cyan-400 font-extrabold">{{ t('app_name') }}</span>
             <span class="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-800/60 tracking-normal">
-              v0.1.127
+              v0.1.128
             </span>
           </div>
           <div class="text-[10px] text-gray-400 tracking-wider font-mono uppercase whitespace-nowrap">

@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.128
+
+Restored Asset Details title, shortened verbose workspace/incident labels in en.js, and removed redundant upgradable package count badge from Upgrade OS buttons.
+
+
 ### Versi v0.1.127
 
 Shortened 'View History & Chart' action label in EndpointInventoryTab.vue to 'History'.
