@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.123
+
+### v0.1.123 — Dukungan Tombol Fisik Escape di Seluruh Modal\n- **Global Escape Stack (frontend/src/utils/useModalEsc.js)**: Menambahkan composable useModalEsc berbasis capture-phase stack agar tombol fisik Esc selalu menutup modal paling atas secara instan, termasuk saat fokus berada di luar input.\n- **Cakupan Penuh 26 Modal**: Menerapkan useModalEsc pada seluruh modal Assets, Incidents, Dashboard, Settings/RBAC, Terminal Confirm/Unlock, AptTaskRunner, RemoteFileManager, ServiceLog, dan NocConfirmModal.
+
+
 ### Versi v0.1.122
 
 ### v0.1.122 — Izinkan Target Lokal/Loopback & Uji Otomatis Saat Simpan Endpoint\n- **Target Lokal/Loopback (server/services/probe_service.py)**: Mengizinkan probing ke 127.0.0.1/localhost untuk layanan lokal NOC sambil tetap memblokir cloud metadata/link-local (169.254.x.x), multicast, dan unspecified.\n- **Auto-Verify Saat Simpan (server/routers/probes.py)**: POST /api/probes dan PUT /api/probes/{pid} kini langsung mengeksekusi probe sebelum merespons sehingga status dan latensi langsung terbarui saat disimpan.

@@ -166,6 +166,7 @@
 </template>
 
 <script setup>
+import { useModalEsc } from '../../../utils/useModalEsc'
 import { ref, computed, watch, nextTick, onUnmounted } from 'vue'
 
 const props = defineProps({
@@ -420,4 +421,5 @@ onUnmounted(() => {
   pollCancelled = true
   stopTailTimer()
 })
+useModalEsc(() => Boolean(props.target), () => emit('close'))
 </script>

@@ -57,9 +57,10 @@
 </template>
 
 <script setup>
+import { useModalEsc } from '../../utils/useModalEsc'
 import { useI18n } from '../../i18n'
 
-defineProps({
+const props = defineProps({
   isOpen: Boolean,
   server: Object
 })
@@ -74,4 +75,5 @@ function handleClose() {
 function handleConfirm() {
   emit('confirm')
 }
+useModalEsc(() => props.isOpen, () => emit('close'))
 </script>

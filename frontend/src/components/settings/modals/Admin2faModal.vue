@@ -79,6 +79,7 @@
 </template>
 
 <script setup>
+import { useModalEsc } from '../../../utils/useModalEsc'
 import { ref } from 'vue'
 import { confirmAction } from '../../../utils/useToast'
 
@@ -122,4 +123,5 @@ async function handleReset2fa() {
     loading.value = false
   }
 }
+useModalEsc(() => true, () => emit('close'))
 </script>

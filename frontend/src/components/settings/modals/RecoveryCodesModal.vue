@@ -74,6 +74,7 @@
 </template>
 
 <script setup>
+import { useModalEsc } from '../../../utils/useModalEsc'
 import { ref } from 'vue'
 import { useI18n } from '../../../i18n'
 
@@ -81,7 +82,7 @@ const props = defineProps({
   codes: { type: Array, default: () => [] }
 })
 
-defineEmits(['close'])
+const emit = defineEmits(['close'])
 const { t } = useI18n()
 
 const copied = ref(false)
@@ -111,4 +112,5 @@ function downloadCodes() {
   a.click()
   URL.revokeObjectURL(url)
 }
+useModalEsc(() => true, () => emit('close'))
 </script>

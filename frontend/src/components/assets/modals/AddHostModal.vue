@@ -133,6 +133,7 @@
 </template>
 
 <script setup>
+import { useModalEsc } from '../../../utils/useModalEsc'
 import { ref, computed } from 'vue'
 import { apiFetch, extractErrorMessage } from '../../../utils/api'
 import { useToast } from '../../../utils/useToast'
@@ -203,4 +204,5 @@ function closeModal() {
   form.value = defaultForm()
   emit('close')
 }
+useModalEsc(() => props.isOpen, closeModal)
 </script>

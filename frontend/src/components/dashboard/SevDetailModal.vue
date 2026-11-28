@@ -150,6 +150,7 @@
 </template>
 
 <script setup>
+import { useModalEsc } from '../../utils/useModalEsc'
 import { ref, computed, watch } from 'vue'
 import { useI18n } from '../../i18n'
 import { formatIncidentMessage, formatIncidentDuration } from '../../utils/formatters'
@@ -164,7 +165,7 @@ const props = defineProps({
   currentUser: { type: Object, default: null }
 })
 
-defineEmits(['close', 'open-problem-detail', 'open-server', 'unignore-problem', 'ignore-problem', 'ack-problem'])
+const emit = defineEmits(['close', 'open-problem-detail', 'open-server', 'unignore-problem', 'ignore-problem', 'ack-problem'])
 
 const isViewer = computed(() => {
   const r = (props.currentUser?.role || '').toLowerCase()
@@ -237,4 +238,5 @@ function formatFullTime(isoStr) {
 function calcDuration(startedAt) {
   return formatIncidentDuration(startedAt, locale)
 }
+useModalEsc(() => props.isOpen, () => emit('close'))
 </script>

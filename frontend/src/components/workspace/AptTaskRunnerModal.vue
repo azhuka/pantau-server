@@ -73,6 +73,7 @@
 </template>
 
 <script setup>
+import { useModalEsc } from '../../utils/useModalEsc'
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 import { Terminal } from 'xterm'
 import { FitAddon } from 'xterm-addon-fit'
@@ -256,4 +257,5 @@ onUnmounted(() => {
   stopTimers()
   if (term) { term.dispose(); term = null }
 })
+useModalEsc(() => props.isOpen, () => emit('close'))
 </script>

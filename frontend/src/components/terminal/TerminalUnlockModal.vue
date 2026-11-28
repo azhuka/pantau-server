@@ -118,6 +118,7 @@
 </template>
 
 <script setup>
+import { useModalEsc } from '../../utils/useModalEsc'
 import { ref, watch, nextTick } from 'vue'
 import { useI18n } from '../../i18n'
 
@@ -231,4 +232,5 @@ function translateError(msg) {
   }
   return str
 }
+useModalEsc(() => props.isOpen, () => emit('close'))
 </script>

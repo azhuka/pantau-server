@@ -140,6 +140,7 @@
 </template>
 
 <script setup>
+import { useModalEsc } from '../../../utils/useModalEsc'
 import { ref, onMounted } from 'vue'
 
 const emit = defineEmits(['close', 'enabled'])
@@ -241,4 +242,5 @@ function downloadCodes() {
 function finishSetup() {
   emit('close')
 }
+useModalEsc(() => true, () => emit('close'))
 </script>

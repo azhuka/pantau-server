@@ -67,6 +67,7 @@
 </template>
 
 <script setup>
+import { useModalEsc } from '../../../utils/useModalEsc'
 import { ref } from 'vue'
 import { useI18n } from '../../../i18n'
 import { useToast } from '../../../utils/useToast'
@@ -109,4 +110,5 @@ async function confirmDelete() {
     submitting.value = false
   }
 }
+useModalEsc(() => props.isOpen, () => emit('close'))
 </script>

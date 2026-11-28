@@ -75,12 +75,13 @@
 </template>
 
 <script setup>
+import { useModalEsc } from '../../../utils/useModalEsc'
 import { ref, computed, watch } from 'vue'
 import { useI18n } from '../../../i18n'
 import { apiFetch } from '../../../utils/api'
 
 const props = defineProps({ probe: { type: Object, default: null } })
-defineEmits(['close'])
+const emit = defineEmits(['close'])
 const { t } = useI18n()
 
 const loading = ref(false)
@@ -114,4 +115,5 @@ watch(() => props.probe, async (p) => {
     loading.value = false
   }
 }, { immediate: true })
+useModalEsc(() => Boolean(props.probe), () => emit('close'))
 </script>

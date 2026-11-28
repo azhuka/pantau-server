@@ -105,6 +105,7 @@
 </template>
 
 <script setup>
+import { useModalEsc } from '../../utils/useModalEsc'
 import { ref, computed } from 'vue'
 import { useI18n } from '../../i18n'
 import { formatIncidentMessage, formatIncidentRootCause, formatIncidentTip } from '../../utils/formatters'
@@ -117,7 +118,7 @@ const props = defineProps({
   currentUser: { type: Object, default: null }
 })
 
-defineEmits(['close', 'open-server'])
+const emit = defineEmits(['close', 'open-server'])
 
 const copied = ref(false)
 
@@ -169,4 +170,5 @@ function copyCli() {
   copied.value = true
   setTimeout(() => { copied.value = false }, 2000)
 }
+useModalEsc(() => props.isOpen && Boolean(props.problem), () => emit('close'))
 </script>

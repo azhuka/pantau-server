@@ -136,6 +136,7 @@
 </template>
 
 <script setup>
+import { useModalEsc } from '../../../utils/useModalEsc'
 import { ref, watch } from 'vue'
 import { useI18n } from '../../../i18n'
 import { confirmAction, useToast } from '../../../utils/useToast'
@@ -238,4 +239,5 @@ function copyNewKey() {
   if (!newApiKey.value) return
   navigator.clipboard.writeText(newApiKey.value).then(() => toast.success('API key copied to clipboard'))
 }
+useModalEsc(() => props.isOpen, () => emit('close'))
 </script>

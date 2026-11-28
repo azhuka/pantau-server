@@ -115,6 +115,7 @@
 </template>
 
 <script setup>
+import { useModalEsc } from '../../../utils/useModalEsc'
 import { ref, reactive } from 'vue'
 import { useI18n } from '../../../i18n'
 
@@ -177,4 +178,5 @@ async function handleSubmit() {
     loading.value = false
   }
 }
+useModalEsc(() => true, () => emit('close'))
 </script>

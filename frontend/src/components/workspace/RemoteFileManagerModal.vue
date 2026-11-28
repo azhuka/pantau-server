@@ -1120,6 +1120,7 @@
 </template>
 
 <script setup>
+import { useModalEsc } from '../../utils/useModalEsc'
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useI18n } from '../../i18n'
 import { confirmAction } from '../../utils/useToast'
@@ -1957,4 +1958,5 @@ watch(() => props.open, (newVal) => {
     loadDirectory(currentPath.value)
   }
 })
+useModalEsc(() => props.open, () => emit('close'))
 </script>

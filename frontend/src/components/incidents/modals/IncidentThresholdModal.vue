@@ -137,6 +137,7 @@
 </template>
 
 <script setup>
+import { useModalEsc } from '../../../utils/useModalEsc'
 import { ref, computed, watch } from 'vue'
 import { useI18n } from '../../../i18n'
 import { useToast } from '../../../utils/useToast'
@@ -208,4 +209,5 @@ async function saveThresholds() {
     saving.value = false
   }
 }
+useModalEsc(() => props.isOpen, () => emit('close'))
 </script>

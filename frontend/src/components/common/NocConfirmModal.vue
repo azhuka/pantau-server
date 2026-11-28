@@ -50,6 +50,7 @@
 </template>
 
 <script setup>
+import { useModalEsc } from '../../utils/useModalEsc'
 import { ref, computed, watch, nextTick } from 'vue'
 import { useConfirmState, resolveConfirm } from '../../utils/useToast'
 
@@ -84,4 +85,5 @@ function accept() {
 function cancel() {
   resolveConfirm(state.value.requirePassword ? null : false)
 }
+useModalEsc(() => state.isOpen, cancel)
 </script>

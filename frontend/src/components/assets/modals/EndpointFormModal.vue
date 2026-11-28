@@ -165,6 +165,7 @@
 </template>
 
 <script setup>
+import { useModalEsc } from '../../../utils/useModalEsc'
 import { ref, computed, watch } from 'vue'
 import { apiFetch, extractErrorMessage } from '../../../utils/api'
 import { useToast } from '../../../utils/useToast'
@@ -295,4 +296,5 @@ function closeModal() {
   testResult.value = null
   emit('close')
 }
+useModalEsc(() => props.isOpen, closeModal)
 </script>

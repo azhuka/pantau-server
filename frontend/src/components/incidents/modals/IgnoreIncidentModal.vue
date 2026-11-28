@@ -82,6 +82,7 @@
 </template>
 
 <script setup>
+import { useModalEsc } from '../../../utils/useModalEsc'
 import { ref, watch } from 'vue'
 import { useI18n } from '../../../i18n'
 import { formatIncidentMessage, severityBadgeClass } from '../../../utils/formatters'
@@ -155,4 +156,5 @@ async function submitIgnore() {
     submitting.value = false
   }
 }
+useModalEsc(() => props.isOpen && Boolean(props.problem), () => emit('close'))
 </script>
