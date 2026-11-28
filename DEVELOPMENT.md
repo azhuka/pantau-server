@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.124
+
+### v0.1.124 — Perbaikan Default created_at pada ProbeTarget & Safe JSON Error Parsing\n- **Fix Insert ProbeTarget (server/models/probe.py, server/routers/probes.py)**: Mengubah created_at dan checked_at memakai default Python datetime.utcnow serta mengisi created_at eksplisit saat POST /api/probes.\n- **Safe JSON Parsing (EndpointFormModal.vue, AddHostModal.vue)**: Menggunakan res.json().catch(() => ({})) agar respons non-JSON tidak memicu error parse JSON.
+
+
 ### Versi v0.1.123
 
 ### v0.1.123 — Dukungan Tombol Fisik Escape di Seluruh Modal\n- **Global Escape Stack (frontend/src/utils/useModalEsc.js)**: Menambahkan composable useModalEsc berbasis capture-phase stack agar tombol fisik Esc selalu menutup modal paling atas secara instan, termasuk saat fokus berada di luar input.\n- **Cakupan Penuh 26 Modal**: Menerapkan useModalEsc pada seluruh modal Assets, Incidents, Dashboard, Settings/RBAC, Terminal Confirm/Unlock, AptTaskRunner, RemoteFileManager, ServiceLog, dan NocConfirmModal.

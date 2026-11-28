@@ -180,8 +180,8 @@ async function submit() {
     const payload = { ...form.value }
     if (payload.platform_override === 'baremetal') payload.is_proxmox_ha = false
     const res = await apiFetch('/api/servers', { method: 'POST', body: JSON.stringify(payload) })
-    const data = await res.json()
-    if (!res.ok) throw new Error(extractErrorMessage(data, 'Failed to register asset'))
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) throw new Error(extractErrorMessage(data, `Failed to register asset (HTTP ${res.status})`))
     revealedKey.value = data.api_key
     revealedHostname.value = data.hostname
     toast.success(data.message)

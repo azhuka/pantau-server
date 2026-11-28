@@ -264,8 +264,8 @@ async function runAdhocTest() {
   testResult.value = null
   try {
     const res = await apiFetch('/api/probes/test-adhoc', { method: 'POST', body: JSON.stringify(buildPayload()) })
-    const data = await res.json()
-    if (!res.ok) throw new Error(extractErrorMessage(data, 'Probe test failed'))
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) throw new Error(extractErrorMessage(data, `Probe test failed (HTTP ${res.status})`))
     testResult.value = data.result
   } catch (err) {
     toast.error(err.message)
@@ -280,8 +280,8 @@ async function submit() {
     const url = isEdit.value ? `/api/probes/${props.probe.id}` : '/api/probes'
     const method = isEdit.value ? 'PUT' : 'POST'
     const res = await apiFetch(url, { method, body: JSON.stringify(buildPayload()) })
-    const data = await res.json()
-    if (!res.ok) throw new Error(extractErrorMessage(data, 'Failed to save endpoint'))
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) throw new Error(extractErrorMessage(data, `Failed to save endpoint (HTTP ${res.status})`))
     toast.success(data.message || 'Endpoint saved')
     emit('saved')
     closeModal()

@@ -189,6 +189,7 @@ async def create_probe(
         consecutive_threshold=max(1, min(10, int(body.get("consecutive_threshold") or 3))),
         is_active=1,
         status="unknown",
+        created_at=datetime.utcnow(),
         created_by=user.username,
     )
     db.add(probe)

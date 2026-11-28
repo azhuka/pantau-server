@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, BigInteger, Float, String, Text, DateTime, SmallInteger, func
+from datetime import datetime
+from sqlalchemy import Column, Integer, BigInteger, Float, String, Text, DateTime, SmallInteger
 from core.database import Base
 
 class ProbeTarget(Base):
@@ -34,7 +35,7 @@ class ProbeTarget(Base):
     consecutive_successes = Column(Integer, default=0)
     uptime_24h = Column(Float, default=100.0)
     uptime_30d = Column(Float, default=100.0)
-    created_at = Column(DateTime, server_default=func.now())
+    created_at = Column(DateTime, default=datetime.utcnow)
     created_by = Column(String(100), nullable=True)
 
 class ProbeLog(Base):
@@ -42,7 +43,7 @@ class ProbeLog(Base):
 
     id = Column(BigInteger, primary_key=True, index=True, autoincrement=True)
     probe_id = Column(Integer, index=True, nullable=False)
-    checked_at = Column(DateTime, server_default=func.now(), index=True)
+    checked_at = Column(DateTime, default=datetime.utcnow, index=True)
     status = Column(String(20), nullable=False)
     latency_ms = Column(Float, nullable=True)
     status_code = Column(Integer, nullable=True)
