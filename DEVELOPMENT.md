@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.117
+
+### v0.1.117 — Peningkatan Skala UI & Kerapian Spasi Tabel/KPI untuk Zoom 150%\n- **Skala Global Moderat ()**: Menetapkan `html { font-size: 17px; overflow-x: hidden; }` dan `body { font-size: 14.5px; }`, serta menaikkan breakpoint `.dash-kpi-grid` ke `max-width: 1220px`.\n- **Spasi Tepi Tabel & KPI ()**: Memberikan padding tepi `pl-4`/`pr-4` dan `px-3.5` pada kolom metrik tabel *Asset Status & Performance* serta *Active Incidents*, `flex-wrap` pada kartu KPI 1, dan membatasi lebar deskripsi insiden (`max-w-md xl:max-w-xl`).\n- **Proteksi Tinggi Modal ()**: Mengubah `min-h-[620px]` menjadi `min-h-[min(620px,90vh)]` agar aman pada layar laptop di zoom 150%.
+
+
 ### Versi v0.1.116
 
 ### v0.1.116 — Standardisasi Total Output Agen ke Bahasa Inggris (Agent v4.11.31)\n- **Agen v4.11.31 ()**: Menerjemahkan seluruh sisa output Bahasa Indonesia pada `get_package_logs`, `clear_package_cache`, `_run_apt_inner`, `fetch_log_lines`, `collect_available_logs`, `collect_fim`, `pantau-file`, dan error terminal ke Bahasa Inggris baku NOC.

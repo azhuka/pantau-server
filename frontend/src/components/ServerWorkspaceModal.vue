@@ -12,7 +12,7 @@
         'hud-tactical-card shadow-2xl flex flex-col transition-all duration-200 overflow-hidden relative',
         isMaximized
           ? 'fixed inset-0 w-screen h-screen rounded-none z-50'
-          : 'w-[92vw] max-w-[1600px] h-[90vh] min-h-[620px] rounded-xl'
+          : 'w-[92vw] max-w-[1600px] h-[90vh] min-h-[min(620px,90vh)] rounded-xl'
       ]"
     >
       <span class="hud-corner-tr"></span>

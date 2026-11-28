@@ -28,7 +28,7 @@
           </svg>
         </div>
 
-        <div class="flex items-center justify-between gap-3">
+        <div class="flex items-center justify-between gap-2 flex-wrap">
           <div class="flex items-baseline gap-1.5 font-mono shrink-0">
             <span class="text-2xl font-black text-gray-100 leading-none tracking-tight">{{ servers.length }}</span>
             <span class="text-[11px] text-cyan-400 font-bold uppercase tracking-wider">{{ t('dash_kpi_host') }}</span>
@@ -72,49 +72,49 @@
         </div>
 
         <!-- Severity Tiles Strip (Glosarium Baku 5-Tingkat Terbaca Jelas & Proporsional) -->
-        <div class="grid grid-cols-5 gap-1.5 text-center font-mono">
+        <div class="grid grid-cols-5 gap-2 text-center font-mono">
           <!-- Danger (Merah - Bahaya) -->
           <div
             @click="openSevModal('danger')"
-            class="py-1 px-1 rounded border transition cursor-pointer hover:brightness-125 active:scale-95"
+            class="py-1.5 px-1.5 rounded border transition cursor-pointer hover:brightness-125 active:scale-95"
             :class="dangerCount > 0 ? 'bg-rose-950/90 border-rose-500 text-rose-300 font-bold shadow-[0_0_8px_rgba(244,63,94,0.3)]' : 'bg-gray-900/40 border-gray-800/80 text-gray-500'"
             :title="t('sev_danger')"
           >
             <span class="text-base font-extrabold leading-tight block">{{ dangerCount }}</span>
-            <span class="text-[9.5px] uppercase font-bold block mt-0.5 tracking-wider">{{ t('sev_danger') }}</span>
+            <span class="text-[9.5px] uppercase font-bold block mt-0.5 tracking-normal">{{ t('sev_danger') }}</span>
           </div>
 
           <!-- Critical (Oranye Pekat - Kritis) -->
           <div
             @click="openSevModal('critical')"
-            class="py-1 px-1 rounded border transition cursor-pointer hover:brightness-125 active:scale-95"
+            class="py-1.5 px-1.5 rounded border transition cursor-pointer hover:brightness-125 active:scale-95"
             :class="criticalCount > 0 ? 'bg-orange-950/90 border-orange-500 text-orange-300 font-bold shadow-[0_0_8px_rgba(249,115,22,0.3)]' : 'bg-gray-900/40 border-gray-800/80 text-gray-500'"
             :title="t('sev_critical')"
           >
             <span class="text-base font-extrabold leading-tight block">{{ criticalCount }}</span>
-            <span class="text-[9.5px] uppercase font-bold block mt-0.5 tracking-wider">{{ t('sev_critical') }}</span>
+            <span class="text-[9.5px] uppercase font-bold block mt-0.5 tracking-normal">{{ t('sev_critical') }}</span>
           </div>
 
           <!-- Warning (Kuning - Peringatan) -->
           <div
             @click="openSevModal('warning')"
-            class="py-1 px-1 rounded border transition cursor-pointer hover:brightness-125 active:scale-95"
+            class="py-1.5 px-1.5 rounded border transition cursor-pointer hover:brightness-125 active:scale-95"
             :class="warnCount > 0 ? 'bg-amber-950/90 border-amber-500 text-amber-300 font-bold shadow-[0_0_8px_rgba(245,158,11,0.3)]' : 'bg-gray-900/40 border-gray-800/80 text-gray-500'"
             :title="t('sev_warning')"
           >
             <span class="text-base font-extrabold leading-tight block">{{ warnCount }}</span>
-            <span class="text-[9.5px] uppercase font-bold block mt-0.5 tracking-wider">{{ t('sev_warning') }}</span>
+            <span class="text-[9.5px] uppercase font-bold block mt-0.5 tracking-normal">{{ t('sev_warning') }}</span>
           </div>
 
           <!-- Info (Biru/Cyan - Info) -->
           <div
             @click="openSevModal('info')"
-            class="py-1 px-1 rounded border transition cursor-pointer hover:brightness-125 active:scale-95"
+            class="py-1.5 px-1.5 rounded border transition cursor-pointer hover:brightness-125 active:scale-95"
             :class="infoCount > 0 ? 'bg-cyan-950/90 border-cyan-500 text-cyan-300 font-bold shadow-[0_0_8px_rgba(56,189,248,0.3)]' : 'bg-gray-900/40 border-gray-800/80 text-gray-500'"
             :title="t('sev_info')"
           >
             <span class="text-base font-extrabold leading-tight block">{{ infoCount }}</span>
-            <span class="text-[9.5px] uppercase font-bold block mt-0.5 tracking-wider">{{ t('sev_info') }}</span>
+            <span class="text-[9.5px] uppercase font-bold block mt-0.5 tracking-normal">{{ t('sev_info') }}</span>
           </div>
 
           <!-- Ignored (Abu-abu / Netral - Diabaikan) -->
@@ -229,12 +229,12 @@
         <table class="w-full text-left text-xs font-mono border-collapse">
           <thead>
             <tr class="border-b border-cyan-500/20 text-gray-400 bg-[#070c18]/80 font-bold tracking-wider select-none">
-              <th class="py-2 px-3 w-28">{{ t('dash_col_time') }}</th>
+              <th class="py-2 pl-4 pr-3 w-28">{{ t('dash_col_time') }}</th>
               <th class="py-2 px-3 w-48">{{ t('dash_col_server') }}</th>
-              <th class="py-2 px-2.5 w-28 text-center">{{ t('dash_col_severity') }}</th>
+              <th class="py-2 px-3 w-28 text-center">{{ t('dash_col_severity') }}</th>
               <th class="py-2 px-3">{{ t('dash_col_description') }}</th>
               <th class="py-2 px-3 w-28 text-right">{{ t('dash_col_duration') }}</th>
-              <th class="py-2 px-2 w-8 text-center"></th>
+              <th class="py-2 pl-2 pr-4 w-9 text-center"></th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-800/40 bg-[#090e1c]/40">
@@ -247,7 +247,7 @@
             >
               <!-- TIME -->
               <td
-                class="py-2 px-3 text-gray-400 whitespace-nowrap cursor-help hover:text-cyan-300 transition"
+                class="py-2 pl-4 pr-3 text-gray-400 whitespace-nowrap cursor-help hover:text-cyan-300 transition"
                 :title="formatFullTime(prob.started_at)"
               >
                 {{ formatIncidentTime(prob.started_at) }}
@@ -321,7 +321,7 @@
               </td>
 
               <!-- DESCRIPTION (Single-Line Compact Ala Blueprint) -->
-              <td class="py-2 px-3 text-gray-200 font-medium leading-snug whitespace-nowrap overflow-hidden text-ellipsis max-w-xl" :title="formatIncidentTip(prob, locale) || formatIncidentMessage(prob, locale)">
+              <td class="py-2 px-3 text-gray-200 font-medium leading-snug whitespace-nowrap overflow-hidden text-ellipsis max-w-md xl:max-w-xl" :title="formatIncidentTip(prob, locale) || formatIncidentMessage(prob, locale)">
                 <span>{{ formatIncidentMessage(prob, locale) }}</span>
               </td>
 
@@ -333,7 +333,7 @@
               </td>
 
               <!-- PASSIVE NAVIGATION CHEVRON -->
-              <td class="py-2 px-2 text-center text-gray-500 group-hover:text-cyan-400 transition">
+              <td class="py-2 pl-2 pr-4 text-center text-gray-500 group-hover:text-cyan-400 transition">
                 <svg class="w-3.5 h-3.5 mx-auto opacity-40 group-hover:opacity-100 group-hover:translate-x-0.5 transition" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <polyline points="9 18 15 12 9 6"/>
                 </svg>
@@ -464,43 +464,43 @@
           <thead>
             <tr class="border-b border-cyan-500/20 font-bold text-gray-400 bg-[#070c18]/80 select-none tracking-wider">
               <!-- 0. Server -->
-              <th @click="setSort('hostname')" class="px-3 cursor-pointer hover:text-cyan-300 transition" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
+              <th @click="setSort('hostname')" class="pl-4 pr-3 cursor-pointer hover:text-cyan-300 transition whitespace-nowrap" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
                 {{ t('col_server') }} <span class="text-[10px] text-gray-500">↕</span>
               </th>
               <!-- 1. Status -->
-              <th class="px-2.5 text-center" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
+              <th class="px-3 text-center whitespace-nowrap" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
                 {{ t('col_status') }}
               </th>
               <!-- 2. Lingkungan -->
-              <th class="px-2.5 text-center" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
+              <th class="px-3 text-center whitespace-nowrap" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
                 {{ t('dash_col_env') }}
               </th>
               <!-- 3. Platform / IP -->
-              <th class="px-3" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
+              <th class="px-3.5 whitespace-nowrap" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
                 {{ t('dash_col_platform_ip') }}
               </th>
               <!-- 4. Uptime -->
-              <th @click="setSort('uptime')" class="px-3 text-center cursor-pointer hover:text-cyan-300 transition" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
+              <th @click="setSort('uptime')" class="px-3.5 text-center cursor-pointer hover:text-cyan-300 transition whitespace-nowrap" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
                 {{ t('col_uptime') }} <span class="text-[10px] text-gray-500">↕</span>
               </th>
               <!-- 5. CPU (%) -->
-              <th @click="setSort('cpu')" class="px-3 text-center cursor-pointer hover:text-cyan-300 transition" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
+              <th @click="setSort('cpu')" class="px-3.5 text-center cursor-pointer hover:text-cyan-300 transition whitespace-nowrap" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
                 {{ t('dash_col_cpu') }} <span class="text-[10px] text-gray-500">↕</span>
               </th>
               <!-- 6. RAM (%) -->
-              <th @click="setSort('ram')" class="px-3 text-center cursor-pointer hover:text-cyan-300 transition" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
+              <th @click="setSort('ram')" class="px-3.5 text-center cursor-pointer hover:text-cyan-300 transition whitespace-nowrap" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
                 {{ t('dash_col_ram') }} <span class="text-[10px] text-gray-500">↕</span>
               </th>
               <!-- 7. STORAGE (%) -->
-              <th @click="setSort('storage')" class="px-3 text-center cursor-pointer hover:text-cyan-300 transition" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
+              <th @click="setSort('storage')" class="px-3.5 text-center cursor-pointer hover:text-cyan-300 transition whitespace-nowrap" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
                 {{ t('dash_col_storage') }} <span class="text-[10px] text-gray-500">↕</span>
               </th>
               <!-- 8. Services -->
-              <th class="px-2.5 text-center" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
+              <th class="px-3 text-center whitespace-nowrap" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
                 {{ t('dash_col_services') }}
               </th>
               <!-- 9. Insiden -->
-              <th @click="setSort('incidents')" class="px-2.5 text-center cursor-pointer hover:text-cyan-300 transition" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
+              <th @click="setSort('incidents')" class="pl-3 pr-4 text-center cursor-pointer hover:text-cyan-300 transition whitespace-nowrap" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
                 {{ t('dash_col_incidents') }} <span class="text-[10px] text-gray-500">↕</span>
               </th>
             </tr>
@@ -513,7 +513,7 @@
               class="hover:bg-cyan-950/20 transition-colors cursor-pointer group"
             >
               <!-- 0. Server -->
-              <td class="px-3 whitespace-nowrap" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
+              <td class="pl-4 pr-3 whitespace-nowrap" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
                 <div class="flex items-center gap-2">
                   <span
                     class="w-2 h-2 rounded-full shrink-0"
@@ -524,7 +524,7 @@
               </td>
 
               <!-- 1. Status -->
-              <td class="px-2.5 text-center whitespace-nowrap" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
+              <td class="px-3 text-center whitespace-nowrap" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
                 <span
                   v-if="s.is_maintenance"
                   class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950/80 text-amber-300 border border-amber-600/60"
@@ -542,7 +542,7 @@
               </td>
 
               <!-- 2. Lingkungan (Produksi vs Non-produksi) -->
-              <td class="px-2.5 text-center whitespace-nowrap" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
+              <td class="px-3 text-center whitespace-nowrap" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
                 <span
                   v-if="s.tier === 1"
                   class="inline-flex items-center justify-center p-1 rounded bg-emerald-950/40 text-emerald-400 border border-emerald-700/50"
@@ -567,7 +567,7 @@
               </td>
 
               <!-- 3. Platform / IP -->
-              <td class="px-3 whitespace-nowrap" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
+              <td class="px-3.5 whitespace-nowrap" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
                 <div class="flex items-center gap-2">
                   <!-- Platform Badge -->
                   <span
@@ -617,12 +617,12 @@
               </td>
 
               <!-- 4. Uptime -->
-              <td class="px-3 text-center whitespace-nowrap text-gray-300 text-xs font-mono" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
+              <td class="px-3.5 text-center whitespace-nowrap text-gray-300 text-xs font-mono" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
                 {{ formatUptime(s.uptime_secs, locale) }}
               </td>
 
               <!-- 5. CPU (%) Visual 10-Segment LED Battery Gauge -->
-              <td class="px-3 text-center whitespace-nowrap" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
+              <td class="px-3.5 text-center whitespace-nowrap" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
                 <div class="inline-flex items-center justify-center gap-2">
                   <div class="meter-led-track" :title="`CPU: ${(s.cpu || 0).toFixed(1)}%`">
                     <span
@@ -639,7 +639,7 @@
               </td>
 
               <!-- 6. RAM (%) Visual 10-Segment LED Battery Gauge -->
-              <td class="px-3 text-center whitespace-nowrap" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
+              <td class="px-3.5 text-center whitespace-nowrap" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
                 <div class="inline-flex items-center justify-center gap-2">
                   <div class="meter-led-track" :title="`RAM: ${(s.mem_pct || 0).toFixed(1)}%`">
                     <span
@@ -656,7 +656,7 @@
               </td>
 
               <!-- 7. STORAGE (%) Visual 10-Segment LED Battery Gauge -->
-              <td class="px-3 text-center whitespace-nowrap" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
+              <td class="px-3.5 text-center whitespace-nowrap" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
                 <div class="inline-flex items-center justify-center gap-2">
                   <div class="meter-led-track" :title="`Storage: ${(s.disk_pct || 0).toFixed(1)}%`">
                     <span
@@ -673,7 +673,7 @@
               </td>
 
               <!-- 8. Services (tot_svcs / up_svcs) -->
-              <td class="px-2.5 text-center whitespace-nowrap font-mono text-xs font-bold" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
+              <td class="px-3 text-center whitespace-nowrap font-mono text-xs font-bold" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
                 <span v-if="!s.is_online || !s.services_total" class="text-gray-500">-</span>
                 <span v-else>
                   <span class="text-emerald-400">{{ s.services_total }}</span><span class="text-gray-500">/</span><span :class="s.services_up < s.services_total ? 'text-amber-400' : 'text-emerald-400'">{{ s.services_up }}</span>
@@ -681,7 +681,7 @@
               </td>
 
               <!-- 9. Insiden -->
-              <td class="px-2.5 text-center whitespace-nowrap" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
+              <td class="pl-3 pr-4 text-center whitespace-nowrap" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
                 <span
                   v-if="!s.is_online"
                   class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950/80 text-rose-300 border border-rose-700/60 uppercase"
