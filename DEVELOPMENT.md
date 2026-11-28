@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.126
+
+Fixed EndpointInventoryTab.vue Teleport Actions dropdown width (w-[178px]) and added automatic dropup flip when space below is less than menu height + footer bar.
+
+
 ### Versi v0.1.125
 
 Upgraded /api/probes/{pid}/history to return probe details, avg_latency_ms stats, and chronological chart series; upgraded EndpointHistoryModal.vue with 4 mini KPI cards and SVG latency line/area chart; made EndpointInventoryTab.vue rows clickable to open History & Chart directly and refined responsive KPI/filter layout.
