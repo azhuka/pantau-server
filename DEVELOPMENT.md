@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.114
+
+### v0.1.114 — Perbaikan Token Autentikasi pada Modal Riwayat Paket\n- **Perbaikan Auth Token ()**: Mengubah pembacaan token dari `localStorage.getItem('token')` menjadi `localStorage.getItem('pantau_token')` agar header `Authorization: Bearer` terkirim ke `/api/logs/request`.
+
+
 ### Versi v0.1.113
 
 ### v0.1.113 — Standardisasi Istilah Acknowledge Incident pada Audit Log\n- **Standardisasi Label & Pesan Audit (, )**: Mengganti `Mark Incident Handled` menjadi `Acknowledge Incident` serta `Incident marked as handled` / `handled mark cleared` menjadi `Incident acknowledged` / `Incident acknowledgement cleared`.

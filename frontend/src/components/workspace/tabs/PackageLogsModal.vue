@@ -75,7 +75,7 @@ async function fetchLogs() {
   errorMsg.value = ''
   logText.value = ''
   try {
-    const token = localStorage.getItem('token')
+    const token = localStorage.getItem('pantau_token')
     const headers = { 'Content-Type': 'application/json' }
     if (token) headers.Authorization = `Bearer ${token}`
     const res = await fetch('/api/logs/request', {
