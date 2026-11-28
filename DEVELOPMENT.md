@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.127
+
+Shortened 'View History & Chart' action label in EndpointInventoryTab.vue to 'History'.
+
+
 ### Versi v0.1.126
 
 Fixed EndpointInventoryTab.vue Teleport Actions dropdown width (w-[178px]) and added automatic dropup flip when space below is less than menu height + footer bar.

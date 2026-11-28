@@ -1,6 +1,6 @@
 # Pantau Server
 
-[![Version](https://img.shields.io/badge/version-v0.1.126-blue.svg)](file:///home/bos/pantau-server/server/config.py)
+[![Version](https://img.shields.io/badge/version-v0.1.127-blue.svg)](file:///home/bos/pantau-server/server/config.py)
 [![Backend](https://img.shields.io/badge/backend-FastAPI%20%7C%20Python%203.12-emerald.svg)](file:///home/bos/pantau-server/server/main.py)
 [![Frontend](https://img.shields.io/badge/frontend-Vue%203%20%7C%20Tailwind%20CSS-cyan.svg)](file:///home/bos/pantau-server/frontend/src/App.vue)
 [![Database](https://img.shields.io/badge/database-MySQL%208.0%2B%20%7C%20MariaDB-orange.svg)](file:///home/bos/pantau-server/server/models/)
