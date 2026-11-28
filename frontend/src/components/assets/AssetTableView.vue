@@ -596,15 +596,9 @@
     <Teleport to="body">
       <AddHostModal
         :is-open="showAddModal"
+        :servers="servers"
         @close="showAddModal = false"
         @created="$emit('server-updated')"
-      />
-      <EndpointFormModal
-        :is-open="showEndpointModal"
-        :probe="editingProbe"
-        :servers="servers"
-        @close="showEndpointModal = false; editingProbe = null"
-        @saved="onEndpointSaved"
       />
     </Teleport>
     </template>
@@ -616,6 +610,16 @@
       @edit-probe="openEditEndpoint"
       @count-updated="endpointCount = $event"
     />
+
+    <Teleport to="body">
+      <EndpointFormModal
+        :is-open="showEndpointModal"
+        :probe="editingProbe"
+        :servers="servers"
+        @close="showEndpointModal = false; editingProbe = null"
+        @saved="onEndpointSaved"
+      />
+    </Teleport>
   </div>
 </template>
 

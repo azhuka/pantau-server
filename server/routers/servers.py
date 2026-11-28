@@ -1623,8 +1623,14 @@ def create_server(
 
     ip_address = str(body.get("ip_address") or "").strip()[:45] or None
     group_name = str(body.get("group_name") or "").strip()[:64] or None
+    tags = str(body.get("tags") or "").strip()[:255] or None
+    notes = str(body.get("notes") or "").strip() or None
+    po_raw = str(body.get("platform_override") or "").strip().lower()
+    platform_override = po_raw if po_raw in ("baremetal", "vm", "lxc") else None
     tier = 2 if str(body.get("tier")) == "2" else 1
-    is_proxmox_ha = 1 if body.get("is_proxmox_ha") else 0
+    is_proxmox_ha = 0 if platform_override == "baremetal" else (1 if body.get("is_proxmox_ha") else 0)
+    is_isolated_net = 1 if body.get("is_isolated_net") else 0
+    allow_web_terminal = 1 if body.get("allow_web_terminal", True) else 0
 
     raw_key = "pk_" + secrets.token_hex(24)
     srv = Server(
@@ -1633,9 +1639,13 @@ def create_server(
         api_key=hash_api_key(raw_key),
         is_active=1,
         group_name=group_name,
+        tags=tags,
+        notes=notes,
+        platform_override=platform_override,
         tier=tier,
         is_proxmox_ha=is_proxmox_ha,
-        allow_web_terminal=1,
+        is_isolated_net=is_isolated_net,
+        allow_web_terminal=allow_web_terminal,
     )
     db.add(srv)
     db.flush()

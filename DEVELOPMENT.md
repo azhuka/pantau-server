@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.119
+
+### v0.1.119 — Perbaikan Modal Tambah Endpoint & Paritas Blueprint AddHostModal\n- **Perbaikan Mounting Modal Endpoint (AssetTableView.vue)**: Memindahkan EndpointFormModal keluar dari blok kondisional servers agar tombol + Add Endpoint dan Edit berfungsi penuh.\n- **Paritas Blueprint Add Server (AddHostModal.vue, servers.py)**: Melengkapi form pendaftaran server dengan chip pilihan grup, tags, notes, platform_override, proteksi Proxmox HA dinamis, is_isolated_net, allow_web_terminal, dan perintah printf satu baris untuk /etc/pantau/agent.conf.
+
+
 ### Versi v0.1.118
 
 ### v0.1.118 — Sub-Tab Klasifikasi Aset (Servers & Endpoints/Network) di Asset Inventory\n- **Backend Probing ()**: Menambahkan endpoint `POST /api/probes/test-adhoc`, dukungan penyimpanan field `tier`, dan filter protokol `web` (`http`/`https`).\n- **Sub-Tab Klasifikasi Aset (, )**: Menyatukan inventaris **Servers** dan **Endpoints & Network** (Web HTTP/HTTPS, ICMP Ping, TCP Port) dalam satu halaman *Asset Inventory* lengkap dengan KPI strip, filter protokol/status, dan menu `Actions ▾`.\n- **Modal Endpoint & Riwayat (, , )**: Menambahkan form dinamis Tambah/Edit Endpoint dengan tombol **Test Connection** sebelum simpan, visualisasi tren latensi riwayat pengecekan, serta perintah setup agen siap salin di `AddHostModal`.
