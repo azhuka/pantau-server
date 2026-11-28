@@ -245,25 +245,82 @@ def record_probe_execution(db: Session, probe_id: int, res: ProbeResult, checked
         probe.ssl_expires_at = res.ssl_expires_at
         probe.ssl_days_remaining = res.ssl_days_remaining
 
-    if res.status == "down":
-        probe.consecutive_failures = (probe.consecutive_failures or 0) + 1
-        probe.consecutive_successes = 0
-        thresh = probe.consecutive_threshold or 1
-        if probe.consecutive_failures >= thresh:
-            probe.status = "down"
-    else:
-        probe.consecutive_successes = (probe.consecutive_successes or 0) + 1
-        probe.consecutive_failures = 0
-        probe.status = res.status
-        from models.problem import ServerProblem
+    from models.problem import ServerProblem
+    from models.server import Server
+
+    eff_tier = int(getattr(probe, "tier", 0) or 0)
+    if eff_tier not in (1, 2, 3) and probe.server_id:
+        srv = db.query(Server.tier).filter(Server.id == probe.server_id).first()
+        eff_tier = int(srv[0] or 1) if srv else 1
+    if eff_tier not in (1, 2, 3):
+        eff_tier = 1
+
+    def _upsert_probe_prob(key: str, sev: str, msg: str, tip: str) -> None:
+        existing = db.query(ServerProblem).filter(
+            ServerProblem.key == key,
+            ServerProblem.resolved_at.is_(None),
+        ).first()
+        if existing:
+            existing.severity = sev
+            existing.message = msg
+            existing.tip = tip
+            existing.server_id = probe.server_id
+            existing.updated_at = checked_at
+            existing.last_active_at = checked_at
+        else:
+            db.add(ServerProblem(
+                server_id=probe.server_id,
+                probe_id=probe_id,
+                key=key,
+                severity=sev,
+                message=msg,
+                tip=tip,
+                started_at=checked_at,
+                updated_at=checked_at,
+                last_active_at=checked_at,
+            ))
+
+    def _resolve_probe_keys(keys: tuple[str, ...]) -> None:
         open_probs = db.query(ServerProblem).filter(
-            ServerProblem.key == f"probe_failed:{probe_id}",
+            ServerProblem.key.in_(keys),
             ServerProblem.resolved_at.is_(None),
         ).all()
         for op in open_probs:
             op.resolved_at = checked_at
             op.updated_at = checked_at
             op.resolved_note = "auto"
+
+    if res.status == "down":
+        probe.consecutive_failures = (probe.consecutive_failures or 0) + 1
+        probe.consecutive_successes = 0
+        thresh = probe.consecutive_threshold or 1
+        if probe.consecutive_failures >= thresh:
+            probe.status = "down"
+            sev = "danger" if eff_tier == 1 else ("critical" if eff_tier == 3 else "warning")
+            _resolve_probe_keys((f"probe_degraded:{probe_id}",))
+            _upsert_probe_prob(
+                f"probe_failed:{probe_id}",
+                sev,
+                f"Endpoint DOWN: {probe.name} ({probe.target})",
+                res.error_message or "Verify endpoint service availability and network reachability.",
+            )
+    elif res.status == "degraded":
+        probe.consecutive_successes = (probe.consecutive_successes or 0) + 1
+        probe.consecutive_failures = 0
+        probe.status = "degraded"
+        _resolve_probe_keys((f"probe_failed:{probe_id}",))
+        sev = "critical" if eff_tier == 1 else "warning"
+        _upsert_probe_prob(
+            f"probe_degraded:{probe_id}",
+            sev,
+            f"Endpoint Degraded: {probe.name} ({int(res.latency_ms or 0)} ms)",
+            f"Response latency exceeded threshold ({probe.latency_threshold_ms or 1000} ms).",
+        )
+    else:
+        probe.consecutive_successes = (probe.consecutive_successes or 0) + 1
+        probe.consecutive_failures = 0
+        probe.status = res.status
+        _resolve_probe_keys((f"probe_failed:{probe_id}", f"probe_degraded:{probe_id}"))
 
     since_24h = checked_at - timedelta(hours=24)
     recent_logs = db.query(ProbeLog.status).filter(ProbeLog.probe_id == probe_id, ProbeLog.checked_at >= since_24h).all()

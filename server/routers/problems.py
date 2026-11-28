@@ -7,6 +7,7 @@ from routers.auth import get_current_user
 from models.user import User
 from models.problem import ServerProblem
 from models.server import Server
+from models.probe import ProbeTarget
 from models.command import Command
 from models.misc import AuditLog
 from services.problem_service import check_all_servers_stale
@@ -70,7 +71,11 @@ def list_problems(
 ):
     """Mengambil daftar insiden / masalah operasional & keamanan NOC."""
     check_all_servers_stale(db)
-    query = db.query(ServerProblem, Server.hostname, Server.group_name).join(Server, Server.id == ServerProblem.server_id)
+    query = (
+        db.query(ServerProblem, Server.hostname, Server.group_name, ProbeTarget.name)
+        .outerjoin(Server, Server.id == ServerProblem.server_id)
+        .outerjoin(ProbeTarget, ProbeTarget.id == ServerProblem.probe_id)
+    )
     
     now = datetime.utcnow()
     if active_only:
@@ -126,9 +131,14 @@ def list_problems(
 
     result = []
     
-    for prob, hostname, s_group_name in problems:
+    for prob, hostname, s_group_name, probe_name in problems:
         if not user.can_access_server(prob.server_id):
             continue
+        if not hostname and probe_name:
+            hostname = f"[Endpoint] {probe_name}"
+            s_group_name = s_group_name or "Endpoint"
+        elif not hostname:
+            hostname = "Standalone Asset"
 
         derived_res_type = _classify_resolution_type(prob) if prob.resolved_at else None
         if res_type and res_type != "all" and derived_res_type != res_type:

@@ -107,10 +107,25 @@ def list_servers(user: User = Depends(get_current_user), db: Session = Depends(g
             down_services_by_server[p.server_id] = down_services_by_server.get(p.server_id, 0) + 1
 
     # 2. Ambil snapshot ID terbaru seluruh aset dalam 1 kueri batch
+    from models.probe import ProbeTarget
+
     server_ids = [s.id for s in servers]
     latest_snaps_map = {}
     extras_map = {}
     services_counts = {}
+    probes_by_server = {}
+
+    all_linked_probes = db.query(ProbeTarget).filter(ProbeTarget.server_id.in_(server_ids)).order_by(ProbeTarget.name.asc()).all() if server_ids else []
+    for pr in all_linked_probes:
+        probes_by_server.setdefault(pr.server_id, []).append({
+            "id": pr.id,
+            "name": pr.name,
+            "probe_type": pr.probe_type,
+            "target": pr.target,
+            "port": pr.port,
+            "status": pr.status if pr.is_active else "paused",
+            "last_latency_ms": round(pr.last_latency_ms, 1) if pr.last_latency_ms is not None else None,
+        })
 
     if server_ids:
         latest_snap_ids = [
@@ -258,6 +273,7 @@ def list_servers(user: User = Depends(get_current_user), db: Session = Depends(g
             "group_name": s.group_name or "",
             "tags": s.tags or "",
             "tier": s.tier,
+            "linked_endpoints": probes_by_server.get(s.id, []),
             "is_online": is_online,
             "last_seen": s.last_seen.isoformat() if s.last_seen else None,
             "cpu": cpu,
@@ -1627,7 +1643,8 @@ def create_server(
     notes = str(body.get("notes") or "").strip() or None
     po_raw = str(body.get("platform_override") or "").strip().lower()
     platform_override = po_raw if po_raw in ("baremetal", "vm", "lxc") else None
-    tier = 2 if str(body.get("tier")) == "2" else 1
+    raw_tier = str(body.get("tier") or "1")
+    tier = int(raw_tier) if raw_tier in ("1", "2", "3") else 1
     is_proxmox_ha = 0 if platform_override == "baremetal" else (1 if body.get("is_proxmox_ha") else 0)
     is_isolated_net = 1 if body.get("is_isolated_net") else 0
     allow_web_terminal = 1 if body.get("allow_web_terminal", True) else 0

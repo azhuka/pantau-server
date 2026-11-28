@@ -64,8 +64,9 @@
               v-model="form.tier"
               class="w-full px-3 py-2 bg-[#060a12] border border-cyan-900/70 rounded text-gray-100 focus:outline-none focus:border-cyan-400 transition cursor-pointer"
             >
-              <option :value="1">{{ t('host_tier_1') }}</option>
-              <option :value="2">{{ t('host_tier_2') }}</option>
+              <option :value="1">Production — Crucial (Core)</option>
+              <option :value="3">Production — Standard (Supporting)</option>
+              <option :value="2">Non-Production (Staging / Test)</option>
             </select>
           </div>
         </div>

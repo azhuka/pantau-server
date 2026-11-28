@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.120
+
+### v0.1.120 — Model Severity 3-Tingkat, Insiden Endpoint, RBAC Scoped & Linked Endpoints di Dasbor\n- **Model Severity 3-Tingkat (problem_service.py, probe_service.py, AddHostModal, EditHostModal, EndpointFormModal)**: Mendukung tier 1 (Production Crucial: Danger/Critical), tier 3 (Production Standard: Critical/Warning), dan tier 2 (Non-Production: Warning).\n- **Insiden Endpoint Otomatis (probe_service.py, problems.py)**: Endpoint down/degraded kini otomatis membuat dan me-resolve ServerProblem (probe_failed / probe_degraded) serta tampil di Active & Resolved Incidents termasuk endpoint standalone.\n- **RBAC Scoped Operator & UX (EndpointFormModal.vue, AssetTableView.vue, AddHostModal.vue)**: Menyembunyikan opsi Standalone/External dan memilih otomatis aset pertama untuk operator terbatas, menyimpan posisi sub-tab, serta panduan setup 2-langkah di AddHostModal.\n- **Linked Endpoints di Dasbor (servers.py, DashboardView.vue)**: Menampilkan badge pasif dengan tooltip daftar endpoint pada kolom Asset (mode Tabel) dan daftar mini endpoint pada kartu server (mode Grid).
+
+
 ### Versi v0.1.119
 
 ### v0.1.119 — Perbaikan Modal Tambah Endpoint & Paritas Blueprint AddHostModal\n- **Perbaikan Mounting Modal Endpoint (AssetTableView.vue)**: Memindahkan EndpointFormModal keluar dari blok kondisional servers agar tombol + Add Endpoint dan Edit berfungsi penuh.\n- **Paritas Blueprint Add Server (AddHostModal.vue, servers.py)**: Melengkapi form pendaftaran server dengan chip pilihan grup, tags, notes, platform_override, proteksi Proxmox HA dinamis, is_isolated_net, allow_web_terminal, dan perintah printf satu baris untuk /etc/pantau/agent.conf.

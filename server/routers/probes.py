@@ -164,7 +164,14 @@ async def create_probe(
         sid = None
 
     port = int(body["port"]) if body.get("port") not in (None, "") else None
-    tier_val = 1 if int(body.get("tier") or 1) == 1 else 2
+    raw_tier = body.get("tier")
+    if raw_tier in (1, 2, 3, "1", "2", "3"):
+        tier_val = int(raw_tier)
+    elif sid is not None:
+        srv_row = db.query(Server.tier).filter(Server.id == sid).first()
+        tier_val = int(srv_row[0] or 1) if srv_row else 1
+    else:
+        tier_val = 1
     probe = ProbeTarget(
         name=name,
         probe_type=ptype,
@@ -258,8 +265,8 @@ def update_probe(
         probe.latency_threshold_ms = max(50, int(body["latency_threshold_ms"] or 1000))
     if "consecutive_threshold" in body:
         probe.consecutive_threshold = max(1, min(10, int(body["consecutive_threshold"] or 3)))
-    if "tier" in body:
-        probe.tier = 1 if int(body["tier"] or 1) == 1 else 2
+    if "tier" in body and body["tier"] in (1, 2, 3, "1", "2", "3"):
+        probe.tier = int(body["tier"])
 
     db.add(AuditLog(
         server_id=probe.server_id,

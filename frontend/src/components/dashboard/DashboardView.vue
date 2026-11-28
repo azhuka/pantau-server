@@ -520,6 +520,14 @@
                     :class="!s.is_online ? 'bg-rose-500 radar-critical' : (s.is_maintenance ? 'bg-amber-400 animate-pulse' : (s.danger_count > 0 ? 'bg-rose-400 radar-critical' : (s.critical_count > 0 ? 'bg-orange-400 radar-critical' : (s.warning_count > 0 ? 'bg-amber-400 radar-warning' : 'bg-emerald-400 beacon-live'))))"
                   ></span>
                   <span class="font-bold text-gray-100 group-hover:text-cyan-300 transition text-sm">{{ s.hostname }}</span>
+                  <span
+                    v-if="s.linked_endpoints && s.linked_endpoints.length"
+                    class="px-1.5 py-0.2 rounded text-[9.5px] font-bold border cursor-help"
+                    :class="linkedEpBadgeClass(s.linked_endpoints)"
+                    :title="formatLinkedEpTooltip(s.linked_endpoints)"
+                  >
+                    {{ s.linked_endpoints.length }} EP
+                  </span>
                 </div>
               </td>
 
@@ -544,7 +552,7 @@
               <!-- 2. Lingkungan (Produksi vs Non-produksi) -->
               <td class="px-3 text-center whitespace-nowrap" :class="tableDensity === 'compact' ? 'py-1.5' : 'py-2.5'">
                 <span
-                  v-if="s.tier === 1"
+                  v-if="s.tier !== 2"
                   class="inline-flex items-center justify-center p-1 rounded bg-emerald-950/40 text-emerald-400 border border-emerald-700/50"
                   :title="t('env_prod')"
                 >
@@ -807,6 +815,20 @@
               </div>
               <div class="cyber-bar-track">
                 <div class="cyber-bar-fill-emerald" :style="{ width: `${Math.min(s.mem_pct || 0, 100)}%` }"></div>
+              </div>
+            </div>
+
+            <!-- Linked Endpoints Mini List (Grid Mode) -->
+            <div v-if="s.linked_endpoints && s.linked_endpoints.length" class="pt-2 border-t border-cyan-500/10 space-y-1">
+              <div class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Linked Endpoints ({{ s.linked_endpoints.length }})</div>
+              <div v-for="ep in s.linked_endpoints" :key="ep.id" class="flex items-center justify-between gap-2 text-[11px]">
+                <div class="flex items-center gap-1.5 min-w-0">
+                  <span class="w-1.5 h-1.5 rounded-full shrink-0" :class="ep.status === 'up' ? 'bg-emerald-400' : (ep.status === 'down' ? 'bg-rose-500' : (ep.status === 'degraded' ? 'bg-amber-400' : 'bg-gray-500'))"></span>
+                  <span class="text-gray-300 truncate">{{ ep.name }}</span>
+                </div>
+                <span class="text-[10px] shrink-0" :class="ep.status === 'up' ? 'text-emerald-400' : (ep.status === 'down' ? 'text-rose-400 font-bold' : 'text-amber-300')">
+                  {{ ep.status.toUpperCase() }}{{ ep.last_latency_ms !== null ? ` · ${ep.last_latency_ms}ms` : '' }}
+                </span>
               </div>
             </div>
           </div>
@@ -1214,6 +1236,16 @@ const filteredServers = computed(() => {
     return 0
   })
 })
+
+function linkedEpBadgeClass(eps) {
+  if (eps.some(e => e.status === 'down')) return 'bg-rose-950/80 text-rose-300 border-rose-700/70'
+  if (eps.some(e => e.status === 'degraded')) return 'bg-amber-950/80 text-amber-300 border-amber-700/70'
+  return 'bg-emerald-950/60 text-emerald-300 border-emerald-700/50'
+}
+
+function formatLinkedEpTooltip(eps) {
+  return eps.map(e => `${e.name} (${String(e.probe_type || '').toUpperCase()}): ${String(e.status || 'unknown').toUpperCase()}${e.last_latency_ms !== null ? ` · ${e.last_latency_ms}ms` : ''}`).join('\n')
+}
 
 function formatFullTime(isoStr) {
   if (!isoStr) return '-'

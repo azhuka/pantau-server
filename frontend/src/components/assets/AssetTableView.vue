@@ -157,7 +157,7 @@
                     {{ s.hostname }}
                   </span>
                   <span
-                    v-if="s.tier === 1"
+                    v-if="s.tier !== 2"
                     class="inline-flex items-center justify-center p-0.5 rounded bg-emerald-950/40 text-emerald-400 border border-emerald-700/50"
                     :title="t('env_prod')"
                   >
@@ -616,6 +616,7 @@
         :is-open="showEndpointModal"
         :probe="editingProbe"
         :servers="servers"
+        :is-scoped-operator="isScopedOperator"
         @close="showEndpointModal = false; editingProbe = null"
         @saved="onEndpointSaved"
       />
@@ -657,7 +658,11 @@ const props = defineProps({
 const emit = defineEmits(['open-workspace', 'probe-node', 'server-updated'])
 
 const { t } = useI18n()
-const assetCategory = ref('servers')
+const assetCategory = ref(sessionStorage.getItem('pantau_assets_subtab') || 'servers')
+watch(assetCategory, (val) => {
+  try { sessionStorage.setItem('pantau_assets_subtab', val) } catch {}
+})
+const isScopedOperator = computed(() => Boolean(props.currentUser && !props.currentUser.is_master_admin && props.currentUser.allowed_server_ids !== null && props.currentUser.allowed_server_ids !== undefined))
 const endpointCount = ref(0)
 const endpointTabRef = ref(null)
 const showAddModal = ref(false)

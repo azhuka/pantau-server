@@ -161,7 +161,7 @@ def check_server_stale(db: Session, srv: Server, now: datetime = None):
 
     ls = srv.last_seen.replace(tzinfo=None) if srv.last_seen and srv.last_seen.tzinfo else srv.last_seen
     sec_silent = (now - ls).total_seconds() if ls else 999999.0
-    is_prod = (getattr(srv, "tier", 1) == 1)
+    tier_val = int(getattr(srv, "tier", 1) or 1)
 
     existing_stale = db.query(ServerProblem).filter(
         ServerProblem.server_id == srv.id,
@@ -183,15 +183,19 @@ def check_server_stale(db: Session, srv: Server, now: datetime = None):
             else:
                 msg = f"Host powered off by operator ({op_by})"
                 tip = f"Host was intentionally powered off by operator ({op_by})."
-        elif is_prod:
+        elif tier_val == 1:
             if sec_silent >= 180.0:
                 sev = "danger"
                 msg = f"Agent silent (> {dur_txt}) — HOST OFFLINE"
-                tip = "Check power supply, hypervisor/physical hardware, and network connectivity for this Production host."
+                tip = "Check power supply, hypervisor/physical hardware, and network connectivity for this Production (Crucial) host."
             else:
                 sev = "critical"
                 msg = f"Agent silent (> {dur_txt})"
                 tip = "Vital telemetry interrupted. Verify pantau-agent daemon status and network connectivity."
+        elif tier_val == 3:
+            sev = "critical"
+            msg = f"Agent silent (> {dur_txt}) — HOST OFFLINE" if sec_silent >= 180.0 else f"Agent silent (> {dur_txt})"
+            tip = "Production (Standard) host is unreachable. Verify pantau-agent daemon status and network connectivity."
         else:
             sev = "warning"
             msg = f"Agent silent (> {dur_txt})"

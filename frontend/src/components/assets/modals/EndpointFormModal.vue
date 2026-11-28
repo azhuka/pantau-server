@@ -37,10 +37,11 @@
               <input v-model="form.name" required maxlength="100" placeholder="e.g. Main Portal API, Core Router" class="w-full bg-[#070c18] border border-gray-700 rounded px-2.5 py-1.5 text-gray-100 focus:border-cyan-500 focus:outline-none" />
             </div>
             <div>
-              <label class="block text-gray-400 font-bold mb-1">Environment</label>
+              <label class="block text-gray-400 font-bold mb-1">Environment &amp; Criticality</label>
               <select v-model="form.tier" class="w-full bg-[#070c18] border border-gray-700 rounded px-2.5 py-1.5 text-gray-100 focus:border-cyan-500 focus:outline-none">
-                <option :value="1">Production</option>
-                <option :value="2">Non-Production</option>
+                <option :value="1">Production — Crucial (Core)</option>
+                <option :value="3">Production — Standard (Supporting)</option>
+                <option :value="2">Non-Production (Staging / Test)</option>
               </select>
             </div>
           </div>
@@ -59,9 +60,11 @@
               />
             </div>
             <div>
-              <label class="block text-gray-400 font-bold mb-1">Linked Asset (Optional)</label>
-              <select v-model="form.server_id" class="w-full bg-[#070c18] border border-gray-700 rounded px-2.5 py-1.5 text-gray-100 focus:border-cyan-500 focus:outline-none">
-                <option value="">-- Standalone / External --</option>
+              <label class="block text-gray-400 font-bold mb-1">
+                Linked Asset {{ isScopedOperator ? '*' : '(Optional)' }}
+              </label>
+              <select v-model="form.server_id" :required="isScopedOperator" class="w-full bg-[#070c18] border border-gray-700 rounded px-2.5 py-1.5 text-gray-100 focus:border-cyan-500 focus:outline-none">
+                <option v-if="!isScopedOperator" value="">-- Standalone / External --</option>
                 <option v-for="s in servers" :key="s.id" :value="s.id">{{ s.hostname }} ({{ s.ip_address }})</option>
               </select>
             </div>
@@ -170,6 +173,7 @@ const props = defineProps({
   isOpen: { type: Boolean, default: false },
   probe: { type: Object, default: null },
   servers: { type: Array, default: () => [] },
+  isScopedOperator: { type: Boolean, default: false },
 })
 const emit = defineEmits(['close', 'saved'])
 const toast = useToast()
@@ -229,6 +233,9 @@ watch(() => [props.isOpen, props.probe], ([open]) => {
   } else {
     activeCategory.value = 'web'
     form.value = defaultForm()
+    if (props.isScopedOperator && props.servers?.length) {
+      form.value.server_id = props.servers[0].id
+    }
   }
 })
 

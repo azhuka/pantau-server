@@ -58,10 +58,11 @@
             <div class="text-[11px] font-bold uppercase text-cyan-300 tracking-wider">Operational Policies</div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label class="block text-gray-400 font-bold mb-1">Environment</label>
+                <label class="block text-gray-400 font-bold mb-1">Environment &amp; Criticality</label>
                 <select v-model="form.tier" class="w-full bg-[#0a0f1d] border border-gray-700 rounded px-2.5 py-1.5 text-gray-100 focus:border-cyan-500 focus:outline-none">
-                  <option :value="1">Production</option>
-                  <option :value="2">Non-Production</option>
+                  <option :value="1">Production — Crucial (Core)</option>
+                  <option :value="3">Production — Standard (Supporting)</option>
+                  <option :value="2">Non-Production (Staging / Test)</option>
                 </select>
               </div>
               <div>
@@ -115,11 +116,12 @@
         </div>
 
         <div>
-          <label class="block text-gray-400 font-bold mb-1">Quick Agent Config Setup (Linux)</label>
+          <label class="block text-gray-400 font-bold mb-1">Step 1 — Write Agent Config (Linux)</label>
           <div class="flex gap-2">
             <input :value="setupHint" readonly class="flex-1 bg-[#070c18] border border-gray-800 rounded px-2.5 py-1.5 text-gray-300 select-all" />
             <button type="button" @click="copyText(setupHint)" class="px-3 py-1.5 rounded bg-gray-800 hover:bg-cyan-950 text-cyan-300 border border-gray-700 font-bold cursor-pointer">Copy</button>
           </div>
+          <p class="text-[11px] text-gray-400 mt-1.5">Step 2 — Restart daemon on target host: <code class="text-cyan-300">sudo systemctl restart agent_pantau</code></p>
         </div>
 
         <div class="flex justify-end pt-3 border-t border-gray-800">
