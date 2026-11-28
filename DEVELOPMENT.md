@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.129
+
+Included probe_id and probe_name in /api/problems; routed endpoint incident view actions in IncidentView.vue, ActiveIncidentsTable.vue, and ResolvedIncidentsTable.vue to EndpointHistoryModal while keeping Asset Details for linked servers.
+
+
 ### Versi v0.1.128
 
 Restored Asset Details title, shortened verbose workspace/incident labels in en.js, and removed redundant upgradable package count badge from Upgrade OS buttons.
