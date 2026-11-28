@@ -1,5 +1,5 @@
 <template>
-  <div v-if="isOpen" class="fixed inset-0 z-[100000] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+  <div v-if="isOpen" class="fixed inset-0 z-[100000] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4" @keydown.esc="closeModal">
     <div class="hud-tactical-card rounded-xl max-w-lg w-full p-5 space-y-4 shadow-2xl border border-cyan-500/40 bg-[#0a0f1d] text-gray-200 font-mono">
       <div class="flex items-center justify-between border-b border-gray-800 pb-3">
         <h3 class="text-sm font-bold text-cyan-300 uppercase tracking-wider">
@@ -71,6 +71,14 @@
           </div>
         </div>
 
+        <div>
+          <label class="block text-gray-400 font-bold mb-1">Quick Agent Environment Setup (Linux)</label>
+          <div class="flex gap-2">
+            <input :value="setupHint" readonly class="flex-1 bg-[#070c18] border border-gray-800 rounded px-2.5 py-1.5 text-gray-300 select-all" />
+            <button type="button" @click="copyText(setupHint)" class="px-3 py-1.5 rounded bg-gray-800 hover:bg-cyan-950 text-cyan-300 border border-gray-700 font-bold cursor-pointer">Copy</button>
+          </div>
+        </div>
+
         <div class="flex justify-end pt-2 border-t border-gray-800">
           <button type="button" @click="closeModal" class="px-4 py-1.5 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold cursor-pointer">Done</button>
         </div>
@@ -93,6 +101,7 @@ const revealedKey = ref('')
 const revealedHostname = ref('')
 const form = ref({ hostname: '', ip_address: '', group_name: '', tier: 1, is_proxmox_ha: false })
 const originUrl = computed(() => window.location.origin)
+const setupHint = computed(() => `cat <<'EOF' | sudo tee /etc/pantau/agent.conf\nSERVER_URL="${originUrl.value}"\nAPI_KEY="${revealedKey.value}"\nEOF`)
 
 async function submit() {
   saving.value = true

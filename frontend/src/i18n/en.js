@@ -943,4 +943,10 @@ export default {
   th_command_details: 'Command / Details',
   th_status_code: 'Code',
   th_details: 'Details',
+  th_endpoint: 'Endpoint',
+  th_linked_asset: 'Linked Asset',
+  th_uptime_24h_30d: 'Uptime (24h / 30d)',
+  th_interval: 'Interval',
+  th_checked_at: 'Checked At',
+  th_http_details: 'HTTP / Details',
 }

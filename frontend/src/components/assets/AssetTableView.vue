@@ -9,21 +9,54 @@
         <h2 class="text-sm font-bold text-gray-100 uppercase tracking-wider font-mono flex items-center gap-2">
           <span class="w-2 h-2 rounded-full bg-cyan-400 beacon-live"></span>
           <span>ASSET INVENTORY MATRIX</span>
-          <span class="text-xs text-cyan-400 font-bold">({{ filteredServers.length }} {{ t('nodes_monitored') }})</span>
+          <span v-if="assetCategory === 'servers'" class="text-xs text-cyan-400 font-bold">({{ filteredServers.length }} {{ t('nodes_monitored') }})</span>
+          <span v-else class="text-xs text-cyan-400 font-bold">({{ endpointCount }} endpoints)</span>
         </h2>
         <p class="text-xs text-gray-400 font-mono mt-0.5">
-          {{ t('assets_subtitle') }}
+          {{ assetCategory === 'servers' ? t('assets_subtitle') : 'Synthetic HTTP/HTTPS, ICMP network ping, and TCP port availability monitoring.' }}
         </p>
       </div>
+      <div class="flex items-center gap-2 shrink-0">
+        <button
+          v-if="assetCategory === 'servers' && !isViewer && (userPerms.can_manage_servers || userPerms.can_server_control)"
+          @click="showAddModal = true"
+          class="px-3 py-1.5 rounded bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold font-mono transition cursor-pointer shrink-0"
+        >
+          + Add Server
+        </button>
+        <button
+          v-if="assetCategory === 'endpoints' && !isViewer && userPerms.can_probing !== false"
+          @click="openAddEndpoint"
+          class="px-3 py-1.5 rounded bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold font-mono transition cursor-pointer shrink-0"
+        >
+          + Add Endpoint
+        </button>
+      </div>
+    </div>
+
+    <!-- ASSET CLASSIFICATION SUB-TABS -->
+    <div class="flex items-center gap-2 border-b border-gray-800/80 pb-2 font-mono text-xs">
       <button
-        v-if="!isViewer && (userPerms.can_manage_servers || userPerms.can_server_control)"
-        @click="showAddModal = true"
-        class="px-3 py-1.5 rounded bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold font-mono transition cursor-pointer shrink-0"
+        type="button"
+        @click="assetCategory = 'servers'"
+        class="px-3.5 py-1.5 rounded-lg border transition cursor-pointer flex items-center gap-2"
+        :class="assetCategory === 'servers' ? 'bg-cyan-950/70 border-cyan-500/60 text-cyan-200 font-bold' : 'bg-[#070c18]/70 border-gray-800 text-gray-400 hover:text-gray-200 hover:border-gray-700'"
       >
-        + Add Asset
+        <span>Servers</span>
+        <span class="px-1.5 py-0.2 rounded text-[10px] bg-gray-900/90 text-cyan-300 border border-gray-700/70">{{ (servers || []).length }}</span>
+      </button>
+      <button
+        type="button"
+        @click="assetCategory = 'endpoints'"
+        class="px-3.5 py-1.5 rounded-lg border transition cursor-pointer flex items-center gap-2"
+        :class="assetCategory === 'endpoints' ? 'bg-cyan-950/70 border-cyan-500/60 text-cyan-200 font-bold' : 'bg-[#070c18]/70 border-gray-800 text-gray-400 hover:text-gray-200 hover:border-gray-700'"
+      >
+        <span>Endpoints &amp; Network</span>
+        <span class="px-1.5 py-0.2 rounded text-[10px] bg-gray-900/90 text-cyan-300 border border-gray-700/70">{{ endpointCount }}</span>
       </button>
     </div>
 
+    <template v-if="assetCategory === 'servers'">
     <!-- BLUEPRINT UNIFIED FILTER BAR (Group, Status, Environment, Search, Reset, Columns) -->
     <AssetFilterBar
       :servers="servers"
@@ -566,16 +599,35 @@
         @close="showAddModal = false"
         @created="$emit('server-updated')"
       />
+      <EndpointFormModal
+        :is-open="showEndpointModal"
+        :probe="editingProbe"
+        :servers="servers"
+        @close="showEndpointModal = false; editingProbe = null"
+        @saved="onEndpointSaved"
+      />
     </Teleport>
+    </template>
+
+    <EndpointInventoryTab
+      v-else
+      ref="endpointTabRef"
+      :can-manage="!isViewer && userPerms.can_probing !== false"
+      @edit-probe="openEditEndpoint"
+      @count-updated="endpointCount = $event"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useI18n } from '../../i18n'
+import { apiFetch } from '../../utils/api'
 import { formatBytes, formatUptime, formatRelativeTime } from '../../utils/formatters'
 import EditHostModal from './modals/EditHostModal.vue'
 import AddHostModal from './modals/AddHostModal.vue'
+import EndpointFormModal from './modals/EndpointFormModal.vue'
+import EndpointInventoryTab from './EndpointInventoryTab.vue'
 import EditNoteModal from './modals/EditNoteModal.vue'
 import InjectKeyModal from './modals/InjectKeyModal.vue'
 import DeleteHostModal from './modals/DeleteHostModal.vue'
@@ -601,7 +653,36 @@ const props = defineProps({
 const emit = defineEmits(['open-workspace', 'probe-node', 'server-updated'])
 
 const { t } = useI18n()
+const assetCategory = ref('servers')
+const endpointCount = ref(0)
+const endpointTabRef = ref(null)
 const showAddModal = ref(false)
+const showEndpointModal = ref(false)
+const editingProbe = ref(null)
+
+function openAddEndpoint() {
+  editingProbe.value = null
+  showEndpointModal.value = true
+}
+
+function openEditEndpoint(prob) {
+  editingProbe.value = prob
+  showEndpointModal.value = true
+}
+
+function onEndpointSaved() {
+  if (endpointTabRef.value?.fetchProbes) endpointTabRef.value.fetchProbes()
+}
+
+onMounted(async () => {
+  try {
+    const res = await apiFetch('/api/probes')
+    if (res.ok) {
+      const data = await res.json()
+      endpointCount.value = data.summary?.total || 0
+    }
+  } catch {}
+})
 
 // --- ENTERPRISE COLUMN VISIBILITY & CUSTOMIZER ---
 const STORAGE_COLS_KEY = 'pantau_asset_matrix_columns_v1'

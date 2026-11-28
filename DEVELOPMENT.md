@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.118
+
+### v0.1.118 — Sub-Tab Klasifikasi Aset (Servers & Endpoints/Network) di Asset Inventory\n- **Backend Probing ()**: Menambahkan endpoint `POST /api/probes/test-adhoc`, dukungan penyimpanan field `tier`, dan filter protokol `web` (`http`/`https`).\n- **Sub-Tab Klasifikasi Aset (, )**: Menyatukan inventaris **Servers** dan **Endpoints & Network** (Web HTTP/HTTPS, ICMP Ping, TCP Port) dalam satu halaman *Asset Inventory* lengkap dengan KPI strip, filter protokol/status, dan menu `Actions ▾`.\n- **Modal Endpoint & Riwayat (, , )**: Menambahkan form dinamis Tambah/Edit Endpoint dengan tombol **Test Connection** sebelum simpan, visualisasi tren latensi riwayat pengecekan, serta perintah setup agen siap salin di `AddHostModal`.
+
+
 ### Versi v0.1.117
 
 ### v0.1.117 — Peningkatan Skala UI & Kerapian Spasi Tabel/KPI untuk Zoom 150%\n- **Skala Global Moderat ()**: Menetapkan `html { font-size: 17px; overflow-x: hidden; }` dan `body { font-size: 14.5px; }`, serta menaikkan breakpoint `.dash-kpi-grid` ke `max-width: 1220px`.\n- **Spasi Tepi Tabel & KPI ()**: Memberikan padding tepi `pl-4`/`pr-4` dan `px-3.5` pada kolom metrik tabel *Asset Status & Performance* serta *Active Incidents*, `flex-wrap` pada kartu KPI 1, dan membatasi lebar deskripsi insiden (`max-w-md xl:max-w-xl`).\n- **Proteksi Tinggi Modal ()**: Mengubah `min-h-[620px]` menjadi `min-h-[min(620px,90vh)]` agar aman pada layar laptop di zoom 150%.

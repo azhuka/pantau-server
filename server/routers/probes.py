@@ -101,7 +101,10 @@ def list_probes(
             all_q = all_q.filter(ProbeTarget.id == -1)
 
     if probe_type and probe_type != "all":
-        query = query.filter(ProbeTarget.probe_type == probe_type)
+        if probe_type == "web":
+            query = query.filter(ProbeTarget.probe_type.in_(["http", "https"]))
+        else:
+            query = query.filter(ProbeTarget.probe_type == probe_type)
     if status_filter and status_filter != "all":
         if status_filter == "paused":
             query = query.filter(ProbeTarget.is_active == 0)
@@ -161,12 +164,14 @@ async def create_probe(
         sid = None
 
     port = int(body["port"]) if body.get("port") not in (None, "") else None
+    tier_val = 1 if int(body.get("tier") or 1) == 1 else 2
     probe = ProbeTarget(
         name=name,
         probe_type=ptype,
         target=target,
         port=port,
         server_id=sid,
+        tier=tier_val,
         interval_seconds=max(10, min(3600, int(body.get("interval_seconds") or 60))),
         timeout_seconds=max(1, min(30, int(body.get("timeout_seconds") or 5))),
         http_method=str(body.get("http_method") or "GET").upper()[:10],
@@ -251,6 +256,10 @@ def update_probe(
         probe.ssl_verify = 1 if body["ssl_verify"] else 0
     if "latency_threshold_ms" in body:
         probe.latency_threshold_ms = max(50, int(body["latency_threshold_ms"] or 1000))
+    if "consecutive_threshold" in body:
+        probe.consecutive_threshold = max(1, min(10, int(body["consecutive_threshold"] or 3)))
+    if "tier" in body:
+        probe.tier = 1 if int(body["tier"] or 1) == 1 else 2
 
     db.add(AuditLog(
         server_id=probe.server_id,
@@ -313,6 +322,38 @@ def toggle_probe(
     ))
     db.commit()
     return {"ok": True, "is_active": bool(probe.is_active), "message": f"Probe '{probe.name}' {state}"}
+
+
+@router.post("/api/probes/test-adhoc")
+async def test_probe_adhoc(
+    body: dict = Body(...),
+    user: User = Depends(get_current_user),
+):
+    _require_probing_perm(user)
+    ptype = str(body.get("probe_type") or "http").strip().lower()
+    target = str(body.get("target") or "").strip()[:255]
+    if not target:
+        raise HTTPException(status_code=400, detail="Target URL or Host is required")
+    if ptype not in ("http", "https", "tcp", "icmp"):
+        raise HTTPException(status_code=400, detail="Probe type must be http, https, tcp, or icmp")
+    if user.allowed_server_ids is not None:
+        sid_raw = body.get("server_id")
+        sid = int(sid_raw) if sid_raw not in (None, "") else None
+        if not sid or not user.can_access_server(sid):
+            raise HTTPException(status_code=403, detail="Scoped operators must bind probes to an authorized asset")
+    port = int(body["port"]) if body.get("port") not in (None, "") else None
+    res = await execute_probe({
+        "probe_type": ptype,
+        "target": target,
+        "port": port,
+        "timeout_seconds": max(1, min(30, int(body.get("timeout_seconds") or 5))),
+        "http_method": str(body.get("http_method") or "GET").upper()[:10],
+        "expected_status": str(body.get("expected_status") or "200-299")[:50],
+        "keyword_match": str(body.get("keyword_match") or "").strip()[:255] or None,
+        "ssl_verify": bool(body.get("ssl_verify", True)),
+        "latency_threshold_ms": max(50, int(body.get("latency_threshold_ms") or 1000)),
+    })
+    return {"ok": True, "result": res.to_dict()}
 
 
 @router.post("/api/probes/{pid}/test")
