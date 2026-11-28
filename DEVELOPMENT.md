@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.122
+
+### v0.1.122 — Izinkan Target Lokal/Loopback & Uji Otomatis Saat Simpan Endpoint\n- **Target Lokal/Loopback (server/services/probe_service.py)**: Mengizinkan probing ke 127.0.0.1/localhost untuk layanan lokal NOC sambil tetap memblokir cloud metadata/link-local (169.254.x.x), multicast, dan unspecified.\n- **Auto-Verify Saat Simpan (server/routers/probes.py)**: POST /api/probes dan PUT /api/probes/{pid} kini langsung mengeksekusi probe sebelum merespons sehingga status dan latensi langsung terbarui saat disimpan.
+
+
 ### Versi v0.1.121
 
 ### v0.1.121 — Perbaikan Content-Type JSON di apiFetch & Error Formatting\n- **Auto Content-Type JSON (frontend/src/utils/api.js)**: apiFetch kini otomatis menambahkan header Content-Type application/json ketika body berupa string JSON, serta menambahkan helper extractErrorMessage.\n- **Anti-[object Object] Toast (useToast.js, EndpointFormModal.vue, AddHostModal.vue)**: Menjamin array/objek error validasi FastAPI (422) selalu diformat menjadi pesan teks yang terbaca.

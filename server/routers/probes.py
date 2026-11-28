@@ -203,7 +203,7 @@ async def create_probe(
     db.commit()
     db.refresh(probe)
 
-    task = asyncio.create_task(_run_initial_probe(probe.id, {
+    res = await execute_probe({
         "probe_type": probe.probe_type,
         "target": probe.target,
         "port": probe.port,
@@ -213,16 +213,16 @@ async def create_probe(
         "keyword_match": probe.keyword_match,
         "ssl_verify": bool(probe.ssl_verify),
         "latency_threshold_ms": probe.latency_threshold_ms,
-    }))
-    _bg_tasks.add(task)
-    task.add_done_callback(_bg_tasks.discard)
+    })
+    record_probe_execution(db, probe.id, res, datetime.utcnow())
+    db.refresh(probe)
 
     servers_map = {s.id: s.hostname for s in db.query(Server.id, Server.hostname).filter(Server.is_active == 1).all()}
-    return {"ok": True, "probe": _probe_to_dict(probe, servers_map), "message": f"Probe '{name}' created"}
+    return {"ok": True, "probe": _probe_to_dict(probe, servers_map), "message": f"Probe '{name}' created ({probe.status.upper()})"}
 
 
 @router.put("/api/probes/{pid}")
-def update_probe(
+async def update_probe(
     pid: int,
     body: dict = Body(...),
     user: User = Depends(get_current_user),
@@ -277,7 +277,22 @@ def update_probe(
         created_at=datetime.utcnow(),
     ))
     db.commit()
-    return {"ok": True, "message": f"Probe '{probe.name}' updated"}
+    db.refresh(probe)
+    if probe.is_active:
+        res = await execute_probe({
+            "probe_type": probe.probe_type,
+            "target": probe.target,
+            "port": probe.port,
+            "timeout_seconds": probe.timeout_seconds,
+            "http_method": probe.http_method,
+            "expected_status": probe.expected_status,
+            "keyword_match": probe.keyword_match,
+            "ssl_verify": bool(probe.ssl_verify),
+            "latency_threshold_ms": probe.latency_threshold_ms,
+        })
+        record_probe_execution(db, probe.id, res, datetime.utcnow())
+        db.refresh(probe)
+    return {"ok": True, "message": f"Probe '{probe.name}' updated ({probe.status.upper()})"}
 
 
 @router.delete("/api/probes/{pid}")

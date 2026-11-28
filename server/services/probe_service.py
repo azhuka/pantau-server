@@ -81,13 +81,13 @@ def _check_ssl_expiry(hostname: str, port: int = 443, timeout: float = 5.0) -> t
 
 
 def _validate_probe_host(host: str) -> Optional[str]:
-    """Block SSRF against loopback, link-local/cloud metadata, multicast, and unspecified addresses."""
+    """Block SSRF against cloud metadata, link-local, multicast, and unspecified addresses."""
     import ipaddress
 
     clean = (host or "").strip().strip("[]").lower()
     if not clean:
         return "Target host is empty"
-    if clean in ("localhost", "localhost.localdomain", "metadata.google.internal"):
+    if clean == "metadata.google.internal":
         return f"Blocked probe target host: {clean}"
     try:
         infos = socket.getaddrinfo(clean, None)
@@ -99,7 +99,7 @@ def _validate_probe_host(host: str) -> Optional[str]:
             ip = ipaddress.ip_address(addr_str)
         except ValueError:
             continue
-        if ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_unspecified or ip.is_reserved:
+        if ip.is_link_local or ip.is_multicast or ip.is_unspecified or ip.is_reserved:
             return f"Blocked probe target IP ({addr_str})"
     return None
 
