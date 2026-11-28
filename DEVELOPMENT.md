@@ -571,6 +571,11 @@ Dokumen ini menjadi pegangan permanen bagi kelangsungan evolusi **Pantau Server*
 
 ## Catatan Perubahan (Changelog)
 
+### Versi v0.1.121
+
+### v0.1.121 — Perbaikan Content-Type JSON di apiFetch & Error Formatting\n- **Auto Content-Type JSON (frontend/src/utils/api.js)**: apiFetch kini otomatis menambahkan header Content-Type application/json ketika body berupa string JSON, serta menambahkan helper extractErrorMessage.\n- **Anti-[object Object] Toast (useToast.js, EndpointFormModal.vue, AddHostModal.vue)**: Menjamin array/objek error validasi FastAPI (422) selalu diformat menjadi pesan teks yang terbaca.
+
+
 ### Versi v0.1.120
 
 ### v0.1.120 — Model Severity 3-Tingkat, Insiden Endpoint, RBAC Scoped & Linked Endpoints di Dasbor\n- **Model Severity 3-Tingkat (problem_service.py, probe_service.py, AddHostModal, EditHostModal, EndpointFormModal)**: Mendukung tier 1 (Production Crucial: Danger/Critical), tier 3 (Production Standard: Critical/Warning), dan tier 2 (Non-Production: Warning).\n- **Insiden Endpoint Otomatis (probe_service.py, problems.py)**: Endpoint down/degraded kini otomatis membuat dan me-resolve ServerProblem (probe_failed / probe_degraded) serta tampil di Active & Resolved Incidents termasuk endpoint standalone.\n- **RBAC Scoped Operator & UX (EndpointFormModal.vue, AssetTableView.vue, AddHostModal.vue)**: Menyembunyikan opsi Standalone/External dan memilih otomatis aset pertama untuk operator terbatas, menyimpan posisi sub-tab, serta panduan setup 2-langkah di AddHostModal.\n- **Linked Endpoints di Dasbor (servers.py, DashboardView.vue)**: Menampilkan badge pasif dengan tooltip daftar endpoint pada kolom Asset (mode Tabel) dan daftar mini endpoint pada kartu server (mode Grid).

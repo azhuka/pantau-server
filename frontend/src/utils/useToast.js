@@ -46,15 +46,19 @@ function defaultTitle(type) {
 }
 
 function pushToast(optsOrMsg, type = 'info', duration = 5000) {
-  const isObj = typeof optsOrMsg === 'object' && optsOrMsg !== null
+  const isObj = typeof optsOrMsg === 'object' && optsOrMsg !== null && !(optsOrMsg instanceof Error) && !Array.isArray(optsOrMsg) && ('message' in optsOrMsg || 'title' in optsOrMsg || 'type' in optsOrMsg)
   const tType = isObj ? (optsOrMsg.type || 'info') : type
   const dur = isObj ? (optsOrMsg.duration ?? 5500) : duration
   const id = nextToastId++
+  const rawMsg = isObj ? optsOrMsg.message : (optsOrMsg instanceof Error ? optsOrMsg.message : optsOrMsg)
+  const safeMsg = Array.isArray(rawMsg)
+    ? rawMsg.map(x => (typeof x === 'string' ? x : (x?.msg || JSON.stringify(x)))).join('; ')
+    : (typeof rawMsg === 'object' && rawMsg !== null ? (rawMsg.msg || rawMsg.message || JSON.stringify(rawMsg)) : String(rawMsg || ''))
   const entry = {
     id,
     type: tType,
     title: isObj ? (optsOrMsg.title || defaultTitle(tType)) : defaultTitle(tType),
-    message: isObj ? String(optsOrMsg.message || '') : String(optsOrMsg || ''),
+    message: safeMsg,
     serverName: isObj ? (optsOrMsg.serverName || '') : '',
     durationSecs: isObj ? (optsOrMsg.durationSecs || 0) : 0,
     onClick: isObj && typeof optsOrMsg.onClick === 'function' ? optsOrMsg.onClick : null,

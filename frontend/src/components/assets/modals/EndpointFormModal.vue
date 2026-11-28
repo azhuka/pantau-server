@@ -166,7 +166,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { apiFetch } from '../../../utils/api'
+import { apiFetch, extractErrorMessage } from '../../../utils/api'
 import { useToast } from '../../../utils/useToast'
 
 const props = defineProps({
@@ -264,7 +264,7 @@ async function runAdhocTest() {
   try {
     const res = await apiFetch('/api/probes/test-adhoc', { method: 'POST', body: JSON.stringify(buildPayload()) })
     const data = await res.json()
-    if (!res.ok) throw new Error(data.detail || 'Probe test failed')
+    if (!res.ok) throw new Error(extractErrorMessage(data, 'Probe test failed'))
     testResult.value = data.result
   } catch (err) {
     toast.error(err.message)
@@ -280,7 +280,7 @@ async function submit() {
     const method = isEdit.value ? 'PUT' : 'POST'
     const res = await apiFetch(url, { method, body: JSON.stringify(buildPayload()) })
     const data = await res.json()
-    if (!res.ok) throw new Error(data.detail || 'Failed to save endpoint')
+    if (!res.ok) throw new Error(extractErrorMessage(data, 'Failed to save endpoint'))
     toast.success(data.message || 'Endpoint saved')
     emit('saved')
     closeModal()

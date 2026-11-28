@@ -134,7 +134,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { apiFetch } from '../../../utils/api'
+import { apiFetch, extractErrorMessage } from '../../../utils/api'
 import { useToast } from '../../../utils/useToast'
 
 const props = defineProps({
@@ -180,7 +180,7 @@ async function submit() {
     if (payload.platform_override === 'baremetal') payload.is_proxmox_ha = false
     const res = await apiFetch('/api/servers', { method: 'POST', body: JSON.stringify(payload) })
     const data = await res.json()
-    if (!res.ok) throw new Error(data.detail || 'Failed to register asset')
+    if (!res.ok) throw new Error(extractErrorMessage(data, 'Failed to register asset'))
     revealedKey.value = data.api_key
     revealedHostname.value = data.hostname
     toast.success(data.message)
